@@ -13,4 +13,14 @@ it(@"should be a thing", ^{
 	expect(updater).notTo.beNil();
 });
 
+pending(@"should download an update when it doesn't match the current version");
+
+pending(@"should unzip an update");
+
+pending(@"should verify the code signature of an update");
+
+pending(@"should install the update on relaunch");
+
+pending(@"should fail to install a corrupt update");
+
 SpecEnd
