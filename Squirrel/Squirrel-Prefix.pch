@@ -1,0 +1,7 @@
+//
+// Prefix header for all source files of the 'Squirrel' target in the 'Squirrel' project
+//
+
+#ifdef __OBJC__
+	#import <Cocoa/Cocoa.h>
+#endif
