@@ -1,4 +1,4 @@
 Squirrel
 ========
 
-:shipit: An Objective-C Framework for shipping updated compiled bits to OS X apps.
+![:shipit:](http://shipitsquirrel.github.io/images/ship%20it%20squirrel.png)
