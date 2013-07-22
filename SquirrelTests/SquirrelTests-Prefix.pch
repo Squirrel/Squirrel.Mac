@@ -1,0 +1,18 @@
+//
+//  SquirrelTests-Prefix.pch
+//  Squirrel
+//
+//  Created by Justin Spahr-Summers on 2013-07-21.
+//  Copyright (c) 2013 GitHub. All rights reserved.
+//
+
+#ifdef __OBJC__
+	#import <Cocoa/Cocoa.h>
+    #import <SenTestingKit/SenTestingKit.h>
+    #import <Squirrel/Squirrel.h>
+
+    #import "Specta.h"
+
+    #define EXP_SHORTHAND
+    #import "Expecta.h"
+#endif

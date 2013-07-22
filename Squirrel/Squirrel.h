@@ -6,8 +6,4 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import <Foundation/Foundation.h>
-
-@interface Squirrel : NSObject
-
-@end
+#import <Squirrel/SQRLUpdater.h>
