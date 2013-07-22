@@ -19,6 +19,17 @@
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
+		F6EB2168179D022C001108CF /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
+		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
+		F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */; };
+		F6EB2174179D08FF001108CF /* AFJSONRequestOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB216F179D08FF001108CF /* AFJSONRequestOperation.h */; };
+		F6EB2175179D08FF001108CF /* AFJSONRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2170179D08FF001108CF /* AFJSONRequestOperation.m */; };
+		F6EB2179179D0D87001108CF /* AFURLConnectionOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2177179D0D87001108CF /* AFURLConnectionOperation.h */; };
+		F6EB217A179D0D87001108CF /* AFURLConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2178179D0D87001108CF /* AFURLConnectionOperation.m */; };
+		F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */; };
+		F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */; };
+		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -134,6 +145,18 @@
 		D0C22C4B179CC15100158214 /* SQRLUpdater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdater.m; sourceTree = "<group>"; };
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
+		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTKeyPathCoding.h; path = Squirrel/extobjc/EXTKeyPathCoding.h; sourceTree = "<group>"; };
+		F6EB2165179D0228001108CF /* EXTScope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTScope.h; path = Squirrel/extobjc/EXTScope.h; sourceTree = "<group>"; };
+		F6EB2166179D0228001108CF /* EXTScope.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EXTScope.m; path = Squirrel/extobjc/EXTScope.m; sourceTree = "<group>"; };
+		F6EB2167179D0228001108CF /* metamacros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = metamacros.h; path = Squirrel/extobjc/metamacros.h; sourceTree = "<group>"; };
+		F6EB216F179D08FF001108CF /* AFJSONRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFJSONRequestOperation.h; path = External/AFNetworking/AFNetworking/AFJSONRequestOperation.h; sourceTree = "<group>"; };
+		F6EB2170179D08FF001108CF /* AFJSONRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFJSONRequestOperation.m; path = External/AFNetworking/AFNetworking/AFJSONRequestOperation.m; sourceTree = "<group>"; };
+		F6EB2177179D0D87001108CF /* AFURLConnectionOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFURLConnectionOperation.h; path = External/AFNetworking/AFNetworking/AFURLConnectionOperation.h; sourceTree = "<group>"; };
+		F6EB2178179D0D87001108CF /* AFURLConnectionOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFURLConnectionOperation.m; path = External/AFNetworking/AFNetworking/AFURLConnectionOperation.m; sourceTree = "<group>"; };
+		F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFHTTPRequestOperation.m; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.m; sourceTree = "<group>"; };
+		F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFHTTPRequestOperation.h; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.h; sourceTree = "<group>"; };
+		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -141,6 +164,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */,
+				F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */,
 				D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -183,9 +208,13 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F6EB217F179D0E4D001108CF /* Security.framework */,
+				F6EB216C179D08CF001108CF /* AFNetworking */,
+				F6EB2163179D01A9001108CF /* libextobjc */,
 				D0C22C1D179CC0B300158214 /* Expecta.xcodeproj */,
 				D0C22C20179CC0B300158214 /* Specta.xcodeproj */,
 				D0C22BDA179CC00E00158214 /* Cocoa.framework */,
+				F6EB2161179CFD93001108CF /* SystemConfiguration.framework */,
 				D0C22BF0179CC00E00158214 /* SenTestingKit.framework */,
 			);
 			name = Frameworks;
@@ -333,6 +362,30 @@
 			name = Specs;
 			sourceTree = "<group>";
 		};
+		F6EB2163179D01A9001108CF /* libextobjc */ = {
+			isa = PBXGroup;
+			children = (
+				F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */,
+				F6EB2165179D0228001108CF /* EXTScope.h */,
+				F6EB2166179D0228001108CF /* EXTScope.m */,
+				F6EB2167179D0228001108CF /* metamacros.h */,
+			);
+			name = libextobjc;
+			sourceTree = "<group>";
+		};
+		F6EB216C179D08CF001108CF /* AFNetworking */ = {
+			isa = PBXGroup;
+			children = (
+				F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */,
+				F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */,
+				F6EB2177179D0D87001108CF /* AFURLConnectionOperation.h */,
+				F6EB2178179D0D87001108CF /* AFURLConnectionOperation.m */,
+				F6EB216F179D08FF001108CF /* AFJSONRequestOperation.h */,
+				F6EB2170179D08FF001108CF /* AFJSONRequestOperation.m */,
+			);
+			name = AFNetworking;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -340,8 +393,13 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6EB2174179D08FF001108CF /* AFJSONRequestOperation.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
+				F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */,
+				F6EB2179179D0D87001108CF /* AFURLConnectionOperation.h in Headers */,
+				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
+				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -394,7 +452,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = SQRL;
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = GitHub;
 			};
 			buildConfigurationList = D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */;
@@ -524,7 +582,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6EB217A179D0D87001108CF /* AFURLConnectionOperation.m in Sources */,
+				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
+				F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
+				F6EB2175179D08FF001108CF /* AFJSONRequestOperation.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -586,6 +648,7 @@
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -612,6 +675,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				GCC_WARN_UNUSED_FUNCTION = NO;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
@@ -625,6 +689,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				GCC_WARN_UNUSED_FUNCTION = NO;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
@@ -687,6 +752,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				GCC_WARN_UNUSED_FUNCTION = NO;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
@@ -732,6 +798,7 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				GCC_WARN_UNUSED_FUNCTION = NO;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;

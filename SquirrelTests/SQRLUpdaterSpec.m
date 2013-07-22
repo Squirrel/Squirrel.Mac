@@ -9,7 +9,7 @@
 SpecBegin(SQRLUpdater)
 
 it(@"should be a thing", ^{
-	SQRLUpdater *updater = [[SQRLUpdater alloc] init];
+	SQRLUpdater *updater = [SQRLUpdater sharedUpdater];
 	expect(updater).notTo.beNil();
 });
 
