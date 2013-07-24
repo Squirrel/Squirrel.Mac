@@ -125,6 +125,13 @@
 			remoteGlobalIDString = E9D96A2514B6B8AB007D9521;
 			remoteInfo = Specta;
 		};
+		F60CA80017A00E750069F69A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F60CA7E8179FC4F60069F69A;
+			remoteInfo = Shipit;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -517,6 +524,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				F60CA80117A00E750069F69A /* PBXTargetDependency */,
 			);
 			name = Squirrel;
 			productName = Squirrel;
@@ -746,6 +754,11 @@
 			isa = PBXTargetDependency;
 			name = Specta;
 			targetProxy = D0C22C3D179CC0BA00158214 /* PBXContainerItemProxy */;
+		};
+		F60CA80117A00E750069F69A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F60CA7E8179FC4F60069F69A /* Shipit */;
+			targetProxy = F60CA80017A00E750069F69A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
