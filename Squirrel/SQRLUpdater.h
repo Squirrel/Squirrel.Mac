@@ -41,6 +41,8 @@ extern const NSInteger SQRLUpdaterErrorCodeSigning;
 // A singleton dedicated to downloading and installing updates from central.
 @interface SQRLUpdater : NSObject
 
+@property (nonatomic, copy) NSString *githubUsername;
+
 // The current state of the manager. Observable.
 @property (atomic, readonly) SQRLUpdaterState state;
 
@@ -62,7 +64,7 @@ extern const NSInteger SQRLUpdaterErrorCodeSigning;
 // occur until `interval` seconds have passed.
 //
 // interval - The interval, in seconds, between each check.
-- (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval githubUsername:(NSString *)username;
+- (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
 
 // Instructs the Sparkle relauncher to install a previously downloaded,
 // unzipped and verified app update.

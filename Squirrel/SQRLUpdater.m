@@ -32,7 +32,6 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 @property (atomic, readwrite) SQRLUpdaterState state;
 @property (nonatomic, readonly) NSOperationQueue *updateQueue;
 @property (nonatomic, strong) NSTimer *updateTimer;
-@property (nonatomic, copy) NSString *githubUsername;
 
 @property (nonatomic, strong) NSURL *downloadFolder;
 
@@ -70,11 +69,11 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	_updateTimer = updateTimer;
 }
 
-- (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval githubUsername:(NSString *)username {
-    self.githubUsername = username;
+- (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
 	@weakify(self);
 	dispatch_async(dispatch_get_main_queue(), ^{
 		@strongify(self)
+        if (self == nil) return;
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
 	});
 }
@@ -87,7 +86,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
     NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
     path = (paths.count > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
     
-	static NSString * const appDirectoryName = @"Squirrel";
+    NSString * appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
 	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
@@ -260,49 +259,37 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 - (void)installUpdateIfNeeded {
 	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
 	
-	NSBundle *bundle = NSBundle.mainBundle;
-	//SUHost *host = [[SUHost alloc] initWithBundle:bundle];
+	NSBundle *bundle = [NSBundle bundleForClass:self.class];
     
-	NSString *relaunchPathToCopy = [bundle pathForResource:@"finish_installation" ofType:@"app"];
-	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:relaunchPathToCopy.lastPathComponent];
+	NSURL *relauncherURL = [bundle URLForResource:@"Shipit" withExtension:nil];
+	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"Shipit"];
 	NSError *error = nil;
-	NSLog(@"Copying relauncher from %@ to %@", relaunchPathToCopy, targetURL.path);
+	NSLog(@"Copying relauncher from %@ to %@", relauncherURL.path, targetURL.path);
 	
-	if (![NSFileManager.defaultManager createDirectoryAtURL:targetURL withIntermediateDirectories:YES attributes:nil error:&error]) {
+	if (![NSFileManager.defaultManager createDirectoryAtURL:targetURL.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:&error]) {
 		NSLog(@"Error installing update, failed to create App Support folder with error %@", error);
 		[self finishAndSetIdle];
 		return;
 	}
     
-	//NSString *relaunchPath = nil;
-	
-//	if ([SUPlainInstaller copyPathWithAuthentication:relaunchPathToCopy overPath:targetURL.path temporaryName:nil error:&error]) {
-//		relaunchPath = targetURL.path;
-//	}
-//    
-//	if (relaunchPath == nil || ![NSFileManager.defaultManager fileExistsAtPath:relaunchPath]) {
-//		// /nope
-//		GHLog(@"Error installing update, failed to copy relauncher into App Support folder with error %@", error);
-//		[self finishAndSetIdle];
-//		return;
-//	}
-//	
-//	NSString *pathToRelaunch = host.bundlePath;
-//	NSString *relaunchToolPath = [relaunchPath stringByAppendingPathComponent:@"Contents/MacOS/finish_installation"];
-//	[NSTask launchedTaskWithLaunchPath:relaunchToolPath arguments:@[
-//                                                                    // Path to host bundle
-//                                                                    host.bundlePath,
-//                                                                    // Path to app to relaunch (here because plugins).
-//                                                                    pathToRelaunch,
-//                                                                    // Wait for this PID to terminate before updating.
-//                                                                    [NSString stringWithFormat:@"%d", NSProcessInfo.processInfo.processIdentifier],
-//                                                                    // Where to find the update.
-//                                                                    self.downloadFolder.path,
-//                                                                    // relaunch after updating?
-//                                                                    self.shouldRelaunch ? @"1" : @"0",
-//                                                                    // Don't show any UI
-//                                                                    @"0",
-//                                                                    ]];
+    if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
+		NSLog(@"Error installing update, failed to copy relauncher %@", error);
+		[self finishAndSetIdle];
+		return;
+	}
+    
+    NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+
+	[NSTask launchedTaskWithLaunchPath:targetURL.path arguments:@[
+        // Path to host bundle
+        currentApplication.bundleURL.path,
+        // Wait for this PID to terminate before updating.
+        [NSString stringWithFormat:@"%d", currentApplication.processIdentifier],
+        // Where to find the update.
+        self.downloadFolder.path,
+        // relaunch after updating?
+        self.shouldRelaunch ? @"1" : @"0",
+    ]];
 }
 
 - (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error {
