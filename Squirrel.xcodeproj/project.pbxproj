@@ -19,6 +19,18 @@
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		F6315C2A179EC9C6000DD609 /* crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C1F179EC9C6000DD609 /* crypt.h */; };
+		F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C20179EC9C6000DD609 /* ioapi.c */; };
+		F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C21179EC9C6000DD609 /* ioapi.h */; };
+		F6315C2D179EC9C6000DD609 /* mztools.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C22179EC9C6000DD609 /* mztools.c */; };
+		F6315C2E179EC9C6000DD609 /* mztools.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C23179EC9C6000DD609 /* mztools.h */; };
+		F6315C2F179EC9C6000DD609 /* unzip.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C24179EC9C6000DD609 /* unzip.c */; };
+		F6315C30179EC9C6000DD609 /* unzip.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C25179EC9C6000DD609 /* unzip.h */; };
+		F6315C31179EC9C6000DD609 /* zip.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C26179EC9C6000DD609 /* zip.c */; };
+		F6315C32179EC9C6000DD609 /* zip.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C27179EC9C6000DD609 /* zip.h */; };
+		F6315C33179EC9C6000DD609 /* SSZipArchive.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C28179EC9C6000DD609 /* SSZipArchive.h */; };
+		F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = F6315C29179EC9C6000DD609 /* SSZipArchive.m */; };
+		F6315C36179EC9E7000DD609 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F6315C35179EC9E7000DD609 /* libz.dylib */; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2168179D022C001108CF /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
 		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
@@ -145,6 +157,18 @@
 		D0C22C4B179CC15100158214 /* SQRLUpdater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdater.m; sourceTree = "<group>"; };
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
+		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
+		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
+		F6315C21179EC9C6000DD609 /* ioapi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ioapi.h; sourceTree = "<group>"; };
+		F6315C22179EC9C6000DD609 /* mztools.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mztools.c; sourceTree = "<group>"; };
+		F6315C23179EC9C6000DD609 /* mztools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mztools.h; sourceTree = "<group>"; };
+		F6315C24179EC9C6000DD609 /* unzip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = unzip.c; sourceTree = "<group>"; };
+		F6315C25179EC9C6000DD609 /* unzip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unzip.h; sourceTree = "<group>"; };
+		F6315C26179EC9C6000DD609 /* zip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = zip.c; sourceTree = "<group>"; };
+		F6315C27179EC9C6000DD609 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zip.h; sourceTree = "<group>"; };
+		F6315C28179EC9C6000DD609 /* SSZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SSZipArchive.h; path = External/ssziparchive/SSZipArchive.h; sourceTree = "<group>"; };
+		F6315C29179EC9C6000DD609 /* SSZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SSZipArchive.m; path = External/ssziparchive/SSZipArchive.m; sourceTree = "<group>"; };
+		F6315C35179EC9E7000DD609 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
 		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTKeyPathCoding.h; path = Squirrel/extobjc/EXTKeyPathCoding.h; sourceTree = "<group>"; };
 		F6EB2165179D0228001108CF /* EXTScope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTScope.h; path = Squirrel/extobjc/EXTScope.h; sourceTree = "<group>"; };
@@ -164,6 +188,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6315C36179EC9E7000DD609 /* libz.dylib in Frameworks */,
 				F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */,
 				F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */,
 				D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */,
@@ -208,12 +233,16 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F6EB217F179D0E4D001108CF /* Security.framework */,
+				F6315C1E179EC9C6000DD609 /* minizip */,
+				F6315C28179EC9C6000DD609 /* SSZipArchive.h */,
+				F6315C29179EC9C6000DD609 /* SSZipArchive.m */,
 				F6EB216C179D08CF001108CF /* AFNetworking */,
 				F6EB2163179D01A9001108CF /* libextobjc */,
+				F6315C35179EC9E7000DD609 /* libz.dylib */,
 				D0C22C1D179CC0B300158214 /* Expecta.xcodeproj */,
 				D0C22C20179CC0B300158214 /* Specta.xcodeproj */,
 				D0C22BDA179CC00E00158214 /* Cocoa.framework */,
+				F6EB217F179D0E4D001108CF /* Security.framework */,
 				F6EB2161179CFD93001108CF /* SystemConfiguration.framework */,
 				D0C22BF0179CC00E00158214 /* SenTestingKit.framework */,
 			);
@@ -362,6 +391,23 @@
 			name = Specs;
 			sourceTree = "<group>";
 		};
+		F6315C1E179EC9C6000DD609 /* minizip */ = {
+			isa = PBXGroup;
+			children = (
+				F6315C1F179EC9C6000DD609 /* crypt.h */,
+				F6315C20179EC9C6000DD609 /* ioapi.c */,
+				F6315C21179EC9C6000DD609 /* ioapi.h */,
+				F6315C22179EC9C6000DD609 /* mztools.c */,
+				F6315C23179EC9C6000DD609 /* mztools.h */,
+				F6315C24179EC9C6000DD609 /* unzip.c */,
+				F6315C25179EC9C6000DD609 /* unzip.h */,
+				F6315C26179EC9C6000DD609 /* zip.c */,
+				F6315C27179EC9C6000DD609 /* zip.h */,
+			);
+			name = minizip;
+			path = External/ssziparchive/minizip;
+			sourceTree = "<group>";
+		};
 		F6EB2163179D01A9001108CF /* libextobjc */ = {
 			isa = PBXGroup;
 			children = (
@@ -396,10 +442,16 @@
 				F6EB2174179D08FF001108CF /* AFJSONRequestOperation.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
+				F6315C33179EC9C6000DD609 /* SSZipArchive.h in Headers */,
+				F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */,
 				F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */,
 				F6EB2179179D0D87001108CF /* AFURLConnectionOperation.h in Headers */,
+				F6315C32179EC9C6000DD609 /* zip.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
+				F6315C30179EC9C6000DD609 /* unzip.h in Headers */,
+				F6315C2A179EC9C6000DD609 /* crypt.h in Headers */,
+				F6315C2E179EC9C6000DD609 /* mztools.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -582,10 +634,15 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */,
 				F6EB217A179D0D87001108CF /* AFURLConnectionOperation.m in Sources */,
 				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
+				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
 				F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */,
+				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
+				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
+				F6315C2F179EC9C6000DD609 /* unzip.c in Sources */,
 				F6EB2175179D08FF001108CF /* AFJSONRequestOperation.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

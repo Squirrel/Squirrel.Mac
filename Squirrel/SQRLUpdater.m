@@ -11,9 +11,10 @@
 #import <Security/Security.h>
 
 #import "AFJSONRequestOperation.h"
+#import "SSZipArchive.h"
 
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotification);
-NSSTRING_CONST(SQRLUpdaterAvailableNotificationReleaseNotesKey);
+NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNameKey);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationLulzURLKey);
 
@@ -164,9 +165,9 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 		NSString *tempDirectoryPath = [fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(result)];
 		free(tempDirectoryNameCString);
 		
-		//NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
+		NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
         
-		//NSString *lulzURLString = JSON[@"lulz"] ?: [self randomLulzURLString];
+		NSString *lulzURLString = JSON[@"lulz"] ?: [self randomLulzURLString];
 		
 		self.downloadFolder = [NSURL fileURLWithPath:tempDirectoryPath];
 		
@@ -180,47 +181,48 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 			@strongify(self);
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
-			
-//			SUHost *host = [[SUHost alloc] initWithBundle:NSBundle.mainBundle];
-//			SUUnarchiver *unarchiver = [SUUnarchiver unarchiverForPath:zipOutputURL.path updatingHost:host];
-//			unarchiver.completionBlock = ^(BOOL success) {
-//				if (!success) {
-//					GHLog(@"Could not extract update.");
-//					[self finishAndSetIdle];
-//					return;
-//				}
-//                
-//				NSString *bundlePath = [zipOutputURL.path.stringByDeletingLastPathComponent stringByAppendingPathComponent:@"GitHub.app"];
-//				NSBundle *downloadedBundle = [NSBundle bundleWithPath:bundlePath];
-//				if (downloadedBundle == nil) {
-//					GHLog(@"Could not create a bundle from %@", bundlePath);
-//					[self finishAndSetIdle];
-//					return;
-//				}
-//                
-//				[[self verifyCodeSignatureOfBundle:downloadedBundle]
-//                 subscribeError:^(NSError *error) {
-//                     GHLog(@"Failed to validate the code signature for app update. Error: %@", error);
-//                     [self finishAndSetIdle];
-//                 } completed:^{
-//                     GHLog(@"Code signature passed for %@", bundlePath);
-//                     
-//                     NSString *name = JSON[SQRLUpdaterJSONNameKey];
-//                     NSDictionary *userInfo = @{
-//                                                SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
-//                                                SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
-//                                                SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
-//                                                };
-//                     
-//                     self.state = SQRLUpdaterStateAwaitingRelaunch;
-//                     
-//                     dispatch_async(dispatch_get_main_queue(), ^{
-//                         [NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-//                     });
-//                 }];
-//			};
-//			
-//			[unarchiver start];
+            
+            NSURL *destinationURL = zipOutputURL.URLByDeletingLastPathComponent;
+            
+            BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:destinationURL.path];
+            
+            if (!unzipped) {
+                NSLog(@"Could not extract update.");
+                [self finishAndSetIdle];
+                return;
+            }
+            
+            NSString *bundlePath = [destinationURL.path stringByAppendingPathComponent:@"GitHub.app"];
+            NSBundle *downloadedBundle = [NSBundle bundleWithPath:bundlePath];
+            if (downloadedBundle == nil) {
+                NSLog(@"Could not create a bundle from %@", bundlePath);
+                [self finishAndSetIdle];
+                return;
+            }
+            
+            NSError *error = nil;
+            BOOL verified = [self verifyCodeSignatureOfBundle:downloadedBundle error:&error];
+
+            if (!verified) {
+                NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
+                 [self finishAndSetIdle];
+                return;
+            }
+        
+             NSLog(@"Code signature passed for %@", bundlePath);
+             
+             NSString *name = JSON[SQRLUpdaterJSONNameKey];
+             NSDictionary *userInfo = @{
+                SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
+                SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
+                SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
+            };
+             
+            self.state = SQRLUpdaterStateAwaitingRelaunch;
+             
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
+            });
 		} failure:nil];
 		
 		zipDownloadOperation.outputStream = zipStream;
