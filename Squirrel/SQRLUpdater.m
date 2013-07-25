@@ -293,39 +293,12 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 }
 
 - (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error {
-    // Use __block so that @onExit sees any changes.
-    __block SecCodeRef hostCode = NULL;
-    @onExit {
-        if (hostCode != NULL) CFRelease(hostCode);
-    };
-    
-    OSStatus result = SecCodeCopySelf(kSecCSDefaultFlags, &hostCode);
-    if (result != noErr) {
-        if (error != NULL) {
-            *error = [self codeSigningErrorWithDescription:NSLocalizedString(@"Failed to copy host code", nil) securityResult:result];
-        }
-        return NO;
-    }
-    
-    __block SecRequirementRef requirement = NULL;
-    @onExit {
-        if (requirement != NULL) CFRelease(requirement);
-    };
-    
-    result = SecCodeCopyDesignatedRequirement(hostCode, kSecCSDefaultFlags, &requirement);
-    if (result != noErr) {
-        if (error != NULL) {
-            *error = [self codeSigningErrorWithDescription:NSLocalizedString(@"Failed to copy designated requirement", nil) securityResult:result];
-        }
-        return NO;
-    }
-    
     __block SecStaticCodeRef staticCode = NULL;
     @onExit {
         if (staticCode != NULL) CFRelease(staticCode);
     };
     
-    result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundle.executableURL, kSecCSDefaultFlags, &staticCode);
+    OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundle.executableURL, kSecCSDefaultFlags, &staticCode);
     if (result != noErr) {
         if (error != NULL) {
             *error = [self codeSigningErrorWithDescription:NSLocalizedString(@"Failed to get static code", nil) securityResult:result];
@@ -334,7 +307,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
     }
     
     CFErrorRef errorRef = NULL;
-    result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSDefaultFlags | kSecCSCheckAllArchitectures, requirement, &errorRef);
+    result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures | kSecCSCheckNestedCode, NULL, &errorRef);
     if (result == noErr) {
         return YES;
     } else {
