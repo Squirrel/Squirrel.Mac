@@ -316,7 +316,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
         } mutableCopy];
         
         if (errorRef != NULL) {
-            userInfo[NSUnderlyingErrorKey] = CFBridgingRelease(error);
+            userInfo[NSUnderlyingErrorKey] = CFBridgingRelease(errorRef);
         }
         
         if (error != NULL) {
