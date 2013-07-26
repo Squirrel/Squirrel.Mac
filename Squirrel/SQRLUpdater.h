@@ -33,11 +33,6 @@ extern NSString *const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
 extern NSString *const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 
-extern NSString * const SQRLUpdaterErrorDomain;
-
-// An error occurred validating the code signature of a downloaded update.
-extern const NSInteger SQRLUpdaterErrorCodeSigning;
-
 // A singleton dedicated to downloading and installing updates from central.
 @interface SQRLUpdater : NSObject
 
@@ -71,12 +66,5 @@ extern const NSInteger SQRLUpdaterErrorCodeSigning;
 //
 // The update won't be installed until the app has been terminated.
 - (void)installUpdateIfNeeded;
-
-// Verifies the code signature of the specified bundle, which must be signed in
-// the same way as the running application.
-//
-// Returns NO if the bundle's code signature could not be verified, and the
-// error parameter will contain the specific error.
-- (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error;
 
 @end

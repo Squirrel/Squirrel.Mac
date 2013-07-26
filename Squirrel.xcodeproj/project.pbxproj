@@ -45,6 +45,10 @@
 		F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */; };
 		F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerfication.h in Headers */ = {isa = PBXBuildFile; fileRef = F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerfication.h */; };
+		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */; };
+		F6F2ED8517A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */; };
+		F6F2ED8C17A341E400F4D220 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -207,6 +211,8 @@
 		F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFHTTPRequestOperation.m; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.m; sourceTree = "<group>"; };
 		F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFHTTPRequestOperation.h; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.h; sourceTree = "<group>"; };
 		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerfication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLCodeSignatureVerfication.h; sourceTree = "<group>"; };
+		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerfication.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -416,6 +422,8 @@
 			children = (
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
+				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerfication.h */,
+				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -503,6 +511,7 @@
 				F6315C32179EC9C6000DD609 /* zip.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
+				F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerfication.h in Headers */,
 				F6315C30179EC9C6000DD609 /* unzip.h in Headers */,
 				F6315C2A179EC9C6000DD609 /* crypt.h in Headers */,
 				F6315C2E179EC9C6000DD609 /* mztools.h in Headers */,
@@ -713,6 +722,7 @@
 				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
 				F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */,
+				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
 				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
@@ -733,7 +743,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6F2ED8C17A341E400F4D220 /* EXTScope.m in Sources */,
 				F60CA7EE179FC4F60069F69A /* main.m in Sources */,
+				F6F2ED8517A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -985,7 +997,6 @@
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "Shipit/Shipit-Prefix.pch";
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"DEBUG=1",
 					"$(inherited)",
@@ -1021,7 +1032,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "Shipit/Shipit-Prefix.pch";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1052,7 +1062,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "Shipit/Shipit-Prefix.pch";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1083,7 +1092,6 @@
 				ENABLE_NS_ASSERTIONS = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = "Shipit/Shipit-Prefix.pch";
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNDECLARED_SELECTOR = YES;
@@ -1140,6 +1148,7 @@
 				F60CA7F6179FC4F60069F69A /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};

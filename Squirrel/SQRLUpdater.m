@@ -8,19 +8,14 @@
 
 #import "SQRLUpdater.h"
 
-#import <Security/Security.h>
-
 #import "AFJSONRequestOperation.h"
 #import "SSZipArchive.h"
+#import "SQRLCodeSignatureVerfication.h"
 
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotification);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNameKey);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationLulzURLKey);
-
-NSSTRING_CONST(SQRLUpdaterErrorDomain);
-
-const NSInteger SQRLUpdaterErrorCodeSigning = 1;
 
 static NSString *const SQRLUpdaterAPIEndpoint = @"https://central.github.com/api/mac/latest";
 static NSString *const SQRLUpdaterJSONURLKey = @"url";
@@ -200,7 +195,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
             }
             
             NSError *error = nil;
-            BOOL verified = [self verifyCodeSignatureOfBundle:downloadedBundle error:&error];
+            BOOL verified = [SQRLCodeSignatureVerfication verifyCodeSignatureOfBundle:downloadedBundle error:&error];
 
             if (!verified) {
                 NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
@@ -290,55 +285,6 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
         // relaunch after updating?
         self.shouldRelaunch ? @"1" : @"0",
     ]];
-}
-
-- (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error {
-    __block SecStaticCodeRef staticCode = NULL;
-    @onExit {
-        if (staticCode != NULL) CFRelease(staticCode);
-    };
-    
-    OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundle.executableURL, kSecCSDefaultFlags, &staticCode);
-    if (result != noErr) {
-        if (error != NULL) {
-            *error = [self codeSigningErrorWithDescription:NSLocalizedString(@"Failed to get static code", nil) securityResult:result];
-        }
-        return NO;
-    }
-    
-    CFErrorRef errorRef = NULL;
-    result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures | kSecCSCheckNestedCode, NULL, &errorRef);
-    if (result == noErr) {
-        return YES;
-    } else {
-        NSMutableDictionary *userInfo = [@{
-            NSLocalizedDescriptionKey: NSLocalizedString(@"Code signature did not pass validation", nil)
-        } mutableCopy];
-        
-        if (errorRef != NULL) {
-            userInfo[NSUnderlyingErrorKey] = CFBridgingRelease(errorRef);
-        }
-        
-        if (error != NULL) {
-            *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorCodeSigning userInfo:userInfo];
-        }
-    }
-    return NO;
-}
-
-- (NSError *)codeSigningErrorWithDescription:(NSString *)description securityResult:(OSStatus)result {
-	NSParameterAssert(description != nil);
-    
-	NSMutableDictionary *userInfo = [@{
-        NSLocalizedDescriptionKey: description,
-    } mutableCopy];
-    
-	NSString *failureReason = CFBridgingRelease(SecCopyErrorMessageString(result, NULL));
-	if (failureReason != nil) {
-		userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
-	}
-    
-	return [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorCodeSigning userInfo:userInfo];
 }
 
 @end
