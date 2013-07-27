@@ -49,6 +49,7 @@
 		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */; };
 		F6F2ED8517A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */; };
 		F6F2ED8C17A341E400F4D220 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
+		F6F2EE2517A46F1C00F4D220 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -243,6 +244,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6F2EE2517A46F1C00F4D220 /* Security.framework in Frameworks */,
 				F60CA7EB179FC4F60069F69A /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
