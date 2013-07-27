@@ -267,6 +267,8 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 		return;
 	}
     
+    [NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+    
     if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
 		NSLog(@"Error installing update, failed to copy relauncher %@", error);
 		[self finishAndSetIdle];
