@@ -49,9 +49,8 @@
     NSRunningApplication *application = notification.userInfo[NSWorkspaceApplicationKey];
     
     if (![application.bundleIdentifier isEqualToString:self.bundleIdentifier] || ![application.bundleURL isEqual:self.bundleURL] || application.processIdentifier != self.processIdentifier) {
+        // Do something.
         
-        
-        return;
     }
     
     [self parentDidTerminate];

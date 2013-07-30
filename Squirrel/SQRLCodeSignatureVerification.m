@@ -24,7 +24,7 @@ const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
     OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundle.executableURL, kSecCSDefaultFlags, &staticCode);
     if (result != noErr) {
         if (error != NULL) {
-            *error = [self codeSigningErrorWithDescription:NSLocalizedString(@"Failed to get static code", nil) securityResult:result];
+            *error = [self codeSigningErrorWithDescription:[NSString stringWithFormat:NSLocalizedString(@"Failed to get static code for bundle %@", nil), bundle.bundleURL.absoluteString] securityResult:result];
         }
         return NO;
     }
@@ -35,8 +35,8 @@ const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
         return YES;
     } else {
         NSMutableDictionary *userInfo = [@{
-                                           NSLocalizedDescriptionKey: NSLocalizedString(@"Code signature did not pass validation", nil)
-                                           } mutableCopy];
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Code signature at URL %@ did not pass validation", nil), bundle.bundleURL.absoluteString],
+        } mutableCopy];
         
         if (errorRef != NULL) {
             userInfo[NSUnderlyingErrorKey] = CFBridgingRelease(errorRef);
@@ -53,8 +53,8 @@ const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
 	NSParameterAssert(description != nil);
     
 	NSMutableDictionary *userInfo = [@{
-                                       NSLocalizedDescriptionKey: description,
-                                       } mutableCopy];
+        NSLocalizedDescriptionKey: description,
+    } mutableCopy];
     
 	NSString *failureReason = CFBridgingRelease(SecCopyErrorMessageString(result, NULL));
 	if (failureReason != nil) {

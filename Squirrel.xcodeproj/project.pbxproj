@@ -40,6 +40,7 @@
 		F65A917F17A7479F005A4666 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F65A915F17A71AA5005A4666 /* AppKit.framework */; };
 		F65A918017A747A9005A4666 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		F66AD31217A74925006F47B1 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
+		F66AD31517A83C7B006F47B1 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = F66AD31417A83C7B006F47B1 /* SQRLInstaller.m */; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2168179D022C001108CF /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
 		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
@@ -205,6 +206,8 @@
 		F65A915F17A71AA5005A4666 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		F65A916B17A73E90005A4666 /* shipit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shipit; sourceTree = BUILT_PRODUCTS_DIR; };
 		F65A916E17A73E90005A4666 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		F66AD31317A83C7B006F47B1 /* SQRLInstaller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLInstaller.h; path = Shipit/SQRLInstaller.h; sourceTree = SOURCE_ROOT; };
+		F66AD31417A83C7B006F47B1 /* SQRLInstaller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLInstaller.m; path = Shipit/SQRLInstaller.m; sourceTree = SOURCE_ROOT; };
 		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTKeyPathCoding.h; path = Squirrel/extobjc/EXTKeyPathCoding.h; sourceTree = "<group>"; };
 		F6EB2165179D0228001108CF /* EXTScope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTScope.h; path = Squirrel/extobjc/EXTScope.h; sourceTree = "<group>"; };
@@ -468,6 +471,8 @@
 			isa = PBXGroup;
 			children = (
 				F65A916E17A73E90005A4666 /* main.m */,
+				F66AD31317A83C7B006F47B1 /* SQRLInstaller.h */,
+				F66AD31417A83C7B006F47B1 /* SQRLInstaller.m */,
 			);
 			path = shipit;
 			sourceTree = "<group>";
@@ -748,6 +753,7 @@
 			files = (
 				F66AD31217A74925006F47B1 /* EXTScope.m in Sources */,
 				F65A917A17A7401B005A4666 /* SQRLTerminationListener.m in Sources */,
+				F66AD31517A83C7B006F47B1 /* SQRLInstaller.m in Sources */,
 				F65A917917A74018005A4666 /* SQRLCodeSignatureVerification.m in Sources */,
 				F65A916F17A73E90005A4666 /* main.m in Sources */,
 			);
