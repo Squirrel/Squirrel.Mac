@@ -8,12 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString * const SQRLCodeSignatureVerficationErrorDomain;
+extern NSString * const SQRLCodeSignatureVerificationErrorDomain;
 
 // An error occurred validating the code signature of a downloaded update.
-extern const NSInteger SQRLCodeSignatureVerficationErrorCodeSigning;
+extern const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning;
 
-@interface SQRLCodeSignatureVerfication : NSObject
+@interface SQRLCodeSignatureVerification : NSObject
 
 // Verifies the code signature of the specified bundle, which must be signed in
 // the same way as the running application.

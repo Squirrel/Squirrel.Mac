@@ -6,14 +6,14 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignatureVerfication.h"
+#import "SQRLCodeSignatureVerification.h"
 #import <Security/Security.h>
 
-NSSTRING_CONST(SQRLCodeSignatureVerficationErrorDomain);
+NSSTRING_CONST(SQRLCodeSignatureVerificationErrorDomain);
 
-const NSInteger SQRLCodeSignatureVerficationErrorCodeSigning = 1;
+const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
 
-@implementation SQRLCodeSignatureVerfication
+@implementation SQRLCodeSignatureVerification
 
 + (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error {
     __block SecStaticCodeRef staticCode = NULL;
@@ -43,7 +43,7 @@ const NSInteger SQRLCodeSignatureVerficationErrorCodeSigning = 1;
         }
         
         if (error != NULL) {
-            *error = [NSError errorWithDomain:SQRLCodeSignatureVerficationErrorDomain code:SQRLCodeSignatureVerficationErrorCodeSigning userInfo:userInfo];
+            *error = [NSError errorWithDomain:SQRLCodeSignatureVerificationErrorDomain code:SQRLCodeSignatureVerificationErrorCodeSigning userInfo:userInfo];
         }
     }
     return NO;
@@ -61,7 +61,7 @@ const NSInteger SQRLCodeSignatureVerficationErrorCodeSigning = 1;
 		userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
 	}
     
-	return [NSError errorWithDomain:SQRLCodeSignatureVerficationErrorDomain code:SQRLCodeSignatureVerficationErrorCodeSigning userInfo:userInfo];
+	return [NSError errorWithDomain:SQRLCodeSignatureVerificationErrorDomain code:SQRLCodeSignatureVerificationErrorCodeSigning userInfo:userInfo];
 }
 
 
