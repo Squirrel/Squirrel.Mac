@@ -10,7 +10,7 @@
 
 #import "AFJSONRequestOperation.h"
 #import "SSZipArchive.h"
-#import "SQRLCodeSignatureVerfication.h"
+#import "SQRLCodeSignatureVerification.h"
 
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotification);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey);
@@ -195,7 +195,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
             }
             
             NSError *error = nil;
-            BOOL verified = [SQRLCodeSignatureVerfication verifyCodeSignatureOfBundle:downloadedBundle error:&error];
+            BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:downloadedBundle error:&error];
 
             if (!verified) {
                 NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
@@ -256,8 +256,8 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	
 	NSBundle *bundle = [NSBundle bundleForClass:self.class];
     
-	NSURL *relauncherURL = [bundle URLForResource:@"Shipit" withExtension:nil];
-	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"Shipit"];
+	NSURL *relauncherURL = [bundle URLForResource:@"shipit" withExtension:nil];
+	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"shipit"];
 	NSError *error = nil;
 	NSLog(@"Copying relauncher from %@ to %@", relauncherURL.path, targetURL.path);
 	
@@ -279,11 +279,15 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 
 	[NSTask launchedTaskWithLaunchPath:targetURL.path arguments:@[
         // Path to host bundle
-        currentApplication.bundleURL.path,
+        currentApplication.bundleURL.absoluteString,
         // Wait for this PID to terminate before updating.
         [NSString stringWithFormat:@"%d", currentApplication.processIdentifier],
+        // Bundle identifier
+        currentApplication.bundleIdentifier,
         // Where to find the update.
-        self.downloadFolder.path,
+        [self.downloadFolder URLByAppendingPathComponent:@"GitHub.app"].absoluteString,
+        // Where to back up the existing version to
+        self.applicationSupportURL.absoluteString,
         // relaunch after updating?
         self.shouldRelaunch ? @"1" : @"0",
     ]];

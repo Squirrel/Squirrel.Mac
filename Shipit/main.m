@@ -1,22 +1,46 @@
 //
 //  main.m
-//  Shipit
+//  shipit
 //
-//  Created by Alan Rogers on 24/07/2013.
+//  Created by Alan Rogers on 29/07/2013.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
+#import "SQRLCodeSignatureVerification.h"
+#import "SQRLTerminationListener.h"
 
-int main(int argc, const char * argv[])
-{
+// blerg
+static SQRLTerminationListener *listener = nil;
 
+int main(int argc, const char * argv[]) {
     @autoreleasepool {
+ 
+        NSArray *arguments = NSProcessInfo.processInfo.arguments;
         
-        // insert code here...
-        NSLog(@"Hello, World! %@", NSProcessInfo.processInfo.arguments);
+        NSLog(@"arguments are %@", arguments);
         
+        if (arguments.count < 7) {
+            return -1;
+        }
+        
+        NSURL *targetBundleURL = [NSURL URLWithString:arguments[1]];
+        pid_t processIdentifier = atoi([arguments[2] UTF8String]);
+        NSString *bundleIdentifier = arguments[3];
+        //NSURL *updateBundleURL = [NSURL URLWithString:arguments[4]];
+        //NSURL *backupURL = [NSURL URLWithString:arguments[5]];
+        //BOOL shouldRelaunch = [arguments[6] isEqualToString:@"1"];
+        
+        listener = [[SQRLTerminationListener alloc] initWithProcessID:processIdentifier bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
+            
+            NSLog(@"app terminated");
+            
+            exit(0);
+        }];
+        
+        CFRunLoopRun();
     }
-    return 0;
+    
+    return -1;
 }
 

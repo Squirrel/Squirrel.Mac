@@ -19,9 +19,6 @@
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		F60CA7EB179FC4F60069F69A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
-		F60CA7EE179FC4F60069F69A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = F60CA7ED179FC4F60069F69A /* main.m */; };
-		F60CA7FF179FC58E0069F69A /* Shipit in Resources */ = {isa = PBXBuildFile; fileRef = F60CA7E9179FC4F60069F69A /* Shipit */; };
 		F6315C2A179EC9C6000DD609 /* crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C1F179EC9C6000DD609 /* crypt.h */; };
 		F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C20179EC9C6000DD609 /* ioapi.c */; };
 		F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C21179EC9C6000DD609 /* ioapi.h */; };
@@ -34,6 +31,15 @@
 		F6315C33179EC9C6000DD609 /* SSZipArchive.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C28179EC9C6000DD609 /* SSZipArchive.h */; };
 		F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = F6315C29179EC9C6000DD609 /* SSZipArchive.m */; };
 		F6315C36179EC9E7000DD609 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F6315C35179EC9E7000DD609 /* libz.dylib */; };
+		F65A916C17A73E90005A4666 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
+		F65A916F17A73E90005A4666 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = F65A916E17A73E90005A4666 /* main.m */; };
+		F65A917917A74018005A4666 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
+		F65A917A17A7401B005A4666 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */; };
+		F65A917B17A74445005A4666 /* shipit in Resources */ = {isa = PBXBuildFile; fileRef = F65A916B17A73E90005A4666 /* shipit */; };
+		F65A917C17A7453B005A4666 /* shipit in Resources */ = {isa = PBXBuildFile; fileRef = F65A916B17A73E90005A4666 /* shipit */; };
+		F65A917F17A7479F005A4666 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F65A915F17A71AA5005A4666 /* AppKit.framework */; };
+		F65A918017A747A9005A4666 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		F66AD31217A74925006F47B1 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2168179D022C001108CF /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
 		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
@@ -45,11 +51,8 @@
 		F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */; };
 		F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
-		F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerfication.h in Headers */ = {isa = PBXBuildFile; fileRef = F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerfication.h */; };
-		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */; };
-		F6F2ED8517A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */; };
-		F6F2ED8C17A341E400F4D220 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
-		F6F2EE2517A46F1C00F4D220 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerification.h in Headers */ = {isa = PBXBuildFile; fileRef = F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */; };
+		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -130,17 +133,17 @@
 			remoteGlobalIDString = E9D96A2514B6B8AB007D9521;
 			remoteInfo = Specta;
 		};
-		F60CA80017A00E750069F69A /* PBXContainerItemProxy */ = {
+		F65A917D17A74711005A4666 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
 			proxyType = 1;
-			remoteGlobalIDString = F60CA7E8179FC4F60069F69A;
-			remoteInfo = Shipit;
+			remoteGlobalIDString = F65A916A17A73E90005A4666;
+			remoteInfo = shipit;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		F60CA7E7179FC4F60069F69A /* CopyFiles */ = {
+		F65A916917A73E90005A4666 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = /usr/share/man/man1/;
@@ -184,10 +187,7 @@
 		D0C22C4B179CC15100158214 /* SQRLUpdater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdater.m; sourceTree = "<group>"; };
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
-		F60CA7E9179FC4F60069F69A /* Shipit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Shipit; sourceTree = BUILT_PRODUCTS_DIR; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		F60CA7ED179FC4F60069F69A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		F60CA7F0179FC4F60069F69A /* Shipit-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Shipit-Prefix.pch"; sourceTree = "<group>"; };
 		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
 		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
 		F6315C21179EC9C6000DD609 /* ioapi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ioapi.h; sourceTree = "<group>"; };
@@ -200,6 +200,11 @@
 		F6315C28179EC9C6000DD609 /* SSZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SSZipArchive.h; path = External/ssziparchive/SSZipArchive.h; sourceTree = "<group>"; };
 		F6315C29179EC9C6000DD609 /* SSZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SSZipArchive.m; path = External/ssziparchive/SSZipArchive.m; sourceTree = "<group>"; };
 		F6315C35179EC9E7000DD609 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
+		F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
+		F65A915F17A71AA5005A4666 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		F65A916B17A73E90005A4666 /* shipit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shipit; sourceTree = BUILT_PRODUCTS_DIR; };
+		F65A916E17A73E90005A4666 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTKeyPathCoding.h; path = Squirrel/extobjc/EXTKeyPathCoding.h; sourceTree = "<group>"; };
 		F6EB2165179D0228001108CF /* EXTScope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTScope.h; path = Squirrel/extobjc/EXTScope.h; sourceTree = "<group>"; };
@@ -212,8 +217,8 @@
 		F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFHTTPRequestOperation.m; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.m; sourceTree = "<group>"; };
 		F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFHTTPRequestOperation.h; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.h; sourceTree = "<group>"; };
 		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerfication.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLCodeSignatureVerfication.h; sourceTree = "<group>"; };
-		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerfication.m; sourceTree = "<group>"; };
+		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLCodeSignatureVerification.h; sourceTree = "<group>"; };
+		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerification.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -240,12 +245,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F60CA7E6179FC4F60069F69A /* Frameworks */ = {
+		F65A916817A73E90005A4666 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F6F2EE2517A46F1C00F4D220 /* Security.framework in Frameworks */,
-				F60CA7EB179FC4F60069F69A /* Foundation.framework in Frameworks */,
+				F65A918017A747A9005A4666 /* Security.framework in Frameworks */,
+				F65A917F17A7479F005A4666 /* AppKit.framework in Frameworks */,
+				F65A916C17A73E90005A4666 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -257,7 +263,7 @@
 			children = (
 				D0C22BE0179CC00E00158214 /* Squirrel */,
 				D0C22BF6179CC00E00158214 /* SquirrelTests */,
-				F60CA7EC179FC4F60069F69A /* Shipit */,
+				F65A916D17A73E90005A4666 /* shipit */,
 				D0C22BD9179CC00E00158214 /* Frameworks */,
 				D0C22C07179CC02E00158214 /* Configuration */,
 				D0C22BD8179CC00E00158214 /* Products */,
@@ -269,7 +275,7 @@
 			children = (
 				D0C22BD7179CC00E00158214 /* Squirrel.framework */,
 				D0C22BEF179CC00E00158214 /* SquirrelTests.octest */,
-				F60CA7E9179FC4F60069F69A /* Shipit */,
+				F65A916B17A73E90005A4666 /* shipit */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -277,6 +283,7 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				F65A915F17A71AA5005A4666 /* AppKit.framework */,
 				F6315C1E179EC9C6000DD609 /* minizip */,
 				F6315C28179EC9C6000DD609 /* SSZipArchive.h */,
 				F6315C29179EC9C6000DD609 /* SSZipArchive.m */,
@@ -422,10 +429,12 @@
 		D0C22C49179CC14400158214 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */,
+				F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */,
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
-				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerfication.h */,
-				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerfication.m */,
+				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */,
+				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -436,23 +445,6 @@
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 			);
 			name = Specs;
-			sourceTree = "<group>";
-		};
-		F60CA7EC179FC4F60069F69A /* Shipit */ = {
-			isa = PBXGroup;
-			children = (
-				F60CA7ED179FC4F60069F69A /* main.m */,
-				F60CA7EF179FC4F60069F69A /* Supporting Files */,
-			);
-			path = Shipit;
-			sourceTree = "<group>";
-		};
-		F60CA7EF179FC4F60069F69A /* Supporting Files */ = {
-			isa = PBXGroup;
-			children = (
-				F60CA7F0179FC4F60069F69A /* Shipit-Prefix.pch */,
-			);
-			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
 		F6315C1E179EC9C6000DD609 /* minizip */ = {
@@ -470,6 +462,14 @@
 			);
 			name = minizip;
 			path = External/ssziparchive/minizip;
+			sourceTree = "<group>";
+		};
+		F65A916D17A73E90005A4666 /* shipit */ = {
+			isa = PBXGroup;
+			children = (
+				F65A916E17A73E90005A4666 /* main.m */,
+			);
+			path = shipit;
 			sourceTree = "<group>";
 		};
 		F6EB2163179D01A9001108CF /* libextobjc */ = {
@@ -513,7 +513,7 @@
 				F6315C32179EC9C6000DD609 /* zip.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
-				F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerfication.h in Headers */,
+				F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerification.h in Headers */,
 				F6315C30179EC9C6000DD609 /* unzip.h in Headers */,
 				F6315C2A179EC9C6000DD609 /* crypt.h in Headers */,
 				F6315C2E179EC9C6000DD609 /* mztools.h in Headers */,
@@ -535,7 +535,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				F60CA80117A00E750069F69A /* PBXTargetDependency */,
+				F65A917E17A74711005A4666 /* PBXTargetDependency */,
 			);
 			name = Squirrel;
 			productName = Squirrel;
@@ -563,21 +563,21 @@
 			productReference = D0C22BEF179CC00E00158214 /* SquirrelTests.octest */;
 			productType = "com.apple.product-type.bundle";
 		};
-		F60CA7E8179FC4F60069F69A /* Shipit */ = {
+		F65A916A17A73E90005A4666 /* shipit */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = F60CA7FD179FC4F60069F69A /* Build configuration list for PBXNativeTarget "Shipit" */;
+			buildConfigurationList = F65A917417A73E90005A4666 /* Build configuration list for PBXNativeTarget "shipit" */;
 			buildPhases = (
-				F60CA7E5179FC4F60069F69A /* Sources */,
-				F60CA7E6179FC4F60069F69A /* Frameworks */,
-				F60CA7E7179FC4F60069F69A /* CopyFiles */,
+				F65A916717A73E90005A4666 /* Sources */,
+				F65A916817A73E90005A4666 /* Frameworks */,
+				F65A916917A73E90005A4666 /* CopyFiles */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
-			name = Shipit;
-			productName = Shipit;
-			productReference = F60CA7E9179FC4F60069F69A /* Shipit */;
+			name = shipit;
+			productName = shipit;
+			productReference = F65A916B17A73E90005A4666 /* shipit */;
 			productType = "com.apple.product-type.tool";
 		};
 /* End PBXNativeTarget section */
@@ -614,7 +614,7 @@
 			targets = (
 				D0C22BD6179CC00E00158214 /* Squirrel */,
 				D0C22BEE179CC00E00158214 /* SquirrelTests */,
-				F60CA7E8179FC4F60069F69A /* Shipit */,
+				F65A916A17A73E90005A4666 /* shipit */,
 			);
 		};
 /* End PBXProject section */
@@ -683,7 +683,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F60CA7FF179FC58E0069F69A /* Shipit in Resources */,
+				F65A917C17A7453B005A4666 /* shipit in Resources */,
 				D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -692,6 +692,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F65A917B17A74445005A4666 /* shipit in Resources */,
 				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -724,7 +725,7 @@
 				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
 				F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */,
-				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */,
+				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
 				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
@@ -741,13 +742,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		F60CA7E5179FC4F60069F69A /* Sources */ = {
+		F65A916717A73E90005A4666 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F6F2ED8C17A341E400F4D220 /* EXTScope.m in Sources */,
-				F60CA7EE179FC4F60069F69A /* main.m in Sources */,
-				F6F2ED8517A33C4900F4D220 /* SQRLCodeSignatureVerfication.m in Sources */,
+				F66AD31217A74925006F47B1 /* EXTScope.m in Sources */,
+				F65A917A17A7401B005A4666 /* SQRLTerminationListener.m in Sources */,
+				F65A917917A74018005A4666 /* SQRLCodeSignatureVerification.m in Sources */,
+				F65A916F17A73E90005A4666 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -769,10 +771,10 @@
 			name = Specta;
 			targetProxy = D0C22C3D179CC0BA00158214 /* PBXContainerItemProxy */;
 		};
-		F60CA80117A00E750069F69A /* PBXTargetDependency */ = {
+		F65A917E17A74711005A4666 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = F60CA7E8179FC4F60069F69A /* Shipit */;
-			targetProxy = F60CA80017A00E750069F69A /* PBXContainerItemProxy */;
+			target = F65A916A17A73E90005A4666 /* shipit */;
+			targetProxy = F65A917D17A74711005A4666 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -980,44 +982,34 @@
 			};
 			name = Test;
 		};
-		F60CA7F3179FC4F60069F69A /* Debug */ = {
+		F65A917517A73E90005A4666 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
 		};
-		F60CA7F4179FC4F60069F69A /* Release */ = {
+		F65A917617A73E90005A4666 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
 		};
-		F60CA7F5179FC4F60069F69A /* Test */ = {
+		F65A917717A73E90005A4666 /* Test */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Test;
 		};
-		F60CA7F6179FC4F60069F69A /* Profile */ = {
+		F65A917817A73E90005A4666 /* Profile */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Profile;
@@ -1058,13 +1050,13 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		F60CA7FD179FC4F60069F69A /* Build configuration list for PBXNativeTarget "Shipit" */ = {
+		F65A917417A73E90005A4666 /* Build configuration list for PBXNativeTarget "shipit" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				F60CA7F3179FC4F60069F69A /* Debug */,
-				F60CA7F4179FC4F60069F69A /* Release */,
-				F60CA7F5179FC4F60069F69A /* Test */,
-				F60CA7F6179FC4F60069F69A /* Profile */,
+				F65A917517A73E90005A4666 /* Debug */,
+				F65A917617A73E90005A4666 /* Release */,
+				F65A917717A73E90005A4666 /* Test */,
+				F65A917817A73E90005A4666 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
