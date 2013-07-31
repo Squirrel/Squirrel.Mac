@@ -28,6 +28,7 @@ int main(int argc, const char * argv[]) {
         NSString *bundleIdentifier = [arguments[3] copy];
         NSURL *updateBundleURL = [NSURL URLWithString:arguments[4]];
         NSURL *backupURL = [NSURL URLWithString:arguments[5]];
+        BOOL shouldRelaunch = [arguments[6] isEqualToString:@"1"];
         
         listener = [[SQRLTerminationListener alloc] initWithProcessID:processIdentifier bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
             SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
@@ -37,6 +38,11 @@ int main(int argc, const char * argv[]) {
                 NSLog(@"Error installing update %@, %@", error, error.userInfo[NSUnderlyingErrorKey]);
                 exit(-1);
             }
+            
+            if (shouldRelaunch) {
+                [NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:0 configuration:nil error:NULL];
+            }
+            
             exit(0);
         }];
             
