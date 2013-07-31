@@ -13,12 +13,6 @@ NSSTRING_CONST(SQRLInstallerErrorDomain);
 
 const NSInteger SQRLInstallerFailedErrorCode = -1;
 
-@interface SQRLInstaller () <NSFileManagerDelegate>
-
-@property (nonatomic, strong) NSFileManager *fileManager;
-
-@end
-
 @implementation SQRLInstaller
 
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL {
@@ -31,9 +25,6 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     _targetBundleURL = targetBundleURL;
     _updateBundleURL = updateBundleURL;
     _backupURL = backupURL;
-    
-    _fileManager = [[NSFileManager alloc] init];
-    _fileManager.delegate = self;
     
     return self;
 }
@@ -56,7 +47,7 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     
     NSURL *backupBundleURL = [self.backupURL URLByAppendingPathComponent:@"GitHub_backup.app"];
     
-    [self.fileManager removeItemAtURL:backupBundleURL error:NULL];
+    [NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
     
     NSError *backupError = nil;
     if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&backupError]) {
@@ -70,7 +61,7 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     
     // Move the new bundle into place.
     
-    [self.fileManager removeItemAtURL:self.targetBundleURL error:NULL];
+    [NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
     
     NSError *installError = nil;
     if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&installError]) {
@@ -103,21 +94,12 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
 - (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorRef {
     NSParameterAssert(targetURL != nil);
     NSParameterAssert(sourceURL != nil);
-    if (![self.fileManager moveItemAtURL:sourceURL toURL:targetURL error:NULL]) {
+    if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:NULL]) {
         // Try a copy instead.
-        return [self.fileManager copyItemAtURL:sourceURL toURL:targetURL error:errorRef];
+        return [NSFileManager.defaultManager copyItemAtURL:sourceURL toURL:targetURL error:errorRef];
     }
     NSLog(@"Copied bundle from %@ to %@", sourceURL, targetURL);
     return YES;
-}
-
-#pragma mark NSFileManagerDelegate
-
-- (BOOL)fileManager:(NSFileManager *)fileManager shouldProceedAfterError:(NSError *)error copyingItemAtPath:(NSString *)srcPath toPath:(NSString *)dstPath {
-    if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileWriteFileExistsError) {
-        return YES;
-    }
-    return NO;
 }
 
 @end
