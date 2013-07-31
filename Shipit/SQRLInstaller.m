@@ -91,7 +91,9 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:&verificationError]) {
         // Move the backup version back into place
         
-        [self installItemAtURL:self.targetBundleURL fromURL:self.backupURL error:NULL];
+        [NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
+        
+        [self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:NULL];
         
         if (errorRef != NULL) {
             *errorRef = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerFailedErrorCode userInfo:@{
