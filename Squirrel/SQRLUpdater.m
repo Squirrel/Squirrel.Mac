@@ -220,10 +220,10 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
             
             NSString *name = JSON[SQRLUpdaterJSONNameKey];
             NSDictionary *userInfo = @{
-                                       SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
-                                       SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
-                                       SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
-                                       };
+                SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
+                SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
+                SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
+            };
             
             self.state = SQRLUpdaterStateAwaitingRelaunch;
             
@@ -239,11 +239,11 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 
 - (NSString *)randomLulzURLString {
 	NSArray *lulz = @[
-                      @"http://blog.lmorchard.com/wp-content/uploads/2013/02/well_done_sir.gif",
-                      @"http://i255.photobucket.com/albums/hh150/hayati_h2/tumblr_lfmpar9EUd1qdzjnp.gif",
-                      @"http://media.tumblr.com/tumblr_lv1j4x1pJM1qbewag.gif",
-                      @"http://i.imgur.com/UmpOi.gif",
-                      ];
+        @"http://blog.lmorchard.com/wp-content/uploads/2013/02/well_done_sir.gif",
+        @"http://i255.photobucket.com/albums/hh150/hayati_h2/tumblr_lfmpar9EUd1qdzjnp.gif",
+        @"http://media.tumblr.com/tumblr_lv1j4x1pJM1qbewag.gif",
+        @"http://i.imgur.com/UmpOi.gif",
+    ];
 	return lulz[arc4random() % lulz.count];
 }
 
