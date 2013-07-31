@@ -20,7 +20,7 @@ int main(int argc, const char * argv[]) {
         NSLog(@"arguments are %@", arguments);
         
         if (arguments.count < 7) {
-            return -1;
+            return EXIT_FAILURE;
         }
         
         NSURL *targetBundleURL = [NSURL URLWithString:arguments[1]];
@@ -36,19 +36,19 @@ int main(int argc, const char * argv[]) {
             NSError* error = nil;
             if (![installer installUpdateWithError:&error]) {
                 NSLog(@"Error installing update %@, %@", error, error.userInfo[NSUnderlyingErrorKey]);
-                exit(-1);
+                exit(EXIT_FAILURE);
             }
             
             if (shouldRelaunch) {
-                [NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:0 configuration:nil error:NULL];
+                [NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:NULL];
             }
             
-            exit(0);
+            exit(EXIT_SUCCESS);
         }];
             
         CFRunLoopRun();
     }
     
-    return -1;
+    return EXIT_FAILURE;
 }
 
