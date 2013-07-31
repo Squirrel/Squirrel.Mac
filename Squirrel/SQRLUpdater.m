@@ -8,7 +8,6 @@
 
 #import "SQRLUpdater.h"
 
-#import "AFJSONRequestOperation.h"
 #import "SSZipArchive.h"
 #import "SQRLCodeSignatureVerification.h"
 
@@ -120,10 +119,14 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:requestString]];
 	@weakify(self);
-	AFJSONRequestOperation *updateCheckOperation = [AFJSONRequestOperation JSONRequestOperationWithRequest:request success:^(NSURLRequest *request, NSHTTPURLResponse *response, NSDictionary *JSON) {
-		@strongify(self);
-		
-		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
+    
+    [NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+        
+        @strongify(self);
+        
+        id JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+        
+        if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
 			[self finishAndSetIdle];
 			return;
 		}
@@ -168,11 +171,21 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
 		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
         
-		NSOutputStream *zipStream = [[NSOutputStream alloc] initWithURL:zipOutputURL append:NO];
 		NSURLRequest *zipDownloadRequest = [NSURLRequest requestWithURL:zipDownloadURL];
-		AFHTTPRequestOperation *zipDownloadOperation = [[AFHTTPRequestOperation alloc] initWithRequest:zipDownloadRequest];
-		[zipDownloadOperation setCompletionBlockWithSuccess:^(AFHTTPRequestOperation *operation, id responseObject) {
-			@strongify(self);
+        
+        [NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+            @strongify(self);
+
+            if (response == nil) {
+                [self finishAndSetIdle];
+                return;
+            }
+            
+            if (![data writeToURL:zipOutputURL atomically:YES]) {
+                [self finishAndSetIdle];
+                return;
+            }
+            
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
             
@@ -196,35 +209,32 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
             
             NSError *error = nil;
             BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:downloadedBundle error:&error];
-
+            
             if (!verified) {
                 NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
-                 [self finishAndSetIdle];
+                [self finishAndSetIdle];
                 return;
             }
-        
-             NSLog(@"Code signature passed for %@", bundlePath);
-             
-             NSString *name = JSON[SQRLUpdaterJSONNameKey];
-             NSDictionary *userInfo = @{
-                SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
-                SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
-                SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
-            };
-             
+            
+            NSLog(@"Code signature passed for %@", bundlePath);
+            
+            NSString *name = JSON[SQRLUpdaterJSONNameKey];
+            NSDictionary *userInfo = @{
+                                       SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
+                                       SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
+                                       SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
+                                       };
+            
             self.state = SQRLUpdaterStateAwaitingRelaunch;
-             
+            
             dispatch_async(dispatch_get_main_queue(), ^{
                 [NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
             });
-		} failure:nil];
-		
-		zipDownloadOperation.outputStream = zipStream;
+
+        }];
+        
 		self.state = SQRLUpdaterStateDownloadingUpdate;
-		[NSOperationQueue.currentQueue addOperation:zipDownloadOperation];
-	} failure:nil]; //This isn't a critical operation so we can just fail silently. They may well be without internet connection
-	
-	[self.updateQueue addOperation:updateCheckOperation];
+    }];
 }
 
 - (NSString *)randomLulzURLString {

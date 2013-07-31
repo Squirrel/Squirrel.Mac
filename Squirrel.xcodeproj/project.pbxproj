@@ -45,12 +45,6 @@
 		F6EB2168179D022C001108CF /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
 		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
 		F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */; };
-		F6EB2174179D08FF001108CF /* AFJSONRequestOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB216F179D08FF001108CF /* AFJSONRequestOperation.h */; };
-		F6EB2175179D08FF001108CF /* AFJSONRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2170179D08FF001108CF /* AFJSONRequestOperation.m */; };
-		F6EB2179179D0D87001108CF /* AFURLConnectionOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2177179D0D87001108CF /* AFURLConnectionOperation.h */; };
-		F6EB217A179D0D87001108CF /* AFURLConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2178179D0D87001108CF /* AFURLConnectionOperation.m */; };
-		F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */; };
-		F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerification.h in Headers */ = {isa = PBXBuildFile; fileRef = F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */; };
 		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
@@ -213,12 +207,6 @@
 		F6EB2165179D0228001108CF /* EXTScope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTScope.h; path = Squirrel/extobjc/EXTScope.h; sourceTree = "<group>"; };
 		F6EB2166179D0228001108CF /* EXTScope.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EXTScope.m; path = Squirrel/extobjc/EXTScope.m; sourceTree = "<group>"; };
 		F6EB2167179D0228001108CF /* metamacros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = metamacros.h; path = Squirrel/extobjc/metamacros.h; sourceTree = "<group>"; };
-		F6EB216F179D08FF001108CF /* AFJSONRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFJSONRequestOperation.h; path = External/AFNetworking/AFNetworking/AFJSONRequestOperation.h; sourceTree = "<group>"; };
-		F6EB2170179D08FF001108CF /* AFJSONRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFJSONRequestOperation.m; path = External/AFNetworking/AFNetworking/AFJSONRequestOperation.m; sourceTree = "<group>"; };
-		F6EB2177179D0D87001108CF /* AFURLConnectionOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFURLConnectionOperation.h; path = External/AFNetworking/AFNetworking/AFURLConnectionOperation.h; sourceTree = "<group>"; };
-		F6EB2178179D0D87001108CF /* AFURLConnectionOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFURLConnectionOperation.m; path = External/AFNetworking/AFNetworking/AFURLConnectionOperation.m; sourceTree = "<group>"; };
-		F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = AFHTTPRequestOperation.m; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.m; sourceTree = "<group>"; };
-		F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AFHTTPRequestOperation.h; path = External/AFNetworking/AFNetworking/AFHTTPRequestOperation.h; sourceTree = "<group>"; };
 		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLCodeSignatureVerification.h; sourceTree = "<group>"; };
 		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerification.m; sourceTree = "<group>"; };
@@ -286,15 +274,14 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				F65A915F17A71AA5005A4666 /* AppKit.framework */,
 				F6315C1E179EC9C6000DD609 /* minizip */,
 				F6315C28179EC9C6000DD609 /* SSZipArchive.h */,
 				F6315C29179EC9C6000DD609 /* SSZipArchive.m */,
-				F6EB216C179D08CF001108CF /* AFNetworking */,
 				F6EB2163179D01A9001108CF /* libextobjc */,
 				F6315C35179EC9E7000DD609 /* libz.dylib */,
 				D0C22C1D179CC0B300158214 /* Expecta.xcodeproj */,
 				D0C22C20179CC0B300158214 /* Specta.xcodeproj */,
+				F65A915F17A71AA5005A4666 /* AppKit.framework */,
 				D0C22BDA179CC00E00158214 /* Cocoa.framework */,
 				F6EB217F179D0E4D001108CF /* Security.framework */,
 				F6EB2161179CFD93001108CF /* SystemConfiguration.framework */,
@@ -488,19 +475,6 @@
 			name = libextobjc;
 			sourceTree = "<group>";
 		};
-		F6EB216C179D08CF001108CF /* AFNetworking */ = {
-			isa = PBXGroup;
-			children = (
-				F6EB217B179D0E29001108CF /* AFHTTPRequestOperation.m */,
-				F6EB217C179D0E29001108CF /* AFHTTPRequestOperation.h */,
-				F6EB2177179D0D87001108CF /* AFURLConnectionOperation.h */,
-				F6EB2178179D0D87001108CF /* AFURLConnectionOperation.m */,
-				F6EB216F179D08FF001108CF /* AFJSONRequestOperation.h */,
-				F6EB2170179D08FF001108CF /* AFJSONRequestOperation.m */,
-			);
-			name = AFNetworking;
-			sourceTree = "<group>";
-		};
 /* End PBXGroup section */
 
 /* Begin PBXHeadersBuildPhase section */
@@ -508,13 +482,10 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				F6EB2174179D08FF001108CF /* AFJSONRequestOperation.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				F6315C33179EC9C6000DD609 /* SSZipArchive.h in Headers */,
 				F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */,
-				F6EB217E179D0E29001108CF /* AFHTTPRequestOperation.h in Headers */,
-				F6EB2179179D0D87001108CF /* AFURLConnectionOperation.h in Headers */,
 				F6315C32179EC9C6000DD609 /* zip.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
@@ -726,16 +697,13 @@
 			buildActionMask = 2147483647;
 			files = (
 				F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */,
-				F6EB217A179D0D87001108CF /* AFURLConnectionOperation.m in Sources */,
 				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
-				F6EB217D179D0E29001108CF /* AFHTTPRequestOperation.m in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
 				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				F6315C2F179EC9C6000DD609 /* unzip.c in Sources */,
-				F6EB2175179D08FF001108CF /* AFJSONRequestOperation.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

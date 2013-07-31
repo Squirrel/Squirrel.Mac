@@ -7,9 +7,6 @@
 [submodule "External/specta"]
 	path = External/specta
 	url = https://github.com/github/specta.git
-[submodule "External/AFNetworking"]
-	path = External/AFNetworking
-	url = https://github.com/AFNetworking/AFNetworking
 [submodule "External/ssziparchive"]
 	path = External/ssziparchive
 	url = https://github.com/alanjrogers/ssziparchive.git
