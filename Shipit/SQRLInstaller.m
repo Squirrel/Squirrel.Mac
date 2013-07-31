@@ -52,9 +52,13 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     }
     
     // Move the old bundle to a backup location
-    // TODO: find the version number or something.
     
-    NSURL *backupBundleURL = [self.backupURL URLByAppendingPathComponent:@"GitHub_backup.app"];
+    NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
+    NSString *bundleVersion = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
+    NSString *bundleExtension = self.targetBundleURL.pathExtension;
+    NSString *backupAppName = [NSString stringWithFormat:@"%@_%@.%@", self.targetBundleURL.URLByDeletingPathExtension.lastPathComponent, bundleVersion, bundleExtension];
+        
+    NSURL *backupBundleURL = [self.backupURL URLByAppendingPathComponent:backupAppName];
     
     [NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
     
