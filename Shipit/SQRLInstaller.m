@@ -29,6 +29,7 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     NSParameterAssert(backupURL != nil);
     
     self = [super init];
+    if (self == nil) return nil;
     
     _targetBundleURL = targetBundleURL;
     _updateBundleURL = updateBundleURL;
