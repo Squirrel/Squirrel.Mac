@@ -13,6 +13,14 @@ NSSTRING_CONST(SQRLInstallerErrorDomain);
 
 const NSInteger SQRLInstallerFailedErrorCode = -1;
 
+@interface SQRLInstaller ()
+
+@property (nonatomic, strong) NSURL *targetBundleURL;
+@property (nonatomic, strong) NSURL *updateBundleURL;
+@property (nonatomic, strong) NSURL *backupURL;
+
+@end
+
 @implementation SQRLInstaller
 
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL {

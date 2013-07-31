@@ -14,10 +14,6 @@ extern const NSInteger SQRLInstallerFailedErrorCode;
 
 @interface SQRLInstaller : NSObject
 
-@property (nonatomic, strong) NSURL *targetBundleURL;
-@property (nonatomic, strong) NSURL *updateBundleURL;
-@property (nonatomic, strong) NSURL *backupURL;
-
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL;
 
 - (BOOL)installUpdateWithError:(NSError **)errorRef;
