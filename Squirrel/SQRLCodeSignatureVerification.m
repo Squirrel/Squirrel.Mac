@@ -31,9 +31,7 @@ const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
     
     CFErrorRef errorRef = NULL;
     result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures /* | kSecCSCheckNestedCode */, NULL, &errorRef);
-    if (result == noErr) {
-        return YES;
-    } else {
+    if (result != noErr) {
         NSMutableDictionary *userInfo = [@{
             NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Code signature at URL %@ did not pass validation", nil), bundleURL.absoluteString],
         } mutableCopy];
@@ -45,8 +43,10 @@ const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
         if (error != NULL) {
             *error = [NSError errorWithDomain:SQRLCodeSignatureVerificationErrorDomain code:SQRLCodeSignatureVerificationErrorCodeSigning userInfo:userInfo];
         }
+		return NO;
     }
-    return NO;
+	
+	return YES;
 }
 
 + (NSError *)codeSigningErrorWithDescription:(NSString *)description securityResult:(OSStatus)result {
