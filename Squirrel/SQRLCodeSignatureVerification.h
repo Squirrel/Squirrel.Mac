@@ -20,6 +20,6 @@ extern const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning;
 //
 // Returns NO if the bundle's code signature could not be verified, and the
 // error parameter will contain the specific error.
-+ (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error;
++ (BOOL)verifyCodeSignatureOfBundle:(NSURL *)bundleLocation error:(NSError **)error;
 
 @end

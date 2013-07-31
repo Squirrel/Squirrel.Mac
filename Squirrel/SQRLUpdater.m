@@ -192,31 +192,21 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
             NSURL *destinationURL = zipOutputURL.URLByDeletingLastPathComponent;
             
             BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:destinationURL.path];
-            
             if (!unzipped) {
                 NSLog(@"Could not extract update.");
                 [self finishAndSetIdle];
                 return;
             }
             
-            NSString *bundlePath = [destinationURL.path stringByAppendingPathComponent:@"GitHub.app"];
-            NSBundle *downloadedBundle = [NSBundle bundleWithPath:bundlePath];
-            if (downloadedBundle == nil) {
-                NSLog(@"Could not create a bundle from %@", bundlePath);
-                [self finishAndSetIdle];
-                return;
-            }
+            NSURL *bundleLocation = [destinationURL URLByAppendingPathComponent:@"GitHub.app"];
             
             NSError *error = nil;
-            BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:downloadedBundle error:&error];
-            
+            BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:bundleLocation error:&error];
             if (!verified) {
                 NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
                 [self finishAndSetIdle];
                 return;
             }
-            
-            NSLog(@"Code signature passed for %@", bundlePath);
             
             NSString *name = JSON[SQRLUpdaterJSONNameKey];
             NSDictionary *userInfo = @{

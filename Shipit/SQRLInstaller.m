@@ -42,7 +42,7 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     // Verify the update bundle.
     
     NSError *verificationError = nil;
-    if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:[NSBundle bundleWithURL:self.updateBundleURL] error:&verificationError]) {
+    if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.updateBundleURL error:&verificationError]) {
         if (errorRef != NULL) {
             *errorRef = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerFailedErrorCode userInfo:@{
                 NSUnderlyingErrorKey: verificationError,
@@ -84,7 +84,7 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
     
     // Verify the bundle in place
 
-    if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:[NSBundle bundleWithURL:self.targetBundleURL] error:&verificationError]) {
+    if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:&verificationError]) {
         // Move the backup version back into place
         
         [self installItemAtURL:self.targetBundleURL fromURL:self.backupURL error:NULL];

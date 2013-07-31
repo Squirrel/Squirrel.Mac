@@ -15,27 +15,27 @@ const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning = 1;
 
 @implementation SQRLCodeSignatureVerification
 
-+ (BOOL)verifyCodeSignatureOfBundle:(NSBundle *)bundle error:(NSError **)error {
++ (BOOL)verifyCodeSignatureOfBundle:(NSURL *)bundleURL error:(NSError **)error {
     __block SecStaticCodeRef staticCode = NULL;
     @onExit {
         if (staticCode != NULL) CFRelease(staticCode);
     };
     
-    OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundle.executableURL, kSecCSDefaultFlags, &staticCode);
+    OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode);
     if (result != noErr) {
         if (error != NULL) {
-            *error = [self codeSigningErrorWithDescription:[NSString stringWithFormat:NSLocalizedString(@"Failed to get static code for bundle %@", nil), bundle.bundleURL.absoluteString] securityResult:result];
+            *error = [self codeSigningErrorWithDescription:[NSString stringWithFormat:NSLocalizedString(@"Failed to get static code for bundle %@", nil), bundleURL.absoluteString] securityResult:result];
         }
         return NO;
     }
     
     CFErrorRef errorRef = NULL;
-    result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures | kSecCSCheckNestedCode, NULL, &errorRef);
+    result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures /* | kSecCSCheckNestedCode */, NULL, &errorRef);
     if (result == noErr) {
         return YES;
     } else {
         NSMutableDictionary *userInfo = [@{
-            NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Code signature at URL %@ did not pass validation", nil), bundle.bundleURL.absoluteString],
+            NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Code signature at URL %@ did not pass validation", nil), bundleURL.absoluteString],
         } mutableCopy];
         
         if (errorRef != NULL) {
