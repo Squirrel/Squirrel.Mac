@@ -277,7 +277,10 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
     
     NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 
-	[NSTask launchedTaskWithLaunchPath:targetURL.path arguments:@[
+    NSTask *launchTask = [[NSTask alloc] init];
+    
+    launchTask.launchPath = targetURL.path;
+    launchTask.arguments = @[
         // Path to host bundle
         currentApplication.bundleURL.absoluteString,
         // Wait for this PID to terminate before updating.
@@ -290,7 +293,10 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
         self.applicationSupportURL.absoluteString,
         // relaunch after updating?
         self.shouldRelaunch ? @"1" : @"0",
-    ]];
+    ];
+    
+    launchTask.environment = @{ };
+    [launchTask launch];
 }
 
 @end
