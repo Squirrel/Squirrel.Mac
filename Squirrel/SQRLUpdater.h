@@ -6,10 +6,10 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-// An enum used to represent the state of the updater.
+// Represents the current state of the updater.
 //
 // SQRLUpdaterStateIdle              - Doing absolutely diddly squat.
-// SQRLUpdaterStateCheckingForUpdate - Requesting any updates from central.
+// SQRLUpdaterStateCheckingForUpdate - Checking for any updates from the server.
 // SQRLUpdaterStateDownloadingUpdate - Update found, downloading the .zip.
 // SQRLUpdaterStateUnzippingUpdate   - Unzipping the .app.
 // SQRLUpdaterStateAwaitingRelaunch  - Awaiting a relaunch to install
@@ -23,36 +23,43 @@ typedef enum : NSUInteger {
 } SQRLUpdaterState;
 
 // Posted when an update is available to be installed.
-//
-// The `userInfo` will contain one
-// `SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey` typed as a
-// string, and one `SQRLUpdaterUpdateAvailableNotificationReleaseNameKey`
-// also typed as string.
 extern NSString * const SQRLUpdaterUpdateAvailableNotification;
+
+// Associated with a string containing the release notes for the available
+// update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
+
+// Associated with a string containing the release name for the available update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
+
+// Associated with an NSURL to a side-splittingly hilarious image to show for
+// the available update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 
-// A singleton dedicated to downloading and installing updates from central.
+// Downloads and installs updates from GitHub.com The Website.
 @interface SQRLUpdater : NSObject
 
+// The GitHub username for the current user of the app, if any.
+//
+// This is used to check for prerelease software that the user may be able to
+// see.
 @property (nonatomic, copy) NSString *githubUsername;
 
-// The current state of the manager. Observable.
+// The current state of the manager.
+//
+// This property is KVO-compliant.
 @property (atomic, readonly) SQRLUpdaterState state;
 
 // Whether or not to relaunch after installing an update.
 @property (nonatomic, readwrite) BOOL shouldRelaunch;
 
-// Returns the singleton instance.
+// Returns the singleton updater.
 + (instancetype)sharedUpdater;
 
 // If one isn't already running, kicks off a check for updates against central.
 //
-// If an update is found, an `SQRLUpdaterUpdateFoundNotificationName`
-// notification will be posted before installation. After a successful
-// installation an `SQRLUpdaterUpdateInstalledNotificationName` will be
-// posted.
+// After the successful installation of an update, an
+// `SQRLUpdaterUpdateAvailableNotificationName` will be posted.
 - (void)checkForUpdates;
 
 // Schedules an update check every `interval` seconds. The first check will not
@@ -61,10 +68,11 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 // interval - The interval, in seconds, between each check.
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
 
-// Instructs the Sparkle relauncher to install a previously downloaded,
-// unzipped and verified app update.
+// Enqueues a job that will wait for the app to terminate, then install a
+// previously downloaded, unzipped, and verified update.
 //
-// The update won't be installed until the app has been terminated.
+// If `shouldRelaunch` is YES, the app will be launched back up after the update
+// is installed successfully.
 - (void)installUpdateIfNeeded;
 
 @end

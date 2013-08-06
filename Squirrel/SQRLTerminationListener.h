@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-
+// Waits for the parent process to terminate.
 @interface SQRLTerminationListener : NSObject
 
 // Initializes the receiver to watch for the termination of the specified

@@ -23,6 +23,8 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
 
 @implementation SQRLInstaller
 
+#pragma mark Lifecycle
+
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL {
 	NSParameterAssert(targetBundleURL != nil);
 	NSParameterAssert(updateBundleURL != nil);
@@ -37,6 +39,8 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
 	
 	return self;
 }
+
+#pragma mark Installation
 
 - (BOOL)installUpdateWithError:(NSError **)errorRef {
 	// Verify the update bundle.

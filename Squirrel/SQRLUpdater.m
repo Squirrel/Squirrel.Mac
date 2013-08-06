@@ -25,14 +25,21 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
-@property (nonatomic, readonly) NSOperationQueue *updateQueue;
+
+// A serial operation queue for update checks.
+@property (nonatomic, strong, readonly) NSOperationQueue *updateQueue;
+
+// A timer used to poll for updates.
 @property (nonatomic, strong) NSTimer *updateTimer;
 
+// The folder into which the latest update will be/has been downloaded.
 @property (nonatomic, strong) NSURL *downloadFolder;
 
 @end
 
 @implementation SQRLUpdater
+
+#pragma mark Lifecycle
 
 + (instancetype)sharedUpdater {
 	static SQRLUpdater *sharedInstance = nil;
@@ -55,7 +62,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	return self;
 }
 
-#pragma mark - Update Timer
+#pragma mark Update Timer
 
 - (void)setUpdateTimer:(NSTimer *)updateTimer {
 	if (self.updateTimer == updateTimer) return;
@@ -72,8 +79,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	});
 }
 
-#pragma mark - System Information
-
+#pragma mark System Information
 
 - (NSURL *)applicationSupportURL {
 	NSString *path = nil;
@@ -100,7 +106,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	return versionPlist[@"ProductUserVisibleVersion"];
 }
 
-#pragma mark - Checking
+#pragma mark Checking
 
 - (void)checkForUpdates {
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
