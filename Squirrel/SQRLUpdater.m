@@ -111,9 +111,10 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	NSString *appVersion = NSBundle.mainBundle.infoDictionary[(id)kCFBundleVersionKey];
 	NSString *OSVersion = self.OSVersionString;
 	
-	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", SQRLUpdaterAPIEndpoint, appVersion, OSVersion];
+	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", SQRLUpdaterAPIEndpoint, [appVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [OSVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
 	if (self.githubUsername.length > 0) {
-		[requestString appendFormat:@"&username=%@", self.githubUsername];
+		CFStringRef escapedUsername = CFURLCreateStringByAddingPercentEscapes(NULL, (__bridge CFStringRef)self.githubUsername, NULL, CFSTR("?=&/#,\\"), kCFStringEncodingUTF8);
+		[requestString appendFormat:@"&username=%@", CFBridgingRelease(escapedUsername)];
 	}
 	
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:requestString]];
