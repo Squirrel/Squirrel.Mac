@@ -83,12 +83,11 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	if (![fileManager fileExistsAtPath:appSupportURL.path]) {
-		NSError *error = nil;
-		BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
-		if (!success) {
-			NSLog(@"Error: %@", error);
-		}
+
+	NSError *error = nil;
+	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
+	if (!success) {
+		NSLog(@"Error creating Application Support folder: %@", error);
 	}
 	
 	return appSupportURL;
