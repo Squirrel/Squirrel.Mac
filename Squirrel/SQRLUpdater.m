@@ -22,6 +22,7 @@ static NSString * const SQRLUpdaterAPIEndpoint = @"https://central.github.com/ap
 static NSString * const SQRLUpdaterJSONURLKey = @"url";
 static NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 static NSString * const SQRLUpdaterJSONNameKey = @"name";
+static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 @interface SQRLUpdater ()
 
@@ -135,7 +136,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		}
 		
 		NSString *urlString = JSON[SQRLUpdaterJSONURLKey];
-		if (urlString == nil) { //Hmm… we got returned something without a URL, whatever it is… we aren't interested in it.
+		if (![urlString isKindOfClass:NSString.class]) { //Hmm… we got returned something without a URL, whatever it is… we aren't interested in it.
 			NSLog(@"Update JSON is missing a URL: %@", JSON);
 
 			[self finishAndSetIdle];
@@ -167,10 +168,6 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		}
 		
 		NSString *tempDirectoryPath = [fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(result)];
-		
-		NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
-		NSString *lulzURLString = JSON[@"lulz"] ?: [self randomLulzURLString];
-		
 		self.downloadFolder = [NSURL fileURLWithPath:tempDirectoryPath];
 		
 		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
@@ -212,11 +209,31 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 			}
 			
 			NSString *name = JSON[SQRLUpdaterJSONNameKey];
-			NSDictionary *userInfo = @{
-				SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
-				SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
-				SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
-			};
+			if (![name isKindOfClass:NSString.class]) {
+				NSLog(@"Ignoring release name of an unsupported type: %@", name);
+				name = nil;
+			}
+			
+			NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
+			if (![releaseNotes isKindOfClass:NSString.class]) {
+				NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
+				releaseNotes = nil;
+			}
+
+			NSString *lulzURLString = JSON[SQRLUpdaterJSONLulzURLKey];
+			NSURL *lulzURL = nil;
+			if ([lulzURLString isKindOfClass:NSString.class]) {
+				lulzURL = [NSURL URLWithString:lulzURLString];
+			} else {
+				NSLog(@"Ignoring lulz URL of an unsupported type: %@", lulzURLString);
+			}
+
+			if (lulzURL == nil) lulzURL = [self randomLulzURL];
+
+			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+			if (releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = releaseNotes;
+			if (name != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = name;
+			if (lulzURL != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationLulzURLKey] = lulzURL;
 			
 			self.state = SQRLUpdaterStateAwaitingRelaunch;
 			
@@ -229,14 +246,15 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	}];
 }
 
-- (NSString *)randomLulzURLString {
+- (NSURL *)randomLulzURL {
 	NSArray *lulz = @[
 		@"http://blog.lmorchard.com/wp-content/uploads/2013/02/well_done_sir.gif",
 		@"http://i255.photobucket.com/albums/hh150/hayati_h2/tumblr_lfmpar9EUd1qdzjnp.gif",
 		@"http://media.tumblr.com/tumblr_lv1j4x1pJM1qbewag.gif",
 		@"http://i.imgur.com/UmpOi.gif",
 	];
-	return lulz[arc4random() % lulz.count];
+
+	return [NSURL URLWithString:lulz[arc4random() % lulz.count]];
 }
 
 - (void)finishAndSetIdle {
