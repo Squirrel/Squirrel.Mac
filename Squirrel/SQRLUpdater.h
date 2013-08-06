@@ -51,7 +51,9 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 @property (atomic, readonly) SQRLUpdaterState state;
 
 // Whether or not to relaunch after installing an update.
-@property (nonatomic, readwrite) BOOL shouldRelaunch;
+//
+// This will be reset to NO whenever update installation fails.
+@property (atomic, readwrite) BOOL shouldRelaunch;
 
 // Returns the singleton updater.
 + (instancetype)sharedUpdater;
