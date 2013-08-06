@@ -9,6 +9,7 @@
 #import "SQRLInstaller.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLCodeSignatureVerification.h"
+#import <sys/xattr.h>
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
 
@@ -127,7 +128,8 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 
 		return NO;
 	}
-	
+
+	[self clearQuarantineForDirectory:self.targetBundleURL];
 	return YES;
 }
 
@@ -153,6 +155,27 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 
 	NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
 	return YES;
+}
+
+- (void)clearQuarantineForDirectory:(NSURL *)directory {
+	NSParameterAssert(directory != nil);
+
+	NSFileManager *manager = [[NSFileManager alloc] init];
+	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:nil options:0 errorHandler:^(NSURL *URL, NSError *error) {
+		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
+		return YES;
+	}];
+
+	for (NSURL *URL in enumerator) {
+		const char *path = URL.path.fileSystemRepresentation;
+		if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
+			int code = errno;
+
+			// This error isn't fatal. The quarantime prompt will just be mildly
+			// annoying to the user.
+			NSLog(@"Error removing quarantine attribute from %s: %s", path, strerror(code));
+		}
+	}
 }
 
 @end
