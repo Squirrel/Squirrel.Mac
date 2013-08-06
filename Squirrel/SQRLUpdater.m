@@ -232,7 +232,7 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		@"http://i.imgur.com/UmpOi.gif",
 	];
 
-	return [NSURL URLWithString:lulz[arc4random() % lulz.count]];
+	return [NSURL URLWithString:lulz[arc4random_uniform(lulz.count)]];
 }
 
 - (void)finishAndSetIdle {
