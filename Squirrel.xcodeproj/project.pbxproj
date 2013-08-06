@@ -209,8 +209,8 @@
 		F6315C28179EC9C6000DD609 /* SSZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SSZipArchive.h; path = External/ssziparchive/SSZipArchive.h; sourceTree = "<group>"; };
 		F6315C29179EC9C6000DD609 /* SSZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SSZipArchive.m; path = External/ssziparchive/SSZipArchive.m; sourceTree = "<group>"; };
 		F6315C35179EC9E7000DD609 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
-		F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
-		F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
+		F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLTerminationListener.h; path = ../Squirrel/SQRLTerminationListener.h; sourceTree = "<group>"; };
+		F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLTerminationListener.m; path = ../Squirrel/SQRLTerminationListener.m; sourceTree = "<group>"; };
 		F65A915F17A71AA5005A4666 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		F65A916B17A73E90005A4666 /* shipit */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = shipit; sourceTree = BUILT_PRODUCTS_DIR; };
 		F65A916E17A73E90005A4666 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -222,8 +222,8 @@
 		F6EB2166179D0228001108CF /* EXTScope.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EXTScope.m; path = Squirrel/extobjc/EXTScope.m; sourceTree = "<group>"; };
 		F6EB2167179D0228001108CF /* metamacros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = metamacros.h; path = Squirrel/extobjc/metamacros.h; sourceTree = "<group>"; };
 		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLCodeSignatureVerification.h; sourceTree = "<group>"; };
-		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerification.m; sourceTree = "<group>"; };
+		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLCodeSignatureVerification.h; path = Squirrel/SQRLCodeSignatureVerification.h; sourceTree = "<group>"; };
+		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLCodeSignatureVerification.m; path = Squirrel/SQRLCodeSignatureVerification.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -435,12 +435,8 @@
 		D0C22C49179CC14400158214 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */,
-				F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */,
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
-				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */,
-				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -463,6 +459,8 @@
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				D007290817B0973E008C7DDE /* SQRLArguments.h */,
 				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
+				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */,
+				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */,
 			);
 			name = Shared;
 			sourceTree = "<group>";
@@ -490,6 +488,8 @@
 				F65A916E17A73E90005A4666 /* main.m */,
 				F66AD31317A83C7B006F47B1 /* SQRLInstaller.h */,
 				F66AD31417A83C7B006F47B1 /* SQRLInstaller.m */,
+				F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */,
+				F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */,
 			);
 			path = shipit;
 			sourceTree = "<group>";
