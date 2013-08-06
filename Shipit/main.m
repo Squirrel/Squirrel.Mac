@@ -69,6 +69,7 @@ int main(int argc, const char * argv[]) {
 		CFRunLoopRun();
 	}
 	
-	return EXIT_FAILURE;
+	NSLog(@"Terminating from run loop exit");
+	return EXIT_SUCCESS;
 }
 
