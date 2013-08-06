@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
 #import "SQRLTerminationListener.h"
@@ -53,7 +54,7 @@ int main(int argc, const char * argv[]) {
 			
 			NSError *error = nil;
 			if (![installer installUpdateWithError:&error]) {
-				NSLog(@"Error installing update %@, %@", error, error.userInfo[NSUnderlyingErrorKey]);
+				NSLog(@"Error installing update: %@", error.sqrl_verboseDescription);
 				exit(EXIT_FAILURE);
 			}
 			

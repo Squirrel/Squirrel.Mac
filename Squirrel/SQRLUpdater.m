@@ -7,6 +7,7 @@
 //
 
 #import "SQRLUpdater.h"
+#import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerification.h"
 
@@ -94,7 +95,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	NSError *error = nil;
 	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
 	if (!success) {
-		NSLog(@"Error creating Application Support folder: %@", error);
+		NSLog(@"Error creating Application Support folder: %@", error.sqrl_verboseDescription);
 	}
 	
 	return appSupportURL;
@@ -150,7 +151,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		NSString *tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:@"com.github.github"];
 		NSError *directoryCreationError = nil;
 		if (![fileManager createDirectoryAtURL:[NSURL fileURLWithPath:tempDirectory] withIntermediateDirectories:YES attributes:nil error:&directoryCreationError]) {
-			NSLog(@"Could not create directory at: %@ because of: %@", self.downloadFolder, directoryCreationError);
+			NSLog(@"Could not create directory at: %@ because of: %@", self.downloadFolder, directoryCreationError.sqrl_verboseDescription);
 			[self finishAndSetIdle];
 			return;
 		}
@@ -211,7 +212,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 			NSError *error = nil;
 			BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:bundleLocation error:&error];
 			if (!verified) {
-				NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
+				NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
 				[self finishAndSetIdle];
 				return;
 			}
@@ -248,7 +249,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	if (self.downloadFolder != nil) {
 		NSError *deleteError = nil;
 		if (![NSFileManager.defaultManager removeItemAtURL:self.downloadFolder error:&deleteError]) {
-			NSLog(@"Error removing downloaded update at %@, error: %@", self.downloadFolder, deleteError);
+			NSLog(@"Error removing downloaded update at %@, error: %@", self.downloadFolder, deleteError.sqrl_verboseDescription);
 		}
 		
 		self.downloadFolder = nil;
@@ -269,19 +270,19 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	NSLog(@"Copying relauncher from %@ to %@", relauncherURL, targetURL);
 	
 	if (![NSFileManager.defaultManager createDirectoryAtURL:targetURL.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:&error]) {
-		NSLog(@"Error installing update, failed to create App Support folder with error %@", error);
+		NSLog(@"Error installing update, failed to create App Support folder with error %@", error.sqrl_verboseDescription);
 		[self finishAndSetIdle];
 		return;
 	}
 	
 	if (![NSFileManager.defaultManager removeItemAtURL:targetURL error:&error]) {
-		NSLog(@"Error removing existing relauncher binary at %@: %@", targetURL, error);
+		NSLog(@"Error removing existing relauncher binary at %@: %@", targetURL, error.sqrl_verboseDescription);
 		[self finishAndSetIdle];
 		return;
 	}
 	
 	if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
-		NSLog(@"Error installing update, failed to copy relauncher from %@ to %@: %@", relauncherURL, targetURL, error);
+		NSLog(@"Error installing update, failed to copy relauncher from %@ to %@: %@", relauncherURL, targetURL, error.sqrl_verboseDescription);
 		[self finishAndSetIdle];
 		return;
 	}

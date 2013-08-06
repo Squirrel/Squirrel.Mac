@@ -7,6 +7,7 @@
 //
 
 #import "SQRLInstaller.h"
+#import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLCodeSignatureVerification.h"
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
@@ -121,7 +122,7 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
 		// Move the backup version back into place
 		if (![self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
-			NSLog(@"Could not move backup bundle %@ back to %@ after codesign failure: %@", backupBundleURL, self.targetBundleURL, error);
+			NSLog(@"Could not move backup bundle %@ back to %@ after codesign failure: %@", backupBundleURL, self.targetBundleURL, error.sqrl_verboseDescription);
 		}
 
 		return NO;
