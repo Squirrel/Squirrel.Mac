@@ -58,8 +58,9 @@ int main(int argc, const char * argv[]) {
 				exit(EXIT_FAILURE);
 			}
 			
-			if (shouldRelaunch.boolValue) {
-				[NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:NULL];
+			if (shouldRelaunch.boolValue && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+				NSLog(@"Error relaunching target application at %@: %@", targetBundleURL, error);
+				exit(EXIT_FAILURE);
 			}
 			
 			exit(EXIT_SUCCESS);
