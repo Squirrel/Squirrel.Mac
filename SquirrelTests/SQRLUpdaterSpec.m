@@ -11,10 +11,6 @@ SpecBegin(SQRLUpdater)
 it(@"should be a thing", ^{
 	SQRLUpdater *updater = SQRLUpdater.sharedUpdater;
 	expect(updater).notTo.beNil();
-
-	expect(self.temporaryDirectoryURL).notTo.beNil();
-	expect(self.testAppURL).notTo.beNil();
-	expect(self.zippedTestAppURL).notTo.beNil();
 });
 
 pending(@"should download an update when it doesn't match the current version");

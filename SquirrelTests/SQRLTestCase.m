@@ -28,15 +28,6 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 #pragma mark Lifecycle
 
 - (void)SPT_tearDown {
-	[self cleanUp];
-}
-
-- (void)tearDown {
-	[super tearDown];
-	[self cleanUp];	
-}
-
-- (void)cleanUp {
 	[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
 	_baseTemporaryDirectoryURL = nil;
 }
@@ -48,9 +39,8 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 		NSURL *globalTemporaryDirectory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
 		_baseTemporaryDirectoryURL = [globalTemporaryDirectory URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
 		
-		NSFileManager *fileManager = [[NSFileManager alloc] init];
 		NSError *error = nil;
-		BOOL success = [fileManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
+		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
 		STAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
 	}
 
@@ -58,7 +48,13 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 }
 
 - (NSURL *)temporaryDirectoryURL {
-	return [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"spec-data"];
+	NSURL *temporaryDirectoryURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"per-example"];
+
+	NSError *error = nil;
+	BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
+	STAssertTrue(success, @"Couldn't create temporary directory at %@: %@", temporaryDirectoryURL, error);
+
+	return temporaryDirectoryURL;
 }
 
 #pragma mark Fixtures
@@ -70,7 +66,7 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 
 	NSTask *task = [[NSTask alloc] init];
 	task.launchPath = @"/usr/bin/unzip";
-	task.arguments = @[ @"-qq", @"-d", destinationDirectory.path, zipURL.path, [memberName stringByAppendingString:@"*"], @"-x", @"*/.DS_Store" ];
+	task.arguments = @[ @"-qq", @"-d", destinationDirectory.path, zipURL.path, [memberName stringByAppendingString:@"/*"] ];
 	[task launch];
 	[task waitUntilExit];
 	
@@ -80,12 +76,11 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 }
 
 - (NSURL *)fixturesURL {
-	NSURL *fixturesURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"fixtures"];
-	if (![NSFileManager.defaultManager fileExistsAtPath:fixturesURL.path]) {
-		NSError *error = nil;
-		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:fixturesURL withIntermediateDirectories:YES attributes:nil error:&error];
-		STAssertTrue(success, @"Couldn't create fixtures directory at %@: %@", fixturesURL, error);
-	}
+	NSURL *fixturesURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"fixtures"];
+
+	NSError *error = nil;
+	BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:fixturesURL withIntermediateDirectories:YES attributes:nil error:&error];
+	STAssertTrue(success, @"Couldn't create fixtures directory at %@: %@", fixturesURL, error);
 
 	return fixturesURL;
 }
@@ -101,7 +96,8 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 }
 
 - (NSURL *)zippedTestAppURL {
-	NSURL *testAppURL = [self.fixturesURL URLByAppendingPathComponent:@"testApp.zip"];
+	NSString *zippedName = [SQRLTestCaseTestAppFixtureName stringByAppendingString:@".zip"];
+	NSURL *testAppURL = [self.fixturesURL URLByAppendingPathComponent:zippedName];
 	if (![NSFileManager.defaultManager fileExistsAtPath:testAppURL.path]) {
 		NSURL *bundledURL = [[NSBundle bundleForClass:self.class] URLForResource:SQRLTestCaseTestAppFixtureName withExtension:@"zip" subdirectory:@"Fixtures"];
 		
@@ -109,7 +105,7 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 		BOOL success = [NSFileManager.defaultManager copyItemAtURL:bundledURL toURL:testAppURL error:&error];
 		STAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundledURL, testAppURL, error);
 	}
-	
+
 	return testAppURL;
 }
 
