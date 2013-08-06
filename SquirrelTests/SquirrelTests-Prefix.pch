@@ -8,11 +8,14 @@
 
 #ifdef __OBJC__
 	#import <Cocoa/Cocoa.h>
-    #import <SenTestingKit/SenTestingKit.h>
-    #import <Squirrel/Squirrel.h>
+	#import <SenTestingKit/SenTestingKit.h>
+	#import <Squirrel/Squirrel.h>
 
-    #import "Specta.h"
+	#define SPT_SUBCLASS SQRLTestCase
+	#import "Specta.h"
 
-    #define EXP_SHORTHAND
-    #import "Expecta.h"
+	#define EXP_SHORTHAND
+	#import "Expecta.h"
+
+	#import "SQRLTestCase.h"
 #endif

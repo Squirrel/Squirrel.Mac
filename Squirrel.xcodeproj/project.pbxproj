@@ -23,6 +23,8 @@
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBE9E17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
+		D0EDBEAB17B0DAD20058BC3C /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = D0EDBEAA17B0DAD20058BC3C /* Fixtures */; };
+		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
 		F6315C2A179EC9C6000DD609 /* crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C1F179EC9C6000DD609 /* crypt.h */; };
 		F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C20179EC9C6000DD609 /* ioapi.c */; };
 		F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C21179EC9C6000DD609 /* ioapi.h */; };
@@ -189,6 +191,9 @@
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
 		D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSError+SQRLVerbosityExtensions.h"; path = "Squirrel/NSError+SQRLVerbosityExtensions.h"; sourceTree = "<group>"; };
 		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = "<group>"; };
+		D0EDBEAA17B0DAD20058BC3C /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = "<group>"; };
+		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
+		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
 		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
@@ -331,6 +336,7 @@
 		D0C22BF7179CC00E00158214 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				D0EDBEAA17B0DAD20058BC3C /* Fixtures */,
 				D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */,
 				D0C22BF9179CC00E00158214 /* InfoPlist.strings */,
 				D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */,
@@ -440,6 +446,8 @@
 		D0C22C4E179CC18000158214 /* Specs */ = {
 			isa = PBXGroup;
 			children = (
+				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
+				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 			);
 			name = Specs;
@@ -686,6 +694,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0EDBEAB17B0DAD20058BC3C /* Fixtures in Resources */,
 				F65A917B17A74445005A4666 /* shipit in Resources */,
 				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
 			);
@@ -732,6 +741,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
+				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
