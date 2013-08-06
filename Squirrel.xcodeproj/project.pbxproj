@@ -25,6 +25,7 @@
 		D0EDBE9E17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBEAB17B0DAD20058BC3C /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = D0EDBEAA17B0DAD20058BC3C /* Fixtures */; };
 		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
+		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */; };
 		F6315C2A179EC9C6000DD609 /* crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C1F179EC9C6000DD609 /* crypt.h */; };
 		F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C20179EC9C6000DD609 /* ioapi.c */; };
 		F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C21179EC9C6000DD609 /* ioapi.h */; };
@@ -194,6 +195,7 @@
 		D0EDBEAA17B0DAD20058BC3C /* Fixtures */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Fixtures; sourceTree = "<group>"; };
 		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
 		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
+		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerificationSpec.m; sourceTree = "<group>"; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
 		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
@@ -448,6 +450,7 @@
 			children = (
 				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
 				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
+				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 			);
 			name = Specs;
@@ -742,6 +745,7 @@
 			files = (
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
+				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
