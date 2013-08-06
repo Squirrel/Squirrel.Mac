@@ -64,19 +64,21 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	return self;
 }
 
+- (void)dealloc {
+	[_updateTimer invalidate];
+}
+
 #pragma mark Update Timer
 
 - (void)setUpdateTimer:(NSTimer *)updateTimer {
-	if (self.updateTimer == updateTimer) return;
-	[self.updateTimer invalidate];
+	if (_updateTimer == updateTimer) return;
+
+	[_updateTimer invalidate];
 	_updateTimer = updateTimer;
 }
 
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
-	@weakify(self);
 	dispatch_async(dispatch_get_main_queue(), ^{
-		@strongify(self)
-		if (self == nil) return;
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
 	});
 }
