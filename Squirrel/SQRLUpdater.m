@@ -145,9 +145,10 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		
 		NSString *tempDirectoryTemplate = [tempDirectory stringByAppendingPathComponent:@"update.XXXXXXX"];
 		
-		const char *tempDirectoryTemplateCString = tempDirectoryTemplate.fileSystemRepresentation;
-		char *tempDirectoryNameCString = (char *)calloc(strlen(tempDirectoryTemplateCString) + 1, sizeof(char));
-		strncpy(tempDirectoryNameCString, tempDirectoryTemplateCString, strlen(tempDirectoryTemplateCString));
+		char *tempDirectoryNameCString = strdup(tempDirectoryTemplate.fileSystemRepresentation);
+		@onExit {
+			free(tempDirectoryNameCString);
+		};
 		
 		char *result = mkdtemp(tempDirectoryNameCString);
 		if (result == NULL) {
@@ -157,7 +158,6 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		}
 		
 		NSString *tempDirectoryPath = [fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(result)];
-		free(tempDirectoryNameCString);
 		
 		NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
 		NSString *lulzURLString = JSON[@"lulz"] ?: [self randomLulzURLString];
