@@ -131,12 +131,16 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		
 		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
 		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
+			NSLog(@"Instead of update information, server returned:\n%@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
+
 			[self finishAndSetIdle];
 			return;
 		}
 		
 		NSString *urlString = JSON[SQRLUpdaterJSONURLKey];
 		if (urlString == nil) { //Hmm… we got returned something without a URL, whatever it is… we aren't interested in it.
+			NSLog(@"Update JSON is missing a URL: %@", JSON);
+
 			[self finishAndSetIdle];
 			return;
 		}
@@ -270,10 +274,14 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		return;
 	}
 	
-	[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+	if (![NSFileManager.defaultManager removeItemAtURL:targetURL error:&error]) {
+		NSLog(@"Error removing existing relauncher binary at %@: %@", targetURL, error);
+		[self finishAndSetIdle];
+		return;
+	}
 	
 	if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
-		NSLog(@"Error installing update, failed to copy relauncher %@", error);
+		NSLog(@"Error installing update, failed to copy relauncher from %@ to %@: %@", relauncherURL, targetURL, error);
 		[self finishAndSetIdle];
 		return;
 	}

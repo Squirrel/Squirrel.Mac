@@ -13,6 +13,10 @@ NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
 
 const NSInteger SQRLInstallerErrorBackupFailed = -1;
 const NSInteger SQRLInstallerErrorReplacingTarget = -2;
+const NSInteger SQRLInstallerErrorCouldNotOpenTarget = -3;
+const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
+const NSInteger SQRLInstallerErrorCouldNotRemoveBackup = -5;
+const NSInteger SQRLInstallerErrorCouldNotRemoveTarget = -6;
 
 @interface SQRLInstaller ()
 
@@ -51,15 +55,55 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	
 	// Move the old bundle to a backup location
 	NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
+	if (targetBundle == nil) {
+		if (errorPtr != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"URL %@ could not be opened as a bundle", nil), self.targetBundleURL],
+			};
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotOpenTarget userInfo:userInfo];
+		}
+
+		return NO;
+	}
+
 	NSString *bundleVersion = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
+	if (bundleVersion == nil) {
+		if (errorPtr != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Target bundle %@ has an invalid version", nil), self.targetBundleURL],
+			};
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidBundleVersion userInfo:userInfo];
+		}
+
+		return NO;
+	}
+
 	NSString *bundleExtension = self.targetBundleURL.pathExtension;
 	NSString *backupAppName = [NSString stringWithFormat:@"%@_%@.%@", self.targetBundleURL.URLByDeletingPathExtension.lastPathComponent, bundleVersion, bundleExtension];
 		
 	NSURL *backupBundleURL = [self.backupURL URLByAppendingPathComponent:backupAppName];
-	
-	[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
+	NSAssert(backupBundleURL != nil, @"nil backupBundleURL after appending \"%@\" to URL %@", backupAppName, self.backupURL);
 	
 	NSError *error = nil;
+
+	// FIXME: We should just use a temporary URL (or at least filename) for
+	// backups. It's silly that this causes updating to fail.
+	if (![NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:&error]) {
+		if (errorPtr != NULL) {
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not remove backup bundle %@", nil), backupBundleURL],
+			} mutableCopy];
+
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotRemoveBackup userInfo:userInfo];
+		}
+
+		return NO;
+	}
+	
 	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
@@ -74,9 +118,21 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 		return NO;
 	}
 	
-	// Move the new bundle into place.
-	[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
+	if (![NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:&error]) {
+		if (errorPtr != NULL) {
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not remove target bundle %@", nil), self.targetBundleURL],
+			} mutableCopy];
+
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotRemoveTarget userInfo:userInfo];
+		}
+
+		return NO;
+	}
 	
+	// Move the new bundle into place.
 	if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
@@ -94,8 +150,14 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	// Verify the bundle in place
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
 		// Move the backup version back into place
-		[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
-		[self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:NULL];
+		if (![NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:&error]) {
+			NSLog(@"Could not remove target bundle %@ after codesign failure: %@", self.targetBundleURL, error);
+		}
+
+		if (![self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
+			NSLog(@"Could not move backup bundle %@ back to %@ after codesign failure: %@", backupBundleURL, self.targetBundleURL, error);
+		}
+
 		return NO;
 	}
 	
@@ -105,11 +167,15 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 - (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
-	if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:NULL]) {
-		// Try a copy instead.
-		return [NSFileManager.defaultManager copyItemAtURL:sourceURL toURL:targetURL error:errorPtr];
+
+	if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:NULL]) {
+		NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
+	} else if ([NSFileManager.defaultManager copyItemAtURL:sourceURL toURL:targetURL error:errorPtr]) {
+		NSLog(@"Copied bundle from %@ to %@", sourceURL, targetURL);
+	} else {
+		return NO;
 	}
-	NSLog(@"Copied bundle from %@ to %@", sourceURL, targetURL);
+
 	return YES;
 }
 
