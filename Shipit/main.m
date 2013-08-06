@@ -7,30 +7,51 @@
 //
 
 #import <Foundation/Foundation.h>
-#import "SQRLTerminationListener.h"
+#import "SQRLArguments.h"
 #import "SQRLInstaller.h"
+#import "SQRLTerminationListener.h"
 
 // blerg
 static SQRLTerminationListener *listener = nil;
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
-		NSArray *arguments = NSProcessInfo.processInfo.arguments;
+		NSDictionary *defaults = NSUserDefaults.standardUserDefaults.dictionaryRepresentation;
+
+		id (^getRequiredArgument)(NSString *, Class) = ^(NSString *key, Class expectedClass) {
+			id object = defaults[key];
+			if (object == nil) {
+				NSLog(@"Required argument -%@ was not set", key);
+				exit(EXIT_FAILURE);
+			}
+
+			if (![object isKindOfClass:expectedClass]) {
+				NSLog(@"Value \"%@\" for argument -%@ is not of the expected type", object, key);
+				exit(EXIT_FAILURE);
+			}
+
+			return object;
+		};
+
+		NSURL * (^getRequiredURLArgument)(NSString *) = ^(NSString *key) {
+			NSString *URLString = getRequiredArgument(key, NSString.class);
+			NSURL *URL = [NSURL URLWithString:URLString];
+			if (URL == nil) {
+				NSLog(@"Value \"%@\" for argument -%@ is not a valid URL", URLString, key);
+				exit(EXIT_FAILURE);
+			}
+
+			return URL;
+		};
+
+		NSURL *targetBundleURL = getRequiredURLArgument(SQRLTargetBundleURLArgumentName);
+		NSURL *updateBundleURL = getRequiredURLArgument(SQRLUpdateBundleURLArgumentName);
+		NSURL *backupURL = getRequiredURLArgument(SQRLBackupURLArgumentName);
+		NSNumber *pid = getRequiredArgument(SQRLProcessIdentifierArgumentName, NSNumber.class);
+		NSString *bundleIdentifier = getRequiredArgument(SQRLBundleIdentifierArgumentName, NSString.class);
+		NSNumber *shouldRelaunch = getRequiredArgument(SQRLShouldRelaunchArgumentName, NSNumber.class);
 		
-		NSLog(@"arguments are %@", arguments);
-		
-		if (arguments.count < 7) {
-			return EXIT_FAILURE;
-		}
-		
-		NSURL *targetBundleURL = [NSURL URLWithString:arguments[1]];
-		pid_t processIdentifier = atoi([arguments[2] UTF8String]);
-		NSString *bundleIdentifier = [arguments[3] copy];
-		NSURL *updateBundleURL = [NSURL URLWithString:arguments[4]];
-		NSURL *backupURL = [NSURL URLWithString:arguments[5]];
-		BOOL shouldRelaunch = [arguments[6] isEqualToString:@"1"];
-		
-		listener = [[SQRLTerminationListener alloc] initWithProcessID:processIdentifier bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
+		listener = [[SQRLTerminationListener alloc] initWithProcessID:pid.intValue bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
 			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
 			
 			NSError *error = nil;
@@ -39,7 +60,7 @@ int main(int argc, const char * argv[]) {
 				exit(EXIT_FAILURE);
 			}
 			
-			if (shouldRelaunch) {
+			if (shouldRelaunch.boolValue) {
 				[NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:NULL];
 			}
 			

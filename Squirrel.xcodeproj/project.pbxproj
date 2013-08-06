@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D007290017B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
+		D007290117B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
@@ -150,6 +152,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D00728FF17B09732008C7DDE /* SQRLArguments.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLArguments.m; path = Shipit/SQRLArguments.m; sourceTree = SOURCE_ROOT; };
+		D007290817B0973E008C7DDE /* SQRLArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SQRLArguments.h; path = Shipit/SQRLArguments.h; sourceTree = SOURCE_ROOT; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
@@ -458,6 +462,8 @@
 			isa = PBXGroup;
 			children = (
 				F65A916E17A73E90005A4666 /* main.m */,
+				D007290817B0973E008C7DDE /* SQRLArguments.h */,
+				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
 				F66AD31317A83C7B006F47B1 /* SQRLInstaller.h */,
 				F66AD31417A83C7B006F47B1 /* SQRLInstaller.m */,
 			);
@@ -701,6 +707,7 @@
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
+				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
 				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				F6315C2F179EC9C6000DD609 /* unzip.c in Sources */,
@@ -721,6 +728,7 @@
 			files = (
 				F66AD31217A74925006F47B1 /* EXTScope.m in Sources */,
 				F65A917A17A7401B005A4666 /* SQRLTerminationListener.m in Sources */,
+				D007290117B09732008C7DDE /* SQRLArguments.m in Sources */,
 				F66AD31517A83C7B006F47B1 /* SQRLInstaller.m in Sources */,
 				F65A917917A74018005A4666 /* SQRLCodeSignatureVerification.m in Sources */,
 				F65A916F17A73E90005A4666 /* main.m in Sources */,
