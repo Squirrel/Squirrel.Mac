@@ -80,16 +80,24 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 		return NO;
 	}
 
-	NSString *bundleExtension = self.targetBundleURL.pathExtension;
-	NSString *backupAppName = [NSString stringWithFormat:@"%@_%@.%@", self.targetBundleURL.URLByDeletingPathExtension.lastPathComponent, bundleVersion, bundleExtension];
-
-	// FIXME: We should just use a temporary URL (or at least filename) for
-	// backups. It's silly that updating will fail if something's here that we
-	// can't remove.
-	NSURL *backupBundleURL = [self.backupURL URLByAppendingPathComponent:backupAppName];
-	NSAssert(backupBundleURL != nil, @"nil backupBundleURL after appending \"%@\" to URL %@", backupAppName, self.backupURL);
-	
+	// This will actually create the directory no matter what we do, but it's
+	// okay. We'll just overwrite it in the next step.
 	NSError *error = nil;
+	NSURL *backupBundleURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.backupURL create:NO error:&error];
+	if (backupBundleURL != nil) {
+		if (errorPtr != NULL) {
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary backup folder in %@", nil), self.backupURL],
+			} mutableCopy];
+
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
+		}
+
+		return NO;
+	}
+	
 	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
