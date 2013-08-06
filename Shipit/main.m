@@ -7,13 +7,72 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "EXTScope.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
+#import "SQRLArguments+Private.h"
 #import "SQRLInstaller.h"
 #import "SQRLTerminationListener.h"
 
+#if TESTING
+static void handleEvent(xpc_object_t event) {
+	xpc_type_t type = xpc_get_type(event);
+	xpc_connection_t remote = xpc_dictionary_get_remote_connection(event);
+
+	if (type == XPC_TYPE_ERROR) {
+		if (event == XPC_ERROR_CONNECTION_INVALID) {
+			exit(EXIT_SUCCESS);
+		} else {
+			return;
+		}
+	}
+
+	NSString *command = @(xpc_dictionary_get_string(event, SQRLCommandKey));
+	NSLog(@"Got command: %@", command);
+
+	if ([command isEqual:@(SQRLCommandListenForTermination)]) {
+		xpc_object_t reply = xpc_dictionary_create_reply(event);
+
+		NSRunningApplication *parent = [NSRunningApplication runningApplicationWithProcessIdentifier:getppid()];
+		NSCAssert(parent != nil, @"Could not find parent process");
+
+		SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:parent.processIdentifier bundleIdentifier:parent.bundleIdentifier bundleURL:parent.bundleURL terminationHandler:^{
+			xpc_connection_send_message(remote, reply);
+			xpc_release(reply);
+		}];
+		
+		[listener beginListening];
+	}
+}
+
+static void startXPC(void) {
+	xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), XPC_CONNECTION_MACH_SERVICE_LISTENER);
+	if (service == NULL) exit(EXIT_FAILURE);
+
+	@onExit {
+		xpc_release(service);
+	};
+	
+	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
+		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+			handleEvent(event);
+		});
+
+		xpc_connection_resume(connection);
+	});
+	
+	xpc_connection_resume(service);
+	CFRunLoopRun();
+}
+#endif
+
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
+		#if TESTING
+		startXPC();
+		return EXIT_SUCCESS;
+		#endif
+
 		NSDictionary *defaults = NSUserDefaults.standardUserDefaults.dictionaryRepresentation;
 
 		id (^getRequiredArgument)(NSString *, Class) = ^(NSString *key, Class expectedClass) {
