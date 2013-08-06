@@ -8,11 +8,14 @@
 
 #import <Foundation/Foundation.h>
 
-// The domain for errors originating in SQRLCodeSignatureVerification.
+// The domain for errors originating within SQRLCodeSignatureVerification.
 extern NSString * const SQRLCodeSignatureVerificationErrorDomain;
 
-// An error occurred validating the code signature of a downloaded update.
-extern const NSInteger SQRLCodeSignatureVerificationErrorCodeSigning;
+// The bundle did not pass codesign verification.
+extern const NSInteger SQRLCodeSignatureVerificationErrorDidNotPass;
+
+// A static code object could not be created for the target bundle.
+extern const NSInteger SQRLCodeSignatureVerificationErrorCouldNotCreateStaticCode;
 
 // Implements the verification of Apple code signatures.
 @interface SQRLCodeSignatureVerification : NSObject

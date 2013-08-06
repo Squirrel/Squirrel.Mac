@@ -11,7 +11,8 @@
 
 NSSTRING_CONST(SQRLInstallerErrorDomain);
 
-const NSInteger SQRLInstallerFailedErrorCode = -1;
+const NSInteger SQRLInstallerErrorBackupFailed = -1;
+const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 
 @interface SQRLInstaller ()
 
@@ -42,21 +43,13 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
 
 #pragma mark Installation
 
-- (BOOL)installUpdateWithError:(NSError **)errorRef {
+- (BOOL)installUpdateWithError:(NSError **)errorPtr {
 	// Verify the update bundle.
-	
-	NSError *verificationError = nil;
-	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.updateBundleURL error:&verificationError]) {
-		if (errorRef != NULL) {
-			*errorRef = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerFailedErrorCode userInfo:@{
-				NSUnderlyingErrorKey: verificationError,
-			}];
-		}
+	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
 		return NO;
 	}
 	
 	// Move the old bundle to a backup location
-	
 	NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
 	NSString *bundleVersion = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
 	NSString *bundleExtension = self.targetBundleURL.pathExtension;
@@ -68,11 +61,12 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
 	
 	NSError *backupError = nil;
 	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&backupError]) {
-		if (errorRef != NULL) {
-			*errorRef = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerFailedErrorCode userInfo:@{
+		if (errorPtr != NULL) {
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:@{
 				NSUnderlyingErrorKey: backupError,
 			}];
 		}
+
 		return NO;
 	}
 	
@@ -82,40 +76,33 @@ const NSInteger SQRLInstallerFailedErrorCode = -1;
 	
 	NSError *installError = nil;
 	if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&installError]) {
-		if (errorRef != NULL) {
-			*errorRef = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerFailedErrorCode userInfo:@{
+		if (errorPtr != NULL) {
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:@{
 				NSUnderlyingErrorKey: installError,
 			}];
 		}
+
 		return NO;
 	}
 	
 	// Verify the bundle in place
 
-	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:&verificationError]) {
+	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
 		// Move the backup version back into place
-		
 		[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
-		
 		[self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:NULL];
-		
-		if (errorRef != NULL) {
-			*errorRef = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerFailedErrorCode userInfo:@{
-				NSUnderlyingErrorKey: verificationError,
-			}];
-		}
 		return NO;
 	}
 	
 	return YES;
 }
 
-- (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorRef {
+- (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 	if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:NULL]) {
 		// Try a copy instead.
-		return [NSFileManager.defaultManager copyItemAtURL:sourceURL toURL:targetURL error:errorRef];
+		return [NSFileManager.defaultManager copyItemAtURL:sourceURL toURL:targetURL error:errorPtr];
 	}
 	NSLog(@"Copied bundle from %@ to %@", sourceURL, targetURL);
 	return YES;

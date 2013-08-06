@@ -11,8 +11,11 @@
 // The domain for errors originating within SQRLInstaller.
 extern NSString * const SQRLInstallerErrorDomain;
 
-// Installing the update failed.
-extern const NSInteger SQRLInstallerFailedErrorCode;
+// There was an error copying the target bundle to the backup location.
+extern const NSInteger SQRLInstallerErrorBackupFailed;
+
+// There was an error replacing the target bundle with the update.
+extern const NSInteger SQRLInstallerErrorReplacingTarget;
 
 // Performs the installation of an update.
 //
