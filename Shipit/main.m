@@ -11,9 +11,6 @@
 #import "SQRLInstaller.h"
 #import "SQRLTerminationListener.h"
 
-// blerg
-static SQRLTerminationListener *listener = nil;
-
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		NSDictionary *defaults = NSUserDefaults.standardUserDefaults.dictionaryRepresentation;
@@ -51,7 +48,7 @@ int main(int argc, const char * argv[]) {
 		NSString *bundleIdentifier = getRequiredArgument(SQRLBundleIdentifierArgumentName, NSString.class);
 		NSNumber *shouldRelaunch = getRequiredArgument(SQRLShouldRelaunchArgumentName, NSNumber.class);
 		
-		listener = [[SQRLTerminationListener alloc] initWithProcessID:pid.intValue bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
+		SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid.intValue bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
 			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
 			
 			NSError *error = nil;
@@ -66,7 +63,8 @@ int main(int argc, const char * argv[]) {
 			
 			exit(EXIT_SUCCESS);
 		}];
-			
+
+		[listener beginListening];
 		CFRunLoopRun();
 	}
 	

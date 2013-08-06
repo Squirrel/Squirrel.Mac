@@ -10,10 +10,10 @@
 
 @interface SQRLTerminationListener ()
 
-@property (nonatomic, assign) pid_t processIdentifier;
-@property (nonatomic, copy) NSString *bundleIdentifier;
-@property (nonatomic, strong) NSURL *bundleURL;
-@property (nonatomic, copy) void (^terminationHandler)(void);
+@property (nonatomic, assign, readonly) pid_t processIdentifier;
+@property (nonatomic, copy, readonly) NSString *bundleIdentifier;
+@property (nonatomic, strong, readonly) NSURL *bundleURL;
+@property (nonatomic, copy, readonly) void (^terminationHandler)(void);
 
 @end
 
@@ -25,25 +25,35 @@
 	NSParameterAssert(terminationHandler != nil);
 	
 	self = [super init];
-	
 	if (self == nil) return nil;
 	
 	_bundleIdentifier = [bundleIdentifier copy];
 	_terminationHandler = [terminationHandler copy];
 	_bundleURL = bundleURL;
 
-	BOOL alreadyTerminated = (getppid() == 1); // ppid is launchd (1) => parent terminated already
-	
-	if (alreadyTerminated) [self parentDidTerminate];
-	
+	return self;
+}
+
+- (void)dealloc {
+	[NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self];
+}
+
+#pragma mark Termination Listening
+
+- (void)beginListening {
 	[NSWorkspace.sharedWorkspace.notificationCenter addObserver:self selector:@selector(workspaceApplicationDidTerminate:) name:NSWorkspaceDidTerminateApplicationNotification object:nil];
 
-	return self;
+	BOOL alreadyTerminated = (getppid() == 1); // ppid is launchd (1) => parent terminated already
+	if (alreadyTerminated) [self parentDidTerminate];
 }
 
 - (void)parentDidTerminate {
 	self.terminationHandler();
+
+	[NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self name:NSWorkspaceDidTerminateApplicationNotification object:nil];
 }
+
+#pragma mark NSWorkspace
 
 - (void)workspaceApplicationDidTerminate:(NSNotification *)notification {
 	NSRunningApplication *application = notification.userInfo[NSWorkspaceApplicationKey];
