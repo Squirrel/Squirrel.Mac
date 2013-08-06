@@ -40,7 +40,7 @@ const NSInteger SQRLCodeSignatureVerificationErrorCouldNotCreateStaticCode = -2;
 	}
 	
 	CFErrorRef validityError = NULL;
-	result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures /* | kSecCSCheckNestedCode */, NULL, &validityError);
+	result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures, NULL, &validityError);
 	if (result != noErr) {
 		if (error != NULL) {
 			NSMutableDictionary *userInfo = [@{
