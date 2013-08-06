@@ -15,8 +15,6 @@ const NSInteger SQRLInstallerErrorBackupFailed = -1;
 const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 const NSInteger SQRLInstallerErrorCouldNotOpenTarget = -3;
 const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
-const NSInteger SQRLInstallerErrorCouldNotRemoveBackup = -5;
-const NSInteger SQRLInstallerErrorCouldNotRemoveTarget = -6;
 
 @interface SQRLInstaller ()
 
@@ -82,28 +80,14 @@ const NSInteger SQRLInstallerErrorCouldNotRemoveTarget = -6;
 
 	NSString *bundleExtension = self.targetBundleURL.pathExtension;
 	NSString *backupAppName = [NSString stringWithFormat:@"%@_%@.%@", self.targetBundleURL.URLByDeletingPathExtension.lastPathComponent, bundleVersion, bundleExtension];
-		
+
+	// FIXME: We should just use a temporary URL (or at least filename) for
+	// backups. It's silly that updating will fail if something's here that we
+	// can't remove.
 	NSURL *backupBundleURL = [self.backupURL URLByAppendingPathComponent:backupAppName];
 	NSAssert(backupBundleURL != nil, @"nil backupBundleURL after appending \"%@\" to URL %@", backupAppName, self.backupURL);
 	
 	NSError *error = nil;
-
-	// FIXME: We should just use a temporary URL (or at least filename) for
-	// backups. It's silly that this causes updating to fail.
-	if (![NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:&error]) {
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not remove backup bundle %@", nil), backupBundleURL],
-			} mutableCopy];
-
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotRemoveBackup userInfo:userInfo];
-		}
-
-		return NO;
-	}
-	
 	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
@@ -113,20 +97,6 @@ const NSInteger SQRLInstallerErrorCouldNotRemoveTarget = -6;
 			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
 			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
-		}
-
-		return NO;
-	}
-	
-	if (![NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:&error]) {
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not remove target bundle %@", nil), self.targetBundleURL],
-			} mutableCopy];
-
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotRemoveTarget userInfo:userInfo];
 		}
 
 		return NO;
@@ -150,10 +120,6 @@ const NSInteger SQRLInstallerErrorCouldNotRemoveTarget = -6;
 	// Verify the bundle in place
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
 		// Move the backup version back into place
-		if (![NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:&error]) {
-			NSLog(@"Could not remove target bundle %@ after codesign failure: %@", self.targetBundleURL, error);
-		}
-
 		if (![self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
 			NSLog(@"Could not move backup bundle %@ back to %@ after codesign failure: %@", backupBundleURL, self.targetBundleURL, error);
 		}
@@ -168,14 +134,23 @@ const NSInteger SQRLInstallerErrorCouldNotRemoveTarget = -6;
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
-	if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:NULL]) {
-		NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
-	} else if ([NSFileManager.defaultManager copyItemAtURL:sourceURL toURL:targetURL error:errorPtr]) {
-		NSLog(@"Copied bundle from %@ to %@", sourceURL, targetURL);
-	} else {
+	// rename() is atomic and makes sure to remove the destination,
+	// whereas NSFileManager sucks.
+	if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) != 0) {
+		if (errorPtr != NULL) {
+			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+			
+			int code = errno;
+			const char *desc = strerror(code);
+			if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
+
+			*errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
+		}
+
 		return NO;
 	}
 
+	NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
 	return YES;
 }
 

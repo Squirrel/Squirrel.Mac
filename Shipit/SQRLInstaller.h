@@ -23,12 +23,6 @@ extern const NSInteger SQRLInstallerErrorCouldNotOpenTarget;
 // The target bundle has an invalid version set.
 extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 
-// An old bundle exists at the backup location, and could not be removed.
-extern const NSInteger SQRLInstallerErrorCouldNotRemoveBackup;
-
-// The bundle at the target location could not be removed.
-extern const NSInteger SQRLInstallerErrorCouldNotRemoveTarget;
-
 // Performs the installation of an update.
 //
 // This class is meant to be used only after the app that will be updated has
