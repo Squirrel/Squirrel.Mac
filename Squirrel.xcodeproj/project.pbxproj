@@ -246,6 +246,8 @@
 		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
 		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerificationSpec.m; sourceTree = "<group>"; };
 		D0F8E0CC17B1919F00BCA070 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/MainMenu.strings; sourceTree = "<group>"; };
+		D0F8E12517B19AC900BCA070 /* shipit-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "shipit-Info.plist"; sourceTree = "<group>"; };
+		D0F8E12617B19AC900BCA070 /* shipit-Launchd.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "shipit-Launchd.plist"; sourceTree = "<group>"; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
 		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
@@ -562,6 +564,15 @@
 			name = Shared;
 			sourceTree = "<group>";
 		};
+		D0F8E12D17B19ACC00BCA070 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				D0F8E12517B19AC900BCA070 /* shipit-Info.plist */,
+				D0F8E12617B19AC900BCA070 /* shipit-Launchd.plist */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 		F6315C1E179EC9C6000DD609 /* minizip */ = {
 			isa = PBXGroup;
 			children = (
@@ -587,6 +598,7 @@
 				F66AD31417A83C7B006F47B1 /* SQRLInstaller.m */,
 				F6442B4D17A6F1B900CD312E /* SQRLTerminationListener.h */,
 				F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */,
+				D0F8E12D17B19ACC00BCA070 /* Supporting Files */,
 			);
 			path = shipit;
 			sourceTree = "<group>";
@@ -1260,6 +1272,16 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
+				OTHER_LDFLAGS = (
+					"-sectcreate",
+					__TEXT,
+					__launchd_plist,
+					"shipit/shipit-Launchd.plist",
+					"-sectcreate",
+					__TEXT,
+					__info_plist,
+					"shipit/shipit-Info.plist",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Test;
