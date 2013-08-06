@@ -62,9 +62,13 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	NSError *backupError = nil;
 	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&backupError]) {
 		if (errorPtr != NULL) {
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:@{
-				NSUnderlyingErrorKey: backupError,
-			}];
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to copy bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
+			} mutableCopy];
+
+			if (backupError != nil) userInfo[NSUnderlyingErrorKey] = backupError;
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
 		}
 
 		return NO;
@@ -77,9 +81,13 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	NSError *installError = nil;
 	if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&installError]) {
 		if (errorPtr != NULL) {
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:@{
-				NSUnderlyingErrorKey: installError,
-			}];
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL],
+			} mutableCopy];
+
+			if (installError != nil) userInfo[NSUnderlyingErrorKey] = installError;
+
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:userInfo];
 		}
 
 		return NO;
