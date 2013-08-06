@@ -81,34 +81,13 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	});
 }
 
-#pragma mark System Information
-
-- (NSURL *)applicationSupportURL {
-	NSString *path = nil;
-	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-	path = (paths.count > 0 ? paths[0] : NSTemporaryDirectory());
-	
-	NSString *appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
-	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
-	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-
-	NSError *error = nil;
-	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
-	if (!success) {
-		NSLog(@"Error creating Application Support folder: %@", error.sqrl_verboseDescription);
-	}
-	
-	return appSupportURL;
-}
+#pragma mark Checking for Updates
 
 - (NSString *)OSVersionString {
 	NSURL *versionPlistURL = [NSURL fileURLWithPath:@"/System/Library/CoreServices/SystemVersion.plist"];
 	NSDictionary *versionPlist = [NSDictionary dictionaryWithContentsOfURL:versionPlistURL];
 	return versionPlist[@"ProductUserVisibleVersion"];
 }
-
-#pragma mark Checking
 
 - (void)checkForUpdates {
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
@@ -145,36 +124,31 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 		NSFileManager *fileManager = NSFileManager.defaultManager;
 		
-		NSString *tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:@"com.github.github"];
+		NSString *tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:NSRunningApplication.currentApplication.bundleIdentifier];
 		NSError *directoryCreationError = nil;
 		if (![fileManager createDirectoryAtURL:[NSURL fileURLWithPath:tempDirectory] withIntermediateDirectories:YES attributes:nil error:&directoryCreationError]) {
-			NSLog(@"Could not create directory at: %@ because of: %@", self.downloadFolder, directoryCreationError.sqrl_verboseDescription);
+			NSLog(@"Could not create directory at %@: %@", tempDirectory, directoryCreationError.sqrl_verboseDescription);
 			[self finishAndSetIdle];
 			return;
 		}
 		
-		NSString *tempDirectoryTemplate = [tempDirectory stringByAppendingPathComponent:@"update.XXXXXXX"];
-		
-		char *tempDirectoryNameCString = strdup(tempDirectoryTemplate.fileSystemRepresentation);
+		char *tempDirectoryNameCString = strdup([tempDirectory stringByAppendingPathComponent:@"update.XXXXXXX"].fileSystemRepresentation);
 		@onExit {
 			free(tempDirectoryNameCString);
 		};
 		
-		char *result = mkdtemp(tempDirectoryNameCString);
-		if (result == NULL) {
+		if (mkdtemp(tempDirectoryNameCString) == NULL) {
 			NSLog(@"Could not create temporary directory. Bailing."); //this would be bad
 			[self finishAndSetIdle];
 			return;
 		}
 		
-		NSString *tempDirectoryPath = [fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(result)];
-		self.downloadFolder = [NSURL fileURLWithPath:tempDirectoryPath];
+		self.downloadFolder = [NSURL fileURLWithPath:[fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(tempDirectoryNameCString)] isDirectory:YES];
 		
 		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
 		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
 		
 		NSURLRequest *zipDownloadRequest = [NSURLRequest requestWithURL:zipDownloadURL];
-		
 		[NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 			if (response == nil) {
 				[self finishAndSetIdle];
@@ -189,19 +163,23 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
 			
-			NSURL *destinationURL = zipOutputURL.URLByDeletingLastPathComponent;
-			
-			BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:destinationURL.path];
+			BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:self.downloadFolder.path];
 			if (!unzipped) {
 				NSLog(@"Could not extract update.");
 				[self finishAndSetIdle];
 				return;
 			}
-			
-			NSURL *bundleLocation = [destinationURL URLByAppendingPathComponent:@"GitHub.app"];
+
+			NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
+			NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
+			if (updateBundle == nil) {
+				NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
+				[self finishAndSetIdle];
+				return;
+			}
 			
 			NSError *error = nil;
-			BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:bundleLocation error:&error];
+			BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
 			if (!verified) {
 				NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
 				[self finishAndSetIdle];
@@ -271,6 +249,61 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	self.state = SQRLUpdaterStateIdle;
 }
 
+#pragma mark Installing Updates
+
+- (NSBundle *)applicationBundleWithIdentifier:(NSString *)bundleIdentifier inDirectory:(NSURL *)directory {
+	NSParameterAssert(bundleIdentifier != nil);
+	NSParameterAssert(directory != nil);
+
+	NSFileManager *manager = [[NSFileManager alloc] init];
+	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
+		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
+		return YES;
+	}];
+
+	for (NSURL *URL in enumerator) {
+		NSString *type = nil;
+		NSError *error = nil;
+		if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
+			NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
+			continue;
+		}
+
+		if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) continue;
+
+		NSBundle *bundle = [NSBundle bundleWithURL:URL];
+		if (bundle == nil) {
+			NSLog(@"Could not open application bundle at %@", URL);
+			continue;
+		}
+
+		if ([bundle.bundleIdentifier isEqual:bundleIdentifier]) {
+			return bundle;
+		}
+	}
+
+	return nil;
+}
+
+- (NSURL *)applicationSupportURL {
+	NSString *path = nil;
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+	path = (paths.count > 0 ? paths[0] : NSTemporaryDirectory());
+	
+	NSString *appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
+	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
+	
+	NSFileManager *fileManager = [[NSFileManager alloc] init];
+
+	NSError *error = nil;
+	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
+	if (!success) {
+		NSLog(@"Error creating Application Support folder: %@", error.sqrl_verboseDescription);
+	}
+	
+	return appSupportURL;
+}
+
 - (void)installUpdateIfNeeded {
 	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
 	
@@ -313,7 +346,14 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	addArgument(SQRLBundleIdentifierArgumentName, currentApplication.bundleIdentifier);
 	addArgument(SQRLTargetBundleURLArgumentName, currentApplication.bundleURL.absoluteString);
 
-	addArgument(SQRLUpdateBundleURLArgumentName, [self.downloadFolder URLByAppendingPathComponent:@"GitHub.app"].absoluteString);
+	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];
+	if (updateBundle == nil) {
+		NSLog(@"Could not locate update bundle for %@ within %@", currentApplication.bundleIdentifier, self.downloadFolder);
+		[self finishAndSetIdle];
+		return;
+	}
+
+	addArgument(SQRLUpdateBundleURLArgumentName, updateBundle.bundleURL.absoluteString);
 	addArgument(SQRLBackupURLArgumentName, self.applicationSupportURL.absoluteString);
 	addArgument(SQRLShouldRelaunchArgumentName, (self.shouldRelaunch ? @"1" : @"0"));
 
