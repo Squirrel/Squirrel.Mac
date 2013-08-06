@@ -24,6 +24,10 @@ static NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 static NSString * const SQRLUpdaterJSONNameKey = @"name";
 static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
+// The name of the executable that performs relaunching. This should exist
+// within the Resources folder of Squirrel.framework.
+static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
+
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -310,14 +314,14 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
 	
 	NSBundle *frameworkBundle = [NSBundle bundleForClass:self.class];
-	NSURL *relauncherURL = [frameworkBundle URLForResource:@"shipit" withExtension:nil];
+	NSURL *relauncherURL = [frameworkBundle URLForResource:SQRLUpdaterRelauncherExecutableName withExtension:nil];
 	if (relauncherURL == nil) {
-		NSLog(@"Could not find relauncher executable in framework bundle at %@", frameworkBundle.bundleURL);
+		NSLog(@"Could not find \"%@\" executable in framework bundle at %@", SQRLUpdaterRelauncherExecutableName, frameworkBundle.bundleURL);
 		[self finishAndSetIdle];
 		return;
 	}
 
-	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"shipit"];
+	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:SQRLUpdaterRelauncherExecutableName];
 	NSError *error = nil;
 	NSLog(@"Copying relauncher from %@ to %@", relauncherURL, targetURL);
 	
