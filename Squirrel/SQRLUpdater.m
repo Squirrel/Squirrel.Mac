@@ -266,7 +266,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	NSURL *relauncherURL = [bundle URLForResource:@"shipit" withExtension:nil];
 	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"shipit"];
 	NSError *error = nil;
-	NSLog(@"Copying relauncher from %@ to %@", relauncherURL.path, targetURL.path);
+	NSLog(@"Copying relauncher from %@ to %@", relauncherURL, targetURL);
 	
 	if (![NSFileManager.defaultManager createDirectoryAtURL:targetURL.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:&error]) {
 		NSLog(@"Error installing update, failed to create App Support folder with error %@", error);
