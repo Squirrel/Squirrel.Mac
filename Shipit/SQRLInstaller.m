@@ -59,14 +59,14 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	
 	[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
 	
-	NSError *backupError = nil;
-	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&backupError]) {
+	NSError *error = nil;
+	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to copy bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
 			} mutableCopy];
 
-			if (backupError != nil) userInfo[NSUnderlyingErrorKey] = backupError;
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
 			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
 		}
@@ -75,17 +75,15 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	}
 	
 	// Move the new bundle into place.
-	
 	[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 	
-	NSError *installError = nil;
-	if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&installError]) {
+	if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL],
 			} mutableCopy];
 
-			if (installError != nil) userInfo[NSUnderlyingErrorKey] = installError;
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
 			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:userInfo];
 		}
@@ -94,7 +92,6 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 	}
 	
 	// Verify the bundle in place
-
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
 		// Move the backup version back into place
 		[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
