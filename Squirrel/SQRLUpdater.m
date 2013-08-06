@@ -125,11 +125,7 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 	}
 	
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:requestString]];
-	@weakify(self);
-	
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-		@strongify(self);
-		
 		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
 		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
 			NSLog(@"Instead of update information, server returned:\n%@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
@@ -183,8 +179,6 @@ static NSString * const SQRLUpdaterJSONNameKey = @"name";
 		NSURLRequest *zipDownloadRequest = [NSURLRequest requestWithURL:zipDownloadURL];
 		
 		[NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-			@strongify(self);
-
 			if (response == nil) {
 				[self finishAndSetIdle];
 				return;
