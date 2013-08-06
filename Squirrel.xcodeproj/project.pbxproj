@@ -50,7 +50,6 @@
 		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
 		F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
-		F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerification.h in Headers */ = {isa = PBXBuildFile; fileRef = F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */; };
 		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
 /* End PBXBuildFile section */
 
@@ -509,7 +508,6 @@
 				F6315C32179EC9C6000DD609 /* zip.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
-				F6F2ED8317A33C4900F4D220 /* SQRLCodeSignatureVerification.h in Headers */,
 				F6315C30179EC9C6000DD609 /* unzip.h in Headers */,
 				F6315C2A179EC9C6000DD609 /* crypt.h in Headers */,
 				F6315C2E179EC9C6000DD609 /* mztools.h in Headers */,
