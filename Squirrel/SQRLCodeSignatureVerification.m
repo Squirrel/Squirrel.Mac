@@ -9,7 +9,7 @@
 #import "SQRLCodeSignatureVerification.h"
 #import <Security/Security.h>
 
-NSSTRING_CONST(SQRLCodeSignatureVerificationErrorDomain);
+NSString * const SQRLCodeSignatureVerificationErrorDomain = @"SQRLCodeSignatureVerificationErrorDomain";
 
 const NSInteger SQRLCodeSignatureVerificationErrorDidNotPass = -1;
 const NSInteger SQRLCodeSignatureVerificationErrorCouldNotCreateStaticCode = -2;

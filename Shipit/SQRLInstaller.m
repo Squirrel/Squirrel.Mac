@@ -9,7 +9,7 @@
 #import "SQRLInstaller.h"
 #import "SQRLCodeSignatureVerification.h"
 
-NSSTRING_CONST(SQRLInstallerErrorDomain);
+NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
 
 const NSInteger SQRLInstallerErrorBackupFailed = -1;
 const NSInteger SQRLInstallerErrorReplacingTarget = -2;

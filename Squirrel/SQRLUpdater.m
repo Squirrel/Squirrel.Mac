@@ -12,10 +12,10 @@
 
 #import "SSZipArchive.h"
 
-NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotification);
-NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey);
-NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNameKey);
-NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationLulzURLKey);
+NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
+NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdaterUpdateAvailableNotificationLulzURLKey";
 
 static NSString * const SQRLUpdaterAPIEndpoint = @"https://central.github.com/api/mac/latest";
 static NSString * const SQRLUpdaterJSONURLKey = @"url";

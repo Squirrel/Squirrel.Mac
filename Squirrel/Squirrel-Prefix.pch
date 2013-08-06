@@ -9,5 +9,3 @@
     #import "EXTScope.h"
     #import "EXTKeyPathCoding.h"
 #endif
-
-#define NSSTRING_CONST(key) NSString *const key = @#key
