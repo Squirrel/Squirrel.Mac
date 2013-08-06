@@ -13,7 +13,7 @@
 // SQRLUpdaterStateDownloadingUpdate - Update found, downloading the .zip.
 // SQRLUpdaterStateUnzippingUpdate   - Unzipping the .app.
 // SQRLUpdaterStateAwaitingRelaunch  - Awaiting a relaunch to install
-//                                         the update.
+//                                     the update.
 typedef enum : NSUInteger {
 	SQRLUpdaterStateIdle,
 	SQRLUpdaterStateCheckingForUpdate,
@@ -28,9 +28,9 @@ typedef enum : NSUInteger {
 // `SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey` typed as a
 // string, and one `SQRLUpdaterUpdateAvailableNotificationReleaseNameKey`
 // also typed as string.
-extern NSString *const SQRLUpdaterUpdateAvailableNotification;
-extern NSString *const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
-extern NSString *const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
+extern NSString * const SQRLUpdaterUpdateAvailableNotification;
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 
 // A singleton dedicated to downloading and installing updates from central.

@@ -16,10 +16,10 @@ NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationReleaseNameKey);
 NSSTRING_CONST(SQRLUpdaterUpdateAvailableNotificationLulzURLKey);
 
-static NSString *const SQRLUpdaterAPIEndpoint = @"https://central.github.com/api/mac/latest";
-static NSString *const SQRLUpdaterJSONURLKey = @"url";
-static NSString *const SQRLUpdaterJSONReleaseNotesKey = @"notes";
-static NSString *const SQRLUpdaterJSONNameKey = @"name";
+static NSString * const SQRLUpdaterAPIEndpoint = @"https://central.github.com/api/mac/latest";
+static NSString * const SQRLUpdaterJSONURLKey = @"url";
+static NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
+static NSString * const SQRLUpdaterJSONNameKey = @"name";
 
 @interface SQRLUpdater ()
 
@@ -50,8 +50,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	_updateQueue = [[NSOperationQueue alloc] init];
 	self.updateQueue.maxConcurrentOperationCount = 1;
 	self.updateQueue.name = @"com.github.Squirrel.updateCheckingQueue";
-	self.shouldRelaunch = NO;
-    
+	
 	return self;
 }
 
@@ -67,7 +66,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	@weakify(self);
 	dispatch_async(dispatch_get_main_queue(), ^{
 		@strongify(self)
-        if (self == nil) return;
+		if (self == nil) return;
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
 	});
 }
@@ -76,18 +75,18 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 
 
 - (NSURL *)applicationSupportURL {
-    NSString *path = nil;
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-    path = (paths.count > 0) ? [paths objectAtIndex:0] : NSTemporaryDirectory();
-    
-    NSString * appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
+	NSString *path = nil;
+	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
+	path = (paths.count > 0 ? paths[0] : NSTemporaryDirectory());
+	
+	NSString *appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
 	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
 	
 	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	if(![fileManager fileExistsAtPath:[appSupportURL path]]) {
+	if (![fileManager fileExistsAtPath:appSupportURL.path]) {
 		NSError *error = nil;
-		BOOL success = [fileManager createDirectoryAtPath:[appSupportURL path] withIntermediateDirectories:YES attributes:nil error:&error];
-		if(!success) {
+		BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
+		if (!success) {
 			NSLog(@"Error: %@", error);
 		}
 	}
@@ -105,13 +104,13 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 
 - (void)checkForUpdates {
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
-    
+	
 	if (self.state != SQRLUpdaterStateIdle) return; //We have a new update installed already, you crazy fool!
 	self.state = SQRLUpdaterStateCheckingForUpdate;
 	
 	NSString *appVersion = NSBundle.mainBundle.infoDictionary[(id)kCFBundleVersionKey];
-	NSString *OSVersion = [self OSVersionString];
-    
+	NSString *OSVersion = self.OSVersionString;
+	
 	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", SQRLUpdaterAPIEndpoint, appVersion, OSVersion];
 	if (self.githubUsername.length > 0) {
 		[requestString appendFormat:@"&username=%@", self.githubUsername];
@@ -119,14 +118,12 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:requestString]];
 	@weakify(self);
-    
-    [NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-        
-        @strongify(self);
-        
-        id JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
-        
-        if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
+	
+	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+		@strongify(self);
+		
+		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
+		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
 			[self finishAndSetIdle];
 			return;
 		}
@@ -136,6 +133,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 			[self finishAndSetIdle];
 			return;
 		}
+
 		NSFileManager *fileManager = NSFileManager.defaultManager;
 		
 		NSString *tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:@"com.github.github"];
@@ -145,10 +143,10 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 			[self finishAndSetIdle];
 			return;
 		}
-        
+		
 		NSString *tempDirectoryTemplate = [tempDirectory stringByAppendingPathComponent:@"update.XXXXXXX"];
 		
-		const char *tempDirectoryTemplateCString = [tempDirectoryTemplate fileSystemRepresentation];
+		const char *tempDirectoryTemplateCString = tempDirectoryTemplate.fileSystemRepresentation;
 		char *tempDirectoryNameCString = (char *)calloc(strlen(tempDirectoryTemplateCString) + 1, sizeof(char));
 		strncpy(tempDirectoryNameCString, tempDirectoryTemplateCString, strlen(tempDirectoryTemplateCString));
 		
@@ -163,77 +161,75 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 		free(tempDirectoryNameCString);
 		
 		NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
-        
 		NSString *lulzURLString = JSON[@"lulz"] ?: [self randomLulzURLString];
 		
 		self.downloadFolder = [NSURL fileURLWithPath:tempDirectoryPath];
 		
 		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
 		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
-        
+		
 		NSURLRequest *zipDownloadRequest = [NSURLRequest requestWithURL:zipDownloadURL];
-        
-        [NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-            @strongify(self);
+		
+		[NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+			@strongify(self);
 
-            if (response == nil) {
-                [self finishAndSetIdle];
-                return;
-            }
-            
-            if (![data writeToURL:zipOutputURL atomically:YES]) {
-                [self finishAndSetIdle];
-                return;
-            }
-            
+			if (response == nil) {
+				[self finishAndSetIdle];
+				return;
+			}
+			
+			if (![data writeToURL:zipOutputURL atomically:YES]) {
+				[self finishAndSetIdle];
+				return;
+			}
+			
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
-            
-            NSURL *destinationURL = zipOutputURL.URLByDeletingLastPathComponent;
-            
-            BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:destinationURL.path];
-            if (!unzipped) {
-                NSLog(@"Could not extract update.");
-                [self finishAndSetIdle];
-                return;
-            }
-            
-            NSURL *bundleLocation = [destinationURL URLByAppendingPathComponent:@"GitHub.app"];
-            
-            NSError *error = nil;
-            BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:bundleLocation error:&error];
-            if (!verified) {
-                NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
-                [self finishAndSetIdle];
-                return;
-            }
-            
-            NSString *name = JSON[SQRLUpdaterJSONNameKey];
-            NSDictionary *userInfo = @{
-                SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
-                SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
-                SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
-            };
-            
-            self.state = SQRLUpdaterStateAwaitingRelaunch;
-            
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-            });
-
-        }];
-        
+			
+			NSURL *destinationURL = zipOutputURL.URLByDeletingLastPathComponent;
+			
+			BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:destinationURL.path];
+			if (!unzipped) {
+				NSLog(@"Could not extract update.");
+				[self finishAndSetIdle];
+				return;
+			}
+			
+			NSURL *bundleLocation = [destinationURL URLByAppendingPathComponent:@"GitHub.app"];
+			
+			NSError *error = nil;
+			BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:bundleLocation error:&error];
+			if (!verified) {
+				NSLog(@"Failed to validate the code signature for app update. Error: %@", error);
+				[self finishAndSetIdle];
+				return;
+			}
+			
+			NSString *name = JSON[SQRLUpdaterJSONNameKey];
+			NSDictionary *userInfo = @{
+				SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey: releaseNotes,
+				SQRLUpdaterUpdateAvailableNotificationReleaseNameKey: name,
+				SQRLUpdaterUpdateAvailableNotificationLulzURLKey: [NSURL URLWithString:lulzURLString],
+			};
+			
+			self.state = SQRLUpdaterStateAwaitingRelaunch;
+			
+			dispatch_async(dispatch_get_main_queue(), ^{
+				[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
+			});
+		}];
+		
 		self.state = SQRLUpdaterStateDownloadingUpdate;
-    }];
+	}];
 }
 
 - (NSString *)randomLulzURLString {
 	NSArray *lulz = @[
-        @"http://blog.lmorchard.com/wp-content/uploads/2013/02/well_done_sir.gif",
-        @"http://i255.photobucket.com/albums/hh150/hayati_h2/tumblr_lfmpar9EUd1qdzjnp.gif",
-        @"http://media.tumblr.com/tumblr_lv1j4x1pJM1qbewag.gif",
-        @"http://i.imgur.com/UmpOi.gif",
-    ];
+		@"http://blog.lmorchard.com/wp-content/uploads/2013/02/well_done_sir.gif",
+		@"http://i255.photobucket.com/albums/hh150/hayati_h2/tumblr_lfmpar9EUd1qdzjnp.gif",
+		@"http://media.tumblr.com/tumblr_lv1j4x1pJM1qbewag.gif",
+		@"http://i.imgur.com/UmpOi.gif",
+	];
 	return lulz[arc4random() % lulz.count];
 }
 
@@ -255,7 +251,7 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
 	
 	NSBundle *bundle = [NSBundle bundleForClass:self.class];
-    
+	
 	NSURL *relauncherURL = [bundle URLForResource:@"shipit" withExtension:nil];
 	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"shipit"];
 	NSError *error = nil;
@@ -266,37 +262,37 @@ static NSString *const SQRLUpdaterJSONNameKey = @"name";
 		[self finishAndSetIdle];
 		return;
 	}
-    
-    [NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
-    
-    if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
+	
+	[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+	
+	if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
 		NSLog(@"Error installing update, failed to copy relauncher %@", error);
 		[self finishAndSetIdle];
 		return;
 	}
-    
-    NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+	
+	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 
-    NSTask *launchTask = [[NSTask alloc] init];
-    
-    launchTask.launchPath = targetURL.path;
-    launchTask.arguments = @[
-        // Path to host bundle
-        currentApplication.bundleURL.absoluteString,
-        // Wait for this PID to terminate before updating.
-        [NSString stringWithFormat:@"%d", currentApplication.processIdentifier],
-        // Bundle identifier
-        currentApplication.bundleIdentifier,
-        // Where to find the update.
-        [self.downloadFolder URLByAppendingPathComponent:@"GitHub.app"].absoluteString,
-        // Where to back up the existing version to
-        self.applicationSupportURL.absoluteString,
-        // relaunch after updating?
-        self.shouldRelaunch ? @"1" : @"0",
-    ];
-    
-    launchTask.environment = @{ };
-    [launchTask launch];
+	NSTask *launchTask = [[NSTask alloc] init];
+	
+	launchTask.launchPath = targetURL.path;
+	launchTask.arguments = @[
+		// Path to host bundle
+		currentApplication.bundleURL.absoluteString,
+		// Wait for this PID to terminate before updating.
+		[NSString stringWithFormat:@"%d", currentApplication.processIdentifier],
+		// Bundle identifier
+		currentApplication.bundleIdentifier,
+		// Where to find the update.
+		[self.downloadFolder URLByAppendingPathComponent:@"GitHub.app"].absoluteString,
+		// Where to back up the existing version to
+		self.applicationSupportURL.absoluteString,
+		// relaunch after updating?
+		self.shouldRelaunch ? @"1" : @"0",
+	];
+	
+	launchTask.environment = @{ };
+	[launchTask launch];
 }
 
 @end

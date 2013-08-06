@@ -11,6 +11,6 @@
 
 @interface SQRLTerminationListener : NSObject
 
-- (id)initWithProcessID:(pid_t)processID bundleIdentifier:(NSString *)bundleIdentifier bundleURL:(NSURL *)bundleURL terminationHandler:(void (^)(void))terminationHandler;                                                                                                                                        
-                                                                                                                                        
+- (id)initWithProcessID:(pid_t)processID bundleIdentifier:(NSString *)bundleIdentifier bundleURL:(NSURL *)bundleURL terminationHandler:(void (^)(void))terminationHandler;
+
 @end
