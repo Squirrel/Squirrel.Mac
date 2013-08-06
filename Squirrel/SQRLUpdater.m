@@ -307,9 +307,14 @@ static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 - (void)installUpdateIfNeeded {
 	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
 	
-	NSBundle *bundle = [NSBundle bundleForClass:self.class];
-	
-	NSURL *relauncherURL = [bundle URLForResource:@"shipit" withExtension:nil];
+	NSBundle *frameworkBundle = [NSBundle bundleForClass:self.class];
+	NSURL *relauncherURL = [frameworkBundle URLForResource:@"shipit" withExtension:nil];
+	if (relauncherURL == nil) {
+		NSLog(@"Could not find relauncher executable in framework bundle at %@", frameworkBundle.bundleURL);
+		[self finishAndSetIdle];
+		return;
+	}
+
 	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:@"shipit"];
 	NSError *error = nil;
 	NSLog(@"Copying relauncher from %@ to %@", relauncherURL, targetURL);
