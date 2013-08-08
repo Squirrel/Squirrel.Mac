@@ -66,6 +66,8 @@ static void startEndpoint(xpc_endpoint_t endpoint) {
 }
 
 static void startXPC(void) {
+	NSLog(@"shipit launched");
+
 	xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), XPC_CONNECTION_MACH_SERVICE_LISTENER);
 	NSCAssert(service != NULL, @"Failed to create %s service", SQRLShipitServiceLabel);
 

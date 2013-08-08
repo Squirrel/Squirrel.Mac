@@ -9,14 +9,12 @@
 /* Begin PBXBuildFile section */
 		D007290017B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
 		D007290117B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
-		D0366BFE17B18FEE0086ED44 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
-		D0366C0817B18FEE0086ED44 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0366C0617B18FEE0086ED44 /* InfoPlist.strings */; };
-		D0366C0A17B18FEE0086ED44 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D0366C0917B18FEE0086ED44 /* main.m */; };
-		D0366C0E17B18FEE0086ED44 /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = D0366C0C17B18FEE0086ED44 /* Credits.rtf */; };
-		D0366C1117B18FEE0086ED44 /* SQRLAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D0366C1017B18FEE0086ED44 /* SQRLAppDelegate.m */; };
-		D0366C1417B18FEE0086ED44 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0366C1217B18FEE0086ED44 /* MainMenu.xib */; };
-		D0366C1617B18FEE0086ED44 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0366C1517B18FEE0086ED44 /* Images.xcassets */; };
-		D08D4D5B17B41D440012B22D /* TestApplication-Launchd.plist in Resources */ = {isa = PBXBuildFile; fileRef = D08D4D5A17B41D440012B22D /* TestApplication-Launchd.plist */; };
+		D08D4D6A17B427B40012B22D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
+		D08D4D7017B427B40012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4D6E17B427B40012B22D /* InfoPlist.strings */; };
+		D08D4D7317B427B40012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4D7217B427B40012B22D /* main.m */; };
+		D08D4D7F17B427D40012B22D /* shipit in Copy LaunchServices */ = {isa = PBXBuildFile; fileRef = F65A916B17A73E90005A4666 /* shipit */; };
+		D08D4D8017B427DD0012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
+		D08D4D8117B428BE0012B22D /* com.github.Squirrel.TestService.xpc in CopyFiles */ = {isa = PBXBuildFile; fileRef = D08D4D6917B427B40012B22D /* com.github.Squirrel.TestService.xpc */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
@@ -34,11 +32,7 @@
 		D0EDBEAB17B0DAD20058BC3C /* Fixtures in Resources */ = {isa = PBXBuildFile; fileRef = D0EDBEAA17B0DAD20058BC3C /* Fixtures */; };
 		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
 		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */; };
-		D0F8E0D717B191DF00BCA070 /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
-		D0F8E0D917B1924000BCA070 /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
-		D0F8E0DC17B1924F00BCA070 /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D0366BFD17B18FEE0086ED44 /* TestApplication.app */; };
 		D0F8E13917B1A0C000BCA070 /* SQRLTerminationListenerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F8E13817B1A0C000BCA070 /* SQRLTerminationListenerSpec.m */; };
-		D0F8E13D17B1A11600BCA070 /* shipit in Copy Launch Services */ = {isa = PBXBuildFile; fileRef = F65A916B17A73E90005A4666 /* shipit */; };
 		F6315C2A179EC9C6000DD609 /* crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C1F179EC9C6000DD609 /* crypt.h */; };
 		F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C20179EC9C6000DD609 /* ioapi.c */; };
 		F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C21179EC9C6000DD609 /* ioapi.h */; };
@@ -55,7 +49,6 @@
 		F65A916F17A73E90005A4666 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = F65A916E17A73E90005A4666 /* main.m */; };
 		F65A917917A74018005A4666 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
 		F65A917A17A7401B005A4666 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = F6442B4E17A6F1B900CD312E /* SQRLTerminationListener.m */; };
-		F65A917B17A74445005A4666 /* shipit in Resources */ = {isa = PBXBuildFile; fileRef = F65A916B17A73E90005A4666 /* shipit */; };
 		F65A917C17A7453B005A4666 /* shipit in Resources */ = {isa = PBXBuildFile; fileRef = F65A916B17A73E90005A4666 /* shipit */; };
 		F65A917F17A7479F005A4666 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F65A915F17A71AA5005A4666 /* AppKit.framework */; };
 		F65A918017A747A9005A4666 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
@@ -70,6 +63,27 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D08D4D7917B427BE0012B22D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0C22BD6179CC00E00158214;
+			remoteInfo = Squirrel;
+		};
+		D08D4D7B17B427BE0012B22D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F65A916A17A73E90005A4666;
+			remoteInfo = shipit;
+		};
+		D08D4D8217B428C30012B22D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D08D4D6817B427B40012B22D;
+			remoteInfo = TestService;
+		};
 		D0C22BF3179CC00E00158214 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
@@ -147,27 +161,6 @@
 			remoteGlobalIDString = E9D96A2514B6B8AB007D9521;
 			remoteInfo = Specta;
 		};
-		D0F8E0CF17B191DB00BCA070 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D0C22BD6179CC00E00158214;
-			remoteInfo = Squirrel;
-		};
-		D0F8E0DA17B1924600BCA070 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D0366BFC17B18FEE0086ED44;
-			remoteInfo = TestApplication;
-		};
-		D0F8E13A17B1A10500BCA070 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = F65A916A17A73E90005A4666;
-			remoteInfo = shipit;
-		};
 		F65A917D17A74711005A4666 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
@@ -178,26 +171,36 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		D0F8E0D817B1922E00BCA070 /* Copy Frameworks */ = {
+		D08D4D6317B426F00012B22D /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
+			dstSubfolderSpec = 16;
+			files = (
+				D08D4D8117B428BE0012B22D /* com.github.Squirrel.TestService.xpc in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08D4D7D17B427C80012B22D /* Copy Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
-				D0F8E0D917B1924000BCA070 /* Squirrel.framework in Copy Frameworks */,
+				D08D4D8017B427DD0012B22D /* Squirrel.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		D0F8E13C17B1A10C00BCA070 /* Copy Launch Services */ = {
+		D08D4D7E17B427CA0012B22D /* Copy LaunchServices */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
 			dstPath = Contents/Library/LaunchServices;
 			dstSubfolderSpec = 1;
 			files = (
-				D0F8E13D17B1A11600BCA070 /* shipit in Copy Launch Services */,
+				D08D4D7F17B427D40012B22D /* shipit in Copy LaunchServices */,
 			);
-			name = "Copy Launch Services";
+			name = "Copy LaunchServices";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		F65A916917A73E90005A4666 /* CopyFiles */ = {
@@ -214,21 +217,16 @@
 /* Begin PBXFileReference section */
 		D00728FF17B09732008C7DDE /* SQRLArguments.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLArguments.m; path = Shipit/SQRLArguments.m; sourceTree = SOURCE_ROOT; };
 		D007290817B0973E008C7DDE /* SQRLArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SQRLArguments.h; path = Shipit/SQRLArguments.h; sourceTree = SOURCE_ROOT; };
-		D0366BFD17B18FEE0086ED44 /* TestApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0366C0017B18FEE0086ED44 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		D0366C0117B18FEE0086ED44 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		D0366C0517B18FEE0086ED44 /* TestApplication-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestApplication-Info.plist"; sourceTree = "<group>"; };
-		D0366C0717B18FEE0086ED44 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		D0366C0917B18FEE0086ED44 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		D0366C0B17B18FEE0086ED44 /* TestApplication-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestApplication-Prefix.pch"; sourceTree = "<group>"; };
-		D0366C0D17B18FEE0086ED44 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
-		D0366C0F17B18FEE0086ED44 /* SQRLAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SQRLAppDelegate.h; sourceTree = "<group>"; };
-		D0366C1017B18FEE0086ED44 /* SQRLAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SQRLAppDelegate.m; sourceTree = "<group>"; };
-		D0366C1317B18FEE0086ED44 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
-		D0366C1517B18FEE0086ED44 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
-		D08D4D5A17B41D440012B22D /* TestApplication-Launchd.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "TestApplication-Launchd.plist"; sourceTree = "<group>"; };
+		D08D4D6917B427B40012B22D /* com.github.Squirrel.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
+		D08D4D6D17B427B40012B22D /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
+		D08D4D6F17B427B40012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		D08D4D7117B427B40012B22D /* TestService-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestService-Prefix.pch"; sourceTree = "<group>"; };
+		D08D4D7217B427B40012B22D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		D08D4D8417B434750012B22D /* com.github.Squirrel.TestService.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = com.github.Squirrel.TestService.entitlements; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
@@ -267,7 +265,6 @@
 		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
 		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
 		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerificationSpec.m; sourceTree = "<group>"; };
-		D0F8E0CC17B1919F00BCA070 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/MainMenu.strings; sourceTree = "<group>"; };
 		D0F8E12517B19AC900BCA070 /* shipit-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "shipit-Info.plist"; sourceTree = "<group>"; };
 		D0F8E12617B19AC900BCA070 /* shipit-Launchd.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "shipit-Launchd.plist"; sourceTree = "<group>"; };
 		D0F8E13717B19C6D00BCA070 /* SQRLArguments+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "SQRLArguments+Private.h"; path = "Shipit/SQRLArguments+Private.h"; sourceTree = "<group>"; };
@@ -303,12 +300,11 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		D0366BFA17B18FEE0086ED44 /* Frameworks */ = {
+		D08D4D6617B427B40012B22D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0F8E0D717B191DF00BCA070 /* Squirrel.framework in Frameworks */,
-				D0366BFE17B18FEE0086ED44 /* Cocoa.framework in Frameworks */,
+				D08D4D6A17B427B40012B22D /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -358,27 +354,22 @@
 			name = "Other Frameworks";
 			sourceTree = "<group>";
 		};
-		D0366C0317B18FEE0086ED44 /* TestApplication */ = {
+		D08D4D6B17B427B40012B22D /* TestService */ = {
 			isa = PBXGroup;
 			children = (
-				D0366C0F17B18FEE0086ED44 /* SQRLAppDelegate.h */,
-				D0366C1017B18FEE0086ED44 /* SQRLAppDelegate.m */,
-				D0366C1217B18FEE0086ED44 /* MainMenu.xib */,
-				D0366C1517B18FEE0086ED44 /* Images.xcassets */,
-				D0366C0417B18FEE0086ED44 /* Supporting Files */,
+				D08D4D8417B434750012B22D /* com.github.Squirrel.TestService.entitlements */,
+				D08D4D7217B427B40012B22D /* main.m */,
+				D08D4D6C17B427B40012B22D /* Supporting Files */,
 			);
-			path = TestApplication;
+			path = TestService;
 			sourceTree = "<group>";
 		};
-		D0366C0417B18FEE0086ED44 /* Supporting Files */ = {
+		D08D4D6C17B427B40012B22D /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				D0366C0517B18FEE0086ED44 /* TestApplication-Info.plist */,
-				D08D4D5A17B41D440012B22D /* TestApplication-Launchd.plist */,
-				D0366C0617B18FEE0086ED44 /* InfoPlist.strings */,
-				D0366C0917B18FEE0086ED44 /* main.m */,
-				D0366C0B17B18FEE0086ED44 /* TestApplication-Prefix.pch */,
-				D0366C0C17B18FEE0086ED44 /* Credits.rtf */,
+				D08D4D6D17B427B40012B22D /* TestService-Info.plist */,
+				D08D4D6E17B427B40012B22D /* InfoPlist.strings */,
+				D08D4D7117B427B40012B22D /* TestService-Prefix.pch */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -390,7 +381,7 @@
 				D0C22BE0179CC00E00158214 /* Squirrel */,
 				D0C22BF6179CC00E00158214 /* SquirrelTests */,
 				F65A916D17A73E90005A4666 /* shipit */,
-				D0366C0317B18FEE0086ED44 /* TestApplication */,
+				D08D4D6B17B427B40012B22D /* TestService */,
 				D0C22BD9179CC00E00158214 /* Frameworks */,
 				D0C22C07179CC02E00158214 /* Configuration */,
 				D0C22BD8179CC00E00158214 /* Products */,
@@ -403,7 +394,7 @@
 				D0C22BD7179CC00E00158214 /* Squirrel.framework */,
 				D0C22BEF179CC00E00158214 /* SquirrelTests.octest */,
 				F65A916B17A73E90005A4666 /* shipit */,
-				D0366BFD17B18FEE0086ED44 /* TestApplication.app */,
+				D08D4D6917B427B40012B22D /* com.github.Squirrel.TestService.xpc */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -664,26 +655,26 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		D0366BFC17B18FEE0086ED44 /* TestApplication */ = {
+		D08D4D6817B427B40012B22D /* TestService */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = D0366C2917B18FEE0086ED44 /* Build configuration list for PBXNativeTarget "TestApplication" */;
+			buildConfigurationList = D08D4D7417B427B40012B22D /* Build configuration list for PBXNativeTarget "TestService" */;
 			buildPhases = (
-				D0366BF917B18FEE0086ED44 /* Sources */,
-				D0366BFA17B18FEE0086ED44 /* Frameworks */,
-				D0366BFB17B18FEE0086ED44 /* Resources */,
-				D0F8E0D817B1922E00BCA070 /* Copy Frameworks */,
-				D0F8E13C17B1A10C00BCA070 /* Copy Launch Services */,
+				D08D4D6517B427B40012B22D /* Sources */,
+				D08D4D6617B427B40012B22D /* Frameworks */,
+				D08D4D6717B427B40012B22D /* Resources */,
+				D08D4D7D17B427C80012B22D /* Copy Frameworks */,
+				D08D4D7E17B427CA0012B22D /* Copy LaunchServices */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				D0F8E13B17B1A10500BCA070 /* PBXTargetDependency */,
-				D0F8E0D017B191DB00BCA070 /* PBXTargetDependency */,
+				D08D4D7A17B427BE0012B22D /* PBXTargetDependency */,
+				D08D4D7C17B427BE0012B22D /* PBXTargetDependency */,
 			);
-			name = TestApplication;
-			productName = TestApplication;
-			productReference = D0366BFD17B18FEE0086ED44 /* TestApplication.app */;
-			productType = "com.apple.product-type.application";
+			name = TestService;
+			productName = TestService;
+			productReference = D08D4D6917B427B40012B22D /* com.github.Squirrel.TestService.xpc */;
+			productType = "com.apple.product-type.bundle";
 		};
 		D0C22BD6179CC00E00158214 /* Squirrel */ = {
 			isa = PBXNativeTarget;
@@ -711,12 +702,13 @@
 				D0C22BEA179CC00E00158214 /* Sources */,
 				D0C22BEB179CC00E00158214 /* Frameworks */,
 				D0C22BEC179CC00E00158214 /* Resources */,
+				D08D4D6317B426F00012B22D /* CopyFiles */,
 				D0C22BED179CC00E00158214 /* ShellScript */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				D0F8E0DB17B1924600BCA070 /* PBXTargetDependency */,
+				D08D4D8317B428C30012B22D /* PBXTargetDependency */,
 				D0C22C3C179CC0BA00158214 /* PBXTargetDependency */,
 				D0C22C3E179CC0BA00158214 /* PBXTargetDependency */,
 				D0C22BF4179CC00E00158214 /* PBXTargetDependency */,
@@ -752,6 +744,15 @@
 				CLASSPREFIX = SQRL;
 				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = GitHub;
+				TargetAttributes = {
+					D08D4D6817B427B40012B22D = {
+						SystemCapabilities = {
+							com.apple.Sandbox = {
+								enabled = 1;
+							};
+						};
+					};
+				};
 			};
 			buildConfigurationList = D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -779,7 +780,7 @@
 				D0C22BD6179CC00E00158214 /* Squirrel */,
 				D0C22BEE179CC00E00158214 /* SquirrelTests */,
 				F65A916A17A73E90005A4666 /* shipit */,
-				D0366BFC17B18FEE0086ED44 /* TestApplication */,
+				D08D4D6817B427B40012B22D /* TestService */,
 			);
 		};
 /* End PBXProject section */
@@ -844,15 +845,11 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
-		D0366BFB17B18FEE0086ED44 /* Resources */ = {
+		D08D4D6717B427B40012B22D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D08D4D5B17B41D440012B22D /* TestApplication-Launchd.plist in Resources */,
-				D0366C0817B18FEE0086ED44 /* InfoPlist.strings in Resources */,
-				D0366C1617B18FEE0086ED44 /* Images.xcassets in Resources */,
-				D0366C0E17B18FEE0086ED44 /* Credits.rtf in Resources */,
-				D0366C1417B18FEE0086ED44 /* MainMenu.xib in Resources */,
+				D08D4D7017B427B40012B22D /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -869,9 +866,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0F8E0DC17B1924F00BCA070 /* TestApplication.app in Resources */,
 				D0EDBEAB17B0DAD20058BC3C /* Fixtures in Resources */,
-				F65A917B17A74445005A4666 /* shipit in Resources */,
 				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -895,12 +890,11 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		D0366BF917B18FEE0086ED44 /* Sources */ = {
+		D08D4D6517B427B40012B22D /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0366C1117B18FEE0086ED44 /* SQRLAppDelegate.m in Sources */,
-				D0366C0A17B18FEE0086ED44 /* main.m in Sources */,
+				D08D4D7317B427B40012B22D /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -949,6 +943,21 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D08D4D7A17B427BE0012B22D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0C22BD6179CC00E00158214 /* Squirrel */;
+			targetProxy = D08D4D7917B427BE0012B22D /* PBXContainerItemProxy */;
+		};
+		D08D4D7C17B427BE0012B22D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F65A916A17A73E90005A4666 /* shipit */;
+			targetProxy = D08D4D7B17B427BE0012B22D /* PBXContainerItemProxy */;
+		};
+		D08D4D8317B428C30012B22D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D08D4D6817B427B40012B22D /* TestService */;
+			targetProxy = D08D4D8217B428C30012B22D /* PBXContainerItemProxy */;
+		};
 		D0C22BF4179CC00E00158214 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D0C22BD6179CC00E00158214 /* Squirrel */;
@@ -964,21 +973,6 @@
 			name = Specta;
 			targetProxy = D0C22C3D179CC0BA00158214 /* PBXContainerItemProxy */;
 		};
-		D0F8E0D017B191DB00BCA070 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D0C22BD6179CC00E00158214 /* Squirrel */;
-			targetProxy = D0F8E0CF17B191DB00BCA070 /* PBXContainerItemProxy */;
-		};
-		D0F8E0DB17B1924600BCA070 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D0366BFC17B18FEE0086ED44 /* TestApplication */;
-			targetProxy = D0F8E0DA17B1924600BCA070 /* PBXContainerItemProxy */;
-		};
-		D0F8E13B17B1A10500BCA070 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = F65A916A17A73E90005A4666 /* shipit */;
-			targetProxy = D0F8E13A17B1A10500BCA070 /* PBXContainerItemProxy */;
-		};
 		F65A917E17A74711005A4666 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = F65A916A17A73E90005A4666 /* shipit */;
@@ -987,29 +981,12 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
-		D0366C0617B18FEE0086ED44 /* InfoPlist.strings */ = {
+		D08D4D6E17B427B40012B22D /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				D0366C0717B18FEE0086ED44 /* en */,
+				D08D4D6F17B427B40012B22D /* en */,
 			);
 			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		D0366C0C17B18FEE0086ED44 /* Credits.rtf */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D0366C0D17B18FEE0086ED44 /* en */,
-			);
-			name = Credits.rtf;
-			sourceTree = "<group>";
-		};
-		D0366C1217B18FEE0086ED44 /* MainMenu.xib */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D0366C1317B18FEE0086ED44 /* Base */,
-				D0F8E0CC17B1919F00BCA070 /* en */,
-			);
-			name = MainMenu.xib;
 			sourceTree = "<group>";
 		};
 		D0C22BE3179CC00E00158214 /* InfoPlist.strings */ = {
@@ -1031,79 +1008,79 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		D0366C2A17B18FEE0086ED44 /* Debug */ = {
+		D08D4D7517B427B40012B22D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TestService/com.github.Squirrel.TestService.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = NO;
 				ENABLE_NS_ASSERTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
-				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
-				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				GCC_PREFIX_HEADER = "TestService/TestService-Prefix.pch";
+				INFOPLIST_FILE = "TestService/TestService-Info.plist";
+				MACH_O_TYPE = mh_execute;
+				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
 				STRIP_INSTALLED_PRODUCT = NO;
-				WRAPPER_EXTENSION = app;
+				WRAPPER_EXTENSION = xpc;
 			};
 			name = Debug;
 		};
-		D0366C2B17B18FEE0086ED44 /* Release */ = {
+		D08D4D7617B427B40012B22D /* Release */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TestService/com.github.Squirrel.TestService.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = NO;
 				ENABLE_NS_ASSERTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
-				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
-				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				GCC_PREFIX_HEADER = "TestService/TestService-Prefix.pch";
+				INFOPLIST_FILE = "TestService/TestService-Info.plist";
+				MACH_O_TYPE = mh_execute;
+				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
 				STRIP_INSTALLED_PRODUCT = NO;
-				WRAPPER_EXTENSION = app;
+				WRAPPER_EXTENSION = xpc;
 			};
 			name = Release;
 		};
-		D0366C2C17B18FEE0086ED44 /* Test */ = {
+		D08D4D7717B427B40012B22D /* Test */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TestService/com.github.Squirrel.TestService.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = NO;
 				ENABLE_NS_ASSERTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
-				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
-				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				GCC_PREFIX_HEADER = "TestService/TestService-Prefix.pch";
+				INFOPLIST_FILE = "TestService/TestService-Info.plist";
+				MACH_O_TYPE = mh_execute;
+				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
 				STRIP_INSTALLED_PRODUCT = NO;
-				WRAPPER_EXTENSION = app;
+				WRAPPER_EXTENSION = xpc;
 			};
 			name = Test;
 		};
-		D0366C2D17B18FEE0086ED44 /* Profile */ = {
+		D08D4D7817B427B40012B22D /* Profile */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = TestService/com.github.Squirrel.TestService.entitlements;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
 				COPY_PHASE_STRIP = NO;
 				ENABLE_NS_ASSERTIONS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
-				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
-				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				GCC_PREFIX_HEADER = "TestService/TestService-Prefix.pch";
+				INFOPLIST_FILE = "TestService/TestService-Info.plist";
+				MACH_O_TYPE = mh_execute;
+				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
 				STRIP_INSTALLED_PRODUCT = NO;
-				WRAPPER_EXTENSION = app;
+				WRAPPER_EXTENSION = xpc;
 			};
 			name = Profile;
 		};
@@ -1338,16 +1315,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		D0366C2917B18FEE0086ED44 /* Build configuration list for PBXNativeTarget "TestApplication" */ = {
+		D08D4D7417B427B40012B22D /* Build configuration list for PBXNativeTarget "TestService" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				D0366C2A17B18FEE0086ED44 /* Debug */,
-				D0366C2B17B18FEE0086ED44 /* Release */,
-				D0366C2C17B18FEE0086ED44 /* Test */,
-				D0366C2D17B18FEE0086ED44 /* Profile */,
+				D08D4D7517B427B40012B22D /* Debug */,
+				D08D4D7617B427B40012B22D /* Release */,
+				D08D4D7717B427B40012B22D /* Test */,
+				D08D4D7817B427B40012B22D /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
 		};
 		D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */ = {
 			isa = XCConfigurationList;

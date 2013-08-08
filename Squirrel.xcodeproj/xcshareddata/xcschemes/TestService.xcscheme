@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D0366BFC17B18FEE0086ED44"
-               BuildableName = "TestApplication.app"
-               BlueprintName = "TestApplication"
+               BlueprintIdentifier = "D08D4D6817B427B40012B22D"
+               BuildableName = "com.github.Squirrel.TestService.xpc"
+               BlueprintName = "TestService"
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -29,15 +29,6 @@
       buildConfiguration = "Test">
       <Testables>
       </Testables>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D0366BFC17B18FEE0086ED44"
-            BuildableName = "TestApplication.app"
-            BlueprintName = "TestApplication"
-            ReferencedContainer = "container:Squirrel.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </TestAction>
    <LaunchAction
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
@@ -48,15 +39,6 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D0366BFC17B18FEE0086ED44"
-            BuildableName = "TestApplication.app"
-            BlueprintName = "TestApplication"
-            ReferencedContainer = "container:Squirrel.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -66,15 +48,6 @@
       useCustomWorkingDirectory = "NO"
       buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "D0366BFC17B18FEE0086ED44"
-            BuildableName = "TestApplication.app"
-            BlueprintName = "TestApplication"
-            ReferencedContainer = "container:Squirrel.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
