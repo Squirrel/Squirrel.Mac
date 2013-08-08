@@ -16,6 +16,7 @@
 		D0366C1117B18FEE0086ED44 /* SQRLAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D0366C1017B18FEE0086ED44 /* SQRLAppDelegate.m */; };
 		D0366C1417B18FEE0086ED44 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D0366C1217B18FEE0086ED44 /* MainMenu.xib */; };
 		D0366C1617B18FEE0086ED44 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D0366C1517B18FEE0086ED44 /* Images.xcassets */; };
+		D08D4D5B17B41D440012B22D /* TestApplication-Launchd.plist in Resources */ = {isa = PBXBuildFile; fileRef = D08D4D5A17B41D440012B22D /* TestApplication-Launchd.plist */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
@@ -227,6 +228,7 @@
 		D0366C1317B18FEE0086ED44 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D0366C1517B18FEE0086ED44 /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		D08D4D5A17B41D440012B22D /* TestApplication-Launchd.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "TestApplication-Launchd.plist"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
@@ -372,6 +374,7 @@
 			isa = PBXGroup;
 			children = (
 				D0366C0517B18FEE0086ED44 /* TestApplication-Info.plist */,
+				D08D4D5A17B41D440012B22D /* TestApplication-Launchd.plist */,
 				D0366C0617B18FEE0086ED44 /* InfoPlist.strings */,
 				D0366C0917B18FEE0086ED44 /* main.m */,
 				D0366C0B17B18FEE0086ED44 /* TestApplication-Prefix.pch */,
@@ -845,6 +848,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D08D4D5B17B41D440012B22D /* TestApplication-Launchd.plist in Resources */,
 				D0366C0817B18FEE0086ED44 /* InfoPlist.strings in Resources */,
 				D0366C1617B18FEE0086ED44 /* Images.xcassets in Resources */,
 				D0366C0E17B18FEE0086ED44 /* Credits.rtf in Resources */,

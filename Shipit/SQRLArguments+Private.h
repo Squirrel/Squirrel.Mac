@@ -13,6 +13,13 @@
 // The label for the `shipit` XPC service.
 #define SQRLShipitServiceLabel "com.github.Squirrel.shipit"
 
+// The label for the TestApplication's XPC service.
+#define SQRLTestApplicationServiceLabel "com.github.Squirrel.TestApplication"
+
+// An XPC event key, associated with an xpc_endpoint_t for connecting to the
+// `shipit` service.
+#define SQRLShipitEndpointKey "shipitEndpoint"
+
 // An XPC event key, associated with a string describing what the service should do.
 #define SQRLCommandKey "command"
 

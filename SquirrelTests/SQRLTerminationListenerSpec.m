@@ -11,7 +11,8 @@
 SpecBegin(SQRLTerminationListener)
 
 __block NSRunningApplication *testApplication;
-__block xpc_connection_t connection;
+__block xpc_connection_t testAppConnection;
+__block xpc_connection_t shipitConnection;
 
 beforeEach(^{
 	NSURL *testApplicationURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
@@ -24,17 +25,35 @@ beforeEach(^{
 
 	NSLog(@"Launched TestApplication: %@", testApplication);
 
-	connection = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), 0);
-	expect(connection).notTo.beNil();
-
-	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+	shipitConnection = xpc_connection_create(NULL, dispatch_get_main_queue());
+	expect(shipitConnection).notTo.beNil();
+	
+	xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
 		xpc_type_t type = xpc_get_type(event);
-		if (type == XPC_TYPE_ERROR) {
+		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
 			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
 		}
 	});
 
-	xpc_connection_resume(connection);
+	testAppConnection = xpc_connection_create_mach_service(SQRLTestApplicationServiceLabel, dispatch_get_main_queue(), 0);
+	expect(testAppConnection).notTo.beNil();
+
+	xpc_connection_set_event_handler(testAppConnection, ^(xpc_object_t event) {
+		xpc_type_t type = xpc_get_type(event);
+		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
+			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
+		}
+	});
+
+	xpc_connection_resume(shipitConnection);
+	xpc_connection_resume(testAppConnection);
+
+	xpc_endpoint_t shipitEndpoint = xpc_endpoint_create(shipitConnection);
+	expect(shipitEndpoint).notTo.beNil();
+
+	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+	xpc_dictionary_set_value(message, SQRLShipitEndpointKey, shipitEndpoint);
+	xpc_connection_send_message(testAppConnection, message);
 });
 
 it(@"should listen for termination of the parent process", ^{
@@ -43,7 +62,7 @@ it(@"should listen for termination of the parent process", ^{
 
 	__block BOOL terminated = NO;
 
-	xpc_connection_send_message_with_reply(connection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR) return;
 
@@ -54,8 +73,11 @@ it(@"should listen for termination of the parent process", ^{
 });
 
 afterEach(^{
-	xpc_connection_cancel(connection);
-	xpc_release(connection);
+	xpc_connection_cancel(shipitConnection);
+	xpc_release(shipitConnection);
+
+	xpc_connection_cancel(testAppConnection);
+	xpc_release(testAppConnection);
 
 	if (!testApplication.terminated) {
 		[testApplication terminate];

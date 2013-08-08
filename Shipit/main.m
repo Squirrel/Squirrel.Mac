@@ -23,7 +23,7 @@ static void handleEvent(xpc_object_t event) {
 		if (event == XPC_ERROR_CONNECTION_INVALID) {
 			exit(EXIT_SUCCESS);
 		} else {
-			return;
+			NSCAssert(NO, @"XPC error: %s", xpc_copy_description(event));
 		}
 	}
 
@@ -45,9 +45,20 @@ static void handleEvent(xpc_object_t event) {
 	}
 }
 
+static void startEndpoint(xpc_endpoint_t endpoint) {
+	xpc_connection_t connection = xpc_connection_create_from_endpoint(endpoint);
+	NSCAssert(connection != NULL, @"NULL connection from endpoint %s", xpc_copy_description(endpoint));
+
+	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+		handleEvent(event);
+	});
+
+	xpc_connection_resume(connection);
+}
+
 static void startXPC(void) {
 	xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), XPC_CONNECTION_MACH_SERVICE_LISTENER);
-	if (service == NULL) exit(EXIT_FAILURE);
+	NSCAssert(service != NULL, @"Failed to create %s service", SQRLShipitServiceLabel);
 
 	@onExit {
 		xpc_release(service);
@@ -55,7 +66,19 @@ static void startXPC(void) {
 	
 	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
 		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-			handleEvent(event);
+			xpc_type_t type = xpc_get_type(event);
+			if (type == XPC_TYPE_ERROR) {
+				if (event == XPC_ERROR_CONNECTION_INVALID) {
+					exit(EXIT_SUCCESS);
+				} else {
+					NSCAssert(NO, @"XPC error: %s", xpc_copy_description(event));
+				}
+			}
+
+			xpc_endpoint_t endpoint = xpc_dictionary_get_value(event, SQRLShipitEndpointKey);
+			startEndpoint(endpoint);
+
+			xpc_connection_cancel(connection);
 		});
 
 		xpc_connection_resume(connection);
