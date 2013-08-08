@@ -8,7 +8,7 @@
 
 #import "SQRLArguments.h"
 
-const char * const SQRLShipItServiceLabel = "com.github.Squirrel.shipit";
+const char * const SQRLShipItServiceLabel = "com.github.Squirrel.ShipIt";
 const char * const SQRLShipItSuccessKey = "SQRLShipItSuccessKey";
 const char * const SQRLShipItErrorKey = "SQRLShipItErrorKey";
 const char * const SQRLShipItCommandKey = "SQRLCommandKey";

@@ -30,14 +30,6 @@ static void handleConnection(xpc_connection_t client) {
 	handleConnectionAndRelease(client, NO);
 }
 
-static void connectToEndpoint(xpc_object_t event, SQRLReplyHandler replyHandler) {
-	xpc_endpoint_t endpoint = xpc_dictionary_get_value(event, SQRLShipItEndpointKey);
-	xpc_connection_t endpointConnection = xpc_connection_create_from_endpoint(endpoint);
-	handleConnectionAndRelease(endpointConnection, YES);
-
-	replyHandler(YES, nil);
-}
-
 static void install(xpc_object_t event, SQRLReplyHandler replyHandler) {
 	NSURL * (^getRequiredURLArgument)(const char *) = ^ id (const char *key) {
 		const char *URLString = xpc_dictionary_get_string(event, key);
@@ -89,10 +81,11 @@ static void install(xpc_object_t event, SQRLReplyHandler replyHandler) {
 }
 
 static void listenForTermination(xpc_object_t event, SQRLReplyHandler replyHandler) {
-	NSRunningApplication *parent = [NSRunningApplication runningApplicationWithProcessIdentifier:getppid()];
-	replyHandler(NO, @"Could not find parent process");
+	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
+	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
+	const char *bundleURLString = xpc_dictionary_get_string(event, SQRLTargetBundleURLKey);
 
-	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:parent.processIdentifier bundleIdentifier:parent.bundleIdentifier bundleURL:parent.bundleURL terminationHandler:^{
+	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:[NSURL URLWithString:@(bundleURLString)] terminationHandler:^{
 		replyHandler(YES, nil);
 	}];
 	
@@ -125,7 +118,7 @@ static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelea
 		if (reply != NULL) {
 			replyHandler = [^(BOOL success, NSString *errorString) {
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
-				xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+				if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
 
 				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
 				xpc_release(reply);
@@ -133,9 +126,7 @@ static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelea
 		}
 
 		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
-		if (strcmp(command, SQRLShipItConnectToEndpointCommand) == 0) {
-			connectToEndpoint(event, replyHandler);
-		} else if (strcmp(command, SQRLShipItInstallCommand) == 0) {
+		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
 			install(event, replyHandler);
 		} else if (strcmp(command, SQRLShipItListenForTerminationCommand) == 0) {
 			listenForTermination(event, replyHandler);

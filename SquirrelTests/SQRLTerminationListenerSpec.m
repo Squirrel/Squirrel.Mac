@@ -10,66 +10,54 @@
 
 SpecBegin(SQRLTerminationListener)
 
-__block xpc_connection_t testServiceConnection;
-__block xpc_connection_t shipitListener;
-__block xpc_connection_t toShipitEndpoint;
+__block NSRunningApplication *testApplication;
+__block xpc_connection_t shipitConnection;
+
+void (^terminateApplication)(void) = ^{
+	if (!testApplication.terminated) {
+		[testApplication terminate];
+		[testApplication forceTerminate];
+	}
+};
 
 beforeEach(^{
-	shipitListener = xpc_connection_create(NULL, dispatch_get_main_queue());
-	expect(shipitListener).notTo.beNil();
+	NSURL *testApplicationURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	expect(testApplicationURL).notTo.beNil();
+
+	NSError *error = nil;
+	testApplication = [NSWorkspace.sharedWorkspace launchApplicationAtURL:testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:nil error:&error];
+	expect(testApplication).notTo.beNil();
+	expect(error).to.beNil();
+
+	NSLog(@"Launched TestApplication: %@", testApplication);
+
+	shipitConnection = xpc_connection_create(SQRLShipItServiceLabel, dispatch_get_main_queue());
+	expect(shipitConnection).notTo.beNil();
 	
-	xpc_connection_set_event_handler(shipitListener, ^(xpc_object_t event) {
-		NSLog(@"shipit listener event: %s", xpc_copy_description(event));
-
-		xpc_type_t type = xpc_get_type(event);
-		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
-			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
-		}
-	});
-
-	testServiceConnection = xpc_connection_create(SQRLTestXPCServiceLabel, dispatch_get_main_queue());
-	expect(testServiceConnection).notTo.beNil();
-
-	xpc_connection_set_event_handler(testServiceConnection, ^(xpc_object_t event) {
-		NSLog(@"TestService event: %s", xpc_copy_description(event));
-
-		xpc_type_t type = xpc_get_type(event);
-		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
-			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
-		}
-	});
-
-	xpc_connection_resume(shipitListener);
-	xpc_connection_resume(testServiceConnection);
-
-	toShipitEndpoint = xpc_connection_create_from_endpoint(xpc_endpoint_create(shipitListener));
-	expect(toShipitEndpoint).notTo.beNil();
-	
-	xpc_connection_set_event_handler(toShipitEndpoint, ^(xpc_object_t event) {
+	xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
 		NSLog(@"shipit event: %s", xpc_copy_description(event));
 
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
+			terminateApplication();
 			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
 		}
 	});
 
-	xpc_endpoint_t fromShipitEndpoint = xpc_endpoint_create(shipitListener);
-	expect(fromShipitEndpoint).notTo.beNil();
-
-	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
-	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItConnectToEndpointCommand);
-	xpc_dictionary_set_value(message, SQRLShipItEndpointKey, fromShipitEndpoint);
-	xpc_connection_send_message(testServiceConnection, message);
+	xpc_connection_resume(shipitConnection);
 });
 
 it(@"should listen for termination of the parent process", ^{
 	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
 	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItListenForTerminationCommand);
 
+	xpc_dictionary_set_int64(message, SQRLProcessIdentifierKey, testApplication.processIdentifier);
+	xpc_dictionary_set_string(message, SQRLBundleIdentifierKey, testApplication.bundleIdentifier.UTF8String);
+	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, testApplication.bundleURL.absoluteString.UTF8String);
+
 	__block BOOL terminated = NO;
 
-	xpc_connection_send_message_with_reply(toShipitEndpoint, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		NSLog(@"shipit reply: %s", xpc_copy_description(event));
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect(xpc_dictionary_get_string(event, SQRLShipItErrorKey)).to.beNil();
@@ -77,18 +65,17 @@ it(@"should listen for termination of the parent process", ^{
 		terminated = YES;
 	});
 
+	expect(terminated).to.beFalsy();
+
+	terminateApplication();
 	expect(terminated).will.beTruthy();
 });
 
 afterEach(^{
-	xpc_connection_cancel(toShipitEndpoint);
-	xpc_release(toShipitEndpoint);
+	xpc_connection_cancel(shipitConnection);
+	xpc_release(shipitConnection);
 
-	xpc_connection_cancel(shipitListener);
-	xpc_release(shipitListener);
-
-	xpc_connection_cancel(testServiceConnection);
-	xpc_release(testServiceConnection);
+	terminateApplication();
 });
 
 SpecEnd
