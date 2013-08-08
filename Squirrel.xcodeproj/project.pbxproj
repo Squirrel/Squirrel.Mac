@@ -236,6 +236,7 @@
 		D08D4DE217B43C280012B22D /* SQRLInstaller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstaller.m; sourceTree = "<group>"; };
 		D08D4DE517B43C440012B22D /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLTerminationListener.h; path = Squirrel/SQRLTerminationListener.h; sourceTree = SOURCE_ROOT; };
 		D08D4DE617B43C440012B22D /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLTerminationListener.m; path = Squirrel/SQRLTerminationListener.m; sourceTree = SOURCE_ROOT; };
+		D08D4DF617B4484A0012B22D /* com.github.Squirrel.ShipIt.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = com.github.Squirrel.ShipIt.entitlements; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
@@ -375,6 +376,7 @@
 		D08D4DD317B43B770012B22D /* ShipIt */ = {
 			isa = PBXGroup;
 			children = (
+				D08D4DF617B4484A0012B22D /* com.github.Squirrel.ShipIt.entitlements */,
 				D08D4DDA17B43B770012B22D /* main.m */,
 				D08D4DE117B43C280012B22D /* SQRLInstaller.h */,
 				D08D4DE217B43C280012B22D /* SQRLInstaller.m */,
@@ -754,7 +756,7 @@
 					D08D4DD017B43B770012B22D = {
 						SystemCapabilities = {
 							com.apple.Sandbox = {
-								enabled = 0;
+								enabled = 1;
 							};
 						};
 					};
@@ -1103,6 +1105,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ShipIt/com.github.Squirrel.ShipIt.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application: GitHub";
 				INFOPLIST_FILE = "ShipIt/ShipIt-Info.plist";
 				MACH_O_TYPE = mh_execute;
 				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
@@ -1115,6 +1119,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ShipIt/com.github.Squirrel.ShipIt.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application: GitHub";
 				INFOPLIST_FILE = "ShipIt/ShipIt-Info.plist";
 				MACH_O_TYPE = mh_execute;
 				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
@@ -1127,6 +1133,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ShipIt/com.github.Squirrel.ShipIt.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application: GitHub";
 				INFOPLIST_FILE = "ShipIt/ShipIt-Info.plist";
 				MACH_O_TYPE = mh_execute;
 				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";
@@ -1139,6 +1147,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = ShipIt/com.github.Squirrel.ShipIt.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application: GitHub";
 				INFOPLIST_FILE = "ShipIt/ShipIt-Info.plist";
 				MACH_O_TYPE = mh_execute;
 				PRODUCT_NAME = "com.github.Squirrel.$(TARGET_NAME:rfc1034identifier)";

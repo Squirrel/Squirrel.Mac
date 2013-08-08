@@ -38,7 +38,9 @@ static void connectionHandler(xpc_connection_t client) {
 		if (checkForXPCTermination(event)) exit(EXIT_SUCCESS);
 
 		// Forward any messages to shipit.
-		xpc_connection_send_message(shipitConnection, event);
+		xpc_object_t message = xpc_copy(event);
+		xpc_connection_send_message(shipitConnection, message);
+		xpc_release(message);
 	});
 	
 	xpc_connection_resume(shipitConnection);
