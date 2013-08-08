@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-// Waits for the parent process to terminate.
+// Waits for a specified process to terminate.
 @interface SQRLTerminationListener : NSObject
 
 // Initializes the receiver to watch for the termination of the specified
@@ -17,8 +17,7 @@
 // Note that termination is not actually noticed until after -beginListening has
 // been invoked.
 //
-// processID          - The PID of the process to watch for termination. This
-//                      process must be the parent of the `shipit` process.
+// processID          - The PID of the process to watch for termination.
 // bundleIdentifier   - The bundle identifier of the application to watch for
 //                      termination. This must not be nil.
 // bundleURL          - The URL of the application to watch for termination.

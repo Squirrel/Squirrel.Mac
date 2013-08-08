@@ -15,6 +15,11 @@
 @property (nonatomic, strong, readonly) NSURL *bundleURL;
 @property (nonatomic, copy, readonly) void (^terminationHandler)(void);
 
+// Whether the target has terminated.
+//
+// This should only be used while synchronized on self.
+@property (nonatomic, assign) BOOL terminated;
+
 @end
 
 @implementation SQRLTerminationListener
@@ -45,14 +50,27 @@
 - (void)beginListening {
 	[NSWorkspace.sharedWorkspace.notificationCenter addObserver:self selector:@selector(workspaceApplicationDidTerminate:) name:NSWorkspaceDidTerminateApplicationNotification object:nil];
 
-	BOOL alreadyTerminated = (getppid() == 1); // ppid is launchd (1) => parent terminated already
-	if (alreadyTerminated) [self parentDidTerminate];
+	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:self.bundleIdentifier];
+	for (NSRunningApplication *application in apps) {
+		if (application.processIdentifier != self.processIdentifier) {
+			if (application.terminated) [self targetDidTerminate];
+			return;
+		}
+	}
+
+	// If we didn't find a matching PID in running applications, it's already
+	// terminated.
+	[self targetDidTerminate];
 }
 
-- (void)parentDidTerminate {
-	self.terminationHandler();
+- (void)targetDidTerminate {
+	@synchronized (self) {
+		if (self.terminated) return;
+		self.terminated = YES;
 
-	[NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self name:NSWorkspaceDidTerminateApplicationNotification object:nil];
+		self.terminationHandler();
+		[NSWorkspace.sharedWorkspace.notificationCenter removeObserver:self name:NSWorkspaceDidTerminateApplicationNotification object:nil];
+	}
 }
 
 #pragma mark NSWorkspace
@@ -65,7 +83,7 @@
 		return;
 	}
 	
-	[self parentDidTerminate];
+	[self targetDidTerminate];
 }
 
 @end
