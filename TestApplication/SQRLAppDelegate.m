@@ -25,10 +25,10 @@ static BOOL checkForXPCTermination(xpc_object_t event) {
 @implementation SQRLAppDelegate
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	xpc_connection_t service = xpc_connection_create_mach_service(SQRLTestApplicationServiceLabel, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+	xpc_connection_t service = xpc_connection_create_mach_service(SQRLTestApplicationServiceLabel, dispatch_get_main_queue(), XPC_CONNECTION_MACH_SERVICE_LISTENER);
 	NSCAssert(service != NULL, @"Failed to create %s service", SQRLTestApplicationServiceLabel);
 
-	xpc_connection_t shipitConnection = xpc_connection_create_mach_service(SQRLShipitServiceLabel, NULL, 0);
+	xpc_connection_t shipitConnection = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), 0);
 	NSCAssert(shipitConnection != NULL, @"Failed to create connection to %s", SQRLShipitServiceLabel);
 	
 	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {

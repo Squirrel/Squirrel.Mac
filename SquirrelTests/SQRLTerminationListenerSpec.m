@@ -29,6 +29,8 @@ beforeEach(^{
 	expect(shipitConnection).notTo.beNil();
 	
 	xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
+		NSLog(@"shipit event: %s", xpc_copy_description(event));
+
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
 			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
@@ -39,6 +41,8 @@ beforeEach(^{
 	expect(testAppConnection).notTo.beNil();
 
 	xpc_connection_set_event_handler(testAppConnection, ^(xpc_object_t event) {
+		NSLog(@"TestApp event: %s", xpc_copy_description(event));
+
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
 			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
@@ -63,8 +67,8 @@ it(@"should listen for termination of the parent process", ^{
 	__block BOOL terminated = NO;
 
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		xpc_type_t type = xpc_get_type(event);
-		if (type == XPC_TYPE_ERROR) return;
+		NSLog(@"shipit reply: %s", xpc_copy_description(event));
+		expect(xpc_get_type(event)).notTo.equal(XPC_TYPE_ERROR);
 
 		terminated = YES;
 	});
