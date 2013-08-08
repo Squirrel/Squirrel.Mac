@@ -26,7 +26,7 @@
 		D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
-		D08D4E4F17B4531B0012B22D /* com.github.Squirrel.ShipIt.xpc in Copy XPC Services */ = {isa = PBXBuildFile; fileRef = D08D4DD117B43B770012B22D /* com.github.Squirrel.ShipIt.xpc */; };
+		D08D4E5217B456FC0012B22D /* com.github.Squirrel.ShipIt.xpc in Copy XPC Services */ = {isa = PBXBuildFile; fileRef = D08D4DD117B43B770012B22D /* com.github.Squirrel.ShipIt.xpc */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
@@ -85,13 +85,6 @@
 			proxyType = 1;
 			remoteGlobalIDString = D08D4E0B17B451500012B22D;
 			remoteInfo = TestApplication;
-		};
-		D08D4E5017B454550012B22D /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = D08D4DD017B43B770012B22D;
-			remoteInfo = ShipIt;
 		};
 		D0C22BF3179CC00E00158214 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -179,6 +172,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
 			dstSubfolderSpec = 16;
 			files = (
+				D08D4E5217B456FC0012B22D /* com.github.Squirrel.ShipIt.xpc in Copy XPC Services */,
 			);
 			name = "Copy XPC Services";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -192,17 +186,6 @@
 				D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		D08D4E4E17B453120012B22D /* Copy XPC Services */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
-			dstSubfolderSpec = 16;
-			files = (
-				D08D4E4F17B4531B0012B22D /* com.github.Squirrel.ShipIt.xpc in Copy XPC Services */,
-			);
-			name = "Copy XPC Services";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -720,13 +703,11 @@
 				D0C22BEA179CC00E00158214 /* Sources */,
 				D0C22BEB179CC00E00158214 /* Frameworks */,
 				D0C22BEC179CC00E00158214 /* Resources */,
-				D08D4E4E17B453120012B22D /* Copy XPC Services */,
 				D0C22BED179CC00E00158214 /* ShellScript */,
 			);
 			buildRules = (
 			);
 			dependencies = (
-				D08D4E5117B454550012B22D /* PBXTargetDependency */,
 				D08D4E4C17B4520C0012B22D /* PBXTargetDependency */,
 				D0C22C3C179CC0BA00158214 /* PBXTargetDependency */,
 				D0C22C3E179CC0BA00158214 /* PBXTargetDependency */,
@@ -970,11 +951,6 @@
 			isa = PBXTargetDependency;
 			target = D08D4E0B17B451500012B22D /* TestApplication */;
 			targetProxy = D08D4E4B17B4520C0012B22D /* PBXContainerItemProxy */;
-		};
-		D08D4E5117B454550012B22D /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = D08D4DD017B43B770012B22D /* ShipIt */;
-			targetProxy = D08D4E5017B454550012B22D /* PBXContainerItemProxy */;
 		};
 		D0C22BF4179CC00E00158214 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
