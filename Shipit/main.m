@@ -15,17 +15,22 @@
 #import "SQRLTerminationListener.h"
 
 #if TESTING
-static void handleEvent(xpc_object_t event) {
+static BOOL checkForXPCTermination(xpc_object_t event) {
 	xpc_type_t type = xpc_get_type(event);
-	xpc_connection_t remote = xpc_dictionary_get_remote_connection(event);
-
 	if (type == XPC_TYPE_ERROR) {
 		if (event == XPC_ERROR_CONNECTION_INVALID) {
-			exit(EXIT_SUCCESS);
+			return YES;
 		} else {
 			NSCAssert(NO, @"XPC error: %s", xpc_copy_description(event));
 		}
 	}
+
+	return NO;
+}
+
+static void handleEvent(xpc_object_t event) {
+	xpc_connection_t remote = xpc_dictionary_get_remote_connection(event);
+	if (checkForXPCTermination(event)) exit(EXIT_SUCCESS);
 
 	NSString *command = @(xpc_dictionary_get_string(event, SQRLCommandKey));
 	NSLog(@"Got command: %@", command);
@@ -70,18 +75,11 @@ static void startXPC(void) {
 	
 	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
 		NSLog(@"Got client connection: %s", xpc_copy_description(connection));
+		if (checkForXPCTermination(connection)) exit(EXIT_SUCCESS);
 
 		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
 			NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
-
-			xpc_type_t type = xpc_get_type(event);
-			if (type == XPC_TYPE_ERROR) {
-				if (event == XPC_ERROR_CONNECTION_INVALID) {
-					exit(EXIT_SUCCESS);
-				} else {
-					NSCAssert(NO, @"XPC error: %s", xpc_copy_description(event));
-				}
-			}
+			if (checkForXPCTermination(event)) exit(EXIT_SUCCESS);
 
 			xpc_endpoint_t endpoint = xpc_dictionary_get_value(event, SQRLShipitEndpointKey);
 			startEndpoint(endpoint);
