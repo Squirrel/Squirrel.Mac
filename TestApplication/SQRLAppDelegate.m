@@ -19,7 +19,11 @@
 	NSCAssert(service != NULL, @"Failed to create connection to %s", SQRLShipitServiceLabel);
 	
 	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
+		NSLog(@"Got client connection: %s", xpc_copy_description(connection));
+
 		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+			NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
+
 			xpc_type_t type = xpc_get_type(event);
 			if (type == XPC_TYPE_ERROR) {
 				if (event == XPC_ERROR_CONNECTION_INVALID) {
@@ -37,6 +41,8 @@
 	});
 	
 	xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
+		NSLog(@"Got event on shipit connection: %s", xpc_copy_description(event));
+
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR) {
 			if (event == XPC_ERROR_CONNECTION_INVALID) {

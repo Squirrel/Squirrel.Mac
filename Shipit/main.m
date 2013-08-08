@@ -46,10 +46,14 @@ static void handleEvent(xpc_object_t event) {
 }
 
 static void startEndpoint(xpc_endpoint_t endpoint) {
+	NSLog(@"Got endpoint: %s", xpc_copy_description(endpoint));
+
 	xpc_connection_t connection = xpc_connection_create_from_endpoint(endpoint);
 	NSCAssert(connection != NULL, @"NULL connection from endpoint %s", xpc_copy_description(endpoint));
 
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+		NSLog(@"Got event over endpoint: %s", xpc_copy_description(event));
+
 		handleEvent(event);
 	});
 
@@ -65,7 +69,11 @@ static void startXPC(void) {
 	};
 	
 	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
+		NSLog(@"Got client connection: %s", xpc_copy_description(connection));
+
 		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+			NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
+
 			xpc_type_t type = xpc_get_type(event);
 			if (type == XPC_TYPE_ERROR) {
 				if (event == XPC_ERROR_CONNECTION_INVALID) {
