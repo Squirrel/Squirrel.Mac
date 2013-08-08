@@ -14,153 +14,146 @@
 #import "SQRLInstaller.h"
 #import "SQRLTerminationListener.h"
 
-#if TESTING
-static BOOL checkForXPCTermination(xpc_object_t event) {
-	xpc_type_t type = xpc_get_type(event);
-	if (type == XPC_TYPE_ERROR) {
-		if (event == XPC_ERROR_CONNECTION_INVALID) {
-			return YES;
-		} else {
-			NSCAssert(NO, @"XPC error: %s", xpc_copy_description(event));
+typedef void (^SQRLReplyHandler)(BOOL success, NSString *errorString);
+
+static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelease);
+
+static NSString *NSStringFromXPCObject(xpc_object_t object) {
+	char *desc = xpc_copy_description(object);
+	NSString *str = @(desc);
+	free(desc);
+
+	return str;
+}
+
+static void handleConnection(xpc_connection_t client) {
+	handleConnectionAndRelease(client, NO);
+}
+
+static void connectToEndpoint(xpc_object_t event, SQRLReplyHandler replyHandler) {
+	xpc_endpoint_t endpoint = xpc_dictionary_get_value(event, SQRLShipItEndpointKey);
+	xpc_connection_t endpointConnection = xpc_connection_create_from_endpoint(endpoint);
+	handleConnectionAndRelease(endpointConnection, YES);
+
+	replyHandler(YES, nil);
+}
+
+static void install(xpc_object_t event, SQRLReplyHandler replyHandler) {
+	NSURL * (^getRequiredURLArgument)(const char *) = ^ id (const char *key) {
+		const char *URLString = xpc_dictionary_get_string(event, key);
+		if (URLString == NULL) {
+			replyHandler(NO, [NSString stringWithFormat:@"Required key \"%s\" not provided", key]);
+			return nil;
 		}
-	}
 
-	return NO;
-}
+		NSURL *URL = [NSURL URLWithString:@(URLString)];
+		if (URL == nil) {
+			replyHandler(NO, [NSString stringWithFormat:@"Value \"%s\" for key \"%s\" is not a valid URL", URLString, key]);
+		}
 
-static void handleEvent(xpc_object_t event) {
-	xpc_connection_t remote = xpc_dictionary_get_remote_connection(event);
-	if (checkForXPCTermination(event)) exit(EXIT_SUCCESS);
-
-	NSString *command = @(xpc_dictionary_get_string(event, SQRLCommandKey));
-	NSLog(@"Got command: %@", command);
-
-	if ([command isEqual:@(SQRLCommandListenForTermination)]) {
-		xpc_object_t reply = xpc_dictionary_create_reply(event);
-
-		NSRunningApplication *parent = [NSRunningApplication runningApplicationWithProcessIdentifier:getppid()];
-		NSCAssert(parent != nil, @"Could not find parent process");
-
-		SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:parent.processIdentifier bundleIdentifier:parent.bundleIdentifier bundleURL:parent.bundleURL terminationHandler:^{
-			xpc_connection_send_message(remote, reply);
-			xpc_release(reply);
-		}];
-		
-		[listener beginListening];
-	}
-}
-
-static void startEndpoint(xpc_endpoint_t endpoint) {
-	NSLog(@"Got endpoint: %s", xpc_copy_description(endpoint));
-
-	xpc_connection_t connection = xpc_connection_create_from_endpoint(endpoint);
-	NSCAssert(connection != NULL, @"NULL connection from endpoint %s", xpc_copy_description(endpoint));
-
-	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-		NSLog(@"Got event over endpoint: %s", xpc_copy_description(event));
-
-		handleEvent(event);
-	});
-
-	xpc_connection_resume(connection);
-}
-
-static void startXPC(void) {
-	NSLog(@"shipit launched");
-
-	xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), XPC_CONNECTION_MACH_SERVICE_LISTENER);
-	NSCAssert(service != NULL, @"Failed to create %s service", SQRLShipitServiceLabel);
-
-	@onExit {
-		xpc_release(service);
+		return URL;
 	};
+
+	NSURL *targetBundleURL = getRequiredURLArgument(SQRLTargetBundleURLKey);
+	NSURL *updateBundleURL = getRequiredURLArgument(SQRLUpdateBundleURLKey);
+	NSURL *backupURL = getRequiredURLArgument(SQRLBackupURLKey);
+	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return;
+
+	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
+	if (bundleIdentifier == NULL) {
+		replyHandler(NO, [NSString stringWithFormat:@"Required key \"%s\" not provided", SQRLBundleIdentifierKey]);
+		return;
+	}
+
+	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
+	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 	
-	xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
-		NSLog(@"Got client connection: %s", xpc_copy_description(connection));
-		if (checkForXPCTermination(connection)) exit(EXIT_SUCCESS);
+	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:targetBundleURL terminationHandler:^{
+		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
+		
+		NSError *error = nil;
+		if (![installer installUpdateWithError:&error]) {
+			replyHandler(NO, [NSString stringWithFormat:@"Error installing update: %@", error.sqrl_verboseDescription]);
+			return;
+		}
+		
+		if (shouldRelaunch && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+			replyHandler(NO, [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription]);
+			return;
+		}
+		
+		replyHandler(YES, nil);
+	}];
 
-		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-			NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
-			if (checkForXPCTermination(event)) exit(EXIT_SUCCESS);
+	[listener beginListening];
+}
 
-			xpc_endpoint_t endpoint = xpc_dictionary_get_value(event, SQRLShipitEndpointKey);
-			startEndpoint(endpoint);
+static void listenForTermination(xpc_object_t event, SQRLReplyHandler replyHandler) {
+	NSRunningApplication *parent = [NSRunningApplication runningApplicationWithProcessIdentifier:getppid()];
+	replyHandler(NO, @"Could not find parent process");
 
-			xpc_connection_cancel(connection);
-		});
+	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:parent.processIdentifier bundleIdentifier:parent.bundleIdentifier bundleURL:parent.bundleURL terminationHandler:^{
+		replyHandler(YES, nil);
+	}];
+	
+	[listener beginListening];
+}
 
-		xpc_connection_resume(connection);
+static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelease) {
+	#if DEBUG
+	NSLog(@"Got client connection: %s", xpc_copy_description(client));
+	#endif
+
+	xpc_connection_set_event_handler(client, ^(xpc_object_t event) {
+		#if DEBUG
+		NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
+		#endif
+
+		xpc_type_t type = xpc_get_type(event);
+		if (type == XPC_TYPE_ERROR) {
+			if (event != XPC_ERROR_CONNECTION_INVALID) {
+				NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
+			}
+
+			xpc_release(client);
+			return;
+		}
+
+		SQRLReplyHandler replyHandler = ^(BOOL success, NSString *errorString) {};
+
+		xpc_object_t reply = xpc_dictionary_create_reply(event);
+		if (reply != NULL) {
+			replyHandler = [^(BOOL success, NSString *errorString) {
+				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
+				xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+
+				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+				xpc_release(reply);
+			} copy];
+		}
+
+		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
+		if (strcmp(command, SQRLShipItConnectToEndpointCommand) == 0) {
+			connectToEndpoint(event, replyHandler);
+		} else if (strcmp(command, SQRLShipItInstallCommand) == 0) {
+			install(event, replyHandler);
+		} else if (strcmp(command, SQRLShipItListenForTerminationCommand) == 0) {
+			listenForTermination(event, replyHandler);
+		}
 	});
 	
-	xpc_connection_resume(service);
-	CFRunLoopRun();
+	xpc_connection_resume(client);
 }
-#endif
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
-		#if TESTING
-		startXPC();
-		return EXIT_SUCCESS;
+		#if DEBUG
+		NSLog(@"ShipIt started");
 		#endif
 
-		NSDictionary *defaults = NSUserDefaults.standardUserDefaults.dictionaryRepresentation;
-
-		id (^getRequiredArgument)(NSString *, Class) = ^(NSString *key, Class expectedClass) {
-			id object = defaults[key];
-			if (object == nil) {
-				NSLog(@"Required argument -%@ was not set", key);
-				exit(EXIT_FAILURE);
-			}
-
-			if (![object isKindOfClass:expectedClass]) {
-				NSLog(@"Value \"%@\" for argument -%@ is not of the expected type", object, key);
-				exit(EXIT_FAILURE);
-			}
-
-			return object;
-		};
-
-		NSURL * (^getRequiredURLArgument)(NSString *) = ^(NSString *key) {
-			NSString *URLString = getRequiredArgument(key, NSString.class);
-			NSURL *URL = [NSURL URLWithString:URLString];
-			if (URL == nil) {
-				NSLog(@"Value \"%@\" for argument -%@ is not a valid URL", URLString, key);
-				exit(EXIT_FAILURE);
-			}
-
-			return URL;
-		};
-
-		NSURL *targetBundleURL = getRequiredURLArgument(SQRLTargetBundleURLArgumentName);
-		NSURL *updateBundleURL = getRequiredURLArgument(SQRLUpdateBundleURLArgumentName);
-		NSURL *backupURL = getRequiredURLArgument(SQRLBackupURLArgumentName);
-		NSNumber *pid = getRequiredArgument(SQRLProcessIdentifierArgumentName, NSNumber.class);
-		NSString *bundleIdentifier = getRequiredArgument(SQRLBundleIdentifierArgumentName, NSString.class);
-		NSNumber *shouldRelaunch = getRequiredArgument(SQRLShouldRelaunchArgumentName, NSNumber.class);
-		
-		SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid.intValue bundleIdentifier:bundleIdentifier bundleURL:targetBundleURL terminationHandler:^{
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
-			
-			NSError *error = nil;
-			if (![installer installUpdateWithError:&error]) {
-				NSLog(@"Error installing update: %@", error.sqrl_verboseDescription);
-				exit(EXIT_FAILURE);
-			}
-			
-			if (shouldRelaunch.boolValue && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-				NSLog(@"Error relaunching target application at %@: %@", targetBundleURL, error);
-				exit(EXIT_FAILURE);
-			}
-			
-			exit(EXIT_SUCCESS);
-		}];
-
-		[listener beginListening];
-		CFRunLoopRun();
+		xpc_main(handleConnection);
 	}
-	
-	NSLog(@"Terminating from run loop exit");
+
 	return EXIT_SUCCESS;
 }
 

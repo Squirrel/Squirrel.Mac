@@ -343,20 +343,7 @@ static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
 		return;
 	}
 	
-	NSMutableArray *arguments = [[NSMutableArray alloc] init];
-	void (^addArgument)(NSString *, NSString *) = ^(NSString *key, NSString *stringValue) {
-		NSCParameterAssert(key != nil);
-		NSCParameterAssert(stringValue != nil);
-
-		[arguments addObject:[@"-" stringByAppendingString:key]];
-		[arguments addObject:stringValue];
-	};
-
 	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
-	addArgument(SQRLProcessIdentifierArgumentName, [NSString stringWithFormat:@"%i", currentApplication.processIdentifier]);
-	addArgument(SQRLBundleIdentifierArgumentName, currentApplication.bundleIdentifier);
-	addArgument(SQRLTargetBundleURLArgumentName, currentApplication.bundleURL.absoluteString);
-
 	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];
 	if (updateBundle == nil) {
 		NSLog(@"Could not locate update bundle for %@ within %@", currentApplication.bundleIdentifier, self.downloadFolder);
@@ -364,15 +351,48 @@ static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
 		return;
 	}
 
-	addArgument(SQRLUpdateBundleURLArgumentName, updateBundle.bundleURL.absoluteString);
-	addArgument(SQRLBackupURLArgumentName, self.applicationSupportURL.absoluteString);
-	addArgument(SQRLShouldRelaunchArgumentName, (self.shouldRelaunch ? @"1" : @"0"));
+	xpc_connection_t connection = xpc_connection_create(SQRLShipItServiceLabel, NULL);
+	if (connection == NULL) {
+		NSLog(@"Error opening XPC connection to %s", SQRLShipItServiceLabel);
+		[self finishAndSetIdle];
+		return;
+	}
+	
+	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
+			if (event != XPC_ERROR_CONNECTION_INVALID) {
+				char *errorStr = xpc_copy_description(event);
+				NSLog(@"Received XPC error: %s", errorStr);
+				free(errorStr);
+			}
 
-	NSTask *launchTask = [[NSTask alloc] init];
-	launchTask.launchPath = targetURL.path;
-	launchTask.arguments = arguments;
-	launchTask.environment = @{};
-	[launchTask launch];
+			xpc_release(connection);
+			return;
+		}
+	});
+
+	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+	@onExit {
+		xpc_release(message);
+	};
+
+	xpc_dictionary_set_int64(message, SQRLProcessIdentifierKey, currentApplication.processIdentifier);
+	xpc_dictionary_set_string(message, SQRLBundleIdentifierKey, currentApplication.bundleIdentifier.UTF8String);
+	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, currentApplication.bundleURL.absoluteString.UTF8String);
+	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
+	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.applicationSupportURL.absoluteString.UTF8String);
+	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
+
+	xpc_connection_resume(connection);
+	xpc_connection_send_message_with_reply(connection, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
+		BOOL success = xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey);
+		if (!success) {
+			const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
+			NSLog(@"Error shipping it: %s", errorStr);
+
+			[self finishAndSetIdle];
+		}
+	});
 }
 
 @end

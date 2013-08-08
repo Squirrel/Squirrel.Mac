@@ -25,8 +25,8 @@ static BOOL checkForXPCTermination(xpc_object_t event) {
 static void connectionHandler(xpc_connection_t client) {
 	NSLog(@"Got client connection: %s", xpc_copy_description(client));
 
-	xpc_connection_t shipitConnection = xpc_connection_create_mach_service(SQRLShipitServiceLabel, dispatch_get_main_queue(), 0);
-	NSCAssert(shipitConnection != NULL, @"Failed to create connection to %s", SQRLShipitServiceLabel);
+	xpc_connection_t shipitConnection = xpc_connection_create(SQRLShipItServiceLabel, dispatch_get_main_queue());
+	NSCAssert(shipitConnection != NULL, @"Failed to create connection to %s", SQRLShipItServiceLabel);
 	
 	xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
 		NSLog(@"Got event on shipit connection: %s", xpc_copy_description(event));
@@ -37,7 +37,7 @@ static void connectionHandler(xpc_connection_t client) {
 		NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
 		if (checkForXPCTermination(event)) exit(EXIT_SUCCESS);
 
-		// Forward any endpoints to shipit.
+		// Forward any messages to shipit.
 		xpc_connection_send_message(shipitConnection, event);
 	});
 	
@@ -49,5 +49,5 @@ int main(int argc, const char *argv[]) {
 	NSLog(@"TestService launched");
 
 	xpc_main(connectionHandler);
-	return 0;
+	return EXIT_SUCCESS;
 }

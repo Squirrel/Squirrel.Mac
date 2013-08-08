@@ -8,9 +8,15 @@
 
 #import "SQRLArguments.h"
 
-NSString * const SQRLProcessIdentifierArgumentName = @"runningProcessID";
-NSString * const SQRLBundleIdentifierArgumentName = @"bundleIdentifier";
-NSString * const SQRLTargetBundleURLArgumentName = @"targetBundleURL";
-NSString * const SQRLUpdateBundleURLArgumentName = @"updateBundleURL";
-NSString * const SQRLBackupURLArgumentName = @"backupURL";
-NSString * const SQRLShouldRelaunchArgumentName = @"shouldRelaunch";
+const char * const SQRLShipItServiceLabel = "com.github.Squirrel.shipit";
+const char * const SQRLShipItSuccessKey = "SQRLShipItSuccessKey";
+const char * const SQRLShipItErrorKey = "SQRLShipItErrorKey";
+const char * const SQRLShipItCommandKey = "SQRLCommandKey";
+
+const char * const SQRLShipItInstallCommand = "SQRLShipItInstallCommand";
+const char * const SQRLProcessIdentifierKey = "SQRLProcessIdentifierKey";
+const char * const SQRLBundleIdentifierKey = "SQRLBundleIdentifierKey";
+const char * const SQRLTargetBundleURLKey = "SQRLTargetBundleURLKey";
+const char * const SQRLUpdateBundleURLKey = "SQRLUpdateBundleURLKey";
+const char * const SQRLBackupURLKey = "SQRLBackupURLKey";
+const char * const SQRLShouldRelaunchKey = "SQRLShouldRelaunchKey";

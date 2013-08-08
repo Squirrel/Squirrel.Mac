@@ -14,9 +14,9 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F65A916A17A73E90005A4666"
-               BuildableName = "shipit"
-               BlueprintName = "shipit"
+               BlueprintIdentifier = "D08D4DD017B43B770012B22D"
+               BuildableName = "com.github.Squirrel.ShipIt.xpc"
+               BlueprintName = "ShipIt"
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -29,15 +29,6 @@
       buildConfiguration = "Test">
       <Testables>
       </Testables>
-      <MacroExpansion>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F65A916A17A73E90005A4666"
-            BuildableName = "shipit"
-            BlueprintName = "shipit"
-            ReferencedContainer = "container:Squirrel.xcodeproj">
-         </BuildableReference>
-      </MacroExpansion>
    </TestAction>
    <LaunchAction
       selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
@@ -48,15 +39,6 @@
       ignoresPersistentStateOnLaunch = "NO"
       debugDocumentVersioning = "YES"
       allowLocationSimulation = "YES">
-      <BuildableProductRunnable>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F65A916A17A73E90005A4666"
-            BuildableName = "shipit"
-            BlueprintName = "shipit"
-            ReferencedContainer = "container:Squirrel.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
       <AdditionalOptions>
       </AdditionalOptions>
    </LaunchAction>
@@ -66,15 +48,6 @@
       useCustomWorkingDirectory = "NO"
       buildConfiguration = "Release"
       debugDocumentVersioning = "YES">
-      <BuildableProductRunnable>
-         <BuildableReference
-            BuildableIdentifier = "primary"
-            BlueprintIdentifier = "F65A916A17A73E90005A4666"
-            BuildableName = "shipit"
-            BlueprintName = "shipit"
-            ReferencedContainer = "container:Squirrel.xcodeproj">
-         </BuildableReference>
-      </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
       buildConfiguration = "Debug">
