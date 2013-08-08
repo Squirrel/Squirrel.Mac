@@ -1361,6 +1361,7 @@
 				D08D4DE017B43B770012B22D /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */ = {
 			isa = XCConfigurationList;
