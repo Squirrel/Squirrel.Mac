@@ -18,10 +18,10 @@ NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLU
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdaterUpdateAvailableNotificationLulzURLKey";
 
-static NSString * const SQRLUpdaterJSONURLKey = @"url";
-static NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
-static NSString * const SQRLUpdaterJSONNameKey = @"name";
-static NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
+NSString * const SQRLUpdaterJSONURLKey = @"url";
+NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
+NSString * const SQRLUpdaterJSONNameKey = @"name";
+NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 // The name of the executable that performs relaunching. This should exist
 // within the Resources folder of Squirrel.framework.

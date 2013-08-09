@@ -12,7 +12,7 @@ __block NSRunningApplication *testApplication;
 __block xpc_connection_t shipitConnection;
 
 beforeEach(^{
-	testApplication = [self launchTestApplication];
+	testApplication = [self launchTestApplicationWithEnvironment:nil];
 	shipitConnection = [self connectToShipIt];
 });
 

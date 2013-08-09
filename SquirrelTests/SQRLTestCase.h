@@ -46,7 +46,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 //
 // Returns the instance of TestApplication.app that was launched. The app will
 // be automatically terminated at the end of the example.
-- (NSRunningApplication *)launchTestApplication;
+- (NSRunningApplication *)launchTestApplicationWithEnvironment:(NSDictionary *)environment;
 
 // Creates an update for TestApplication.app by bumping its Info.plist version
 // to `SQRLTestApplicationUpdatedShortVersionString`.

@@ -153,7 +153,7 @@ static void SQRLSignalHandler(int sig) {
 	return bundle;
 }
 
-- (NSRunningApplication *)launchTestApplication {
+- (NSRunningApplication *)launchTestApplicationWithEnvironment:(NSDictionary *)environment {
 	NSURL *appURL = self.testApplicationBundle.bundleURL;
 
 	NSURL *testAppLog = [appURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
@@ -166,8 +166,11 @@ static void SQRLSignalHandler(int sig) {
 		[readTestApp terminate];
 	}];
 
+	NSDictionary *configuration = nil;
+	if (environment != nil) configuration = @{ NSWorkspaceLaunchConfigurationEnvironment: environment };
+
 	NSError *error = nil;
-	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:appURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:nil error:&error];
+	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:appURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:configuration error:&error];
 	STAssertNotNil(app, @"Could not launch app at %@: %@", appURL, error);
 
 	[self addCleanupBlock:^{
