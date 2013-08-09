@@ -15,3 +15,11 @@
 //  - SQRLBundleIdentifierKey
 //  - SQRLTargetBundleURLKey
 #define SQRLShipItListenForTerminationCommand "SQRLShipItListenForTerminationCommand"
+
+// Specified for SQRLShipItCommandKey to immediately install an update bundle,
+// without waiting for process termination. Uses the following keys:
+//
+//  - SQRLTargetBundleURLKey
+//  - SQRLUpdateBundleURLKey
+//  - SQRLBackupURLKey
+#define SQRLShipItInstallWithoutWaitingCommand "SQRLShipItInstallWithoutWaitingCommand"

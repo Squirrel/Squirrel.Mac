@@ -30,7 +30,7 @@ static void handleConnection(xpc_connection_t client) {
 	handleConnectionAndRelease(client, NO);
 }
 
-static void install(xpc_object_t event, SQRLReplyHandler replyHandler) {
+static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyHandler) {
 	NSURL * (^getRequiredURLArgument)(const char *) = ^ id (const char *key) {
 		const char *URLString = xpc_dictionary_get_string(event, key);
 		if (URLString == NULL) {
@@ -51,16 +51,7 @@ static void install(xpc_object_t event, SQRLReplyHandler replyHandler) {
 	NSURL *backupURL = getRequiredURLArgument(SQRLBackupURLKey);
 	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return;
 
-	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
-	if (bundleIdentifier == NULL) {
-		replyHandler(NO, [NSString stringWithFormat:@"Required key \"%s\" not provided", SQRLBundleIdentifierKey]);
-		return;
-	}
-
-	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
-	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
-	
-	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:targetBundleURL terminationHandler:^{
+	void (^installUpdate)(BOOL) = ^(BOOL shouldRelaunch) {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
 		
 		NSError *error = nil;
@@ -75,6 +66,24 @@ static void install(xpc_object_t event, SQRLReplyHandler replyHandler) {
 		}
 		
 		replyHandler(YES, nil);
+	};
+
+	if (!shouldWait) {
+		installUpdate(NO);
+		return;
+	}
+
+	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
+	if (bundleIdentifier == NULL) {
+		replyHandler(NO, [NSString stringWithFormat:@"Required key \"%s\" not provided", SQRLBundleIdentifierKey]);
+		return;
+	}
+
+	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
+	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
+	
+	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:targetBundleURL terminationHandler:^{
+		installUpdate(shouldRelaunch);
 	}];
 
 	[listener beginListening];
@@ -127,9 +136,11 @@ static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelea
 
 		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
 		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
-			install(event, replyHandler);
+			install(event, YES, replyHandler);
 		} else if (strcmp(command, SQRLShipItListenForTerminationCommand) == 0) {
 			listenForTermination(event, replyHandler);
+		} else if (strcmp(command, SQRLShipItInstallWithoutWaitingCommand) == 0) {
+			install(event, NO, replyHandler);
 		}
 	});
 	
