@@ -27,7 +27,6 @@ it(@"should listen for termination of the parent process", ^{
 	__block BOOL terminated = NO;
 
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		NSLog(@"shipit reply: %s", xpc_copy_description(event));
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect(xpc_dictionary_get_string(event, SQRLShipItErrorKey)).to.beNil();
 
