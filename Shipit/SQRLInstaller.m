@@ -148,10 +148,23 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	// rename() is atomic and makes sure to remove the destination,
 	// whereas NSFileManager sucks.
 	if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) != 0) {
+		int code = errno;
+		if (code == EXDEV) {
+			// If the locations lie on two different volumes, remove the
+			// destination by hand, then perform a move.
+			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+
+			if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:errorPtr]) {
+				NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
+				return YES;
+			} else {
+				return NO;
+			}
+		}
+
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 			
-			int code = errno;
 			const char *desc = strerror(code);
 			if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
 
