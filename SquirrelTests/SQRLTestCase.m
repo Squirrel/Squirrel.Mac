@@ -57,7 +57,7 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 	_exampleCleanupBlocks = [[NSMutableArray alloc] init];
 
 	NSBundle *squirrelBundle = [NSBundle bundleWithIdentifier:@"com.github.Squirrel"];
-	NSURL *shipItLog = [squirrelBundle.bundleURL URLByAppendingPathComponent:@"XPCServices/ShipIt.log"];
+	NSURL *shipItLog = [squirrelBundle.bundleURL URLByAppendingPathComponent:@"Versions/Current/XPCServices/ShipIt.log"];
 	[[NSData data] writeToURL:shipItLog atomically:YES];
 
 	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog.path ]];
