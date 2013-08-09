@@ -170,8 +170,8 @@
 		D08D4DEC17B43D7A0012B22D /* Copy XPC Services */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
-			dstPath = "$(CONTENTS_FOLDER_PATH)/XPCServices";
-			dstSubfolderSpec = 16;
+			dstPath = XPCServices;
+			dstSubfolderSpec = 1;
 			files = (
 				D08D4E5217B456FC0012B22D /* com.github.Squirrel.ShipIt.xpc in Copy XPC Services */,
 			);
