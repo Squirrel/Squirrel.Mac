@@ -182,13 +182,12 @@ static void SQRLSignalHandler(int sig) {
 			if (event == XPC_ERROR_CONNECTION_INVALID) {
 				STFail(@"ShipIt connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
 			}
-
-			xpc_release(connection);
 		}
 	});
 
 	[self addCleanupBlock:^{
 		xpc_connection_cancel(connection);
+		xpc_release(connection);
 	}];
 
 	xpc_connection_resume(connection);
