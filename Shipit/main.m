@@ -16,18 +16,12 @@
 
 typedef void (^SQRLReplyHandler)(BOOL success, NSString *errorString);
 
-static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelease);
-
 static NSString *NSStringFromXPCObject(xpc_object_t object) {
 	char *desc = xpc_copy_description(object);
 	NSString *str = @(desc);
 	free(desc);
 
 	return str;
-}
-
-static void handleConnection(xpc_connection_t client) {
-	handleConnectionAndRelease(client, NO);
 }
 
 static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyHandler) {
@@ -101,7 +95,7 @@ static void listenForTermination(xpc_object_t event, SQRLReplyHandler replyHandl
 	[listener beginListening];
 }
 
-static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelease) {
+static void handleConnection(xpc_connection_t client) {
 	#if DEBUG
 	NSLog(@"Got client connection: %s", xpc_copy_description(client));
 	#endif
@@ -117,7 +111,6 @@ static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelea
 				NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
 			}
 
-			xpc_release(client);
 			return;
 		}
 
