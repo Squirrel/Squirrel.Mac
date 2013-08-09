@@ -176,26 +176,16 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (NSURL *)createTestApplicationUpdate {
-	NSURL *originalURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
-	STAssertNotNil(originalURL, @"Couldn't find TestApplication.app in test bundle");
+	NSURL *originalURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication 2.1" withExtension:@"app"];
+	STAssertNotNil(originalURL, @"Couldn't find TestApplication update in test bundle");
 
 	NSError *error = nil;
 	NSURL *updateParentURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.baseTemporaryDirectoryURL create:YES error:&error];
 	STAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
 
-	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:@"TestApplication.app"];
+	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
-
-	NSURL *plistURL = [updateURL URLByAppendingPathComponent:@"Contents/Info.plist"];
-	NSMutableDictionary *infoPlist = [[NSDictionary dictionaryWithContentsOfURL:plistURL] mutableCopy];
-	STAssertNotNil(infoPlist, @"Could not read Info.plist from %@", plistURL);
-
-	STAssertEqualObjects(infoPlist[SQRLBundleShortVersionStringKey], SQRLTestApplicationOriginalShortVersionString, @"Unexpected original version in Info.plist: %@", infoPlist);
-	infoPlist[SQRLBundleShortVersionStringKey] = SQRLTestApplicationUpdatedShortVersionString;
-
-	success = [infoPlist writeToURL:plistURL atomically:YES];
-	STAssertTrue(success, @"Could not write updated Info.plist to %@", plistURL);
 
 	return updateURL;
 }

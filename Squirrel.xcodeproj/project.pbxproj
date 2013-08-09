@@ -30,6 +30,7 @@
 		D08D4E5317B457630012B22D /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */; };
 		D09D244817B598C30001FAF8 /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
+		D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */ = {isa = PBXBuildFile; fileRef = D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */; };
 		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
@@ -232,6 +233,7 @@
 		D08D4E1E17B451500012B22D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D08D4E2017B451500012B22D /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
+		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
 		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -480,6 +482,7 @@
 		D0C22BF7179CC00E00158214 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */,
 				D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */,
 				D0C22BF9179CC00E00158214 /* InfoPlist.strings */,
 				D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */,
@@ -883,6 +886,7 @@
 			files = (
 				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
 				D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */,
+				D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
