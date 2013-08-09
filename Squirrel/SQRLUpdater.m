@@ -18,7 +18,6 @@ NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLU
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdaterUpdateAvailableNotificationLulzURLKey";
 
-static NSString * const SQRLUpdaterAPIEndpoint = @"https://central.github.com/api/mac/latest";
 static NSString * const SQRLUpdaterJSONURLKey = @"url";
 static NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 static NSString * const SQRLUpdaterJSONNameKey = @"name";
@@ -64,6 +63,8 @@ static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
 	_updateQueue = [[NSOperationQueue alloc] init];
 	self.updateQueue.maxConcurrentOperationCount = 1;
 	self.updateQueue.name = @"com.github.Squirrel.updateCheckingQueue";
+
+	_APIEndpoint = [NSURL URLWithString:@"https://central.github.com/api/mac/latest"];
 	
 	return self;
 }
@@ -104,7 +105,7 @@ static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
 	NSString *appVersion = NSBundle.mainBundle.infoDictionary[(id)kCFBundleVersionKey];
 	NSString *OSVersion = self.OSVersionString;
 	
-	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", SQRLUpdaterAPIEndpoint, [appVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [OSVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
+	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", self.APIEndpoint.absoluteString, [appVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [OSVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
 	if (self.githubUsername.length > 0) {
 		CFStringRef escapedUsername = CFURLCreateStringByAddingPercentEscapes(NULL, (__bridge CFStringRef)self.githubUsername, NULL, CFSTR("?=&/#,\\"), kCFStringEncodingUTF8);
 		[requestString appendFormat:@"&username=%@", CFBridgingRelease(escapedUsername)];

@@ -55,6 +55,11 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 // This will be reset to NO whenever update installation fails.
 @property (atomic, readwrite) BOOL shouldRelaunch;
 
+// The API endpoint from which to receive information about updates.
+//
+// This can be set to a local URL for testing.
+@property (atomic, copy) NSURL *APIEndpoint;
+
 // Returns the singleton updater.
 + (instancetype)sharedUpdater;
 
