@@ -131,7 +131,7 @@ static void SQRLSignalHandler(int sig) {
 
 #pragma mark Fixtures
 
-- (NSBundle *)testApplicationBundle {
+- (NSURL *)testApplicationURL {
 	NSURL *fixtureURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
 		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
@@ -142,6 +142,11 @@ static void SQRLSignalHandler(int sig) {
 		STAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundleURL, fixtureURL, error);
 	}
 
+	return fixtureURL;
+}
+
+- (NSBundle *)testApplicationBundle {
+	NSURL *fixtureURL = self.testApplicationURL;
 	NSBundle *bundle = [NSBundle bundleWithURL:fixtureURL];
 	STAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
 	

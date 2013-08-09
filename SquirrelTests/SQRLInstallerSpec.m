@@ -20,11 +20,9 @@ it(@"should install an update", ^{
 	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
 	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallWithoutWaitingCommand);
 
-	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationBundle.bundleURL.absoluteString.UTF8String);
+	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
-
-	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationOriginalShortVersionString);
 
 	__block BOOL installed = NO;
 

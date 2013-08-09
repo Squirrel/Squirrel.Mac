@@ -23,7 +23,18 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // This directory will be deleted between each example.
 @property (nonatomic, copy, readonly) NSURL *temporaryDirectoryURL;
 
+// The URL to a modifiable copy of TestApplication.app.
+//
+// You can use this if you need to make changes that should later be visible in
+// the `testApplicationBundle`, without creating the NSBundle initially.
+//
+// This URL will be deleted between each example.
+@property (nonatomic, copy, readonly) NSURL *testApplicationURL;
+
 // The bundle for a modifiable copy of TestApplication.app.
+//
+// Note that the bundle will only be read once. NSBundle will not pick up future
+// modifications.
 //
 // This bundle will be deleted between each example.
 @property (nonatomic, copy, readonly) NSBundle *testApplicationBundle;
