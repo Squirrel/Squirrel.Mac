@@ -25,6 +25,12 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 	abort();
 }
 
+static void SQRLSignalHandler(int sig) {
+	NSLog(@"Backtrace: %@", [NSThread callStackSymbols]);
+	fflush(stderr);
+	abort();
+}
+
 @interface SQRLTestCase ()
 
 // An array of dispatch_block_t values, for performing cleanup after the current
@@ -49,7 +55,8 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 
 - (void)setUp {
 	[super setUp];
-
+	
+	signal(SIGILL, &SQRLSignalHandler);
 	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
 }
 
