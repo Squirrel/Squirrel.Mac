@@ -123,7 +123,7 @@ describe(@"resource changes", ^{
 	__block NSURL *resourceURL;
 
 	beforeEach(^{
-		resourceURL = [bundle URLForResource:@"MainMenu" withExtension:@"nib"];
+		resourceURL = [bundle URLForResource:@"MainMenu" withExtension:@"nib" subdirectory:@"Base.lproj"];
 		expect(resourceURL).notTo.beNil();
 	});
 
