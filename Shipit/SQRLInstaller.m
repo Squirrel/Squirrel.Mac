@@ -130,7 +130,9 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	// Verify the bundle in place
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
 		// Move the backup version back into place
-		if (![self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
+		if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
+			[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
+		} else {
 			NSLog(@"Could not move backup bundle %@ back to %@ after codesign failure: %@", backupBundleURL, self.targetBundleURL, error.sqrl_verboseDescription);
 		}
 
