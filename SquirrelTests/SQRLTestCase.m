@@ -56,11 +56,11 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 - (void)SPT_setUp {
 	_exampleCleanupBlocks = [[NSMutableArray alloc] init];
 
-	NSString *folder = [NSBundle bundleForClass:self.class].bundlePath.stringByDeletingLastPathComponent;
-	NSString *shipItLog = [folder stringByAppendingPathComponent:@"ShipIt.log"];
-	[[NSData data] writeToFile:shipItLog atomically:YES];
+	NSBundle *squirrelBundle = [NSBundle bundleWithIdentifier:@"com.github.Squirrel"];
+	NSURL *shipItLog = [squirrelBundle.bundleURL URLByAppendingPathComponent:@"XPCServices/ShipIt.log"];
+	[[NSData data] writeToURL:shipItLog atomically:YES];
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog ]];
+	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog.path ]];
 	STAssertTrue([readShipIt isRunning], @"Could not start task %@ to read %@", readShipIt, shipItLog);
 
 	[self addCleanupBlock:^{
