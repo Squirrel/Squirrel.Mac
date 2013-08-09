@@ -196,8 +196,14 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	for (NSURL *URL in enumerator) {
 		const char *path = URL.path.fileSystemRepresentation;
 		if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
+			int code = errno;
+			if (code == ENOATTR) {
+				// This just means the extended attribute was never set on the
+				// file to begin with.
+				continue;
+			}
+
 			if (error != NULL) {
-				int code = errno;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 				
 				const char *desc = strerror(code);
