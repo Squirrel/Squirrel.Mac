@@ -63,7 +63,7 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 // Returns the singleton updater.
 + (instancetype)sharedUpdater;
 
-// If one isn't already running, kicks off a check for updates against central.
+// If one isn't already running, kicks off a check for updates.
 //
 // After the successful installation of an update, an
 // `SQRLUpdaterUpdateAvailableNotificationName` will be posted.
