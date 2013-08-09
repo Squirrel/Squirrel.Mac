@@ -207,7 +207,9 @@ static void SQRLSignalHandler(int sig) {
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
 		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
 			if (event == XPC_ERROR_CONNECTION_INVALID) {
-				STFail(@"ShipIt connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
+				STFail(@"ShipIt connection invalid: %@", [self errorFromObject:event]);
+			} else if (event == XPC_ERROR_CONNECTION_INTERRUPTED) {
+				STFail(@"ShipIt connection interrupted: %@", [self errorFromObject:event]);
 			}
 		}
 	});
@@ -219,6 +221,21 @@ static void SQRLSignalHandler(int sig) {
 
 	xpc_connection_resume(connection);
 	return connection;
+}
+
+#pragma mark Diagnostics
+
+- (NSString *)errorFromObject:(xpc_object_t)object {
+	const char *desc = NULL;
+
+	if (xpc_get_type(object) == XPC_TYPE_ERROR) {
+		desc = xpc_dictionary_get_string(object, XPC_ERROR_KEY_DESCRIPTION);
+	} else if (xpc_get_type(object) == XPC_TYPE_DICTIONARY) {
+		desc = xpc_dictionary_get_string(object, SQRLShipItErrorKey);
+	}
+
+	if (desc == NULL) return nil;
+	return @(desc);
 }
 
 @end

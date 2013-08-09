@@ -50,4 +50,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // the example.
 - (xpc_connection_t)connectToShipIt;
 
+// Fetches any error string from the given XPC object.
+- (NSString *)errorFromObject:(xpc_object_t)object;
+
 @end

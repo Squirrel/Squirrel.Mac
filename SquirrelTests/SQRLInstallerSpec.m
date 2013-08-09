@@ -30,7 +30,7 @@ it(@"should install an update", ^{
 
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect(xpc_dictionary_get_string(event, SQRLShipItErrorKey)).to.beNil();
+		expect([self errorFromObject:event]).to.beNil();
 
 		installed = YES;
 	});
