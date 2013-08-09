@@ -106,12 +106,10 @@ static void SQRLSignalHandler(int sig) {
 		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
 		STAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
 
-		#if 0
 		[self addCleanupBlock:^{
 			[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
 			_baseTemporaryDirectoryURL = nil;
 		}];
-		#endif
 	}
 
 	return _baseTemporaryDirectoryURL;
