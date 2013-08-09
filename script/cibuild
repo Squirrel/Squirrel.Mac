@@ -37,6 +37,21 @@ DEFAULT_TARGETS=
 XCODEBUILD_SETTINGS="TEST_AFTER_BUILD=YES"
 
 ##
+## Code-signing Setup
+##
+
+# A source-able file with information about the Keychain containing our
+# code-signing certificate.
+KEYCHAIN_INFO=/var/lib/jenkins/config/xcodekeychain
+
+if [ -e "$KEYCHAIN_INFO" ]
+then
+    # Unlock the keychain so the certificates it contains can be used for building.
+    . "${KEYCHAIN_INFO}"
+    security unlock-keychain -p "${XCODE_KEYCHAIN_PASSWORD}" "${XCODE_KEYCHAIN}"
+fi
+
+##
 ## Build Process
 ##
 
