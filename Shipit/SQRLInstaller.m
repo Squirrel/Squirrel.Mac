@@ -89,7 +89,7 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	// okay. We'll just overwrite it in the next step.
 	NSError *error = nil;
 	NSURL *backupBundleURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.backupURL create:NO error:&error];
-	if (backupBundleURL != nil) {
+	if (backupBundleURL == nil) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary backup folder in %@", nil), self.backupURL],
