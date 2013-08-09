@@ -13,6 +13,7 @@
 
 NSString * const SQRLTestApplicationOriginalShortVersionString = @"1.0";
 NSString * const SQRLTestApplicationUpdatedShortVersionString = @"2.1";
+NSString * const SQRLBundleShortVersionStringKey = @"CFBundleShortVersionString";
 
 static void SQRLKillAllTestApplications(void) {
 	// Forcibly kill all copies of the TestApplication that may be running.
@@ -190,9 +191,8 @@ static void SQRLSignalHandler(int sig) {
 	NSMutableDictionary *infoPlist = [[NSDictionary dictionaryWithContentsOfURL:plistURL] mutableCopy];
 	STAssertNotNil(infoPlist, @"Could not read Info.plist from %@", plistURL);
 
-	static NSString * const versionStringKey = @"SQRLTestApplicationOriginalShortVersionString";
-	STAssertEqualObjects(infoPlist[versionStringKey], SQRLTestApplicationOriginalShortVersionString, @"Unexpected original version in Info.plist: %@", infoPlist);
-	infoPlist[versionStringKey] = SQRLTestApplicationUpdatedShortVersionString;
+	STAssertEqualObjects(infoPlist[SQRLBundleShortVersionStringKey], SQRLTestApplicationOriginalShortVersionString, @"Unexpected original version in Info.plist: %@", infoPlist);
+	infoPlist[SQRLBundleShortVersionStringKey] = SQRLTestApplicationUpdatedShortVersionString;
 
 	success = [infoPlist writeToURL:plistURL atomically:YES];
 	STAssertTrue(success, @"Could not write updated Info.plist to %@", plistURL);

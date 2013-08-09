@@ -13,6 +13,9 @@ extern NSString * const SQRLTestApplicationOriginalShortVersionString;
 // `createTestApplicationUpdate`.
 extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
 
+// The Info.plist key associated with a bundle's short version string.
+extern NSString * const SQRLBundleShortVersionStringKey;
+
 @interface SQRLTestCase : SPTSenTestCase
 
 // A URL to a temporary directory tests can use.
