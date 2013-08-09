@@ -52,6 +52,11 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
 		return NO;
 	}
+
+	// Clear the quarantine bit on the update.
+	if (![self clearQuarantineForDirectory:self.targetBundleURL error:errorPtr]) {
+		return NO;
+	}
 	
 	// Move the old bundle to a backup location
 	NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
@@ -139,7 +144,6 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 		return NO;
 	}
 
-	[self clearQuarantineForDirectory:self.targetBundleURL];
 	return YES;
 }
 
@@ -180,7 +184,7 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	return YES;
 }
 
-- (void)clearQuarantineForDirectory:(NSURL *)directory {
+- (BOOL)clearQuarantineForDirectory:(NSURL *)directory error:(NSError **)error {
 	NSParameterAssert(directory != nil);
 
 	NSFileManager *manager = [[NSFileManager alloc] init];
@@ -192,13 +196,21 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	for (NSURL *URL in enumerator) {
 		const char *path = URL.path.fileSystemRepresentation;
 		if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
-			int code = errno;
+			if (error != NULL) {
+				int code = errno;
+				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+				
+				const char *desc = strerror(code);
+				if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
 
-			// This error isn't fatal. The quarantime prompt will just be mildly
-			// annoying to the user.
-			NSLog(@"Error removing quarantine attribute from %s: %s", path, strerror(code));
+				*error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
+			}
+
+			return NO;
 		}
 	}
+
+	return YES;
 }
 
 @end
