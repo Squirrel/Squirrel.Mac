@@ -139,6 +139,18 @@ static void handleConnectionAndRelease(xpc_connection_t client, BOOL shouldRelea
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		#if DEBUG
+		NSString *folder = [NSBundle bundleWithIdentifier:@(SQRLShipItServiceLabel)].bundlePath;
+
+		// Move out of the framework folder.
+		for (int i = 0; i < 5; i++) {
+			folder = folder.stringByDeletingLastPathComponent;
+		}
+
+		NSString *logPath = [folder stringByAppendingPathComponent:@"ShipIt.log"];
+		NSLog(@"Redirecting logging to %@", logPath);
+
+		freopen(logPath.fileSystemRepresentation, "a+", stderr);
+
 		NSLog(@"ShipIt started");
 		#endif
 

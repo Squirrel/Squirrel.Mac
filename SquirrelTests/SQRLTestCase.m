@@ -55,6 +55,17 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 
 - (void)SPT_setUp {
 	_exampleCleanupBlocks = [[NSMutableArray alloc] init];
+
+	NSString *folder = [NSBundle bundleForClass:self.class].bundlePath.stringByDeletingLastPathComponent;
+	NSString *shipItLog = [folder stringByAppendingPathComponent:@"ShipIt.log"];
+	[[NSData data] writeToFile:shipItLog atomically:YES];
+
+	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog ]];
+	STAssertTrue([readShipIt isRunning], @"Could not start task %@ to read %@", readShipIt, shipItLog);
+
+	[self addCleanupBlock:^{
+		[readShipIt terminate];
+	}];
 }
 
 - (void)SPT_tearDown {
@@ -128,6 +139,16 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 
 - (NSRunningApplication *)launchTestApplication {
 	NSURL *appURL = self.testApplicationBundle.bundleURL;
+
+	NSURL *testAppLog = [appURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
+	[[NSData data] writeToURL:testAppLog atomically:YES];
+
+	NSTask *readTestApp = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", testAppLog.path ]];
+	STAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
+
+	[self addCleanupBlock:^{
+		[readTestApp terminate];
+	}];
 
 	NSError *error = nil;
 	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:appURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:nil error:&error];
