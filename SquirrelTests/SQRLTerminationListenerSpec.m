@@ -13,23 +13,8 @@ SpecBegin(SQRLTerminationListener)
 __block NSRunningApplication *testApplication;
 __block xpc_connection_t shipitConnection;
 
-void (^terminateApplication)(void) = ^{
-	if (!testApplication.terminated) {
-		[testApplication terminate];
-		[testApplication forceTerminate];
-	}
-};
-
 beforeEach(^{
-	NSURL *testApplicationURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
-	expect(testApplicationURL).notTo.beNil();
-
-	NSError *error = nil;
-	testApplication = [NSWorkspace.sharedWorkspace launchApplicationAtURL:testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:nil error:&error];
-	expect(testApplication).notTo.beNil();
-	expect(error).to.beNil();
-
-	NSLog(@"Launched TestApplication: %@", testApplication);
+	testApplication = [self launchTestApplication];
 
 	shipitConnection = xpc_connection_create(SQRLShipItServiceLabel, dispatch_get_main_queue());
 	expect(shipitConnection).notTo.beNil();
@@ -39,7 +24,6 @@ beforeEach(^{
 
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR && event != XPC_ERROR_CONNECTION_INVALID) {
-			terminateApplication();
 			NSAssert(NO, @"XPC connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
 		}
 	});
@@ -67,15 +51,13 @@ it(@"should listen for termination of the parent process", ^{
 
 	expect(terminated).to.beFalsy();
 
-	terminateApplication();
+	[testApplication forceTerminate];
 	expect(terminated).will.beTruthy();
 });
 
 afterEach(^{
 	xpc_connection_cancel(shipitConnection);
 	xpc_release(shipitConnection);
-
-	terminateApplication();
 });
 
 SpecEnd

@@ -8,13 +8,33 @@
 
 #import "SQRLTestCase.h"
 
-// The name (without any extension) of the test application fixture.
-static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-retain-cycles"
+
+static void SQRLKillAllTestApplications(void) {
+	// Forcibly kill all copies of the TestApplication that may be running.
+	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"];
+	[apps makeObjectsPerformSelector:@selector(forceTerminate)];
+}
+
+static void SQRLUncaughtExceptionHandler(NSException *exception) {
+	SQRLKillAllTestApplications();
+
+	NSLog(@"Uncaught exception: %@", exception);
+	raise(SIGTRAP);
+	abort();
+}
 
 @interface SQRLTestCase ()
 
+// An array of dispatch_block_t values, for performing cleanup after the current
+// example finishes.
+//
+// This array will be emptied between each example.
+@property (nonatomic, strong, readonly) NSMutableArray *exampleCleanupBlocks;
+
 // The URL to the temporary directory which contains `temporaryDirectoryURL` and
-// all copied fixtures.
+// all copied test data.
 @property (nonatomic, copy, readonly) NSURL *baseTemporaryDirectoryURL;
 
 @end
@@ -27,9 +47,34 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 
 #pragma mark Lifecycle
 
+- (void)setUp {
+	[super setUp];
+
+	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
+}
+
+- (void)SPT_setUp {
+	_exampleCleanupBlocks = [[NSMutableArray alloc] init];
+}
+
 - (void)SPT_tearDown {
-	[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
-	_baseTemporaryDirectoryURL = nil;
+	NSArray *cleanupBlocks = [self.exampleCleanupBlocks copy];
+	_exampleCleanupBlocks = nil;
+
+	// Enumerate backwards, so later resources are cleaned up first.
+	for (dispatch_block_t block in cleanupBlocks.reverseObjectEnumerator) {
+		block();
+	}
+}
+
+- (void)tearDown {
+	[super tearDown];
+
+	SQRLKillAllTestApplications();
+}
+
+- (void)addCleanupBlock:(dispatch_block_t)block {
+	[self.exampleCleanupBlocks addObject:[block copy]];
 }
 
 #pragma mark Temporary Directory
@@ -42,6 +87,11 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
 		STAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
+
+		[self addCleanupBlock:^{
+			[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
+			_baseTemporaryDirectoryURL = nil;
+		}];
 	}
 
 	return _baseTemporaryDirectoryURL;
@@ -59,54 +109,40 @@ static NSString * const SQRLTestCaseTestAppFixtureName = @"GitHub.app";
 
 #pragma mark Fixtures
 
-- (void)unzipMember:(NSString *)memberName fromArchiveAtURL:(NSURL *)zipURL intoDirectory:(NSURL *)destinationDirectory {
-	NSParameterAssert(memberName != nil);
-	NSParameterAssert(zipURL != nil);
-	NSParameterAssert(destinationDirectory != nil);
+- (NSBundle *)testApplicationBundle {
+	NSURL *fixtureURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
+	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
+		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+		STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
-	NSTask *task = [[NSTask alloc] init];
-	task.launchPath = @"/usr/bin/unzip";
-	task.arguments = @[ @"-qq", @"-d", destinationDirectory.path, zipURL.path, [memberName stringByAppendingString:@"/*"] ];
-	[task launch];
-	[task waitUntilExit];
+		NSError *error = nil;
+		BOOL success = [NSFileManager.defaultManager copyItemAtURL:bundleURL toURL:fixtureURL error:&error];
+		STAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundleURL, fixtureURL, error);
+	}
+
+	NSBundle *bundle = [NSBundle bundleWithURL:fixtureURL];
+	STAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
 	
-	BOOL success = (task.terminationStatus == 0);
-	STAssertTrue(success, @"Couldn't unzip member \"%@\" from %@ into %@", memberName, zipURL, destinationDirectory);
-	STAssertTrue([NSFileManager.defaultManager fileExistsAtPath:[destinationDirectory URLByAppendingPathComponent:memberName].path], @"Member \"%@\" from %@ does not exist in %@ after unzipping", memberName, zipURL, destinationDirectory);
+	return bundle;
 }
 
-- (NSURL *)fixturesURL {
-	NSURL *fixturesURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"fixtures"];
+- (NSRunningApplication *)launchTestApplication {
+	NSURL *appURL = self.testApplicationBundle.bundleURL;
 
 	NSError *error = nil;
-	BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:fixturesURL withIntermediateDirectories:YES attributes:nil error:&error];
-	STAssertTrue(success, @"Couldn't create fixtures directory at %@: %@", fixturesURL, error);
+	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:appURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:nil error:&error];
+	STAssertNotNil(app, @"Could not launch app at %@: %@", appURL, error);
 
-	return fixturesURL;
-}
+	[self addCleanupBlock:^{
+		if (!app.terminated) {
+			[app terminate];
+			[app forceTerminate];
+		}
+	}];
 
-- (NSURL *)testAppURL {
-	NSURL *testAppURL = [self.fixturesURL URLByAppendingPathComponent:SQRLTestCaseTestAppFixtureName];
-	if (![NSFileManager.defaultManager fileExistsAtPath:testAppURL.path]) {
-		NSURL *zippedURL = [[NSBundle bundleForClass:self.class] URLForResource:SQRLTestCaseTestAppFixtureName withExtension:@"zip" subdirectory:@"Fixtures"];
-		[self unzipMember:SQRLTestCaseTestAppFixtureName fromArchiveAtURL:zippedURL intoDirectory:self.fixturesURL];
-	}
-
-	return testAppURL;
-}
-
-- (NSURL *)zippedTestAppURL {
-	NSString *zippedName = [SQRLTestCaseTestAppFixtureName stringByAppendingString:@".zip"];
-	NSURL *testAppURL = [self.fixturesURL URLByAppendingPathComponent:zippedName];
-	if (![NSFileManager.defaultManager fileExistsAtPath:testAppURL.path]) {
-		NSURL *bundledURL = [[NSBundle bundleForClass:self.class] URLForResource:SQRLTestCaseTestAppFixtureName withExtension:@"zip" subdirectory:@"Fixtures"];
-		
-		NSError *error = nil;
-		BOOL success = [NSFileManager.defaultManager copyItemAtURL:bundledURL toURL:testAppURL error:&error];
-		STAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundledURL, testAppURL, error);
-	}
-
-	return testAppURL;
+	return app;
 }
 
 @end
+
+#pragma clang diagnostic pop

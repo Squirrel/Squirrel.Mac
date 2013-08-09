@@ -14,8 +14,7 @@ __block NSBundle *bundle;
 __block void (^corruptURL)(NSURL *URL);
 
 beforeEach(^{
-	bundle = [NSBundle bundleWithURL:self.testAppURL];
-	expect(bundle).notTo.beNil();
+	bundle = self.testApplicationBundle;
 
 	corruptURL = ^(NSURL *URL) {
 		expect([@"foobar" writeToURL:bundle.executableURL atomically:YES encoding:NSUTF8StringEncoding error:NULL]).to.beTruthy();
