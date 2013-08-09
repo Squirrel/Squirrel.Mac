@@ -51,11 +51,6 @@
                BlueprintName = "SquirrelTests"
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>
-            <SkippedTests>
-               <Test
-                  Identifier = "SQRLCodeSignatureVerificationSpec">
-               </Test>
-            </SkippedTests>
          </TestableReference>
       </Testables>
    </TestAction>

@@ -28,6 +28,7 @@
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
 		D08D4E5217B456FC0012B22D /* com.github.Squirrel.ShipIt.xpc in Copy XPC Services */ = {isa = PBXBuildFile; fileRef = D08D4DD117B43B770012B22D /* com.github.Squirrel.ShipIt.xpc */; };
 		D08D4E5317B457630012B22D /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
@@ -188,6 +189,17 @@
 			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D0B1DDCD17B487F50059C355 /* Copy Executables */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */,
+			);
+			name = "Copy Executables";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
@@ -216,6 +228,7 @@
 		D08D4E1B17B451500012B22D /* SQRLAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SQRLAppDelegate.m; sourceTree = "<group>"; };
 		D08D4E1E17B451500012B22D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.xib; name = Base; path = Base.lproj/MainMenu.xib; sourceTree = "<group>"; };
 		D08D4E2017B451500012B22D /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
@@ -372,6 +385,7 @@
 		D08D4E0F17B451500012B22D /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				D0B1DDCB17B487D90059C355 /* unused-helper */,
 				D08D4E1017B451500012B22D /* TestApplication-Info.plist */,
 				D08D4E1117B451500012B22D /* InfoPlist.strings */,
 				D08D4E1417B451500012B22D /* main.m */,
@@ -664,6 +678,7 @@
 				D08D4E0917B451500012B22D /* Frameworks */,
 				D08D4E0A17B451500012B22D /* Resources */,
 				D08D4E4817B451E90012B22D /* Copy Frameworks */,
+				D0B1DDCD17B487F50059C355 /* Copy Executables */,
 			);
 			buildRules = (
 			);
@@ -1077,6 +1092,7 @@
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1091,6 +1107,7 @@
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
@@ -1105,6 +1122,7 @@
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Test;
@@ -1119,6 +1137,7 @@
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
 				WRAPPER_EXTENSION = app;
 			};
 			name = Profile;

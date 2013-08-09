@@ -90,7 +90,7 @@ describe(@"helper executable changes", ^{
 	__block NSURL *helperURL;
 
 	beforeEach(^{
-		helperURL = [bundle URLForAuxiliaryExecutable:@"github_cli"];
+		helperURL = [bundle URLForAuxiliaryExecutable:@"unused-helper"];
 		expect(helperURL).notTo.beNil();
 	});
 
@@ -123,7 +123,7 @@ describe(@"resource changes", ^{
 	__block NSURL *resourceURL;
 
 	beforeEach(^{
-		resourceURL = [bundle URLForResource:@"GHAboutWindowController" withExtension:@"nib"];
+		resourceURL = [bundle URLForResource:@"MainMenu" withExtension:@"nib"];
 		expect(resourceURL).notTo.beNil();
 	});
 
@@ -156,7 +156,7 @@ describe(@"framework changes", ^{
 	__block NSURL *frameworkURL;
 
 	beforeEach(^{
-		frameworkURL = [bundle.bundleURL URLByAppendingPathComponent:@"Contents/Frameworks/Mantle.framework"];
+		frameworkURL = [bundle.bundleURL URLByAppendingPathComponent:@"Contents/Frameworks/Squirrel.framework"];
 	});
 
 	it(@"should fail to verify a bundle with a missing framework", ^{
@@ -172,7 +172,7 @@ describe(@"framework changes", ^{
 	});
 
 	it(@"should fail to verify a bundle with a corrupt framework", ^{
-		corruptURL([frameworkURL URLByAppendingPathComponent:@"Contents/Versions/A/Mantle"]);
+		corruptURL([frameworkURL URLByAppendingPathComponent:@"Contents/Versions/A/Squirrel"]);
 
 		NSError *error = nil;
 		BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
