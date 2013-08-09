@@ -52,13 +52,13 @@
 
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:self.bundleIdentifier];
 	for (NSRunningApplication *application in apps) {
-		if (application.processIdentifier != self.processIdentifier) {
+		if ([application.bundleURL isEqual:self.bundleURL]) {
 			if (application.terminated) [self targetDidTerminate];
 			return;
 		}
 	}
 
-	// If we didn't find a matching PID in running applications, it's already
+	// If we didn't find a matching URL in running applications, it's already
 	// terminated.
 	[self targetDidTerminate];
 }
@@ -78,7 +78,7 @@
 - (void)workspaceApplicationDidTerminate:(NSNotification *)notification {
 	NSRunningApplication *application = notification.userInfo[NSWorkspaceApplicationKey];
 	
-	if (![application.bundleIdentifier isEqualToString:self.bundleIdentifier] || ![application.bundleURL isEqual:self.bundleURL] || application.processIdentifier != self.processIdentifier) {
+	if (![application.bundleIdentifier isEqualToString:self.bundleIdentifier] || ![application.bundleURL isEqual:self.bundleURL]) {
 		// Ignore termination of other apps.
 		return;
 	}
