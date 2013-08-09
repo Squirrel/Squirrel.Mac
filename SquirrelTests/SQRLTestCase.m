@@ -143,6 +143,28 @@ static void SQRLUncaughtExceptionHandler(NSException *exception) {
 	return app;
 }
 
+- (xpc_connection_t)connectToShipIt {
+	xpc_connection_t connection = xpc_connection_create(SQRLShipItServiceLabel, NULL);
+	expect(connection).notTo.beNil();
+	
+	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
+			if (event == XPC_ERROR_CONNECTION_INVALID) {
+				STFail(@"ShipIt connection failed with error: %s", xpc_dictionary_get_string(event, XPC_ERROR_KEY_DESCRIPTION));
+			}
+
+			xpc_release(connection);
+		}
+	});
+
+	[self addCleanupBlock:^{
+		xpc_connection_cancel(connection);
+	}];
+
+	xpc_connection_resume(connection);
+	return connection;
+}
+
 @end
 
 #pragma clang diagnostic pop

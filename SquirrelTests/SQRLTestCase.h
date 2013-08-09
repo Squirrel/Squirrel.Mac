@@ -27,4 +27,10 @@
 // be automatically terminated at the end of the example.
 - (NSRunningApplication *)launchTestApplication;
 
+// Opens and resumes a new XPC connection to the ShipIt service.
+//
+// Returns the new connection, which will be automatically closed at the end of
+// the example.
+- (xpc_connection_t)connectToShipIt;
+
 @end
