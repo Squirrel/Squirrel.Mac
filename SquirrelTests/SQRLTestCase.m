@@ -11,6 +11,9 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
 
+NSString * const SQRLTestApplicationOriginalShortVersionString = @"1.0";
+NSString * const SQRLTestApplicationUpdatedShortVersionString = @"2.1";
+
 static void SQRLKillAllTestApplications(void) {
 	// Forcibly kill all copies of the TestApplication that may be running.
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"];
@@ -169,6 +172,32 @@ static void SQRLSignalHandler(int sig) {
 	}];
 
 	return app;
+}
+
+- (NSURL *)createTestApplicationUpdate {
+	NSURL *originalURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	STAssertNotNil(originalURL, @"Couldn't find TestApplication.app in test bundle");
+
+	NSError *error = nil;
+	NSURL *updateParentURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.baseTemporaryDirectoryURL create:YES error:&error];
+	STAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
+
+	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:@"TestApplication.app"];
+	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
+	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
+
+	NSURL *plistURL = [updateURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+	NSMutableDictionary *infoPlist = [[NSDictionary dictionaryWithContentsOfURL:plistURL] mutableCopy];
+	STAssertNotNil(infoPlist, @"Could not read Info.plist from %@", plistURL);
+
+	static NSString * const versionStringKey = @"SQRLTestApplicationOriginalShortVersionString";
+	STAssertEqualObjects(infoPlist[versionStringKey], SQRLTestApplicationOriginalShortVersionString, @"Unexpected original version in Info.plist: %@", infoPlist);
+	infoPlist[versionStringKey] = SQRLTestApplicationUpdatedShortVersionString;
+
+	success = [infoPlist writeToURL:plistURL atomically:YES];
+	STAssertTrue(success, @"Could not write updated Info.plist to %@", plistURL);
+
+	return updateURL;
 }
 
 - (xpc_connection_t)connectToShipIt {

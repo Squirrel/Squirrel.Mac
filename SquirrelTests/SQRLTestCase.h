@@ -6,6 +6,13 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+// The short version string for the `testApplicationBundle`.
+extern NSString * const SQRLTestApplicationOriginalShortVersionString;
+
+// The short version string for an update created with
+// `createTestApplicationUpdate`.
+extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
+
 @interface SQRLTestCase : SPTSenTestCase
 
 // A URL to a temporary directory tests can use.
@@ -26,6 +33,13 @@
 // Returns the instance of TestApplication.app that was launched. The app will
 // be automatically terminated at the end of the example.
 - (NSRunningApplication *)launchTestApplication;
+
+// Creates an update for TestApplication.app by bumping its Info.plist version
+// to `SQRLTestApplicationUpdatedShortVersionString`.
+//
+// Returns the URL of the update bundle. The bundle will be automatically
+// deleted at the end of the example.
+- (NSURL *)createTestApplicationUpdate;
 
 // Opens and resumes a new XPC connection to the ShipIt service.
 //
