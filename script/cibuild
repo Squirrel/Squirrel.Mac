@@ -31,7 +31,7 @@ BOOTSTRAP="$SCRIPT_DIR/bootstrap"
 # are specified on the command line.
 #
 # Individual names can be quoted to avoid word splitting.
-DEFAULT_TARGETS=
+DEFAULT_TARGETS=Squirrel
 
 # Extra build settings to pass to xcodebuild.
 XCODEBUILD_SETTINGS="TEST_AFTER_BUILD=YES"
