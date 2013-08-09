@@ -20,8 +20,7 @@ extern const NSInteger SQRLCodeSignatureVerificationErrorCouldNotCreateStaticCod
 // Implements the verification of Apple code signatures.
 @interface SQRLCodeSignatureVerification : NSObject
 
-// Verifies the code signature of the specified bundle, which must be signed in
-// the same way as the running application.
+// Verifies the code signature of the specified bundle.
 //
 // Returns NO if the bundle's code signature could not be verified, and the
 // error parameter will contain the specific error.
