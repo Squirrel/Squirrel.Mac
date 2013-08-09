@@ -52,14 +52,6 @@ then
 fi
 
 ##
-## Environment Variables
-##
-
-export MallocPreScribble=1
-export MallocScribble=1
-export MallocGuardEdges=1
-
-##
 ## Build Process
 ##
 
