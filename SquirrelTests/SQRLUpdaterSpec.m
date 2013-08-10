@@ -28,8 +28,7 @@ pending(@"should fail to install a corrupt update");
 
 it(@"should use the application's bundled version of Squirrel and update in-place", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	NSURL *zippedUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.zip"];
-	expect([SSZipArchive createZipFileAtPath:zippedUpdateURL.path withContentsOfDirectory:updateURL.URLByDeletingLastPathComponent.path]).to.beTruthy();
+	NSURL *zippedUpdateURL = [self zipItemAtURL:updateURL];
 
 	NSDictionary *updateInfo = @{
 		SQRLUpdaterJSONURLKey: zippedUpdateURL.absoluteString

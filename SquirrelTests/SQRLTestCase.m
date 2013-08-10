@@ -62,6 +62,8 @@ static void SQRLSignalHandler(int sig) {
 	
 	signal(SIGILL, &SQRLSignalHandler);
 	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
+
+	Expecta.asynchronousTestTimeout = 3;
 }
 
 - (void)SPT_setUp {
@@ -154,9 +156,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (NSRunningApplication *)launchTestApplicationWithEnvironment:(NSDictionary *)environment {
-	NSURL *appURL = self.testApplicationBundle.bundleURL;
-
-	NSURL *testAppLog = [appURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
+	NSURL *testAppLog = [self.testApplicationURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 	[[NSData data] writeToURL:testAppLog atomically:YES];
 
 	NSTask *readTestApp = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", testAppLog.path ]];
@@ -170,8 +170,8 @@ static void SQRLSignalHandler(int sig) {
 	if (environment != nil) configuration = @{ NSWorkspaceLaunchConfigurationEnvironment: environment };
 
 	NSError *error = nil;
-	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:appURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:configuration error:&error];
-	STAssertNotNil(app, @"Could not launch app at %@: %@", appURL, error);
+	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:self.testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:configuration error:&error];
+	STAssertNotNil(app, @"Could not launch app at %@: %@", self.testApplicationURL, error);
 
 	[self addCleanupBlock:^{
 		if (!app.terminated) {
@@ -196,6 +196,17 @@ static void SQRLSignalHandler(int sig) {
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
 
 	return updateURL;
+}
+
+- (NSURL *)zipItemAtURL:(NSURL *)itemURL {
+	NSURL *outputURL = [[self.baseTemporaryDirectoryURL URLByAppendingPathComponent:itemURL.lastPathComponent] URLByAppendingPathExtension:@"zip"];
+	STAssertNotNil(outputURL, @"Could not create zip archive URL for %@", itemURL);
+
+	NSTask *task = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/zip" arguments:@[ @"-r", outputURL.path, itemURL.path ]];
+	[task waitUntilExit];
+
+	STAssertEquals(task.terminationStatus, 0, @"zip task terminated with an error");
+	return outputURL;
 }
 
 - (xpc_connection_t)connectToShipIt {

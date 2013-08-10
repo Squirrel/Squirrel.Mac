@@ -14,7 +14,11 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 	NSString *updateURLString = NSProcessInfo.processInfo.environment[@"SQRLUpdateFromURL"];
-	if (updateURLString == nil) return;
+	if (updateURLString == nil) {
+		NSLog(@"Skipping update installation");
+	}
+
+	NSLog(@"Installing update from URL %@", updateURLString);
 
 	SQRLUpdater.sharedUpdater.APIEndpoint = [NSURL URLWithString:updateURLString];
 	[SQRLUpdater.sharedUpdater addObserver:self forKeyPath:@"state" options:0 context:NULL];
@@ -32,7 +36,13 @@
 
 	if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
 		[updater installUpdateIfNeeded];
-		[NSApp terminate:self];
+
+		if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
+			NSLog(@"Update ready for installation");
+			[NSApp terminate:self];
+		} else {
+			NSLog(@"Error in updater, will not terminating");
+		}
 	}
 }
 

@@ -154,15 +154,17 @@ static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
 		
 		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
 		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
-		
+
 		NSURLRequest *zipDownloadRequest = [NSURLRequest requestWithURL:zipDownloadURL];
 		[NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 			if (response == nil) {
+				NSLog(@"Error downloading zipped update at %@", zipDownloadURL);
 				[self finishAndSetIdle];
 				return;
 			}
 			
 			if (![data writeToURL:zipOutputURL atomically:YES]) {
+				NSLog(@"Error saved zipped update to %@", zipOutputURL);
 				[self finishAndSetIdle];
 				return;
 			}
