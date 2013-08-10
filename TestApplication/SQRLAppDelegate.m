@@ -35,14 +35,14 @@
 	NSParameterAssert([updater isKindOfClass:SQRLUpdater.class]);
 
 	if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
-		[updater installUpdateIfNeeded];
-
-		if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
-			NSLog(@"Update ready for installation");
-			[NSApp terminate:self];
-		} else {
-			NSLog(@"Error in updater, will not terminating");
-		}
+		[updater installUpdateIfNeeded:^(BOOL success) {
+			if (success) {
+				NSLog(@"Update ready for installation");
+				[NSApp terminate:self];
+			} else {
+				NSLog(@"Error in updater, will not terminate");
+			}
+		}];
 	}
 }
 

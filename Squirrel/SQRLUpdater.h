@@ -80,6 +80,9 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 //
 // If `shouldRelaunch` is YES, the app will be launched back up after the update
 // is installed successfully.
-- (void)installUpdateIfNeeded;
+//
+// completionHandler - A block to invoke when the job has been enqueued, or the
+//                     enqueuing has failed.
+- (void)installUpdateIfNeeded:(void (^)(BOOL success))completionHandler;
 
 @end

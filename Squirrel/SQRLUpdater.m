@@ -309,21 +309,31 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	return appSupportURL;
 }
 
-- (void)installUpdateIfNeeded {
-	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
+- (void)installUpdateIfNeeded:(void (^)(BOOL success))completionHandler {
+	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) {
+		completionHandler(NO);
+		return;
+	}
+
+	__typeof__(completionHandler) originalHandler = [completionHandler copy];
+
+	completionHandler = ^(BOOL success) {
+		if (!success) [self finishAndSetIdle];
+		originalHandler(success);
+	};
 	
 	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];
 	if (updateBundle == nil) {
 		NSLog(@"Could not locate update bundle for %@ within %@", currentApplication.bundleIdentifier, self.downloadFolder);
-		[self finishAndSetIdle];
+		completionHandler(NO);
 		return;
 	}
 
 	xpc_connection_t connection = xpc_connection_create(SQRLShipItServiceLabel, NULL);
 	if (connection == NULL) {
 		NSLog(@"Error opening XPC connection to %s", SQRLShipItServiceLabel);
-		[self finishAndSetIdle];
+		completionHandler(NO);
 		return;
 	}
 	
@@ -345,6 +355,7 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		xpc_release(message);
 	};
 
+	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
 	xpc_dictionary_set_int64(message, SQRLProcessIdentifierKey, currentApplication.processIdentifier);
 	xpc_dictionary_set_string(message, SQRLBundleIdentifierKey, currentApplication.bundleIdentifier.UTF8String);
 	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, currentApplication.bundleURL.absoluteString.UTF8String);
@@ -358,9 +369,10 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		if (!success) {
 			const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
 			NSLog(@"Error shipping it: %s", errorStr);
-
-			[self finishAndSetIdle];
 		}
+
+		xpc_connection_cancel(connection);
+		completionHandler(success);
 	});
 }
 
