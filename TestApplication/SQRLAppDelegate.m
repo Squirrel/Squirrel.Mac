@@ -13,9 +13,14 @@
 #pragma mark Lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+	atexit_b(^{
+		NSLog(@"TestApplication quitting");
+	});
+
 	NSString *updateURLString = NSProcessInfo.processInfo.environment[@"SQRLUpdateFromURL"];
 	if (updateURLString == nil) {
 		NSLog(@"Skipping update installation");
+		return;
 	}
 
 	NSLog(@"Installing update from URL %@", updateURLString);
