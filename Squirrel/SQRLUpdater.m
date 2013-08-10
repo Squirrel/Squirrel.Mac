@@ -356,8 +356,6 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	};
 
 	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-	xpc_dictionary_set_int64(message, SQRLProcessIdentifierKey, currentApplication.processIdentifier);
-	xpc_dictionary_set_string(message, SQRLBundleIdentifierKey, currentApplication.bundleIdentifier.UTF8String);
 	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, currentApplication.bundleURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.applicationSupportURL.absoluteString.UTF8String);

@@ -270,7 +270,6 @@
 		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
 		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
 		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerificationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerificationSpec.m; sourceTree = "<group>"; };
-		D0F8E13717B19C6D00BCA070 /* SQRLArguments+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "SQRLArguments+Private.h"; path = "Shipit/SQRLArguments+Private.h"; sourceTree = "<group>"; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
 		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
@@ -598,7 +597,6 @@
 				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				D007290817B0973E008C7DDE /* SQRLArguments.h */,
-				D0F8E13717B19C6D00BCA070 /* SQRLArguments+Private.h */,
 				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
 				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */,
 				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */,

@@ -10,7 +10,6 @@
 #import "EXTScope.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
-#import "SQRLArguments+Private.h"
 #import "SQRLInstaller.h"
 
 typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
@@ -87,7 +86,6 @@ static void handleConnection(xpc_connection_t client) {
 		};
 
 		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
-
 		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
 			SQRLInstallationHandler handler = prepareInstallation(event);
 			if (handler == nil) {
@@ -103,21 +101,6 @@ static void handleConnection(xpc_connection_t client) {
 			xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
 			if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
 			xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
-		} else {
-			#if DEBUG
-			// This command is only used for unit testing.
-			if (strcmp(command, SQRLShipItInstallWithoutWaitingCommand) == 0) {
-				SQRLInstallationHandler handler = prepareInstallation(event);
-
-				NSString *errorString = nil;
-				BOOL success = handler(&errorString);
-
-				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
-				if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
-
-				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
-			}
-			#endif
 		}
 	});
 	

@@ -26,8 +26,6 @@ extern const char * const SQRLShipItCommandKey;
 //
 // The event can contain the following keys to configure the installation:
 //
-//	- SQRLProcessIdentifierKey
-//	- SQRLBundleIdentifierKey
 //	- SQRLTargetBundleURLKey
 //	- SQRLUpdateBundleURLKey
 //	- SQRLBackupURLKey
@@ -37,17 +35,6 @@ extern const char * const SQRLShipItCommandKey;
 // successful. Once the connection has been terminated, the installation will
 // start.
 extern const char * const SQRLShipItInstallCommand;
-
-// Associated with the PID of the application process that wants to install an
-// update.
-//
-// This key is required.
-extern const char * const SQRLProcessIdentifierKey;
-
-// Associated with the bundle identifier of the application to update.
-//
-// This argument is required.
-extern const char * const SQRLBundleIdentifierKey;
 
 // Associated with a string representation of the URL to _replace_ on disk.
 //
