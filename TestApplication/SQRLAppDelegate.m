@@ -13,6 +13,12 @@
 #pragma mark Lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
+	NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
+	NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
+	
+	NSLog(@"Redirecting logging to %@", logPath);
+	freopen(logPath.fileSystemRepresentation, "a+", stderr);
+
 	atexit_b(^{
 		NSLog(@"TestApplication quitting");
 	});

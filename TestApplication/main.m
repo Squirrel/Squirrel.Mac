@@ -10,12 +10,6 @@
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
-		NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
-		NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
-		
-		NSLog(@"Redirecting logging to %@", logPath);
-		freopen(logPath.fileSystemRepresentation, "a+", stderr);
-
 		return NSApplicationMain(argc, argv);
 	}
 }
