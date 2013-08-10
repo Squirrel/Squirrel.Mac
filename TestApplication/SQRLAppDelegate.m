@@ -8,26 +8,11 @@
 
 #import "SQRLAppDelegate.h"
 
-static void SQRLUncaughtExceptionHandler(NSException *exception) {
-	NSLog(@"Uncaught exception: %@", exception);
-	raise(SIGTRAP);
-	abort();
-}
-
-static void SQRLSignalHandler(int sig) {
-	NSLog(@"Backtrace: %@", [NSThread callStackSymbols]);
-	fflush(stderr);
-	abort();
-}
-
 @implementation SQRLAppDelegate
 
 #pragma mark Lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	signal(SIGILL, &SQRLSignalHandler);
-	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
-
 	NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
 	NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
 	

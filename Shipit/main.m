@@ -124,24 +124,9 @@ static void handleConnection(xpc_connection_t client) {
 	xpc_connection_resume(client);
 }
 
-static void SQRLUncaughtExceptionHandler(NSException *exception) {
-	NSLog(@"Uncaught exception: %@", exception);
-	raise(SIGTRAP);
-	abort();
-}
-
-static void SQRLSignalHandler(int sig) {
-	NSLog(@"Backtrace: %@", [NSThread callStackSymbols]);
-	fflush(stderr);
-	abort();
-}
-
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		#if DEBUG
-		signal(SIGILL, &SQRLSignalHandler);
-		NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
-
 		atexit_b(^{
 			NSLog(@"ShipIt quitting");
 		});
