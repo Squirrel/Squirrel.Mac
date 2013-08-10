@@ -34,13 +34,7 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return nil;
 
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
-
-	xpc_transaction_begin();
 	return ^(NSString **errorString) {
-		@onExit {
-			xpc_transaction_end();
-		};
-
 		#if DEBUG
 		NSLog(@"Beginning installation…");
 		#endif
@@ -105,13 +99,16 @@ static void handleConnection(xpc_connection_t client) {
 
 			xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
 			xpc_connection_send_message_with_reply(xpc_dictionary_get_remote_connection(reply), reply, dispatch_get_main_queue(), ^(xpc_object_t event) {
-				if (event != XPC_ERROR_CONNECTION_INVALID) {
+				xpc_transaction_begin();
+
+				if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
 					NSLog(@"Unexpected client response to installation: %@", NSStringFromXPCObject(event));
 				}
 
 				dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLApplicationTerminationLeeway * NSEC_PER_SEC));
 				dispatch_after(time, dispatch_get_main_queue(), ^{
 					handler(NULL);
+					xpc_transaction_end();
 				});
 			});
 		} else {
