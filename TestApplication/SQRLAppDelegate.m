@@ -63,12 +63,16 @@ static void SQRLSignalHandler(int sig) {
 	if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
 		[updater installUpdateIfNeeded:^(BOOL success) {
 			if (success) {
-				NSLog(@"Update installed, terminating");
-				[NSApp terminate:self];
+				NSLog(@"Update installed");
 			} else {
-				NSLog(@"Error in updater, will not terminate");
+				NSLog(@"Error in updater");
 			}
+
+			[NSApp terminate:self];
 		}];
+	} else if (updater.state == SQRLUpdaterStateIdle) {
+		NSLog(@"Updater reset to idle state, terminating");
+		[NSApp terminate:self];
 	}
 }
 

@@ -11,23 +11,7 @@
 
 SpecBegin(SQRLUpdater)
 
-it(@"should be a thing", ^{
-	SQRLUpdater *updater = SQRLUpdater.sharedUpdater;
-	expect(updater).notTo.beNil();
-});
-
-pending(@"should download an update when it doesn't match the current version");
-
-pending(@"should unzip an update");
-
-pending(@"should verify the code signature of an update");
-
-pending(@"should install the update on relaunch");
-
-pending(@"should fail to install a corrupt update");
-
-it(@"should use the application's bundled version of Squirrel and update in-place", ^{
-	NSURL *updateURL = [self createTestApplicationUpdate];
+NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
 	NSURL *zippedUpdateURL = [self zipItemAtURL:updateURL];
 
 	NSDictionary *updateInfo = @{
@@ -48,13 +32,24 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 		@"SQRLUpdateFromURL": JSONURL.absoluteString
 	};
 
-	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:environment];
+	return [self launchTestApplicationWithEnvironment:environment];
+};
+
+it(@"should use the application's bundled version of Squirrel and update in-place", ^{
+	NSURL *updateURL = [self createTestApplicationUpdate];
+	NSRunningApplication *app = launchWithMockUpdate(updateURL);
 	expect(app.terminated).will.beTruthy();
-
-	// Give ShipIt some time to update the app.
-	[NSThread sleepForTimeInterval:0.5];
-
 	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+it(@"should not install a corrupt update", ^{
+	NSURL *updateURL = [self createTestApplicationUpdate];
+	NSURL *codeSignatureURL = [updateURL URLByAppendingPathComponent:@"Contents/_CodeSignature"];
+	expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to.beTruthy();
+
+	NSRunningApplication *app = launchWithMockUpdate(updateURL);
+	expect(app.terminated).will.beTruthy();
+	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
 SpecEnd
