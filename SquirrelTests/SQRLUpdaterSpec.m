@@ -50,7 +50,11 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 
 	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:environment];
 	expect(app.terminated).will.beTruthy();
-	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+
+	// Give ShipIt some time to update the app.
+	[NSThread sleepForTimeInterval:0.5];
+
+	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
 SpecEnd

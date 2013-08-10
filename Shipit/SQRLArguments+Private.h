@@ -10,14 +10,6 @@
 
 #if DEBUG
 
-// Specified for SQRLShipItCommandKey to listen for termination of a process,
-// indicated using the following keys:
-//
-//  - SQRLProcessIdentifierKey
-//  - SQRLBundleIdentifierKey
-//  - SQRLTargetBundleURLKey
-#define SQRLShipItListenForTerminationCommand "SQRLShipItListenForTerminationCommand"
-
 // Specified for SQRLShipItCommandKey to immediately install an update bundle,
 // without waiting for process termination. Uses the following keys:
 //

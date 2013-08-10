@@ -371,7 +371,6 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 			NSLog(@"Error shipping it: %s", errorStr);
 		}
 
-		xpc_connection_cancel(connection);
 		completionHandler(success);
 	});
 }

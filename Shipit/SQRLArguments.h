@@ -32,6 +32,10 @@ extern const char * const SQRLShipItCommandKey;
 //	- SQRLUpdateBundleURLKey
 //	- SQRLBackupURLKey
 //	- SQRLShouldRelaunchKey
+//
+// ShipIt will respond immediately indicating whether the initial setup was
+// successful. Once the connection has been terminated, the installation will
+// start.
 extern const char * const SQRLShipItInstallCommand;
 
 // Associated with the PID of the application process that wants to install an

@@ -12,9 +12,12 @@
 #import "SQRLArguments.h"
 #import "SQRLArguments+Private.h"
 #import "SQRLInstaller.h"
-#import "SQRLTerminationListener.h"
 
-typedef void (^SQRLReplyHandler)(BOOL success, NSString *errorString);
+typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
+
+// The amount of time to wait after the XPC connection has closed before
+// starting to update.
+static const NSTimeInterval SQRLApplicationTerminationLeeway = 0.05;
 
 static NSString *NSStringFromXPCObject(xpc_object_t object) {
 	char *desc = xpc_copy_description(object);
@@ -24,100 +27,46 @@ static NSString *NSStringFromXPCObject(xpc_object_t object) {
 	return str;
 }
 
-static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyHandler) {
-	NSURL * (^getRequiredURLArgument)(const char *) = ^ id (const char *key) {
-		const char *URLString = xpc_dictionary_get_string(event, key);
-		if (URLString == NULL) {
-			replyHandler(NO, [NSString stringWithFormat:@"Required key \"%s\" not provided", key]);
-			return nil;
-		}
+static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
+	NSURL *targetBundleURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLTargetBundleURLKey))];
+	NSURL *updateBundleURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLUpdateBundleURLKey))];
+	NSURL *backupURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLBackupURLKey))];
+	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return nil;
 
-		NSURL *URL = [NSURL URLWithString:@(URLString)];
-		if (URL == nil) {
-			replyHandler(NO, [NSString stringWithFormat:@"Value \"%s\" for key \"%s\" is not a valid URL", URLString, key]);
-		}
+	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 
-		return URL;
-	};
+	xpc_transaction_begin();
+	return ^(NSString **errorString) {
+		@onExit {
+			xpc_transaction_end();
+		};
 
-	NSURL *targetBundleURL = getRequiredURLArgument(SQRLTargetBundleURLKey);
-	NSURL *updateBundleURL = getRequiredURLArgument(SQRLUpdateBundleURLKey);
-	NSURL *backupURL = getRequiredURLArgument(SQRLBackupURLKey);
-	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return;
+		#if DEBUG
+		NSLog(@"Beginning installation…");
+		#endif
 
-	void (^installUpdate)(BOOL) = ^(BOOL shouldRelaunch) {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
 
-		@onExit {
-			if (shouldWait) xpc_transaction_end();
-		};
-		
 		NSError *error = nil;
 		if (![installer installUpdateWithError:&error]) {
 			NSString *message = [NSString stringWithFormat:@"Error installing update: %@", error.sqrl_verboseDescription];
 			NSLog(@"%@", message);
 
-			if (!shouldWait) replyHandler(NO, message);
-			return;
+			if (errorString != NULL) *errorString = message;
+			return NO;
 		}
 		
 		if (shouldRelaunch && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
 			NSString *message = [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription];
 			NSLog(@"%@", message);
 
-			if (!shouldWait) replyHandler(NO, message);
-			return;
+			if (errorString != NULL) *errorString = message;
+			return NO;
 		}
 		
-		if (!shouldWait) replyHandler(YES, nil);
+		return YES;
 	};
-
-	if (!shouldWait) {
-		installUpdate(NO);
-		return;
-	}
-
-	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
-	if (bundleIdentifier == NULL) {
-		replyHandler(NO, [NSString stringWithFormat:@"Required key \"%s\" not provided", SQRLBundleIdentifierKey]);
-		return;
-	}
-
-	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
-	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
-	
-	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:targetBundleURL terminationHandler:^{
-		#if DEBUG
-		NSLog(@"Target process terminated, installing update");
-		#endif
-
-		installUpdate(shouldRelaunch);
-	}];
-
-	[listener beginListening];
-	if (shouldWait) {
-		xpc_transaction_begin();
-		replyHandler(YES, nil);
-	}
-
-	#if DEBUG
-	NSLog(@"Listening for termination…");
-	#endif
 }
-
-#if DEBUG
-static void listenForTermination(xpc_object_t event, SQRLReplyHandler replyHandler) {
-	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
-	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
-	const char *bundleURLString = xpc_dictionary_get_string(event, SQRLTargetBundleURLKey);
-
-	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:[NSURL URLWithString:@(bundleURLString)] terminationHandler:^{
-		replyHandler(YES, nil);
-	}];
-	
-	[listener beginListening];
-}
-#endif
 
 static void handleConnection(xpc_connection_t client) {
 	#if DEBUG
@@ -138,29 +87,46 @@ static void handleConnection(xpc_connection_t client) {
 			return;
 		}
 
-		SQRLReplyHandler replyHandler = ^(BOOL success, NSString *errorString) {};
-
 		xpc_object_t reply = xpc_dictionary_create_reply(event);
-		if (reply != NULL) {
-			replyHandler = [^(BOOL success, NSString *errorString) {
+		@onExit {
+			xpc_release(reply);
+		};
+
+		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
+
+		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
+			SQRLInstallationHandler handler = prepareInstallation(event);
+			if (handler == nil) {
+				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, false);
+				xpc_dictionary_set_string(reply, SQRLShipItErrorKey, "Required key not provided");
+				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+				return;
+			}
+
+			xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
+			xpc_connection_send_message_with_reply(xpc_dictionary_get_remote_connection(reply), reply, dispatch_get_main_queue(), ^(xpc_object_t event) {
+				if (event != XPC_ERROR_CONNECTION_INVALID) {
+					NSLog(@"Unexpected client response to installation: %@", NSStringFromXPCObject(event));
+				}
+
+				dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLApplicationTerminationLeeway * NSEC_PER_SEC));
+				dispatch_after(time, dispatch_get_main_queue(), ^{
+					handler(NULL);
+				});
+			});
+		} else {
+			#if DEBUG
+			// This command is only used for unit testing.
+			if (strcmp(command, SQRLShipItInstallWithoutWaitingCommand) == 0) {
+				SQRLInstallationHandler handler = prepareInstallation(event);
+
+				NSString *errorString = nil;
+				BOOL success = handler(&errorString);
+
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
 				if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
 
 				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
-				xpc_release(reply);
-			} copy];
-		}
-
-		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
-		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
-			install(event, YES, replyHandler);
-		} else {
-			#if DEBUG
-			// These commands are only used for unit testing.
-			if (strcmp(command, SQRLShipItListenForTerminationCommand) == 0) {
-				listenForTermination(event, replyHandler);
-			} else if (strcmp(command, SQRLShipItInstallWithoutWaitingCommand) == 0) {
-				install(event, NO, replyHandler);
 			}
 			#endif
 		}
