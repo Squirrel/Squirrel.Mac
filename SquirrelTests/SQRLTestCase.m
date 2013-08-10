@@ -68,7 +68,7 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)setUp {
 	[super setUp];
-	
+
 	signal(SIGILL, &SQRLSignalHandler);
 	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
 
