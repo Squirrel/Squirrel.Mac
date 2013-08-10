@@ -64,6 +64,10 @@ static void SQRLSignalHandler(int sig) {
 
 	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog.path ]];
 	NSAssert([readShipIt isRunning], @"Could not start task %@ to read %@", readShipIt, shipItLog);
+
+	atexit_b(^{
+		[readShipIt terminate];
+	});
 }
 
 - (void)setUp {
