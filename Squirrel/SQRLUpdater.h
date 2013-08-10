@@ -75,14 +75,14 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 // interval - The interval, in seconds, between each check.
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
 
-// Enqueues a job that will wait for the app to terminate, then install a
-// previously downloaded, unzipped, and verified update.
+// Enqueues a job that will install a previously downloaded, unzipped, and verified
+// update in place (i.e. while the application still runs).
 //
 // If `shouldRelaunch` is YES, the app will be launched back up after the update
 // is installed successfully.
 //
-// completionHandler - A block to invoke when the job has been enqueued, or the
-//                     enqueuing has failed.
+// completionHandler - A block to invoke when updating in place has completed or failed.
+//                     The app should immediately terminate once this block is invoked.
 - (void)installUpdateIfNeeded:(void (^)(BOOL success))completionHandler;
 
 @end

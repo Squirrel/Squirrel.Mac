@@ -15,10 +15,6 @@
 
 typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
 
-// The amount of time to wait after the XPC connection has closed before
-// starting to update.
-static const NSTimeInterval SQRLApplicationTerminationLeeway = 0.05;
-
 static NSString *NSStringFromXPCObject(xpc_object_t object) {
 	char *desc = xpc_copy_description(object);
 	NSString *str = @(desc);
@@ -49,6 +45,10 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 			if (errorString != NULL) *errorString = message;
 			return NO;
 		}
+		
+		#if DEBUG
+		NSLog(@"Installation completed successfully");
+		#endif
 		
 		if (shouldRelaunch && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
 			NSString *message = [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription];
@@ -96,21 +96,13 @@ static void handleConnection(xpc_connection_t client) {
 				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
 				return;
 			}
-
-			xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
-			xpc_connection_send_message_with_reply(xpc_dictionary_get_remote_connection(reply), reply, dispatch_get_main_queue(), ^(xpc_object_t event) {
-				xpc_transaction_begin();
-
-				if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
-					NSLog(@"Unexpected client response to installation: %@", NSStringFromXPCObject(event));
-				}
-
-				dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLApplicationTerminationLeeway * NSEC_PER_SEC));
-				dispatch_after(time, dispatch_get_main_queue(), ^{
-					handler(NULL);
-					xpc_transaction_end();
-				});
-			});
+			
+			NSString *errorString = nil;
+			BOOL success = handler(&errorString);
+				
+			xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
+			if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+			xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
 		} else {
 			#if DEBUG
 			// This command is only used for unit testing.
