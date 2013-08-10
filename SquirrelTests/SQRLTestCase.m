@@ -57,6 +57,15 @@ static void SQRLSignalHandler(int sig) {
 
 #pragma mark Lifecycle
 
++ (void)load {
+	NSBundle *squirrelBundle = [NSBundle bundleWithIdentifier:@"com.github.Squirrel"];
+	NSURL *shipItLog = [squirrelBundle.bundleURL URLByAppendingPathComponent:@"XPCServices/ShipIt.log"];
+	[[NSData data] writeToURL:shipItLog atomically:YES];
+
+	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog.path ]];
+	NSAssert([readShipIt isRunning], @"Could not start task %@ to read %@", readShipIt, shipItLog);
+}
+
 - (void)setUp {
 	[super setUp];
 	
@@ -68,17 +77,6 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)SPT_setUp {
 	_exampleCleanupBlocks = [[NSMutableArray alloc] init];
-
-	NSBundle *squirrelBundle = [NSBundle bundleWithIdentifier:@"com.github.Squirrel"];
-	NSURL *shipItLog = [squirrelBundle.bundleURL URLByAppendingPathComponent:@"XPCServices/ShipIt.log"];
-	[[NSData data] writeToURL:shipItLog atomically:YES];
-
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog.path ]];
-	STAssertTrue([readShipIt isRunning], @"Could not start task %@ to read %@", readShipIt, shipItLog);
-
-	[self addCleanupBlock:^{
-		[readShipIt terminate];
-	}];
 }
 
 - (void)SPT_tearDown {
@@ -142,6 +140,16 @@ static void SQRLSignalHandler(int sig) {
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager copyItemAtURL:bundleURL toURL:fixtureURL error:&error];
 		STAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundleURL, fixtureURL, error);
+
+		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
+		[[NSData data] writeToURL:testAppLog atomically:YES];
+
+		NSTask *readTestApp = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", testAppLog.path ]];
+		STAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
+
+		[self addCleanupBlock:^{
+			[readTestApp terminate];
+		}];
 	}
 
 	return fixtureURL;
@@ -156,16 +164,6 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (NSRunningApplication *)launchTestApplicationWithEnvironment:(NSDictionary *)environment {
-	NSURL *testAppLog = [self.testApplicationURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
-	[[NSData data] writeToURL:testAppLog atomically:YES];
-
-	NSTask *readTestApp = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", testAppLog.path ]];
-	STAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
-
-	[self addCleanupBlock:^{
-		[readTestApp terminate];
-	}];
-
 	NSDictionary *configuration = nil;
 	if (environment != nil) configuration = @{ NSWorkspaceLaunchConfigurationEnvironment: environment };
 
