@@ -8,6 +8,8 @@
 
 #import "SQRLArguments.h"
 
+#if DEBUG
+
 // Specified for SQRLShipItCommandKey to listen for termination of a process,
 // indicated using the following keys:
 //
@@ -23,3 +25,5 @@
 //  - SQRLUpdateBundleURLKey
 //  - SQRLBackupURLKey
 #define SQRLShipItInstallWithoutWaitingCommand "SQRLShipItInstallWithoutWaitingCommand"
+
+#endif

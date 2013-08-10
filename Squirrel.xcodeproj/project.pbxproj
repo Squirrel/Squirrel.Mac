@@ -606,8 +606,8 @@
 				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				D007290817B0973E008C7DDE /* SQRLArguments.h */,
-				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
 				D0F8E13717B19C6D00BCA070 /* SQRLArguments+Private.h */,
+				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
 				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */,
 				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */,
 			);

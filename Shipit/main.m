@@ -84,6 +84,7 @@ static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyH
 	[listener beginListening];
 }
 
+#if DEBUG
 static void listenForTermination(xpc_object_t event, SQRLReplyHandler replyHandler) {
 	pid_t pid = (pid_t)xpc_dictionary_get_int64(event, SQRLProcessIdentifierKey);
 	const char *bundleIdentifier = xpc_dictionary_get_string(event, SQRLBundleIdentifierKey);
@@ -95,6 +96,7 @@ static void listenForTermination(xpc_object_t event, SQRLReplyHandler replyHandl
 	
 	[listener beginListening];
 }
+#endif
 
 static void handleConnection(xpc_connection_t client) {
 	#if DEBUG
@@ -131,10 +133,15 @@ static void handleConnection(xpc_connection_t client) {
 		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
 		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
 			install(event, YES, replyHandler);
-		} else if (strcmp(command, SQRLShipItListenForTerminationCommand) == 0) {
-			listenForTermination(event, replyHandler);
-		} else if (strcmp(command, SQRLShipItInstallWithoutWaitingCommand) == 0) {
-			install(event, NO, replyHandler);
+		} else {
+			#if DEBUG
+			// These commands are only used for unit testing.
+			if (strcmp(command, SQRLShipItListenForTerminationCommand) == 0) {
+				listenForTermination(event, replyHandler);
+			} else if (strcmp(command, SQRLShipItInstallWithoutWaitingCommand) == 0) {
+				install(event, NO, replyHandler);
+			}
+			#endif
 		}
 	});
 	
