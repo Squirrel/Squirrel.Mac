@@ -65,7 +65,6 @@ it(@"should install an update and relaunch", ^{
 
 	apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
 	expect(apps.count).to.equal(1);
-	expect([apps.lastObject bundleURL]).to.equal(self.testApplicationURL);
 });
 
 SpecEnd
