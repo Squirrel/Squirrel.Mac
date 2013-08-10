@@ -47,19 +47,29 @@ static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyH
 
 	void (^installUpdate)(BOOL) = ^(BOOL shouldRelaunch) {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
+
+		@onExit {
+			if (shouldWait) xpc_transaction_end();
+		};
 		
 		NSError *error = nil;
 		if (![installer installUpdateWithError:&error]) {
-			replyHandler(NO, [NSString stringWithFormat:@"Error installing update: %@", error.sqrl_verboseDescription]);
+			NSString *message = [NSString stringWithFormat:@"Error installing update: %@", error.sqrl_verboseDescription];
+			NSLog(@"%@", message);
+
+			if (!shouldWait) replyHandler(NO, message);
 			return;
 		}
 		
 		if (shouldRelaunch && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-			replyHandler(NO, [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription]);
+			NSString *message = [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription];
+			NSLog(@"%@", message);
+
+			if (!shouldWait) replyHandler(NO, message);
 			return;
 		}
 		
-		replyHandler(YES, nil);
+		if (!shouldWait) replyHandler(YES, nil);
 	};
 
 	if (!shouldWait) {
@@ -77,11 +87,22 @@ static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyH
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 	
 	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:targetBundleURL terminationHandler:^{
+		#if DEBUG
 		NSLog(@"Target process terminated, installing update");
+		#endif
+
 		installUpdate(shouldRelaunch);
 	}];
 
 	[listener beginListening];
+	if (shouldWait) {
+		xpc_transaction_begin();
+		replyHandler(YES, nil);
+	}
+
+	#if DEBUG
+	NSLog(@"Listening for termination…");
+	#endif
 }
 
 #if DEBUG
@@ -151,6 +172,10 @@ static void handleConnection(xpc_connection_t client) {
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		#if DEBUG
+		atexit_b(^{
+			NSLog(@"ShipIt quitting");
+		});
+
 		NSString *folder = [NSBundle bundleWithIdentifier:@(SQRLShipItServiceLabel)].bundlePath.stringByDeletingLastPathComponent;
 		NSString *logPath = [folder stringByAppendingPathComponent:@"ShipIt.log"];
 		NSLog(@"Redirecting logging to %@", logPath);
