@@ -23,10 +23,6 @@ NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdaterJSONNameKey = @"name";
 NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
-// The name of the executable that performs relaunching. This should exist
-// within the Resources folder of Squirrel.framework.
-static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
-
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -315,36 +311,6 @@ static NSString * const SQRLUpdaterRelauncherExecutableName = @"shipit";
 
 - (void)installUpdateIfNeeded {
 	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) return;
-	
-	NSBundle *frameworkBundle = [NSBundle bundleForClass:self.class];
-	NSURL *relauncherURL = [frameworkBundle URLForResource:SQRLUpdaterRelauncherExecutableName withExtension:nil];
-	if (relauncherURL == nil) {
-		NSLog(@"Could not find \"%@\" executable in framework bundle at %@", SQRLUpdaterRelauncherExecutableName, frameworkBundle.bundleURL);
-		[self finishAndSetIdle];
-		return;
-	}
-
-	NSURL *targetURL = [self.applicationSupportURL URLByAppendingPathComponent:SQRLUpdaterRelauncherExecutableName];
-	NSError *error = nil;
-	NSLog(@"Copying relauncher from %@ to %@", relauncherURL, targetURL);
-	
-	if (![NSFileManager.defaultManager createDirectoryAtURL:targetURL.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:&error]) {
-		NSLog(@"Error installing update, failed to create App Support folder with error %@", error.sqrl_verboseDescription);
-		[self finishAndSetIdle];
-		return;
-	}
-	
-	if (![NSFileManager.defaultManager removeItemAtURL:targetURL error:&error]) {
-		NSLog(@"Error removing existing relauncher binary at %@: %@", targetURL, error.sqrl_verboseDescription);
-		[self finishAndSetIdle];
-		return;
-	}
-	
-	if (![NSFileManager.defaultManager copyItemAtURL:relauncherURL toURL:targetURL error:&error]) {
-		NSLog(@"Error installing update, failed to copy relauncher from %@ to %@: %@", relauncherURL, targetURL, error.sqrl_verboseDescription);
-		[self finishAndSetIdle];
-		return;
-	}
 	
 	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];

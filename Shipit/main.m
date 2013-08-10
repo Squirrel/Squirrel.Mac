@@ -77,6 +77,7 @@ static void install(xpc_object_t event, BOOL shouldWait, SQRLReplyHandler replyH
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 	
 	SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithProcessID:pid bundleIdentifier:@(bundleIdentifier) bundleURL:targetBundleURL terminationHandler:^{
+		NSLog(@"Target process terminated, installing update");
 		installUpdate(shouldRelaunch);
 	}];
 
