@@ -202,7 +202,11 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *outputURL = [[self.baseTemporaryDirectoryURL URLByAppendingPathComponent:itemURL.lastPathComponent] URLByAppendingPathExtension:@"zip"];
 	STAssertNotNil(outputURL, @"Could not create zip archive URL for %@", itemURL);
 
-	NSTask *task = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/zip" arguments:@[ @"-r", outputURL.path, itemURL.path ]];
+	NSTask *task = [[NSTask alloc] init];
+	task.launchPath = @"/usr/bin/zip";
+	task.currentDirectoryPath = itemURL.URLByDeletingLastPathComponent.path;
+	task.arguments = @[ @"-r", outputURL.path, itemURL.lastPathComponent ];
+	[task launch];
 	[task waitUntilExit];
 
 	STAssertEquals(task.terminationStatus, 0, @"zip task terminated with an error");
