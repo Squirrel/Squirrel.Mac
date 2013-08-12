@@ -39,10 +39,19 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 	NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
 	jobDict[@"Label"] = jobLabel;
-	jobDict[@"Program"] = [squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path;
 	jobDict[@"Nice"] = @(-1);
 	jobDict[@"KeepAlive"] = @NO;
-	jobDict[@"MachServices"] = @{ jobLabel: @YES };
+	jobDict[@"MachServices"] = @{
+		jobLabel: @YES
+	};
+
+	jobDict[@"ProgramArguments"] = @[
+		[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path,
+
+		// Pass in the service name as the only argument, so ShipIt knows how to
+		// broadcast itself.
+		jobLabel
+	];
 
 	NSError *error = nil;
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
@@ -65,11 +74,11 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		return NULL;
 	}
 
-	xpc_connection_t connection = xpc_connection_create_mach_service(SQRLShipItServiceLabel, NULL, 0);
+	xpc_connection_t connection = xpc_connection_create_mach_service(jobLabel.UTF8String, NULL, 0);
 	if (connection == NULL) {
 		if (errorPtr != NULL) {
 			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Error opening XPC connection to %s", nil), SQRLShipItServiceLabel],
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Error opening XPC connection to %@", nil), jobLabel],
 			};
 
 			*errorPtr = [NSError errorWithDomain:SQRLShipItLauncherErrorDomain code:SQRLShipItLauncherErrorCouldNotStartService userInfo:userInfo];

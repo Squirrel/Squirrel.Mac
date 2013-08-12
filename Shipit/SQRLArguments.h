@@ -6,9 +6,6 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-// The label for the ShipIt XPC service.
-extern const char * const SQRLShipItServiceLabel;
-
 // A key in an XPC reply, associated with a boolean indicating whether the
 // requested command was successful.
 extern const char * const SQRLShipItSuccessKey;

@@ -132,11 +132,17 @@ int main(int argc, const char * argv[]) {
 			NSLog(@"ShipIt quitting");
 		});
 
-		NSLog(@"ShipIt started");
+		if (argc < 2) {
+			NSLog(@"Missing Mach service label for ShipIt");
+			return EXIT_FAILURE;
+		}
 
-		xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipItServiceLabel, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+		const char *serviceName = argv[1];
+		NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
+
+		xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
 		if (service == NULL) {
-			NSLog(@"Could not start Mach service \"%s\"", SQRLShipItServiceLabel);
+			NSLog(@"Could not start Mach service \"%s\"", serviceName);
 			exit(EXIT_FAILURE);
 		}
 
