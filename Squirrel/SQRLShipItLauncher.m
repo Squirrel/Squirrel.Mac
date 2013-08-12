@@ -21,12 +21,6 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
-	NSURL *plistURL = [squirrelBundle URLForResource:@"ShipIt-Launchd" withExtension:@"plist"];
-	NSAssert(plistURL != nil, @"Could not find ShipIt launchd.plist in %@", squirrelBundle);
-
-	NSMutableDictionary *jobDict = [[NSDictionary dictionaryWithContentsOfURL:plistURL] mutableCopy];
-	NSAssert(jobDict != nil, @"Could not read ShipIt launchd.plist from %@", plistURL);
-
 	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
 	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
 	NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
@@ -43,8 +37,12 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		}
 	}
 
+	NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
 	jobDict[@"Label"] = jobLabel;
 	jobDict[@"Program"] = [squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path;
+	jobDict[@"Nice"] = @(-1);
+	jobDict[@"KeepAlive"] = @NO;
+	jobDict[@"MachServices"] = @{ jobLabel: @YES };
 
 	NSError *error = nil;
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];

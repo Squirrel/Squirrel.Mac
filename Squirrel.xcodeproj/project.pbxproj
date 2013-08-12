@@ -12,7 +12,6 @@
 		D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D014AC0517B97885007D79D0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC0417B97885007D79D0 /* main.m */; };
 		D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
-		D014AC1517B978F9007D79D0 /* ShipIt-Launchd.plist in Resources */ = {isa = PBXBuildFile; fileRef = D014AC1417B978A7007D79D0 /* ShipIt-Launchd.plist */; };
 		D014AC1817B97945007D79D0 /* ShipIt in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = D014AC0117B97885007D79D0 /* ShipIt */; };
 		D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
 		D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
@@ -218,7 +217,6 @@
 		D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLInstaller.h; sourceTree = "<group>"; };
 		D014AC1017B9789C007D79D0 /* SQRLInstaller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstaller.m; sourceTree = "<group>"; };
 		D014AC1217B978A7007D79D0 /* com.github.Squirrel.ShipIt.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = com.github.Squirrel.ShipIt.entitlements; sourceTree = "<group>"; };
-		D014AC1417B978A7007D79D0 /* ShipIt-Launchd.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "ShipIt-Launchd.plist"; sourceTree = "<group>"; };
 		D0366C0017B18FEE0086ED44 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		D0366C0117B18FEE0086ED44 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -361,7 +359,6 @@
 			isa = PBXGroup;
 			children = (
 				D014AC1217B978A7007D79D0 /* com.github.Squirrel.ShipIt.entitlements */,
-				D014AC1417B978A7007D79D0 /* ShipIt-Launchd.plist */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -860,7 +857,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */,
-				D014AC1517B978F9007D79D0 /* ShipIt-Launchd.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
