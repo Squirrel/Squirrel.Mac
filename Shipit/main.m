@@ -104,7 +104,7 @@ static void handleConnection(xpc_connection_t client) {
 						return;
 					}
 
-					NSLog(@"Waiting for %f seconds before installing", SQRLUpdaterInstallationDelay);
+					NSLog(@"Waiting for %g seconds before installing", SQRLUpdaterInstallationDelay);
 
 					dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLUpdaterInstallationDelay * NSEC_PER_SEC));
 					dispatch_after(time, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
