@@ -51,6 +51,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	}
 
 	#if DEBUG
+	jobDict[@"Debug"] = @YES;
+
 	NSLog(@"ShipIt job dictionary: %@", jobDict);
 	#endif
 
