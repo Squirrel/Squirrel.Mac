@@ -33,6 +33,11 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 	return ^(NSString **errorString) {
+		xpc_transaction_begin();
+		@onExit {
+			xpc_transaction_end();
+		};
+
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
 
 		NSLog(@"Beginning installation");
