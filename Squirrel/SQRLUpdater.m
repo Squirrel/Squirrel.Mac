@@ -362,6 +362,7 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		}
 
 		completionHandler(success);
+		xpc_connection_cancel(connection);
 	});
 }
 
