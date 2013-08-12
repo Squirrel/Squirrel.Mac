@@ -14,8 +14,8 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "D08D4DD017B43B770012B22D"
-               BuildableName = "com.github.Squirrel.ShipIt.xpc"
+               BlueprintIdentifier = "D014AC0017B97885007D79D0"
+               BuildableName = "ShipIt"
                BlueprintName = "ShipIt"
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>

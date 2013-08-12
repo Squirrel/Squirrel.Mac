@@ -9,6 +9,7 @@
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
 #import "SQRLArguments.h"
+#import <ServiceManagement/ServiceManagement.h>
 
 NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
 
@@ -17,7 +18,30 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 @implementation SQRLShipItLauncher
 
 - (xpc_connection_t)launch:(NSError **)error {
-	xpc_connection_t connection = xpc_connection_create(SQRLShipItServiceLabel, NULL);
+	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
+	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
+
+	NSURL *plistURL = [squirrelBundle URLForResource:@"ShipIt-Launchd" withExtension:@"plist"];
+	NSAssert(plistURL != nil, @"Could not find ShipIt launchd.plist in %@", squirrelBundle);
+
+	NSMutableDictionary *jobDict = [[NSDictionary dictionaryWithContentsOfURL:plistURL] mutableCopy];
+	NSAssert(jobDict != nil, @"Could not read ShipIt launchd.plist from %@", plistURL);
+
+	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
+	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
+	jobDict[@"Label"] = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+	jobDict[@"Program"] = [squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path;
+
+	NSLog(@"Job dictionary: %@", jobDict);
+
+	CFErrorRef cfError;
+	if (!SMJobSubmit(kSMDomainUserLaunchd, (__bridge CFDictionaryRef)jobDict, NULL, &cfError)) {
+		if (error) *error = (__bridge id)cfError;
+		if (cfError != NULL) CFRelease(cfError);
+		return NULL;
+	}
+
+	xpc_connection_t connection = xpc_connection_create_mach_service(SQRLShipItServiceLabel, NULL, 0);
 	if (connection == NULL) {
 		if (error != NULL) {
 			NSDictionary *userInfo = @{

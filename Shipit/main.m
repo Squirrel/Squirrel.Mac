@@ -123,7 +123,22 @@ int main(int argc, const char * argv[]) {
 		NSLog(@"ShipIt started");
 		#endif
 
-		xpc_main(handleConnection);
+		xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipItServiceLabel, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+		if (service == NULL) {
+			NSLog(@"Could not start Mach service \"%s\"", SQRLShipItServiceLabel);
+			exit(EXIT_FAILURE);
+		}
+
+		@onExit {
+			xpc_release(service);
+		};
+		
+		xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
+			handleConnection(connection);
+		});
+		
+		xpc_connection_resume(service);
+		dispatch_main();
 	}
 
 	return EXIT_SUCCESS;
