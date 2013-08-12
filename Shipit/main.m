@@ -75,10 +75,7 @@ static void handleConnection(xpc_connection_t client) {
 
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR) {
-			if (event != XPC_ERROR_CONNECTION_INVALID) {
-				NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
-			}
-
+			NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
 			return;
 		}
 
@@ -111,7 +108,8 @@ static void handleConnection(xpc_connection_t client) {
 
 					dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLUpdaterInstallationDelay * NSEC_PER_SEC));
 					dispatch_after(time, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-						handler(NULL);
+						BOOL success = handler(NULL);
+						exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
 					});
 				});
 			} else {
