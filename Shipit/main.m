@@ -114,12 +114,6 @@ int main(int argc, const char * argv[]) {
 			NSLog(@"ShipIt quitting");
 		});
 
-		NSString *folder = [NSBundle bundleWithIdentifier:@(SQRLShipItServiceLabel)].bundlePath.stringByDeletingLastPathComponent;
-		NSString *logPath = [folder stringByAppendingPathComponent:@"ShipIt.log"];
-		NSLog(@"Redirecting logging to %@", logPath);
-
-		freopen(logPath.fileSystemRepresentation, "a+", stderr);
-
 		NSLog(@"ShipIt started");
 		#endif
 

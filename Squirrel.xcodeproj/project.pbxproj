@@ -1301,6 +1301,7 @@
 				D014AC0E17B97885007D79D0 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D08D4E3317B451500012B22D /* Build configuration list for PBXNativeTarget "TestApplication" */ = {
 			isa = XCConfigurationList;

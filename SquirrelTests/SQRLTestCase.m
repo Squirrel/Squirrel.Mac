@@ -59,12 +59,17 @@ static void SQRLSignalHandler(int sig) {
 #pragma mark Lifecycle
 
 + (void)load {
-	NSBundle *squirrelBundle = [NSBundle bundleWithIdentifier:@"com.github.Squirrel"];
-	NSURL *shipItLog = [squirrelBundle.bundleURL URLByAppendingPathComponent:@"XPCServices/ShipIt.log"];
-	[[NSData data] writeToURL:shipItLog atomically:YES];
+	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
+	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", shipItLog.path ]];
-	NSAssert([readShipIt isRunning], @"Could not start task %@ to read %@", readShipIt, shipItLog);
+	NSURL *stdoutShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
+	NSURL *stderrShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
+
+	[[NSData data] writeToURL:stdoutShipIt atomically:YES];
+	[[NSData data] writeToURL:stderrShipIt atomically:YES];
+
+	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", stdoutShipIt.path, stderrShipIt.path ]];
+	NSAssert([readShipIt isRunning], @"Could not start task %@ to read %@ and %@", readShipIt, stdoutShipIt, stderrShipIt);
 
 	atexit_b(^{
 		[readShipIt terminate];

@@ -17,7 +17,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 @implementation SQRLShipItLauncher
 
-- (xpc_connection_t)launch:(NSError **)error {
+- (xpc_connection_t)launch:(NSError **)errorPtr {
 	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
@@ -32,23 +32,31 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	jobDict[@"Label"] = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 	jobDict[@"Program"] = [squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path;
 
+	NSError *error = nil;
+	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
+	if (appSupportURL == nil) {
+		NSLog(@"Could not find Application Support folder: %@", error);
+	} else {
+		jobDict[@"StandardOutPath"] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
+		jobDict[@"StandardErrorPath"] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
+	}
+
 	NSLog(@"Job dictionary: %@", jobDict);
 
-	CFErrorRef cfError;
 	if (!SMJobSubmit(kSMDomainUserLaunchd, (__bridge CFDictionaryRef)jobDict, NULL, &cfError)) {
-		if (error) *error = (__bridge id)cfError;
+		if (errorPtr) *errorPtr = (__bridge id)cfError;
 		if (cfError != NULL) CFRelease(cfError);
 		return NULL;
 	}
 
 	xpc_connection_t connection = xpc_connection_create_mach_service(SQRLShipItServiceLabel, NULL, 0);
 	if (connection == NULL) {
-		if (error != NULL) {
+		if (errorPtr != NULL) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Error opening XPC connection to %s", nil), SQRLShipItServiceLabel],
 			};
 
-			*error = [NSError errorWithDomain:SQRLShipItLauncherErrorDomain code:SQRLShipItLauncherErrorCouldNotStartService userInfo:userInfo];
+			*errorPtr = [NSError errorWithDomain:SQRLShipItLauncherErrorDomain code:SQRLShipItLauncherErrorCouldNotStartService userInfo:userInfo];
 		}
 
 		return NULL;
