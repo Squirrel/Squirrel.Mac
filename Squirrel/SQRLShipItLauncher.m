@@ -29,7 +29,16 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
 	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
-	jobDict[@"Label"] = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+	NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+
+	CFErrorRef cfError;
+	if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)jobLabel, NULL, true, &cfError)) {
+		if (errorPtr) *errorPtr = (__bridge id)cfError;
+		if (cfError != NULL) CFRelease(cfError);
+		return NULL;
+	}
+
+	jobDict[@"Label"] = jobLabel;
 	jobDict[@"Program"] = [squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path;
 
 	NSError *error = nil;
