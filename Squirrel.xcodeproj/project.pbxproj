@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		D007290017B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
+		D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */ = {isa = PBXBuildFile; fileRef = D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */; };
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
 		D08D4DD817B43B770012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4DD617B43B770012B22D /* InfoPlist.strings */; };
 		D08D4DDB17B43B770012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4DDA17B43B770012B22D /* main.m */; };
@@ -207,6 +208,8 @@
 /* Begin PBXFileReference section */
 		D00728FF17B09732008C7DDE /* SQRLArguments.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLArguments.m; path = Shipit/SQRLArguments.m; sourceTree = SOURCE_ROOT; };
 		D007290817B0973E008C7DDE /* SQRLArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SQRLArguments.h; path = Shipit/SQRLArguments.h; sourceTree = SOURCE_ROOT; };
+		D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItLauncher.h; sourceTree = "<group>"; };
+		D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItLauncher.m; sourceTree = "<group>"; };
 		D0366C0017B18FEE0086ED44 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		D0366C0117B18FEE0086ED44 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -572,6 +575,8 @@
 		D0C22C49179CC14400158214 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
+				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
 				D09D247A17B5A3DD0001FAF8 /* SQRLUpdater+Private.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
@@ -931,6 +936,7 @@
 				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */,
+				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
 				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,

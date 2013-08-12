@@ -7,6 +7,7 @@
 //
 
 #import "SQRLTestCase.h"
+#import "SQRLShipItLauncher.h"
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
@@ -216,8 +217,11 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (xpc_connection_t)connectToShipIt {
-	xpc_connection_t connection = xpc_connection_create(SQRLShipItServiceLabel, NULL);
-	expect(connection).notTo.beNil();
+	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
+
+	NSError *error = nil;
+	xpc_connection_t connection = [launcher launch:&error];
+	STAssertTrue(connection != NULL, @"Could not open XPC connection: %@", error);
 	
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
 		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
@@ -231,7 +235,6 @@ static void SQRLSignalHandler(int sig) {
 
 	[self addCleanupBlock:^{
 		xpc_connection_cancel(connection);
-		xpc_release(connection);
 	}];
 
 	xpc_connection_resume(connection);

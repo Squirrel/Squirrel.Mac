@@ -10,6 +10,7 @@
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerification.h"
+#import "SQRLShipItLauncher.h"
 
 #import "SSZipArchive.h"
 
@@ -330,25 +331,15 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		return;
 	}
 
-	xpc_connection_t connection = xpc_connection_create(SQRLShipItServiceLabel, NULL);
+	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
+
+	NSError *error = nil;
+	xpc_connection_t connection = [launcher launch:&error];
 	if (connection == NULL) {
-		NSLog(@"Error opening XPC connection to %s", SQRLShipItServiceLabel);
+		NSLog(@"Error launching ShipIt: %@", error);
 		completionHandler(NO);
 		return;
 	}
-	
-	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
-			if (event != XPC_ERROR_CONNECTION_INVALID) {
-				char *errorStr = xpc_copy_description(event);
-				NSLog(@"Received XPC error: %s", errorStr);
-				free(errorStr);
-			}
-
-			xpc_release(connection);
-			return;
-		}
-	});
 
 	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
 	@onExit {
