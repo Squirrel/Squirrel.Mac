@@ -30,11 +30,21 @@ extern const char * const SQRLShipItCommandKey;
 //	- SQRLUpdateBundleURLKey
 //	- SQRLBackupURLKey
 //	- SQRLShouldRelaunchKey
+//	- SQRLWaitForConnectionKey
 //
-// ShipIt will respond immediately indicating whether the initial setup was
-// successful. Once the connection has been terminated, the installation will
-// start.
+// If SQRLWaitForConnectionKey is set to `true`, ShipIt will respond
+// immediately indicating whether the initial setup was successful, then begin
+// installation shortly after the connection has been terminated by the client.
+//
+// If SQRLWaitForConnectionKey is set to `false`, ShipIt will begin installation
+// immediately, and then reply with whether installation was successful.
 extern const char * const SQRLShipItInstallCommand;
+
+// Associated with a boolean, indicating whether ShipIt should wait for the
+// connection to terminate before beginning installation.
+//
+// This argument is required.
+extern const char * const SQRLWaitForConnectionKey;
 
 // Associated with a string representation of the URL to _replace_ on disk.
 //

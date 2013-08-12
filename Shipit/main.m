@@ -14,6 +14,9 @@
 
 typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
 
+// How long to wait after connection termination before installing an update.
+static const NSTimeInterval SQRLUpdaterInstallationDelay = 0.1;
+
 static NSString *NSStringFromXPCObject(xpc_object_t object) {
 	char *desc = xpc_copy_description(object);
 	NSString *str = @(desc);
@@ -30,9 +33,9 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 	return ^(NSString **errorString) {
-		NSLog(@"Beginning installation…");
-
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
+
+		NSLog(@"Beginning installation");
 
 		NSError *error = nil;
 		if (![installer installUpdateWithError:&error]) {
@@ -44,8 +47,9 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 		}
 		
 		NSLog(@"Installation completed successfully");
-		
-		if (shouldRelaunch && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+		if (!shouldRelaunch) return YES;
+
+		if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
 			NSString *message = [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription];
 			NSLog(@"%@", message);
 
@@ -53,6 +57,7 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 			return NO;
 		}
 		
+		NSLog(@"Application relaunched");
 		return YES;
 	};
 }
@@ -86,13 +91,32 @@ static void handleConnection(xpc_connection_t client) {
 				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
 				return;
 			}
-			
-			NSString *errorString = nil;
-			BOOL success = handler(&errorString);
-				
-			xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
-			if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
-			xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+
+			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(reply);
+
+			if (xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
+				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
+				xpc_connection_send_message_with_reply(remoteConnection, reply, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t event) {
+					if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
+						NSLog(@"Expected connection termination, got %@", NSStringFromXPCObject(event));
+						return;
+					}
+
+					NSLog(@"Waiting for %f seconds before installing", SQRLUpdaterInstallationDelay);
+
+					dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLUpdaterInstallationDelay * NSEC_PER_SEC));
+					dispatch_after(time, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
+						handler(NULL);
+					});
+				});
+			} else {
+				NSString *errorString = nil;
+				BOOL success = handler(&errorString);
+					
+				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
+				if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+				xpc_connection_send_message(remoteConnection, reply);
+			}
 		}
 	});
 	

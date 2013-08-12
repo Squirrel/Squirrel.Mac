@@ -14,6 +14,7 @@ const char * const SQRLShipItErrorKey = "SQRLShipItErrorKey";
 const char * const SQRLShipItCommandKey = "SQRLCommandKey";
 
 const char * const SQRLShipItInstallCommand = "SQRLShipItInstallCommand";
+const char * const SQRLWaitForConnectionKey = "SQRLWaitForConnectionKey";
 const char * const SQRLProcessIdentifierKey = "SQRLProcessIdentifierKey";
 const char * const SQRLBundleIdentifierKey = "SQRLBundleIdentifierKey";
 const char * const SQRLTargetBundleURLKey = "SQRLTargetBundleURLKey";

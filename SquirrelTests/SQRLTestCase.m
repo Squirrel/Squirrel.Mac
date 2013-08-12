@@ -173,6 +173,15 @@ static void SQRLSignalHandler(int sig) {
 	return bundle;
 }
 
+- (NSString *)testApplicationBundleVersion {
+	NSURL *plistURL = [self.testApplicationURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+
+	NSDictionary *plist = [NSDictionary dictionaryWithContentsOfURL:plistURL];
+	STAssertNotNil(plist, @"Could not read plist from %@", plistURL);
+
+	return plist[SQRLBundleShortVersionStringKey];
+}
+
 - (NSRunningApplication *)launchTestApplicationWithEnvironment:(NSDictionary *)environment {
 	NSDictionary *configuration = nil;
 	if (environment != nil) configuration = @{ NSWorkspaceLaunchConfigurationEnvironment: environment };

@@ -351,6 +351,7 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.applicationSupportURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
+	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
 
 	xpc_connection_resume(connection);
 	xpc_connection_send_message_with_reply(connection, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {

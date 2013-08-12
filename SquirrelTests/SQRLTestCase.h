@@ -48,6 +48,10 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // be automatically terminated at the end of the example.
 - (NSRunningApplication *)launchTestApplicationWithEnvironment:(NSDictionary *)environment;
 
+// Reads the short version string from the `testApplicationBundle` on disk, but
+// without actually loading the bundle into memory.
+- (NSString *)testApplicationBundleVersion;
+
 // Creates an update for TestApplication.app by bumping its Info.plist version
 // to `SQRLTestApplicationUpdatedShortVersionString`.
 //

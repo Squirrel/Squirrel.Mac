@@ -24,6 +24,7 @@ it(@"should install an update", ^{
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
+	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, false);
 
 	__block BOOL installed = NO;
 
@@ -35,7 +36,7 @@ it(@"should install an update", ^{
 	});
 
 	expect(installed).will.beTruthy();
-	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
 it(@"should install an update and relaunch", ^{
@@ -46,6 +47,7 @@ it(@"should install an update and relaunch", ^{
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, true);
+	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, false);
 
 	__block BOOL installed = NO;
 
@@ -61,7 +63,7 @@ it(@"should install an update and relaunch", ^{
 	});
 
 	expect(installed).will.beTruthy();
-	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
 	apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
 	expect(apps.count).to.equal(1);

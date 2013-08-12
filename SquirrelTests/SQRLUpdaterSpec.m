@@ -39,7 +39,7 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 	NSURL *updateURL = [self createTestApplicationUpdate];
 	NSRunningApplication *app = launchWithMockUpdate(updateURL);
 	expect(app.terminated).will.beTruthy();
-	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
 it(@"should not install a corrupt update", ^{
@@ -49,7 +49,10 @@ it(@"should not install a corrupt update", ^{
 
 	NSRunningApplication *app = launchWithMockUpdate(updateURL);
 	expect(app.terminated).will.beTruthy();
-	expect(self.testApplicationBundle.infoDictionary[SQRLBundleShortVersionStringKey]).to.equal(SQRLTestApplicationOriginalShortVersionString);
+
+	// Give the update some time to finish installing.
+	[NSThread sleepForTimeInterval:0.2];
+	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
 SpecEnd
