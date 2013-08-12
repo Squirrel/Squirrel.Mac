@@ -30,9 +30,7 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
 	return ^(NSString **errorString) {
-		#if DEBUG
 		NSLog(@"Beginning installation…");
-		#endif
 
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
 
@@ -45,9 +43,7 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 			return NO;
 		}
 		
-		#if DEBUG
 		NSLog(@"Installation completed successfully");
-		#endif
 		
 		if (shouldRelaunch && ![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
 			NSString *message = [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription];
@@ -62,14 +58,10 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 }
 
 static void handleConnection(xpc_connection_t client) {
-	#if DEBUG
 	NSLog(@"Got client connection: %s", xpc_copy_description(client));
-	#endif
 
 	xpc_connection_set_event_handler(client, ^(xpc_object_t event) {
-		#if DEBUG
 		NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
-		#endif
 
 		xpc_type_t type = xpc_get_type(event);
 		if (type == XPC_TYPE_ERROR) {
@@ -109,13 +101,11 @@ static void handleConnection(xpc_connection_t client) {
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
-		#if DEBUG
 		atexit_b(^{
 			NSLog(@"ShipIt quitting");
 		});
 
 		NSLog(@"ShipIt started");
-		#endif
 
 		xpc_connection_t service = xpc_connection_create_mach_service(SQRLShipItServiceLabel, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
 		if (service == NULL) {

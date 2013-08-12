@@ -50,7 +50,9 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		jobDict[@"StandardErrorPath"] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
 	}
 
-	NSLog(@"Job dictionary: %@", jobDict);
+	#if DEBUG
+	NSLog(@"ShipIt job dictionary: %@", jobDict);
+	#endif
 
 	if (!SMJobSubmit(kSMDomainUserLaunchd, (__bridge CFDictionaryRef)jobDict, NULL, &cfError)) {
 		if (errorPtr) *errorPtr = (__bridge id)cfError;
