@@ -76,7 +76,9 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
 
 // Enqueues a job that will install a previously downloaded, unzipped, and verified
-// update in place (i.e. while the application still runs).
+// update after the app quits.
+//
+// This will disable sudden termination if the job is enqueued successfully.
 //
 // If `shouldRelaunch` is YES, the app will be launched back up after the update
 // is installed successfully.

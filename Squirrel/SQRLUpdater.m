@@ -340,6 +340,8 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		completionHandler(NO);
 		return;
 	}
+	
+	[NSProcessInfo.processInfo disableSuddenTermination];
 
 	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
 	@onExit {
@@ -359,6 +361,8 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 		if (!success) {
 			const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
 			NSLog(@"Error shipping it: %s", errorStr);
+	
+			[NSProcessInfo.processInfo enableSuddenTermination];
 		}
 
 		completionHandler(success);
