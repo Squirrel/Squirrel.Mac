@@ -219,8 +219,7 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
-	// rename() is atomic and makes sure to remove the destination,
-	// whereas NSFileManager sucks.
+	// rename() is atomic, NSFileManager sucks.
 	if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) != 0) {
 		int code = errno;
 		if (code == EXDEV) {
