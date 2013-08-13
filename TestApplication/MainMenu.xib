@@ -1263,7 +1263,7 @@
 				<string key="NSName">_NSMainMenu</string>
 			</object>
 			<object class="NSCustomObject" id="235667571">
-				<string key="NSClassName">SQRLAppDelegate</string>
+				<string key="NSClassName">TestAppDelegate</string>
 			</object>
 		</array>
 		<object class="IBObjectContainer" key="IBDocument.Objects">

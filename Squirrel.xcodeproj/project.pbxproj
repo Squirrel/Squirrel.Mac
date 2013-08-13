@@ -25,7 +25,7 @@
 		D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1117B451500012B22D /* InfoPlist.strings */; };
 		D08D4E1517B451500012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1417B451500012B22D /* main.m */; };
 		D08D4E1917B451500012B22D /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1717B451500012B22D /* Credits.rtf */; };
-		D08D4E1C17B451500012B22D /* SQRLAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1B17B451500012B22D /* SQRLAppDelegate.m */; };
+		D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1B17B451500012B22D /* TestAppDelegate.m */; };
 		D08D4E2117B451500012B22D /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E2017B451500012B22D /* Images.xcassets */; };
 		D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
@@ -228,8 +228,8 @@
 		D08D4E1417B451500012B22D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		D08D4E1617B451500012B22D /* TestApplication-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestApplication-Prefix.pch"; sourceTree = "<group>"; };
 		D08D4E1817B451500012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
-		D08D4E1A17B451500012B22D /* SQRLAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = SQRLAppDelegate.h; sourceTree = "<group>"; };
-		D08D4E1B17B451500012B22D /* SQRLAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = SQRLAppDelegate.m; sourceTree = "<group>"; };
+		D08D4E1A17B451500012B22D /* TestAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestAppDelegate.h; sourceTree = "<group>"; };
+		D08D4E1B17B451500012B22D /* TestAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TestAppDelegate.m; sourceTree = "<group>"; };
 		D08D4E2017B451500012B22D /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
 		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
@@ -369,8 +369,8 @@
 		D08D4E0E17B451500012B22D /* TestApplication */ = {
 			isa = PBXGroup;
 			children = (
-				D08D4E1A17B451500012B22D /* SQRLAppDelegate.h */,
-				D08D4E1B17B451500012B22D /* SQRLAppDelegate.m */,
+				D08D4E1A17B451500012B22D /* TestAppDelegate.h */,
+				D08D4E1B17B451500012B22D /* TestAppDelegate.m */,
 				D08D4E2017B451500012B22D /* Images.xcassets */,
 				D08D4E0F17B451500012B22D /* Supporting Files */,
 			);
@@ -900,7 +900,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D08D4E1C17B451500012B22D /* SQRLAppDelegate.m in Sources */,
+				D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */,
 				D08D4E1517B451500012B22D /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

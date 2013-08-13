@@ -1,5 +1,5 @@
 //
-//  SQRLAppDelegate.h
+//  TestAppDelegate.h
 //  TestApplication
 //
 //  Created by Justin Spahr-Summers on 2013-08-08.
@@ -8,7 +8,7 @@
 
 #import <Cocoa/Cocoa.h>
 
-@interface SQRLAppDelegate : NSObject <NSApplicationDelegate>
+@interface TestAppDelegate : NSObject <NSApplicationDelegate>
 
 @property (assign) IBOutlet NSWindow *window;
 

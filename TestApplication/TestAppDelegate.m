@@ -1,14 +1,14 @@
 //
-//  SQRLAppDelegate.m
+//  TestAppDelegate.m
 //  TestApplication
 //
 //  Created by Justin Spahr-Summers on 2013-08-08.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLAppDelegate.h"
+#import "TestAppDelegate.h"
 
-@implementation SQRLAppDelegate
+@implementation TestAppDelegate
 
 #pragma mark Lifecycle
 
