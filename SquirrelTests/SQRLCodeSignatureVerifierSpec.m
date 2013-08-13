@@ -28,6 +28,16 @@ it(@"should verify a valid bundle", ^{
 	expect(error).to.beNil();
 });
 
+it(@"should fail to verify with different code signing requirements", ^{
+	SQRLCodeSignatureVerifier *verifier = [[SQRLCodeSignatureVerifier alloc] init];
+	expect(verifier).notTo.beNil();
+
+	NSError *error = nil;
+	BOOL success = [verifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+	expect(success).to.beFalsy();
+	expect(error).notTo.beNil();
+});
+
 describe(@"code signature changes", ^{
 	__block NSURL *codeSignatureURL;
 
