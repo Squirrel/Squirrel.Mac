@@ -86,4 +86,10 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // Fetches any error string from the given XPC object.
 - (NSString *)errorFromObject:(xpc_object_t)object;
 
+// Creates a disk image using the contents of the given directory, then mounts it.
+//
+// Returns the URL to the mounted volume's root directory. The disk image will
+// automatically be unmounted and deleted at the end of the example.
+- (NSURL *)createAndMountDiskImageOfDirectory:(NSURL *)directoryURL;
+
 @end

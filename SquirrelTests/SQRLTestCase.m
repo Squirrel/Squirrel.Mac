@@ -296,6 +296,26 @@ static void SQRLSignalHandler(int sig) {
 	return connection;
 }
 
+- (NSURL *)createAndMountDiskImageOfDirectory:(NSURL *)directoryURL {
+	NSString *name = directoryURL.lastPathComponent;
+	NSURL *destinationURL = [[self.baseTemporaryDirectoryURL URLByAppendingPathComponent:name] URLByAppendingPathExtension:@"dmg"];
+	STAssertNotNil(destinationURL, @"Could not create disk image URL for %@", directoryURL);
+
+	NSString *createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDRW -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+	expect(system(createInvocation.UTF8String)).to.equal(0);
+
+	NSString *mountInvocation = [NSString stringWithFormat:@"hdiutil attach '%@' -noverify -noautofsck -readwrite -quiet", destinationURL.path];
+	expect(system(mountInvocation.UTF8String)).to.equal(0);
+
+	NSString *path = [NSString stringWithFormat:@"/Volumes/%@", name];
+	[self addCleanupBlock:^{
+		NSString *detachInvocation = [NSString stringWithFormat:@"hdiutil detach '%@' -force -quiet", path];
+		expect(system(detachInvocation.UTF8String)).to.equal(0);
+	}];
+
+	return [NSURL fileURLWithPath:path isDirectory:YES];
+}
+
 #pragma mark Diagnostics
 
 - (NSString *)errorFromObject:(xpc_object_t)object {
