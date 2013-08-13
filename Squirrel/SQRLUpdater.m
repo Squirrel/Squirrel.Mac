@@ -382,7 +382,6 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 		}
 
 		completionHandler(success, error);
-		xpc_connection_cancel(connection);
 	});
 }
 
