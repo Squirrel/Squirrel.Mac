@@ -256,21 +256,6 @@ static void SQRLSignalHandler(int sig) {
 	}];
 }
 
-- (NSURL *)zipItemAtURL:(NSURL *)itemURL {
-	NSURL *outputURL = [[self.baseTemporaryDirectoryURL URLByAppendingPathComponent:itemURL.lastPathComponent] URLByAppendingPathExtension:@"zip"];
-	STAssertNotNil(outputURL, @"Could not create zip archive URL for %@", itemURL);
-
-	NSTask *task = [[NSTask alloc] init];
-	task.launchPath = @"/usr/bin/ditto";
-	task.currentDirectoryPath = itemURL.URLByDeletingLastPathComponent.path;
-	task.arguments = @[ @"-ck", @"--keepParent", itemURL.lastPathComponent, outputURL.path ];
-	[task launch];
-	[task waitUntilExit];
-
-	STAssertEquals(task.terminationStatus, 0, @"zip task terminated with an error");
-	return outputURL;
-}
-
 - (xpc_connection_t)connectToShipIt {
 	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
 

@@ -11,8 +11,7 @@
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
-
-#import "SSZipArchive.h"
+#import "SQRLZipArchiver.h"
 
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";
@@ -180,61 +179,62 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
 			
-			BOOL unzipped = [SSZipArchive unzipFileAtPath:zipOutputURL.path toDestination:self.downloadFolder.path];
-			if (!unzipped) {
-				NSLog(@"Could not extract update.");
-				[self finishAndSetIdle];
-				return;
-			}
+			[SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder completion:^(BOOL unzipped) {
+				if (!unzipped) {
+					NSLog(@"Could not extract update.");
+					[self finishAndSetIdle];
+					return;
+				}
 
-			NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
-			NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
-			if (updateBundle == nil) {
-				NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
-				[self finishAndSetIdle];
-				return;
-			}
+				NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
+				NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
+				if (updateBundle == nil) {
+					NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
+					[self finishAndSetIdle];
+					return;
+				}
 
-			NSError *error = nil;
-			BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
-			if (!verified) {
-				NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
-				[self finishAndSetIdle];
-				return;
-			}
-			
-			NSString *name = JSON[SQRLUpdaterJSONNameKey];
-			if (![name isKindOfClass:NSString.class]) {
-				NSLog(@"Ignoring release name of an unsupported type: %@", name);
-				name = nil;
-			}
-			
-			NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
-			if (![releaseNotes isKindOfClass:NSString.class]) {
-				NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
-				releaseNotes = nil;
-			}
+				NSError *error = nil;
+				BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
+				if (!verified) {
+					NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
+					[self finishAndSetIdle];
+					return;
+				}
+				
+				NSString *name = JSON[SQRLUpdaterJSONNameKey];
+				if (![name isKindOfClass:NSString.class]) {
+					NSLog(@"Ignoring release name of an unsupported type: %@", name);
+					name = nil;
+				}
+				
+				NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
+				if (![releaseNotes isKindOfClass:NSString.class]) {
+					NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
+					releaseNotes = nil;
+				}
 
-			NSString *lulzURLString = JSON[SQRLUpdaterJSONLulzURLKey];
-			NSURL *lulzURL = nil;
-			if ([lulzURLString isKindOfClass:NSString.class]) {
-				lulzURL = [NSURL URLWithString:lulzURLString];
-			} else {
-				NSLog(@"Ignoring lulz URL of an unsupported type: %@", lulzURLString);
-			}
+				NSString *lulzURLString = JSON[SQRLUpdaterJSONLulzURLKey];
+				NSURL *lulzURL = nil;
+				if ([lulzURLString isKindOfClass:NSString.class]) {
+					lulzURL = [NSURL URLWithString:lulzURLString];
+				} else {
+					NSLog(@"Ignoring lulz URL of an unsupported type: %@", lulzURLString);
+				}
 
-			if (lulzURL == nil) lulzURL = [self randomLulzURL];
+				if (lulzURL == nil) lulzURL = [self randomLulzURL];
 
-			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-			if (releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = releaseNotes;
-			if (name != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = name;
-			if (lulzURL != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationLulzURLKey] = lulzURL;
-			
-			self.state = SQRLUpdaterStateAwaitingRelaunch;
-			
-			dispatch_async(dispatch_get_main_queue(), ^{
-				[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-			});
+				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+				if (releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = releaseNotes;
+				if (name != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = name;
+				if (lulzURL != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationLulzURLKey] = lulzURL;
+				
+				self.state = SQRLUpdaterStateAwaitingRelaunch;
+				
+				dispatch_async(dispatch_get_main_queue(), ^{
+					[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
+				});
+			}];
 		}];
 		
 		self.state = SQRLUpdaterStateDownloadingUpdate;
