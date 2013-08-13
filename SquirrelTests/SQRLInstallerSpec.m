@@ -100,6 +100,26 @@ it(@"should back up to another volume while updating", ^{
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
+it(@"should install an update to another volume", ^{
+	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+	NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+	__block BOOL installed = NO;
+
+	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+		expect([self errorFromObject:event]).to.beNil();
+
+		installed = YES;
+	});
+
+	expect(installed).will.beTruthy();
+
+	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
 describe(@"signal handling", ^{
 	__block void (^sendThenCancel)(void);
 	__block NSURL *targetURL;
