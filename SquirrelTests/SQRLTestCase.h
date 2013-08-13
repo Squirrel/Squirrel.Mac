@@ -50,6 +50,8 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 
 // Reads the short version string from the `testApplicationBundle` on disk, but
 // without actually loading the bundle into memory.
+//
+// This will not create the `testApplicationBundle` if it doesn't already exist.
 - (NSString *)testApplicationBundleVersion;
 
 // Creates an update for TestApplication.app by bumping its Info.plist version

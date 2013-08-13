@@ -64,8 +64,13 @@ it(@"should install an update and relaunch", ^{
 
 describe(@"signal handling", ^{
 	__block void (^sendThenCancel)(void);
+	__block NSURL *targetURL;
 
 	beforeEach(^{
+		// Copied so that we don't recreate the TestApplication bundle by
+		// accessing the property.
+		targetURL = self.testApplicationURL;
+
 		sendThenCancel = ^{
 			xpc_connection_send_message(shipitConnection, message);
 			xpc_connection_send_barrier(shipitConnection, ^{
@@ -80,8 +85,19 @@ describe(@"signal handling", ^{
 
 	describe(@"with a guaranteed target bundle", ^{
 		afterEach(^{
+			BOOL (^processExists)(void) = ^ BOOL {
+				int result = system("killall -s ShipIt");
+				expect(result).notTo.equal(-1);
+				expect(result).notTo.equal(127);
+				return WEXITSTATUS(result) != 1;
+			};
+
+			// Wait until ShipIt isn't running anymore before verifying the code
+			// signature.
+			expect(processExists()).will.beFalsy();
+
 			NSError *error = nil;
-			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationURL error:&error];
+			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:targetURL error:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		});
@@ -119,9 +135,9 @@ describe(@"signal handling", ^{
 		//  2. The target bundle passes code signing.
 		//
 		// Any corruption of the target bundle is a critical failure.
-		if ([NSFileManager.defaultManager fileExistsAtPath:self.testApplicationURL.path]) {
+		if ([NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
 			NSError *error = nil;
-			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationURL error:&error];
+			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:targetURL error:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		}

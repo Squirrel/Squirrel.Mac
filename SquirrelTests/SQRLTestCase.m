@@ -174,7 +174,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (NSString *)testApplicationBundleVersion {
-	NSURL *plistURL = [self.testApplicationURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+	NSURL *plistURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app/Contents/Info.plist"];
 
 	NSDictionary *plist = [NSDictionary dictionaryWithContentsOfURL:plistURL];
 	STAssertNotNil(plist, @"Could not read plist from %@", plistURL);
