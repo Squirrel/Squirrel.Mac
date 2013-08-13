@@ -296,12 +296,17 @@ static void SQRLSignalHandler(int sig) {
 	return connection;
 }
 
-- (NSURL *)createAndMountDiskImageOfDirectory:(NSURL *)directoryURL {
-	NSString *name = directoryURL.lastPathComponent;
+- (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {
 	NSURL *destinationURL = [[self.baseTemporaryDirectoryURL URLByAppendingPathComponent:name] URLByAppendingPathExtension:@"dmg"];
 	STAssertNotNil(destinationURL, @"Could not create disk image URL for %@", directoryURL);
 
-	NSString *createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDRW -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+	NSString *createInvocation;
+	if (directoryURL == nil) {
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -size 30m -quiet", destinationURL.path, name];
+	} else {
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDRW -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+	}
+
 	expect(system(createInvocation.UTF8String)).to.equal(0);
 
 	NSString *mountInvocation = [NSString stringWithFormat:@"hdiutil attach '%@' -noverify -noautofsck -readwrite -quiet", destinationURL.path];
