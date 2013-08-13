@@ -21,9 +21,9 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 //
 // error - If not NULL, set to any error that occurs.
 //
-// Returns the XPC connection established, or NULL if an error occurs. If an
-// error occurs in the connection, it will be automatically released. Retain it
-// if you'll still need it after that point.
+// Returns the XPC connection established, or NULL if an error occurs. The
+// connection will be automatically released once it has completed or received
+// an error. Retain the connection if you'll still need it after that point.
 - (xpc_connection_t)launch:(NSError **)error;
 
 @end
