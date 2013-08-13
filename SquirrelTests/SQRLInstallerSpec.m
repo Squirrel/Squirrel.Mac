@@ -71,37 +71,34 @@ describe(@"signal handling", ^{
 			xpc_connection_send_barrier(shipitConnection, ^{
 				xpc_connection_cancel(shipitConnection);
 			});
+
+			// Apply a random delay before sending the termination signal, to
+			// fuzz out race conditions.
+			u_int32_t msDelay = arc4random_uniform(80);
+			[NSThread sleepForTimeInterval:msDelay / 1000.0];
 		};
+	});
+
+	afterEach(^{
+		NSError *error = nil;
+		BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationBundle.bundleURL error:&error];
+		expect(success).to.beTruthy();
+		expect(error).to.beNil();
 	});
 
 	it(@"should leave the target in a valid state after being sent SIGHUP", ^{
 		sendThenCancel();
 		expect(system("killall -HUP ShipIt")).to.equal(0);
-
-		NSError *error = nil;
-		BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationBundle.bundleURL error:&error];
-		expect(success).to.beTruthy();
-		expect(error).to.beNil();
 	});
 
 	it(@"should leave the target in a valid state after being sent SIGTERM", ^{
 		sendThenCancel();
 		expect(system("killall -TERM ShipIt")).to.equal(0);
-
-		NSError *error = nil;
-		BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationBundle.bundleURL error:&error];
-		expect(success).to.beTruthy();
-		expect(error).to.beNil();
 	});
 
 	it(@"should leave the target in a valid state after being sent SIGKILL", ^{
 		sendThenCancel();
 		expect(system("killall -KILL ShipIt")).to.equal(0);
-
-		NSError *error = nil;
-		BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationBundle.bundleURL error:&error];
-		expect(success).to.beTruthy();
-		expect(error).to.beNil();
 	});
 });
 
