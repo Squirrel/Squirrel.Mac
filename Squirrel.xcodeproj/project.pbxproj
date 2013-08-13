@@ -7,6 +7,33 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D007290017B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
+		D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */ = {isa = PBXBuildFile; fileRef = D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */; };
+		D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
+		D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC0417B97885007D79D0 /* ShipIt-main.m */; };
+		D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
+		D014AC1817B97945007D79D0 /* ShipIt in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = D014AC0117B97885007D79D0 /* ShipIt */; };
+		D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */; };
+		D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
+		D014AC1B17B979AD007D79D0 /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
+		D014AC1C17B979B3007D79D0 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
+		D014AC1D17B979B7007D79D0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		D014AC1E17B979BD007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
+		D014AC1F17B979C4007D79D0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
+		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
+		D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
+		D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1117B451500012B22D /* InfoPlist.strings */; };
+		D08D4E1517B451500012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1417B451500012B22D /* main.m */; };
+		D08D4E1917B451500012B22D /* Credits.rtf in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1717B451500012B22D /* Credits.rtf */; };
+		D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1B17B451500012B22D /* TestAppDelegate.m */; };
+		D08D4E2117B451500012B22D /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E2017B451500012B22D /* Images.xcassets */; };
+		D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
+		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
+		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
+		D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */; };
+		D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */ = {isa = PBXBuildFile; fileRef = D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */; };
+		D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
@@ -19,9 +46,52 @@
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0D97E4417B58FC400301C72 /* ResourceRules.plist */; };
+		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
+		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
+		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */; };
+		F6315C2A179EC9C6000DD609 /* crypt.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C1F179EC9C6000DD609 /* crypt.h */; };
+		F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C20179EC9C6000DD609 /* ioapi.c */; };
+		F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C21179EC9C6000DD609 /* ioapi.h */; };
+		F6315C2D179EC9C6000DD609 /* mztools.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C22179EC9C6000DD609 /* mztools.c */; };
+		F6315C2E179EC9C6000DD609 /* mztools.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C23179EC9C6000DD609 /* mztools.h */; };
+		F6315C2F179EC9C6000DD609 /* unzip.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C24179EC9C6000DD609 /* unzip.c */; };
+		F6315C30179EC9C6000DD609 /* unzip.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C25179EC9C6000DD609 /* unzip.h */; };
+		F6315C31179EC9C6000DD609 /* zip.c in Sources */ = {isa = PBXBuildFile; fileRef = F6315C26179EC9C6000DD609 /* zip.c */; };
+		F6315C32179EC9C6000DD609 /* zip.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C27179EC9C6000DD609 /* zip.h */; };
+		F6315C33179EC9C6000DD609 /* SSZipArchive.h in Headers */ = {isa = PBXBuildFile; fileRef = F6315C28179EC9C6000DD609 /* SSZipArchive.h */; };
+		F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = F6315C29179EC9C6000DD609 /* SSZipArchive.m */; };
+		F6315C36179EC9E7000DD609 /* libz.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F6315C35179EC9E7000DD609 /* libz.dylib */; };
+		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
+		F6EB2168179D022C001108CF /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
+		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
+		F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */; };
+		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
+		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		D014AC1617B9793A007D79D0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D014AC0017B97885007D79D0;
+			remoteInfo = ShipIt;
+		};
+		D08D4E4517B451E10012B22D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D0C22BD6179CC00E00158214;
+			remoteInfo = Squirrel;
+		};
+		D08D4E4B17B4520C0012B22D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D08D4E0B17B451500012B22D;
+			remoteInfo = TestApplication;
+		};
 		D0C22BF3179CC00E00158214 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
@@ -101,7 +171,70 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		D08D4DEC17B43D7A0012B22D /* Copy ShipIt */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				D014AC1817B97945007D79D0 /* ShipIt in Copy ShipIt */,
+			);
+			name = "Copy ShipIt";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08D4E4817B451E90012B22D /* Copy Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */,
+			);
+			name = "Copy Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D0B1DDCD17B487F50059C355 /* Copy Executables */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 6;
+			files = (
+				D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */,
+			);
+			name = "Copy Executables";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		D00728FF17B09732008C7DDE /* SQRLArguments.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLArguments.m; path = Squirrel/SQRLArguments.m; sourceTree = SOURCE_ROOT; };
+		D007290817B0973E008C7DDE /* SQRLArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SQRLArguments.h; path = Squirrel/SQRLArguments.h; sourceTree = SOURCE_ROOT; };
+		D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItLauncher.h; sourceTree = "<group>"; };
+		D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItLauncher.m; sourceTree = "<group>"; };
+		D014ABB917B97403007D79D0 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
+		D014AC0117B97885007D79D0 /* ShipIt */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ShipIt; sourceTree = BUILT_PRODUCTS_DIR; };
+		D014AC0417B97885007D79D0 /* ShipIt-main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "ShipIt-main.m"; path = "Squirrel/ShipIt-main.m"; sourceTree = SOURCE_ROOT; };
+		D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLInstaller.h; path = Squirrel/SQRLInstaller.h; sourceTree = SOURCE_ROOT; };
+		D014AC1017B9789C007D79D0 /* SQRLInstaller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLInstaller.m; path = Squirrel/SQRLInstaller.m; sourceTree = SOURCE_ROOT; };
+		D0366C0017B18FEE0086ED44 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		D0366C0117B18FEE0086ED44 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
+		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
+		D08D4E0C17B451500012B22D /* TestApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D08D4E1017B451500012B22D /* TestApplication-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestApplication-Info.plist"; sourceTree = "<group>"; };
+		D08D4E1217B451500012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		D08D4E1417B451500012B22D /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		D08D4E1617B451500012B22D /* TestApplication-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestApplication-Prefix.pch"; sourceTree = "<group>"; };
+		D08D4E1817B451500012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; name = en; path = en.lproj/Credits.rtf; sourceTree = "<group>"; };
+		D08D4E1A17B451500012B22D /* TestAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestAppDelegate.h; sourceTree = "<group>"; };
+		D08D4E1B17B451500012B22D /* TestAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TestAppDelegate.m; sourceTree = "<group>"; };
+		D08D4E2017B451500012B22D /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
+		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
+		D09D247A17B5A3DD0001FAF8 /* SQRLUpdater+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLUpdater+Private.h"; sourceTree = "<group>"; };
+		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
@@ -134,13 +267,64 @@
 		D0C22C4B179CC15100158214 /* SQRLUpdater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdater.m; sourceTree = "<group>"; };
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
+		D0D97E4417B58FC400301C72 /* ResourceRules.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = ResourceRules.plist; sourceTree = "<group>"; };
+		D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSError+SQRLVerbosityExtensions.h"; path = "Squirrel/NSError+SQRLVerbosityExtensions.h"; sourceTree = SOURCE_ROOT; };
+		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = SOURCE_ROOT; };
+		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
+		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
+		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerifierSpec.m; sourceTree = "<group>"; };
+		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		F6315C1F179EC9C6000DD609 /* crypt.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = crypt.h; sourceTree = "<group>"; };
+		F6315C20179EC9C6000DD609 /* ioapi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ioapi.c; sourceTree = "<group>"; };
+		F6315C21179EC9C6000DD609 /* ioapi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ioapi.h; sourceTree = "<group>"; };
+		F6315C22179EC9C6000DD609 /* mztools.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = mztools.c; sourceTree = "<group>"; };
+		F6315C23179EC9C6000DD609 /* mztools.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = mztools.h; sourceTree = "<group>"; };
+		F6315C24179EC9C6000DD609 /* unzip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = unzip.c; sourceTree = "<group>"; };
+		F6315C25179EC9C6000DD609 /* unzip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = unzip.h; sourceTree = "<group>"; };
+		F6315C26179EC9C6000DD609 /* zip.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = zip.c; sourceTree = "<group>"; };
+		F6315C27179EC9C6000DD609 /* zip.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zip.h; sourceTree = "<group>"; };
+		F6315C28179EC9C6000DD609 /* SSZipArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SSZipArchive.h; path = External/ssziparchive/SSZipArchive.h; sourceTree = "<group>"; };
+		F6315C29179EC9C6000DD609 /* SSZipArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SSZipArchive.m; path = External/ssziparchive/SSZipArchive.m; sourceTree = "<group>"; };
+		F6315C35179EC9E7000DD609 /* libz.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libz.dylib; path = usr/lib/libz.dylib; sourceTree = SDKROOT; };
+		F65A915F17A71AA5005A4666 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTKeyPathCoding.h; path = Squirrel/extobjc/EXTKeyPathCoding.h; sourceTree = "<group>"; };
+		F6EB2165179D0228001108CF /* EXTScope.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = EXTScope.h; path = Squirrel/extobjc/EXTScope.h; sourceTree = "<group>"; };
+		F6EB2166179D0228001108CF /* EXTScope.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EXTScope.m; path = Squirrel/extobjc/EXTScope.m; sourceTree = "<group>"; };
+		F6EB2167179D0228001108CF /* metamacros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = metamacros.h; path = Squirrel/extobjc/metamacros.h; sourceTree = "<group>"; };
+		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLCodeSignatureVerifier.h; path = Squirrel/SQRLCodeSignatureVerifier.h; sourceTree = SOURCE_ROOT; };
+		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLCodeSignatureVerifier.m; path = Squirrel/SQRLCodeSignatureVerifier.m; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		D014ABFE17B97885007D79D0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D014AC1F17B979C4007D79D0 /* Cocoa.framework in Frameworks */,
+				D014AC1D17B979B7007D79D0 /* Security.framework in Frameworks */,
+				D014AC1E17B979BD007D79D0 /* ServiceManagement.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08D4E0917B451500012B22D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */,
+				D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D0C22BD3179CC00E00158214 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */,
+				F6315C36179EC9E7000DD609 /* libz.dylib in Frameworks */,
+				F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */,
+				F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */,
 				D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -154,17 +338,68 @@
 				D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */,
 				D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */,
 				D0C22BF5179CC00E00158214 /* Squirrel.framework in Frameworks */,
+				D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		D014AC0317B97885007D79D0 /* ShipIt */ = {
+			isa = PBXGroup;
+			children = (
+				D014AC0417B97885007D79D0 /* ShipIt-main.m */,
+				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
+				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
+			);
+			name = ShipIt;
+			path = Squirrel;
+			sourceTree = "<group>";
+		};
+		D0366BFF17B18FEE0086ED44 /* Other Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				D0366C0017B18FEE0086ED44 /* AppKit.framework */,
+				D0366C0117B18FEE0086ED44 /* CoreData.framework */,
+				D0366C0217B18FEE0086ED44 /* Foundation.framework */,
+			);
+			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		D08D4E0E17B451500012B22D /* TestApplication */ = {
+			isa = PBXGroup;
+			children = (
+				D08D4E1A17B451500012B22D /* TestAppDelegate.h */,
+				D08D4E1B17B451500012B22D /* TestAppDelegate.m */,
+				D08D4E2017B451500012B22D /* Images.xcassets */,
+				D08D4E0F17B451500012B22D /* Supporting Files */,
+			);
+			path = TestApplication;
+			sourceTree = "<group>";
+		};
+		D08D4E0F17B451500012B22D /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				D0D97E4417B58FC400301C72 /* ResourceRules.plist */,
+				D0B1DDCB17B487D90059C355 /* unused-helper */,
+				D08D4E1017B451500012B22D /* TestApplication-Info.plist */,
+				D08D4E1117B451500012B22D /* InfoPlist.strings */,
+				D08D4E1417B451500012B22D /* main.m */,
+				D08D4E1617B451500012B22D /* TestApplication-Prefix.pch */,
+				D08D4E1717B451500012B22D /* Credits.rtf */,
+				D03BE98C17B6174500458593 /* MainMenu.xib */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 		D0C22BCD179CC00E00158214 = {
 			isa = PBXGroup;
 			children = (
+				D0EDBE9F17B0C6930058BC3C /* Shared */,
 				D0C22BE0179CC00E00158214 /* Squirrel */,
 				D0C22BF6179CC00E00158214 /* SquirrelTests */,
+				D08D4E0E17B451500012B22D /* TestApplication */,
+				D014AC0317B97885007D79D0 /* ShipIt */,
 				D0C22BD9179CC00E00158214 /* Frameworks */,
 				D0C22C07179CC02E00158214 /* Configuration */,
 				D0C22BD8179CC00E00158214 /* Products */,
@@ -176,6 +411,8 @@
 			children = (
 				D0C22BD7179CC00E00158214 /* Squirrel.framework */,
 				D0C22BEF179CC00E00158214 /* SquirrelTests.octest */,
+				D08D4E0C17B451500012B22D /* TestApplication.app */,
+				D014AC0117B97885007D79D0 /* ShipIt */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -183,10 +420,22 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				D014ABB917B97403007D79D0 /* ServiceManagement.framework */,
+				F6315C1E179EC9C6000DD609 /* minizip */,
+				F6315C28179EC9C6000DD609 /* SSZipArchive.h */,
+				F6315C29179EC9C6000DD609 /* SSZipArchive.m */,
+				F6EB2163179D01A9001108CF /* libextobjc */,
+				F6315C35179EC9E7000DD609 /* libz.dylib */,
 				D0C22C1D179CC0B300158214 /* Expecta.xcodeproj */,
 				D0C22C20179CC0B300158214 /* Specta.xcodeproj */,
+				F65A915F17A71AA5005A4666 /* AppKit.framework */,
 				D0C22BDA179CC00E00158214 /* Cocoa.framework */,
+				F6EB217F179D0E4D001108CF /* Security.framework */,
+				F6EB2161179CFD93001108CF /* SystemConfiguration.framework */,
 				D0C22BF0179CC00E00158214 /* SenTestingKit.framework */,
+				F60CA7EA179FC4F60069F69A /* Foundation.framework */,
+				D0366C1C17B18FEE0086ED44 /* XCTest.framework */,
+				D0366BFF17B18FEE0086ED44 /* Other Frameworks */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -223,6 +472,7 @@
 		D0C22BF7179CC00E00158214 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */,
 				D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */,
 				D0C22BF9179CC00E00158214 /* InfoPlist.strings */,
 				D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */,
@@ -319,7 +569,10 @@
 		D0C22C49179CC14400158214 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
+				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
+				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
+				D09D247A17B5A3DD0001FAF8 /* SQRLUpdater+Private.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
 			);
 			name = Classes;
@@ -328,9 +581,55 @@
 		D0C22C4E179CC18000158214 /* Specs */ = {
 			isa = PBXGroup;
 			children = (
+				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
+				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
+				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
+				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 			);
 			name = Specs;
+			sourceTree = "<group>";
+		};
+		D0EDBE9F17B0C6930058BC3C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
+				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
+				D007290817B0973E008C7DDE /* SQRLArguments.h */,
+				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
+				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */,
+				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */,
+			);
+			name = Shared;
+			path = Squirrel;
+			sourceTree = "<group>";
+		};
+		F6315C1E179EC9C6000DD609 /* minizip */ = {
+			isa = PBXGroup;
+			children = (
+				F6315C1F179EC9C6000DD609 /* crypt.h */,
+				F6315C20179EC9C6000DD609 /* ioapi.c */,
+				F6315C21179EC9C6000DD609 /* ioapi.h */,
+				F6315C22179EC9C6000DD609 /* mztools.c */,
+				F6315C23179EC9C6000DD609 /* mztools.h */,
+				F6315C24179EC9C6000DD609 /* unzip.c */,
+				F6315C25179EC9C6000DD609 /* unzip.h */,
+				F6315C26179EC9C6000DD609 /* zip.c */,
+				F6315C27179EC9C6000DD609 /* zip.h */,
+			);
+			name = minizip;
+			path = External/ssziparchive/minizip;
+			sourceTree = "<group>";
+		};
+		F6EB2163179D01A9001108CF /* libextobjc */ = {
+			isa = PBXGroup;
+			children = (
+				F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */,
+				F6EB2165179D0228001108CF /* EXTScope.h */,
+				F6EB2166179D0228001108CF /* EXTScope.m */,
+				F6EB2167179D0228001108CF /* metamacros.h */,
+			);
+			name = libextobjc;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -342,12 +641,56 @@
 			files = (
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
+				F6315C33179EC9C6000DD609 /* SSZipArchive.h in Headers */,
+				F6315C2C179EC9C6000DD609 /* ioapi.h in Headers */,
+				F6315C32179EC9C6000DD609 /* zip.h in Headers */,
+				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
+				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
+				F6315C30179EC9C6000DD609 /* unzip.h in Headers */,
+				F6315C2A179EC9C6000DD609 /* crypt.h in Headers */,
+				F6315C2E179EC9C6000DD609 /* mztools.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
+		D014AC0017B97885007D79D0 /* ShipIt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D014AC0A17B97885007D79D0 /* Build configuration list for PBXNativeTarget "ShipIt" */;
+			buildPhases = (
+				D014ABFD17B97885007D79D0 /* Sources */,
+				D014ABFE17B97885007D79D0 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ShipIt;
+			productName = ShipIt;
+			productReference = D014AC0117B97885007D79D0 /* ShipIt */;
+			productType = "com.apple.product-type.tool";
+		};
+		D08D4E0B17B451500012B22D /* TestApplication */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D08D4E3317B451500012B22D /* Build configuration list for PBXNativeTarget "TestApplication" */;
+			buildPhases = (
+				D08D4E0817B451500012B22D /* Sources */,
+				D08D4E0917B451500012B22D /* Frameworks */,
+				D08D4E0A17B451500012B22D /* Resources */,
+				D08D4E4817B451E90012B22D /* Copy Frameworks */,
+				D0B1DDCD17B487F50059C355 /* Copy Executables */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				D08D4E4617B451E10012B22D /* PBXTargetDependency */,
+			);
+			name = TestApplication;
+			productName = TestApplication;
+			productReference = D08D4E0C17B451500012B22D /* TestApplication.app */;
+			productType = "com.apple.product-type.application";
+		};
 		D0C22BD6179CC00E00158214 /* Squirrel */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = D0C22C01179CC00E00158214 /* Build configuration list for PBXNativeTarget "Squirrel" */;
@@ -356,10 +699,12 @@
 				D0C22BD3179CC00E00158214 /* Frameworks */,
 				D0C22BD4179CC00E00158214 /* Headers */,
 				D0C22BD5179CC00E00158214 /* Resources */,
+				D08D4DEC17B43D7A0012B22D /* Copy ShipIt */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				D014AC1717B9793A007D79D0 /* PBXTargetDependency */,
 			);
 			name = Squirrel;
 			productName = Squirrel;
@@ -378,6 +723,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				D08D4E4C17B4520C0012B22D /* PBXTargetDependency */,
 				D0C22C3C179CC0BA00158214 /* PBXTargetDependency */,
 				D0C22C3E179CC0BA00158214 /* PBXTargetDependency */,
 				D0C22BF4179CC00E00158214 /* PBXTargetDependency */,
@@ -394,7 +740,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = SQRL;
-				LastUpgradeCheck = 0460;
+				LastUpgradeCheck = 0500;
 				ORGANIZATIONNAME = GitHub;
 			};
 			buildConfigurationList = D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */;
@@ -403,6 +749,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				Base,
 			);
 			mainGroup = D0C22BCD179CC00E00158214;
 			productRefGroup = D0C22BD8179CC00E00158214 /* Products */;
@@ -421,6 +768,8 @@
 			targets = (
 				D0C22BD6179CC00E00158214 /* Squirrel */,
 				D0C22BEE179CC00E00158214 /* SquirrelTests */,
+				D08D4E0B17B451500012B22D /* TestApplication */,
+				D014AC0017B97885007D79D0 /* ShipIt */,
 			);
 		};
 /* End PBXProject section */
@@ -485,6 +834,18 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
+		D08D4E0A17B451500012B22D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */,
+				D08D4E2117B451500012B22D /* Images.xcassets in Resources */,
+				D08D4E1917B451500012B22D /* Credits.rtf in Resources */,
+				D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */,
+				D03BE98D17B6174500458593 /* MainMenu.xib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D0C22BD5179CC00E00158214 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -498,6 +859,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
+				D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */,
+				D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -520,11 +883,43 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		D014ABFD17B97885007D79D0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
+				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
+				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */,
+				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
+				D014AC1B17B979AD007D79D0 /* SQRLArguments.m in Sources */,
+				D014AC1C17B979B3007D79D0 /* EXTScope.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08D4E0817B451500012B22D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */,
+				D08D4E1517B451500012B22D /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		D0C22BD2179CC00E00158214 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */,
+				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
+				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
+				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */,
+				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
+				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
+				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
+				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
+				F6315C2F179EC9C6000DD609 /* unzip.c in Sources */,
+				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -532,13 +927,31 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
+				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
+				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		D014AC1717B9793A007D79D0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D014AC0017B97885007D79D0 /* ShipIt */;
+			targetProxy = D014AC1617B9793A007D79D0 /* PBXContainerItemProxy */;
+		};
+		D08D4E4617B451E10012B22D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D0C22BD6179CC00E00158214 /* Squirrel */;
+			targetProxy = D08D4E4517B451E10012B22D /* PBXContainerItemProxy */;
+		};
+		D08D4E4C17B4520C0012B22D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D08D4E0B17B451500012B22D /* TestApplication */;
+			targetProxy = D08D4E4B17B4520C0012B22D /* PBXContainerItemProxy */;
+		};
 		D0C22BF4179CC00E00158214 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D0C22BD6179CC00E00158214 /* Squirrel */;
@@ -557,6 +970,22 @@
 /* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
+		D08D4E1117B451500012B22D /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D08D4E1217B451500012B22D /* en */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+		D08D4E1717B451500012B22D /* Credits.rtf */ = {
+			isa = PBXVariantGroup;
+			children = (
+				D08D4E1817B451500012B22D /* en */,
+			);
+			name = Credits.rtf;
+			sourceTree = "<group>";
+		};
 		D0C22BE3179CC00E00158214 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
@@ -576,6 +1005,102 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		D014AC0B17B97885007D79D0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		D014AC0C17B97885007D79D0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		D014AC0D17B97885007D79D0 /* Test */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Test;
+		};
+		D014AC0E17B97885007D79D0 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Profile;
+		};
+		D08D4E3417B451500012B22D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
+				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
+				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
+				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Debug;
+		};
+		D08D4E3517B451500012B22D /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
+				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
+				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
+				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Release;
+		};
+		D08D4E3617B451500012B22D /* Test */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
+				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
+				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
+				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Test;
+		};
+		D08D4E3717B451500012B22D /* Profile */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
+				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
+				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
+				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				VALIDATE_PRODUCT = YES;
+				WRAPPER_EXTENSION = app;
+			};
+			name = Profile;
+		};
 		D0C22BFF179CC00E00158214 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0B179CC02E00158214 /* Debug.xcconfig */;
@@ -719,7 +1244,6 @@
 				CLANG_CXX_LIBRARY = "libc++";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
 				MACOSX_DEPLOYMENT_TARGET = 10.7;
 				SDKROOT = macosx;
 			};
@@ -758,6 +1282,28 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		D014AC0A17B97885007D79D0 /* Build configuration list for PBXNativeTarget "ShipIt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D014AC0B17B97885007D79D0 /* Debug */,
+				D014AC0C17B97885007D79D0 /* Release */,
+				D014AC0D17B97885007D79D0 /* Test */,
+				D014AC0E17B97885007D79D0 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D08D4E3317B451500012B22D /* Build configuration list for PBXNativeTarget "TestApplication" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D08D4E3417B451500012B22D /* Debug */,
+				D08D4E3517B451500012B22D /* Release */,
+				D08D4E3617B451500012B22D /* Test */,
+				D08D4E3717B451500012B22D /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

@@ -10,7 +10,7 @@ cd "$SCRIPT_DIR/.."
 # The build configuration to use.
 if [ -z "$XCCONFIGURATION" ]
 then
-    XCCONFIGURATION="Release"
+    XCCONFIGURATION="Test"
 fi
 
 # The workspace to build.
@@ -31,10 +31,25 @@ BOOTSTRAP="$SCRIPT_DIR/bootstrap"
 # are specified on the command line.
 #
 # Individual names can be quoted to avoid word splitting.
-DEFAULT_TARGETS=
+DEFAULT_TARGETS=Squirrel
 
 # Extra build settings to pass to xcodebuild.
 XCODEBUILD_SETTINGS="TEST_AFTER_BUILD=YES"
+
+##
+## Code-signing Setup
+##
+
+# A source-able file with information about the Keychain containing our
+# code-signing certificate.
+KEYCHAIN_INFO=/var/lib/jenkins/config/xcodekeychain
+
+if [ -e "$KEYCHAIN_INFO" ]
+then
+    # Unlock the keychain so the certificates it contains can be used for building.
+    . "${KEYCHAIN_INFO}"
+    security unlock-keychain -p "${XCODE_KEYCHAIN_PASSWORD}" "${XCODE_KEYCHAIN}"
+fi
 
 ##
 ## Build Process
