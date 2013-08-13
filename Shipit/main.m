@@ -41,14 +41,20 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 	NSURL *backupURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLBackupURLKey))];
 	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return nil;
 
+	size_t requirementDataLen = 0;
+	const void *requirementDataPtr = xpc_dictionary_get_data(event, SQRLCodeSigningRequirementKey, &requirementDataLen);
+	if (requirementDataPtr == NULL) return nil;
+
+	NSData *requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
 	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
+
 	return ^(NSString **errorString) {
 		xpc_transaction_begin();
 		@onExit {
 			xpc_transaction_end();
 		};
 
-		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL];
+		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL backupURL:backupURL requirementData:requirementData];
 
 		NSLog(@"Beginning installation");
 

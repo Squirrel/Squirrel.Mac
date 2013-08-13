@@ -13,7 +13,7 @@
 		D014AC0517B97885007D79D0 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC0417B97885007D79D0 /* main.m */; };
 		D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
 		D014AC1817B97945007D79D0 /* ShipIt in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = D014AC0117B97885007D79D0 /* ShipIt */; };
-		D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
+		D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */; };
 		D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D014AC1B17B979AD007D79D0 /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
 		D014AC1C17B979B3007D79D0 /* EXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = F6EB2166179D0228001108CF /* EXTScope.m */; };
@@ -32,6 +32,7 @@
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
 		D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */; };
 		D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */ = {isa = PBXBuildFile; fileRef = D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */; };
+		D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
@@ -66,7 +67,7 @@
 		F6EB2169179D03AA001108CF /* EXTScope.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2165179D0228001108CF /* EXTScope.h */; };
 		F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */ = {isa = PBXBuildFile; fileRef = F6EB2164179D0228001108CF /* EXTKeyPathCoding.h */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
-		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */; };
+		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -293,8 +294,8 @@
 		F6EB2166179D0228001108CF /* EXTScope.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = EXTScope.m; path = Squirrel/extobjc/EXTScope.m; sourceTree = "<group>"; };
 		F6EB2167179D0228001108CF /* metamacros.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = metamacros.h; path = Squirrel/extobjc/metamacros.h; sourceTree = "<group>"; };
 		F6EB217F179D0E4D001108CF /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
-		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLCodeSignatureVerification.h; path = Squirrel/SQRLCodeSignatureVerification.h; sourceTree = "<group>"; };
-		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLCodeSignatureVerification.m; path = Squirrel/SQRLCodeSignatureVerification.m; sourceTree = "<group>"; };
+		F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLCodeSignatureVerifier.h; path = Squirrel/SQRLCodeSignatureVerifier.h; sourceTree = "<group>"; };
+		F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLCodeSignatureVerifier.m; path = Squirrel/SQRLCodeSignatureVerifier.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -338,6 +339,7 @@
 				D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */,
 				D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */,
 				D0C22BF5179CC00E00158214 /* Squirrel.framework in Frameworks */,
+				D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -604,8 +606,8 @@
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				D007290817B0973E008C7DDE /* SQRLArguments.h */,
 				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
-				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerification.h */,
-				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerification.m */,
+				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */,
+				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */,
 			);
 			name = Shared;
 			sourceTree = "<group>";
@@ -895,7 +897,7 @@
 			files = (
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D014AC0517B97885007D79D0 /* main.m in Sources */,
-				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerification.m in Sources */,
+				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D014AC1B17B979AD007D79D0 /* SQRLArguments.m in Sources */,
 				D014AC1C17B979B3007D79D0 /* EXTScope.m in Sources */,
@@ -918,7 +920,7 @@
 				F6315C2B179EC9C6000DD609 /* ioapi.c in Sources */,
 				F6EB2168179D022C001108CF /* EXTScope.m in Sources */,
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
-				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerification.m in Sources */,
+				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,

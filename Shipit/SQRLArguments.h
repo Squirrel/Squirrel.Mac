@@ -71,3 +71,9 @@ extern const char * const SQRLBackupURLKey;
 //
 // This argument is required.
 extern const char * const SQRLShouldRelaunchKey;
+
+// Associated with a data object describing the code signing requirement that
+// the application must satisfy in order to be valid.
+//
+// This argument is required.
+extern const char * const SQRLCodeSigningRequirementKey;

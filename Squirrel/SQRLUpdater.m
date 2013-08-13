@@ -9,7 +9,7 @@
 #import "SQRLUpdater.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
-#import "SQRLCodeSignatureVerification.h"
+#import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 
 #import "SSZipArchive.h"
@@ -28,6 +28,7 @@ NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 const NSInteger SQRLUpdaterErrorNoUpdateWaiting = 1;
 const NSInteger SQRLUpdaterErrorMissingUpdateBundle = 2;
 const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
+const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 @interface SQRLUpdater ()
 
@@ -41,6 +42,9 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 
 // The folder into which the latest update will be/has been downloaded.
 @property (nonatomic, strong) NSURL *downloadFolder;
+
+// The verifier used to check code against the running application's signature.
+@property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
 
 @end
 
@@ -67,6 +71,8 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 	self.updateQueue.name = @"com.github.Squirrel.updateCheckingQueue";
 
 	_APIEndpoint = [NSURL URLWithString:@"https://central.github.com/api/mac/latest"];
+	_verifier = [[SQRLCodeSignatureVerifier alloc] init];
+	if (_verifier == nil) return nil;
 	
 	return self;
 }
@@ -188,9 +194,9 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 				[self finishAndSetIdle];
 				return;
 			}
-			
+
 			NSError *error = nil;
-			BOOL verified = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
+			BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
 			if (!verified) {
 				NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
 				[self finishAndSetIdle];
@@ -344,6 +350,16 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 		return;
 	}
 
+	NSData *requirementData = self.verifier.requirementData;
+	if (requirementData == nil) {
+		NSDictionary *userInfo = @{
+			NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not load code signing requirement for %@", nil), currentApplication.bundleIdentifier],
+		};
+
+		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorRetrievingCodeSigningRequirement userInfo:userInfo]);
+		return;
+	}
+
 	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
 
 	NSError *error = nil;
@@ -366,6 +382,7 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.applicationSupportURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
 	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
+	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 
 	xpc_connection_resume(connection);
 	xpc_connection_send_message_with_reply(connection, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {

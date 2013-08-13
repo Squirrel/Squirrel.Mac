@@ -7,6 +7,8 @@
 //
 
 #import "SQRLTestCase.h"
+#import "EXTScope.h"
+#import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 
 #pragma clang diagnostic push
@@ -213,6 +215,45 @@ static void SQRLSignalHandler(int sig) {
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
 
 	return updateURL;
+}
+
+- (id)performWithTestApplicationRequirement:(id (^)(SecRequirementRef requirement))block {
+	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
+
+	SecStaticCodeRef staticCode = NULL;
+	OSStatus status = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode);
+	STAssertTrue(status == noErr, @"Error creating static code object for %@", bundleURL);
+
+	@onExit {
+		if (staticCode != NULL) CFRelease(staticCode);
+	};
+
+	SecRequirementRef requirement = NULL;
+	status = SecCodeCopyDesignatedRequirement(staticCode, kSecCSDefaultFlags, &requirement);
+	STAssertTrue(status == noErr, @"Error getting designated requirement of %@", staticCode);
+
+	@onExit {
+		if (requirement != NULL) CFRelease(requirement);
+	};
+
+	return block(requirement);
+}
+
+- (SQRLCodeSignatureVerifier *)testApplicationVerifier {
+	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
+		return [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
+	}];
+}
+
+- (NSData *)testApplicationCodeSigningRequirementData {
+	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
+		CFDataRef data = NULL;
+		OSStatus status = SecRequirementCopyData(requirement, kSecCSDefaultFlags, &data);
+		STAssertTrue(status == noErr, @"Error copying data for requirement %@", requirement);
+
+		return CFBridgingRelease(data);
+	}];
 }
 
 - (NSURL *)zipItemAtURL:(NSURL *)itemURL {

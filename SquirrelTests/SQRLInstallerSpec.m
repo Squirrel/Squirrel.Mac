@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignatureVerification.h"
+#import "SQRLCodeSignatureVerifier.h"
 
 SpecBegin(SQRLInstaller)
 
@@ -26,6 +26,9 @@ beforeEach(^{
 	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
 	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, false);
+
+	NSData *requirementData = self.testApplicationCodeSigningRequirementData;
+	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 });
 
 it(@"should install an update", ^{
@@ -97,7 +100,7 @@ describe(@"signal handling", ^{
 			expect(processExists()).will.beFalsy();
 
 			NSError *error = nil;
-			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:targetURL error:&error];
+			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		});
@@ -137,7 +140,7 @@ describe(@"signal handling", ^{
 		// Any corruption of the target bundle is a critical failure.
 		if ([NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
 			NSError *error = nil;
-			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:targetURL error:&error];
+			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		}

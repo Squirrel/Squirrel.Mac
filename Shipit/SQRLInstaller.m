@@ -8,7 +8,7 @@
 
 #import "SQRLInstaller.h"
 #import "NSError+SQRLVerbosityExtensions.h"
-#import "SQRLCodeSignatureVerification.h"
+#import "SQRLCodeSignatureVerifier.h"
 #import <libkern/OSAtomic.h>
 #import <sys/xattr.h>
 
@@ -41,6 +41,7 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 @property (nonatomic, strong, readonly) NSURL *targetBundleURL;
 @property (nonatomic, strong, readonly) NSURL *updateBundleURL;
 @property (nonatomic, strong, readonly) NSURL *backupURL;
+@property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
 
 @end
 
@@ -55,14 +56,24 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 	SQRLSignalHandlersLock.name = @"com.github.Squirrel.ShipIt.SQRLSignalHandlersLock";
 }
 
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL {
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL requirementData:(NSData *)requirementData {
 	NSParameterAssert(targetBundleURL != nil);
 	NSParameterAssert(updateBundleURL != nil);
 	NSParameterAssert(backupURL != nil);
+	NSParameterAssert(requirementData != nil);
 	
 	self = [super init];
 	if (self == nil) return nil;
-	
+
+	SecRequirementRef requirement = NULL;
+	OSStatus status = SecRequirementCreateWithData((__bridge CFDataRef)requirementData, kSecCSDefaultFlags, &requirement);
+	@onExit {
+		if (requirement != NULL) CFRelease(requirement);
+	};
+
+	if (status != noErr) return nil;
+
+	_verifier = [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
 	_targetBundleURL = targetBundleURL;
 	_updateBundleURL = updateBundleURL;
 	_backupURL = backupURL;
@@ -103,7 +114,7 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 	};
 
 	// Verify the update bundle.
-	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
+	if (![self.verifier verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
 		return NO;
 	}
 
@@ -189,7 +200,7 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 		}
 	} @finally {
 		NSError *error = nil;
-		if (![NSFileManager.defaultManager fileExistsAtPath:self.targetBundleURL.path] || ![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
+		if (![NSFileManager.defaultManager fileExistsAtPath:self.targetBundleURL.path] || ![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
 			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 

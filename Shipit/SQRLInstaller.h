@@ -37,9 +37,12 @@ extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 //                   not be nil.
 // backupURL       - A URL to a folder in which the target app will be backed up
 //                   before updating. This must not be nil.
+// requirementData - A serialized SecRequirementRef describing what the update
+//                   bundle must satisfy in order to be valid. This must not be
+//                   nil.
 //
 // Returns an initialized installer, or nil if an error occurred.
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL;
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL requirementData:(NSData *)requirementData;
 
 // Attempts to install the update specified at the time of initialization.
 - (BOOL)installUpdateWithError:(NSError **)errorPtr;

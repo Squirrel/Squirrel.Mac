@@ -49,6 +49,10 @@ extern const NSInteger SQRLUpdaterErrorMissingUpdateBundle;
 // An error occurred in the out-of-process updater while it was setting up.
 extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;
 
+// The code signing requirement for the running application could not be
+// retrieved.
+extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
+
 // Downloads and installs updates from GitHub.com The Website.
 @interface SQRLUpdater : NSObject
 
