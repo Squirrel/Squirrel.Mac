@@ -74,31 +74,57 @@ describe(@"signal handling", ^{
 
 			// Apply a random delay before sending the termination signal, to
 			// fuzz out race conditions.
-			u_int32_t msDelay = arc4random_uniform(80);
-			[NSThread sleepForTimeInterval:msDelay / 1000.0];
+			[NSThread sleepForTimeInterval:arc4random_uniform(100) / 1000.0];
 		};
 	});
 
-	afterEach(^{
-		NSError *error = nil;
-		BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationBundle.bundleURL error:&error];
-		expect(success).to.beTruthy();
-		expect(error).to.beNil();
+	describe(@"with a guaranteed target bundle", ^{
+		afterEach(^{
+			NSError *error = nil;
+			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationURL error:&error];
+			expect(success).to.beTruthy();
+			expect(error).to.beNil();
+		});
+
+		it(@"should handle SIGHUP", ^{
+			sendThenCancel();
+			expect(system("killall -HUP ShipIt")).to.equal(0);
+		});
+
+		it(@"should handle SIGTERM", ^{
+			sendThenCancel();
+			expect(system("killall -TERM ShipIt")).to.equal(0);
+		});
+
+		it(@"should handle SIGINT", ^{
+			sendThenCancel();
+			expect(system("killall -TERM ShipIt")).to.equal(0);
+		});
+
+		it(@"should handle SIGQUIT", ^{
+			sendThenCancel();
+			expect(system("killall -TERM ShipIt")).to.equal(0);
+		});
 	});
 
-	it(@"should leave the target in a valid state after being sent SIGHUP", ^{
-		sendThenCancel();
-		expect(system("killall -HUP ShipIt")).to.equal(0);
-	});
-
-	it(@"should leave the target in a valid state after being sent SIGTERM", ^{
-		sendThenCancel();
-		expect(system("killall -TERM ShipIt")).to.equal(0);
-	});
-
-	it(@"should leave the target in a valid state after being sent SIGKILL", ^{
+	it(@"should leave the target missing or in a valid state after being sent SIGKILL", ^{
 		sendThenCancel();
 		expect(system("killall -KILL ShipIt")).to.equal(0);
+
+		// Our behavior can't be as well-defined in the case of SIGKILL (since
+		// we get no opportunity to handle it), but we should at least guarantee
+		// that:
+		//
+		//  1. The target bundle is missing, or
+		//  2. The target bundle passes code signing.
+		//
+		// Any corruption of the target bundle is a critical failure.
+		if ([NSFileManager.defaultManager fileExistsAtPath:self.testApplicationURL.path]) {
+			NSError *error = nil;
+			BOOL success = [SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.testApplicationURL error:&error];
+			expect(success).to.beTruthy();
+			expect(error).to.beNil();
+		}
 	});
 });
 

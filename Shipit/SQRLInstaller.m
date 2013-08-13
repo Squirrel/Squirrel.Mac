@@ -9,6 +9,7 @@
 #import "SQRLInstaller.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLCodeSignatureVerification.h"
+#import <libkern/OSAtomic.h>
 #import <sys/xattr.h>
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
@@ -17,6 +18,23 @@ const NSInteger SQRLInstallerErrorBackupFailed = -1;
 const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 const NSInteger SQRLInstallerErrorCouldNotOpenTarget = -3;
 const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
+
+// Protects access to SQRLReplaceSignalHandlers and
+// SQRLInstallerTransactionCount.
+static NSLock *SQRLSignalHandlersLock;
+
+// Tracks how many concurrent installations are in progress.
+//
+// This is used to control how ShipIt handles signals.
+static NSUInteger SQRLInstallerTransactionCount = 0;
+
+// Updates the behavior for handling termination signals.
+static void SQRLReplaceSignalHandlers(sig_t func) {
+	signal(SIGHUP, func);
+	signal(SIGINT, func);
+	signal(SIGQUIT, func);
+	signal(SIGTERM, func);
+}
 
 @interface SQRLInstaller ()
 
@@ -29,6 +47,13 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 @implementation SQRLInstaller
 
 #pragma mark Lifecycle
+
++ (void)initialize {
+	if (self != SQRLInstaller.class) return;
+
+	SQRLSignalHandlersLock = [[NSLock alloc] init];
+	SQRLSignalHandlersLock.name = @"com.github.Squirrel.ShipIt.SQRLSignalHandlersLock";
+}
 
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL {
 	NSParameterAssert(targetBundleURL != nil);
@@ -47,7 +72,36 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 
 #pragma mark Installation
 
+- (void)enableSignalCatching {
+	[SQRLSignalHandlersLock lock];
+	@onExit {
+		[SQRLSignalHandlersLock unlock];
+	};
+
+	if (SQRLInstallerTransactionCount++ == 0) {
+		// This is the first transaction, install handlers.
+		SQRLReplaceSignalHandlers(SIG_IGN);
+	}
+}
+
+- (void)disableSignalCatching {
+	[SQRLSignalHandlersLock lock];
+	@onExit {
+		[SQRLSignalHandlersLock unlock];
+	};
+
+	if (--SQRLInstallerTransactionCount == 0) {
+		// This is the last transaction, remove handlers.
+		SQRLReplaceSignalHandlers(SIG_DFL);
+	}
+}
+
 - (BOOL)installUpdateWithError:(NSError **)errorPtr {
+	[self enableSignalCatching];
+	@onExit {
+		[self disableSignalCatching];
+	};
+
 	// Verify the update bundle.
 	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
 		return NO;

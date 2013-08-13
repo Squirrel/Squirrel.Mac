@@ -41,6 +41,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	jobDict[@"Label"] = jobLabel;
 	jobDict[@"Nice"] = @(-1);
 	jobDict[@"KeepAlive"] = @NO;
+	jobDict[@"EnableTransactions"] = @NO;
 	jobDict[@"MachServices"] = @{
 		jobLabel: @YES
 	};
