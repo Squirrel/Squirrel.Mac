@@ -58,7 +58,7 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 		return NO;
 	}
 	
-	// Move the old bundle to a backup location
+	// Create a backup location for the original bundle.
 	NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
 	if (targetBundle == nil) {
 		if (errorPtr != NULL) {
@@ -102,46 +102,49 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 
 		return NO;
 	}
-	
-	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
-			} mutableCopy];
 
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+	@try {
+		// First, move the target out of place and into the backup location.
+		if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
+			if (errorPtr != NULL) {
+				NSMutableDictionary *userInfo = [@{
+					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
+				} mutableCopy];
 
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
+				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+				*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
+			}
+
+			return NO;
 		}
+		
+		// Move the new bundle into place.
+		if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&error]) {
+			if (errorPtr != NULL) {
+				NSMutableDictionary *userInfo = [@{
+					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL],
+				} mutableCopy];
 
-		return NO;
-	}
-	
-	// Move the new bundle into place.
-	if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&error]) {
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL],
-			} mutableCopy];
+				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+				*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:userInfo];
+			}
 
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:userInfo];
+			return NO;
 		}
+	} @finally {
+		NSError *error = nil;
+		if (![NSFileManager.defaultManager fileExistsAtPath:self.targetBundleURL.path] || ![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
+			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
+			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 
-		return NO;
-	}
-	
-	// Verify the bundle in place
-	if (![SQRLCodeSignatureVerification verifyCodeSignatureOfBundle:self.targetBundleURL error:errorPtr]) {
-		// Move the backup version back into place
-		if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
-			[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
-		} else {
-			NSLog(@"Could not move backup bundle %@ back to %@ after codesign failure: %@", backupBundleURL, self.targetBundleURL, error.sqrl_verboseDescription);
+			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
+				[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
+			} else {
+				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, error.sqrl_verboseDescription);
+			}
 		}
-
-		return NO;
 	}
 
 	return YES;
