@@ -7,12 +7,20 @@
 //
 
 #import "SQRLUpdater+Private.h"
-#import "SSZipArchive.h"
+#import "SQRLZipArchiver.h"
 
 SpecBegin(SQRLUpdater)
 
 NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
-	NSURL *zippedUpdateURL = [self zipItemAtURL:updateURL];
+	__block BOOL finished = NO;
+
+	NSURL *zippedUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.zip"];
+	[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL completion:^(BOOL success) {
+		expect(success).to.beTruthy();
+		finished = YES;
+	}];
+
+	expect(finished).will.beTruthy();
 
 	NSDictionary *updateInfo = @{
 		SQRLUpdaterJSONURLKey: zippedUpdateURL.absoluteString

@@ -71,12 +71,6 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // TestApplication.app.
 - (NSData *)testApplicationCodeSigningRequirementData;
 
-// Creates a zip archive with the specified item at the top level.
-//
-// Returns the URL of the created archive. The archive will be automatically
-// deleted at the end of the example.
-- (NSURL *)zipItemAtURL:(NSURL *)itemURL;
-
 // Opens and resumes a new XPC connection to the ShipIt service.
 //
 // Returns the new connection, which will be automatically closed at the end of
