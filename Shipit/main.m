@@ -15,6 +15,16 @@
 typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
 
 // How long to wait after connection termination before installing an update.
+//
+// Although a terminated connection usually indicates that the parent
+// application has quit and is ready to be updated, it may still take a very
+// short period of time for it to finish shutting down. We use this delay to
+// ensure that the parent application has definitely terminated before we begin
+// the installation process.
+//
+// Unfortunately, other mechanisms for watching application termination do not
+// generally work when one side is a GUI application, and the watcher is
+// a command line tool.
 static const NSTimeInterval SQRLUpdaterInstallationDelay = 0.1;
 
 static NSString *NSStringFromXPCObject(xpc_object_t object) {
