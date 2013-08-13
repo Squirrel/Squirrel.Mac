@@ -10,6 +10,7 @@
 #import "EXTScope.h"
 #import "SQRLArguments.h"
 #import <ServiceManagement/ServiceManagement.h>
+#import <launch.h>
 
 NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
 
@@ -38,15 +39,15 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	}
 
 	NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
-	jobDict[@"Label"] = jobLabel;
-	jobDict[@"Nice"] = @(-1);
-	jobDict[@"KeepAlive"] = @NO;
-	jobDict[@"EnableTransactions"] = @NO;
-	jobDict[@"MachServices"] = @{
+	jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
+	jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
+	jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @NO;
+	jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
+	jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
 		jobLabel: @YES
 	};
 
-	jobDict[@"ProgramArguments"] = @[
+	jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = @[
 		[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path,
 
 		// Pass in the service name as the only argument, so ShipIt knows how to
@@ -59,12 +60,12 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	if (appSupportURL == nil) {
 		NSLog(@"Could not find Application Support folder: %@", error);
 	} else {
-		jobDict[@"StandardOutPath"] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
-		jobDict[@"StandardErrorPath"] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
+		jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
+		jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
 	}
 
 	#if DEBUG
-	jobDict[@"Debug"] = @YES;
+	jobDict[@(LAUNCH_JOBKEY_DEBUG)] = @YES;
 
 	NSLog(@"ShipIt job dictionary: %@", jobDict);
 	#endif
