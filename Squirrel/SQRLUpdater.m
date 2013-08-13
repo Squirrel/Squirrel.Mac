@@ -24,6 +24,11 @@ NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdaterJSONNameKey = @"name";
 NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
+NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
+const NSInteger SQRLUpdaterErrorNoUpdateWaiting = 1;
+const NSInteger SQRLUpdaterErrorMissingUpdateBundle = 2;
+const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
+
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -259,7 +264,8 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 - (NSBundle *)applicationBundleWithIdentifier:(NSString *)bundleIdentifier inDirectory:(NSURL *)directory {
 	NSParameterAssert(bundleIdentifier != nil);
-	NSParameterAssert(directory != nil);
+
+	if (directory == nil) return nil;
 
 	NSFileManager *manager = [[NSFileManager alloc] init];
 	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
@@ -310,24 +316,31 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	return appSupportURL;
 }
 
-- (void)installUpdateIfNeeded:(void (^)(BOOL success))completionHandler {
-	if (self.state != SQRLUpdaterStateAwaitingRelaunch || self.downloadFolder == nil) {
-		completionHandler(NO);
-		return;
-	}
-
+- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler {
 	__typeof__(completionHandler) originalHandler = [completionHandler copy];
 
-	completionHandler = ^(BOOL success) {
+	completionHandler = ^(BOOL success, NSError *error) {
 		if (!success) [self finishAndSetIdle];
-		originalHandler(success);
+		originalHandler(success, error);
 	};
+
+	if (self.state != SQRLUpdaterStateAwaitingRelaunch) {
+		NSDictionary *userInfo = @{
+			NSLocalizedDescriptionKey: NSLocalizedString(@"No update to install", nil),
+		};
+
+		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorNoUpdateWaiting userInfo:userInfo]);
+		return;
+	}
 	
 	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];
 	if (updateBundle == nil) {
-		NSLog(@"Could not locate update bundle for %@ within %@", currentApplication.bundleIdentifier, self.downloadFolder);
-		completionHandler(NO);
+		NSDictionary *userInfo = @{
+			NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), currentApplication.bundleIdentifier, self.downloadFolder],
+		};
+
+		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]);
 		return;
 	}
 
@@ -336,8 +349,7 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	NSError *error = nil;
 	xpc_connection_t connection = [launcher launch:&error];
 	if (connection == NULL) {
-		NSLog(@"Error launching ShipIt: %@", error);
-		completionHandler(NO);
+		completionHandler(NO, error);
 		return;
 	}
 	
@@ -358,14 +370,18 @@ NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 	xpc_connection_resume(connection);
 	xpc_connection_send_message_with_reply(connection, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
 		BOOL success = xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey);
+		NSError *error = nil;
 		if (!success) {
 			const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
-			NSLog(@"Error shipping it: %s", errorStr);
-	
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: @(errorStr) ?: NSLocalizedString(@"An unknown error occurred within ShipIt", nil),
+			};
+
+			error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo];
 			[NSProcessInfo.processInfo enableSuddenTermination];
 		}
 
-		completionHandler(success);
+		completionHandler(success, error);
 		xpc_connection_cancel(connection);
 	});
 }

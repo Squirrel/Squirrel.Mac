@@ -46,11 +46,11 @@
 	NSParameterAssert([updater isKindOfClass:SQRLUpdater.class]);
 
 	if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
-		[updater installUpdateIfNeeded:^(BOOL success) {
+		[updater installUpdateIfNeeded:^(BOOL success, NSError *error) {
 			if (success) {
 				NSLog(@"Update installed");
 			} else {
-				NSLog(@"Error in updater");
+				NSLog(@"Error in updater: %@", error);
 			}
 
 			[NSApp terminate:self];

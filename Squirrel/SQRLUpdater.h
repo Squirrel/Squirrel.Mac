@@ -36,6 +36,19 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
 // the available update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 
+// The domain for errors originating within SQRLUpdater.
+extern NSString * const SQRLUpdaterErrorDomain;
+
+// There is no update to be installed from -installUpdateIfNeeded:.
+extern const NSInteger SQRLUpdaterErrorNoUpdateWaiting;
+
+// The downloaded update does not contain an app bundle, or it was deleted on
+// disk before we could get to it.
+extern const NSInteger SQRLUpdaterErrorMissingUpdateBundle;
+
+// An error occurred in the out-of-process updater while it was setting up.
+extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;
+
 // Downloads and installs updates from GitHub.com The Website.
 @interface SQRLUpdater : NSObject
 
@@ -85,6 +98,6 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 //
 // completionHandler - A block to invoke when updating in place has completed or failed.
 //                     The app should immediately terminate once this block is invoked.
-- (void)installUpdateIfNeeded:(void (^)(BOOL success))completionHandler;
+- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler;
 
 @end
