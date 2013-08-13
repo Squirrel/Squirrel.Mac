@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
+		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
+		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
 		D007290017B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
 		D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */ = {isa = PBXBuildFile; fileRef = D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */; };
 		D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
@@ -208,6 +211,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
+		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
+		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
+		D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiverSpec.m; sourceTree = "<group>"; };
 		D00728FF17B09732008C7DDE /* SQRLArguments.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLArguments.m; path = Squirrel/SQRLArguments.m; sourceTree = SOURCE_ROOT; };
 		D007290817B0973E008C7DDE /* SQRLArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SQRLArguments.h; path = Squirrel/SQRLArguments.h; sourceTree = SOURCE_ROOT; };
 		D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItLauncher.h; sourceTree = "<group>"; };
@@ -472,6 +479,7 @@
 		D0C22BF7179CC00E00158214 /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
+				D000219617BAD34D0050109A /* TestApplication.app.zip */,
 				D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */,
 				D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */,
 				D0C22BF9179CC00E00158214 /* InfoPlist.strings */,
@@ -574,6 +582,8 @@
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
 				D09D247A17B5A3DD0001FAF8 /* SQRLUpdater+Private.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
+				D000218C17BACEFF0050109A /* SQRLZipArchiver.h */,
+				D000218D17BACEFF0050109A /* SQRLZipArchiver.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -586,6 +596,7 @@
 				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
 				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
+				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -861,6 +872,7 @@
 				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
 				D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */,
 				D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */,
+				D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -914,6 +926,7 @@
 				F6315C31179EC9C6000DD609 /* zip.c in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
+				D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */,
 				F6315C2D179EC9C6000DD609 /* mztools.c in Sources */,
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
 				F6315C34179EC9C6000DD609 /* SSZipArchive.m in Sources */,
@@ -927,6 +940,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
