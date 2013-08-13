@@ -106,7 +106,7 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 	if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to copy bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
 			} mutableCopy];
 
 			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
