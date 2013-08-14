@@ -93,26 +93,39 @@ static void handleConnection(xpc_connection_t client) {
 		if (type == XPC_TYPE_ERROR) {
 			NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
 			return;
+		} else if (type != XPC_TYPE_DICTIONARY) {
+			NSLog(@"Expected XPC dictionary, not %@", NSStringFromXPCObject(event));
+			return;
 		}
 
 		xpc_object_t reply = xpc_dictionary_create_reply(event);
+		if (reply == NULL) {
+			NSLog(@"Received dictionary without a remote connection: %@", NSStringFromXPCObject(event));
+		}
+
 		@onExit {
-			xpc_release(reply);
+			if (reply != NULL) xpc_release(reply);
 		};
 
 		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
 		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
 			SQRLInstallationHandler handler = prepareInstallation(event);
 			if (handler == nil) {
-				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, false);
-				xpc_dictionary_set_string(reply, SQRLShipItErrorKey, "Required key not provided");
-				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+				if (reply != NULL) {
+					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, false);
+					xpc_dictionary_set_string(reply, SQRLShipItErrorKey, "Required key not provided");
+					xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+				}
+
 				return;
 			}
 
-			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(reply);
+			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(event);
+			void (^exitWithSuccess)(BOOL) = ^(BOOL success) {
+				exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
+			};
 
-			if (xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
+			if (reply != NULL && xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
 				xpc_connection_send_message_with_reply(remoteConnection, reply, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t event) {
 					if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
@@ -125,16 +138,24 @@ static void handleConnection(xpc_connection_t client) {
 					dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLUpdaterInstallationDelay * NSEC_PER_SEC));
 					dispatch_after(time, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
 						BOOL success = handler(NULL);
-						exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
+						exitWithSuccess(success);
 					});
 				});
 			} else {
 				NSString *errorString = nil;
 				BOOL success = handler(&errorString);
 					
-				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
-				if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
-				xpc_connection_send_message(remoteConnection, reply);
+				if (reply == NULL) {
+					exitWithSuccess(success);
+				} else {
+					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
+					if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+
+					xpc_connection_send_message(remoteConnection, reply);
+					xpc_connection_send_barrier(remoteConnection, ^{
+						exitWithSuccess(success);
+					});
+				}
 			}
 		}
 	});
