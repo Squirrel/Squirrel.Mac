@@ -118,9 +118,9 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 		[SQRLInstallerTransactionLock unlock];
 	};
 
+	// If there are any transactions already, skip initial setup.
 	if (SQRLInstallerTransactionCount++ > 0) return;
 
-	// This is the first open transaction.
 	SQRLInstallerReplaceSignalHandlers(SIG_IGN);
 
 	NSString *details = [NSString stringWithFormat:@"%@ is being updated, and interrupting the process could corrupt the application", self.targetBundleURL.path];
@@ -136,9 +136,9 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 		[SQRLInstallerTransactionLock unlock];
 	};
 
+	// If there are still transactions left, skip teardown.
 	if (--SQRLInstallerTransactionCount > 0) return;
 
-	// This was the last open transaction.
 	SQRLInstallerReplaceSignalHandlers(SIG_DFL);
 
 	IOReturn result = IOPMAssertionRelease(SQRLInstallerPowerAssertion);
@@ -151,10 +151,14 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 - (BOOL)installUpdateWithError:(NSError **)errorPtr {
 	[self beginTransaction];
-	@onExit {
+	@try {
+		return [self reallyInstallUpdateWithError:errorPtr];
+	} @finally {
 		[self endTransaction];
-	};
+	}
+}
 
+- (BOOL)reallyInstallUpdateWithError:(NSError **)errorPtr {
 	// Verify the update bundle.
 	if (![self.verifier verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
 		return NO;
