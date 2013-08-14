@@ -65,6 +65,61 @@ it(@"should install an update and relaunch", ^{
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
 });
 
+it(@"should install an update from another volume", ^{
+	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication 2.1" fromDirectory:updateURL.URLByDeletingLastPathComponent];
+	updateURL = [diskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
+
+	__block BOOL installed = NO;
+
+	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+		expect([self errorFromObject:event]).to.beNil();
+
+		installed = YES;
+	});
+
+	expect(installed).will.beTruthy();
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+it(@"should back up to another volume while updating", ^{
+	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication Backup" fromDirectory:nil];
+
+	__block BOOL installed = NO;
+
+	xpc_dictionary_set_string(message, SQRLBackupURLKey, diskImageURL.absoluteString.UTF8String);
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+		expect([self errorFromObject:event]).to.beNil();
+
+		installed = YES;
+	});
+
+	expect(installed).will.beTruthy();
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+it(@"should install an update to another volume", ^{
+	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+	NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+	__block BOOL installed = NO;
+
+	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+		expect([self errorFromObject:event]).to.beNil();
+
+		installed = YES;
+	});
+
+	expect(installed).will.beTruthy();
+
+	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
 describe(@"signal handling", ^{
 	__block BOOL terminated;
 	__block void (^sendMessage)(void);

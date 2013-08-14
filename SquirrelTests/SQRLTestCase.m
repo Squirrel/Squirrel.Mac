@@ -281,6 +281,31 @@ static void SQRLSignalHandler(int sig) {
 	return connection;
 }
 
+- (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {
+	NSURL *destinationURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:name];
+	STAssertNotNil(destinationURL, @"Could not create disk image URL for %@", directoryURL);
+
+	NSString *createInvocation;
+	if (directoryURL == nil) {
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -type SPARSE -size 10m -quiet", destinationURL.path, name];
+	} else {
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDSP -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+	}
+
+	expect(system(createInvocation.UTF8String)).to.equal(0);
+
+	NSString *mountInvocation = [NSString stringWithFormat:@"hdiutil attach '%@.sparseimage' -noverify -noautofsck -readwrite -quiet", destinationURL.path];
+	expect(system(mountInvocation.UTF8String)).to.equal(0);
+
+	NSString *path = [NSString stringWithFormat:@"/Volumes/%@", name];
+	[self addCleanupBlock:^{
+		NSString *detachInvocation = [NSString stringWithFormat:@"hdiutil detach '%@' -force -quiet", path];
+		expect(system(detachInvocation.UTF8String)).to.equal(0);
+	}];
+
+	return [NSURL fileURLWithPath:path isDirectory:YES];
+}
+
 #pragma mark Diagnostics
 
 - (NSString *)errorFromObject:(xpc_object_t)object {
