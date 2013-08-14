@@ -99,23 +99,30 @@ static void handleConnection(xpc_connection_t client) {
 		}
 
 		xpc_object_t reply = xpc_dictionary_create_reply(event);
+		if (reply == NULL) {
+			NSLog(@"Received dictionary without a remote connection: %@", NSStringFromXPCObject(event));
+		}
+
 		@onExit {
-			xpc_release(reply);
+			if (reply != NULL) xpc_release(reply);
 		};
 
 		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
 		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
 			SQRLInstallationHandler handler = prepareInstallation(event);
 			if (handler == nil) {
-				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, false);
-				xpc_dictionary_set_string(reply, SQRLShipItErrorKey, "Required key not provided");
-				xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+				if (reply != NULL) {
+					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, false);
+					xpc_dictionary_set_string(reply, SQRLShipItErrorKey, "Required key not provided");
+					xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
+				}
+
 				return;
 			}
 
 			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(event);
 
-			if (xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
+			if (reply != NULL && xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
 				xpc_connection_send_message_with_reply(remoteConnection, reply, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t event) {
 					if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
@@ -135,9 +142,11 @@ static void handleConnection(xpc_connection_t client) {
 				NSString *errorString = nil;
 				BOOL success = handler(&errorString);
 					
-				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
-				if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
-				xpc_connection_send_message(remoteConnection, reply);
+				if (reply != NULL) {
+					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
+					if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+					xpc_connection_send_message(remoteConnection, reply);
+				}
 			}
 		}
 	});
