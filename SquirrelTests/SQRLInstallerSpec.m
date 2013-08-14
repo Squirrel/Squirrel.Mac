@@ -85,6 +85,10 @@ describe(@"signal handling", ^{
 
 		sendMessage = ^{
 			xpc_connection_send_message(shipitConnection, message);
+			xpc_connection_send_barrier(shipitConnection, ^{
+				// Ensure that ShipIt has launched before we send any signal to
+				// it.
+			});
 
 			// Apply a random delay before sending the termination signal, to
 			// fuzz out race conditions.
