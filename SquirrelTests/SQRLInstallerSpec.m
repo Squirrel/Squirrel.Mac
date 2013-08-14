@@ -66,7 +66,9 @@ it(@"should install an update and relaunch", ^{
 });
 
 describe(@"signal handling", ^{
-	__block void (^sendThenCancel)(void);
+	__block BOOL terminated;
+	__block void (^sendMessage)(void);
+
 	__block NSURL *targetURL;
 
 	beforeEach(^{
@@ -74,37 +76,38 @@ describe(@"signal handling", ^{
 		// accessing the property.
 		targetURL = self.testApplicationURL;
 
-		sendThenCancel = ^{
+		terminated = NO;
+		xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
+			if (event == XPC_ERROR_CONNECTION_INVALID || event == XPC_ERROR_CONNECTION_INTERRUPTED) {
+				terminated = YES;
+			}
+		});
+
+		sendMessage = ^{
 			xpc_connection_send_message(shipitConnection, message);
 
 			__block BOOL launched = NO;
 			xpc_connection_send_barrier(shipitConnection, ^{
+				// Ensure that ShipIt has launched before we send any signal to
+				// it.
 				launched = YES;
-				xpc_connection_cancel(shipitConnection);
 			});
-			
-			// Make sure that ShipIt is running before we try sending it
-			// a signal.
+
 			expect(launched).will.beTruthy();
 
 			// Apply a random delay before sending the termination signal, to
 			// fuzz out race conditions.
-			[NSThread sleepForTimeInterval:arc4random_uniform(100) / 1000.0];
+			NSTimeInterval delay = arc4random_uniform(80) / 1000.0;
+			NSLog(@"Waiting for %g seconds before sending signal", delay);
+			[NSThread sleepForTimeInterval:delay];
 		};
 	});
 
 	describe(@"with a guaranteed target bundle", ^{
 		afterEach(^{
-			BOOL (^processExists)(void) = ^ BOOL {
-				int result = system("killall -s ShipIt");
-				expect(result).notTo.equal(-1);
-				expect(result).notTo.equal(127);
-				return WEXITSTATUS(result) != 1;
-			};
-
 			// Wait until ShipIt isn't running anymore before verifying the code
 			// signature.
-			expect(processExists()).will.beFalsy();
+			expect(terminated).will.beTruthy();
 
 			NSError *error = nil;
 			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
@@ -113,29 +116,29 @@ describe(@"signal handling", ^{
 		});
 
 		it(@"should handle SIGHUP", ^{
-			sendThenCancel();
-			system("killall -HUP ShipIt");
+			sendMessage();
+			system("killall -v -HUP ShipIt");
 		});
 
 		it(@"should handle SIGTERM", ^{
-			sendThenCancel();
-			system("killall -TERM ShipIt");
+			sendMessage();
+			system("killall -v -TERM ShipIt");
 		});
 
 		it(@"should handle SIGINT", ^{
-			sendThenCancel();
-			system("killall -INT ShipIt");
+			sendMessage();
+			system("killall -v -INT ShipIt");
 		});
 
 		it(@"should handle SIGQUIT", ^{
-			sendThenCancel();
-			system("killall -QUIT ShipIt");
+			sendMessage();
+			system("killall -v -QUIT ShipIt");
 		});
 	});
 
 	it(@"should leave the target missing or in a valid state after being sent SIGKILL", ^{
-		sendThenCancel();
-		system("killall -KILL ShipIt");
+		sendMessage();
+		system("killall -v -KILL ShipIt");
 
 		// Our behavior can't be as well-defined in the case of SIGKILL (since
 		// we get no opportunity to handle it), but we should at least guarantee
