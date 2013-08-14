@@ -121,6 +121,9 @@ static void handleConnection(xpc_connection_t client) {
 			}
 
 			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(event);
+			void (^exitWithSuccess)(BOOL) = ^(BOOL success) {
+				exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
+			};
 
 			if (reply != NULL && xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
@@ -135,23 +138,24 @@ static void handleConnection(xpc_connection_t client) {
 					dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLUpdaterInstallationDelay * NSEC_PER_SEC));
 					dispatch_after(time, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
 						BOOL success = handler(NULL);
-						exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
+						exitWithSuccess(success);
 					});
 				});
 			} else {
 				NSString *errorString = nil;
 				BOOL success = handler(&errorString);
 					
-				if (reply != NULL) {
+				if (reply == NULL) {
+					exitWithSuccess(success);
+				} else {
 					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
 					if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
 
 					xpc_connection_send_message(remoteConnection, reply);
+					xpc_connection_send_barrier(remoteConnection, ^{
+						exitWithSuccess(success);
+					});
 				}
-
-				xpc_connection_send_barrier(remoteConnection, ^{
-					exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
-				});
 			}
 		}
 	});
