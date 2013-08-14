@@ -36,9 +36,9 @@ static NSString *NSStringFromXPCObject(xpc_object_t object) {
 }
 
 static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
-	NSURL *targetBundleURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLTargetBundleURLKey))].filePathURL;
-	NSURL *updateBundleURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLUpdateBundleURLKey))].filePathURL;
-	NSURL *backupURL = [NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLBackupURLKey))].filePathURL;
+	NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLTargetBundleURLKey))] filePathURL];
+	NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLUpdateBundleURLKey))] filePathURL];
+	NSURL *backupURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLBackupURLKey))] filePathURL];
 	if (targetBundleURL == nil || updateBundleURL == nil || backupURL == nil) return nil;
 
 	size_t requirementDataLen = 0;
