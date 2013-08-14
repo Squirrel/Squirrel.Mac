@@ -145,8 +145,13 @@ static void handleConnection(xpc_connection_t client) {
 				if (reply != NULL) {
 					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
 					if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
+
 					xpc_connection_send_message(remoteConnection, reply);
 				}
+
+				xpc_connection_send_barrier(remoteConnection, ^{
+					exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
+				});
 			}
 		}
 	});
