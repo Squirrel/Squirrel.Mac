@@ -93,6 +93,9 @@ static void handleConnection(xpc_connection_t client) {
 		if (type == XPC_TYPE_ERROR) {
 			NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
 			return;
+		} else if (type != XPC_TYPE_DICTIONARY) {
+			NSLog(@"Expected XPC dictionary, not %@", NSStringFromXPCObject(event));
+			return;
 		}
 
 		xpc_object_t reply = xpc_dictionary_create_reply(event);
@@ -110,7 +113,7 @@ static void handleConnection(xpc_connection_t client) {
 				return;
 			}
 
-			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(reply);
+			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(event);
 
 			if (xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
