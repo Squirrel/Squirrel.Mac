@@ -9,6 +9,7 @@
 #import "SQRLInstaller.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLCodeSignatureVerifier.h"
+#import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
 #import <sys/xattr.h>
 
@@ -19,17 +20,30 @@ const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 const NSInteger SQRLInstallerErrorCouldNotOpenTarget = -3;
 const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 
-// Protects access to SQRLReplaceSignalHandlers and
-// SQRLInstallerTransactionCount.
-static NSLock *SQRLSignalHandlersLock;
+// Protects access to resources that are used during the opening/closing of
+// a transaction.
+static NSLock *SQRLInstallerTransactionLock;
 
-// Tracks how many concurrent installations are in progress.
+// Tracks how many concurrent transactions are in progress.
 //
-// This is used to control how ShipIt handles signals.
+// This variable must only be used while `SQRLInstallerTransactionLock` is held.
 static NSUInteger SQRLInstallerTransactionCount = 0;
 
-// Updates the behavior for handling termination signals.
-static void SQRLReplaceSignalHandlers(sig_t func) {
+// Prevents the machine from shutting down or sleeping while a transaction is in
+// progress.
+//
+// This variable must only be used while `SQRLInstallerTransactionLock` is held.
+static IOPMAssertionID SQRLInstallerPowerAssertion;
+
+// How long before the `SQRLInstallerPowerAssertion` times out.
+//
+// This will not actually affect behavior -- it is used only for logging.
+static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
+
+// Updates the behavior for handling termination signals to `func`.
+//
+// This function must only be called while `SQRLInstallerTransactionLock` is held.
+static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	signal(SIGHUP, func);
 	signal(SIGINT, func);
 	signal(SIGQUIT, func);
@@ -43,6 +57,21 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 @property (nonatomic, strong, readonly) NSURL *backupURL;
 @property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
 
+// Invoked when the installer needs to begin some uninterruptible work.
+//
+// A best-effort attempt will be made to protect the process from termination
+// during this time.
+//
+// -endTransaction must be called after the work is completed. These calls can
+// be nested.
+- (void)beginTransaction;
+
+// Ends a transaction previously opened with -beginTransaction.
+//
+// These calls may be nested, but there must be one -endTransaction call for
+// each -beginTransaction call.
+- (void)endTransaction;
+
 @end
 
 @implementation SQRLInstaller
@@ -52,8 +81,8 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 + (void)initialize {
 	if (self != SQRLInstaller.class) return;
 
-	SQRLSignalHandlersLock = [[NSLock alloc] init];
-	SQRLSignalHandlersLock.name = @"com.github.Squirrel.ShipIt.SQRLSignalHandlersLock";
+	SQRLInstallerTransactionLock = [[NSLock alloc] init];
+	SQRLInstallerTransactionLock.name = @"com.github.Squirrel.ShipIt.SQRLInstallerTransactionLock";
 }
 
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL requirementData:(NSData *)requirementData {
@@ -81,36 +110,49 @@ static void SQRLReplaceSignalHandlers(sig_t func) {
 	return self;
 }
 
+#pragma mark Transactions
+
+- (void)beginTransaction {
+	[SQRLInstallerTransactionLock lock];
+	@onExit {
+		[SQRLInstallerTransactionLock unlock];
+	};
+
+	if (SQRLInstallerTransactionCount++ > 0) return;
+
+	// This is the first open transaction.
+	SQRLInstallerReplaceSignalHandlers(SIG_IGN);
+
+	NSString *details = [NSString stringWithFormat:@"%@ is being updated, and interrupting the process could corrupt the application", self.targetBundleURL.path];
+	IOReturn result = IOPMAssertionCreateWithDescription(kIOPMAssertionTypePreventSystemSleep, CFSTR("Updating"), (__bridge CFStringRef)details, NULL, NULL, SQRLInstallerPowerAssertionTimeout, kIOPMAssertionTimeoutActionLog, &SQRLInstallerPowerAssertion);
+	if (result != kIOReturnSuccess) {
+		NSLog(@"Could not install power assertion: %li", (long)result);
+	}
+}
+
+- (void)endTransaction {
+	[SQRLInstallerTransactionLock lock];
+	@onExit {
+		[SQRLInstallerTransactionLock unlock];
+	};
+
+	if (--SQRLInstallerTransactionCount > 0) return;
+
+	// This was the last open transaction.
+	SQRLInstallerReplaceSignalHandlers(SIG_DFL);
+
+	IOReturn result = IOPMAssertionRelease(SQRLInstallerPowerAssertion);
+	if (result != kIOReturnSuccess) {
+		NSLog(@"Could not release power assertion: %li", (long)result);
+	}
+}
+
 #pragma mark Installation
 
-- (void)enableSignalCatching {
-	[SQRLSignalHandlersLock lock];
-	@onExit {
-		[SQRLSignalHandlersLock unlock];
-	};
-
-	if (SQRLInstallerTransactionCount++ == 0) {
-		// This is the first transaction, install handlers.
-		SQRLReplaceSignalHandlers(SIG_IGN);
-	}
-}
-
-- (void)disableSignalCatching {
-	[SQRLSignalHandlersLock lock];
-	@onExit {
-		[SQRLSignalHandlersLock unlock];
-	};
-
-	if (--SQRLInstallerTransactionCount == 0) {
-		// This is the last transaction, remove handlers.
-		SQRLReplaceSignalHandlers(SIG_DFL);
-	}
-}
-
 - (BOOL)installUpdateWithError:(NSError **)errorPtr {
-	[self enableSignalCatching];
+	[self beginTransaction];
 	@onExit {
-		[self disableSignalCatching];
+		[self endTransaction];
 	};
 
 	// Verify the update bundle.
