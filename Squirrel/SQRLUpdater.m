@@ -89,7 +89,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
-	[self _assertCanCheckForUpdates];
+	[self assertCanCheckForUpdates];
 
 	dispatch_async(dispatch_get_main_queue(), ^{
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
@@ -98,7 +98,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 #pragma mark Checking for Updates
 
-- (void)_assertCanCheckForUpdates {
+- (void)assertCanCheckForUpdates {
 	NSParameterAssert(self.APIEndpoint != nil);
 }
 
@@ -109,7 +109,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 - (void)checkForUpdates {
-	[self _assertCanCheckForUpdates];
+	[self assertCanCheckForUpdates];
 
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
 	
