@@ -78,6 +78,8 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 @property (atomic, copy) NSURL *APIEndpoint;
 
 // Returns the singleton updater.
+//
+// APIEndpoint must be configured before checking for updates
 + (instancetype)sharedUpdater;
 
 // If one isn't already running, kicks off a check for updates.
