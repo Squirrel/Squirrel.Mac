@@ -69,7 +69,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	self.updateQueue.maxConcurrentOperationCount = 1;
 	self.updateQueue.name = @"com.github.Squirrel.updateCheckingQueue";
 
-	_APIEndpoint = [NSURL URLWithString:@"https://central.github.com/api/mac/latest"];
 	_verifier = [[SQRLCodeSignatureVerifier alloc] init];
 	if (_verifier == nil) return nil;
 	
@@ -90,12 +89,18 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
+	[self assertCanCheckForUpdates];
+
 	dispatch_async(dispatch_get_main_queue(), ^{
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
 	});
 }
 
 #pragma mark Checking for Updates
+
+- (void)assertCanCheckForUpdates {
+	NSParameterAssert(self.APIEndpoint != nil);
+}
 
 - (NSString *)OSVersionString {
 	NSURL *versionPlistURL = [NSURL fileURLWithPath:@"/System/Library/CoreServices/SystemVersion.plist"];
@@ -104,6 +109,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 - (void)checkForUpdates {
+	[self assertCanCheckForUpdates];
+
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
 	
 	if (self.state != SQRLUpdaterStateIdle) return; //We have a new update installed already, you crazy fool!
