@@ -118,7 +118,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		[requestString appendFormat:@"&username=%@", CFBridgingRelease(escapedUsername)];
 	}
 	
-	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
 		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
@@ -162,7 +163,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
 		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
 
-		NSURLRequest *zipDownloadRequest = [NSURLRequest requestWithURL:zipDownloadURL];
+		NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
+		[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 		[NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 			if (response == nil) {
 				NSLog(@"Error downloading zipped update at %@", zipDownloadURL);
