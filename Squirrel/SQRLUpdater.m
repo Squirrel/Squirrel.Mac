@@ -129,6 +129,13 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+		if (data == nil) {
+			NSLog(@"No data received for request %@", request);
+			
+			[self finishAndSetIdle];
+			return;
+		}
+		
 		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
 		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
 			NSLog(@"Instead of update information, server returned:\n%@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
