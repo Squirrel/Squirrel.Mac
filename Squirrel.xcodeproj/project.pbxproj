@@ -390,6 +390,7 @@
 				D0C22BD8179CC00E00158214 /* Products */,
 			);
 			sourceTree = "<group>";
+			usesTabs = 1;
 		};
 		D0C22BD8179CC00E00158214 /* Products */ = {
 			isa = PBXGroup;
