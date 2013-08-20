@@ -29,8 +29,13 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotification;
 // update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
 
-// Associated with a string containing the release name for the available update.
+// Associated with a string containing the release name for the available
+// update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
+
+// Asscociated with a string containing the bundle version for the available
+// update.
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
 
 // Associated with an NSURL to a side-splittingly hilarious image to show for
 // the available update.
