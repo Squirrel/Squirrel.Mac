@@ -235,7 +235,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 					formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
 					formatter.dateFormat = @"EEE MMM dd HH:mm:ss Z yyyy";
-					formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
 					releaseDate = [formatter dateFromString:releaseDateString];
 					if (releaseDate == nil) {
 						NSLog(@"Could not parse publication date for update. %@", releaseDateString);
