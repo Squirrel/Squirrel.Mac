@@ -237,6 +237,9 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					formatter.dateFormat = @"EEE MMM dd HH:mm:ss Z yyyy";
 					formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
 					releaseDate = [formatter dateFromString:releaseDateString];
+					if (releaseDate == nil) {
+						NSLog(@"Could not parse publication date for update. %@", releaseDateString);
+					}
 				}
 				
 				NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
