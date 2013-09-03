@@ -231,7 +231,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				NSString *releaseDateString = JSON[SQRLUpdaterJSONPublicationDateKey];
 				if (![releaseDateString isKindOfClass:NSString.class]) {
 					NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
-					releaseDateString = nil;
 				} else {
 					NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 					formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
