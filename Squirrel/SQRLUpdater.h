@@ -33,6 +33,10 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
 // update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
 
+// Associated with an NSDate representing the day that the release became
+// available.
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey;
+
 // Asscociated with a string containing the bundle version for the available
 // update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
