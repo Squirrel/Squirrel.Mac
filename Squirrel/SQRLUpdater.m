@@ -16,12 +16,14 @@
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseDateKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey = @"SQRLUpdaterUpdateAvailableNotificationBundleVersionKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdaterUpdateAvailableNotificationLulzURLKey";
 
 NSString * const SQRLUpdaterJSONURLKey = @"url";
 NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdaterJSONNameKey = @"name";
+NSString * const SQRLUpdaterJSONPubDateKey = @"pub_date";
 NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
@@ -225,6 +227,19 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					name = nil;
 				}
 				
+				NSDate *releaseDate = nil;
+				NSString *releaseDateString = JSON[SQRLUpdaterJSONPubDateKey];
+				if (![releaseDateString isKindOfClass:NSString.class]) {
+					NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
+					releaseDateString = nil;
+				} else {
+					NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+					formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+					formatter.dateFormat = @"EEE MMM dd HH:mm:ss Z yyyy";
+					formatter.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"];
+					releaseDate = [formatter dateFromString:releaseDateString];
+				}
+				
 				NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
 				if (![releaseNotes isKindOfClass:NSString.class]) {
 					NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
@@ -244,6 +259,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 				if (releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = releaseNotes;
 				if (name != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = name;
+				if (releaseDate != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseDateKey] = releaseDate;
 				if (lulzURL != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationLulzURLKey] = lulzURL;
 
 				NSString *bundleVersion = [updateBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
