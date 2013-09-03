@@ -23,7 +23,7 @@ NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdate
 NSString * const SQRLUpdaterJSONURLKey = @"url";
 NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdaterJSONNameKey = @"name";
-NSString * const SQRLUpdaterJSONPubDateKey = @"pub_date";
+NSString * const SQRLUpdaterJSONPublicationDateKey = @"pub_date";
 NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
@@ -228,7 +228,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				}
 				
 				NSDate *releaseDate = nil;
-				NSString *releaseDateString = JSON[SQRLUpdaterJSONPubDateKey];
+				NSString *releaseDateString = JSON[SQRLUpdaterJSONPublicationDateKey];
 				if (![releaseDateString isKindOfClass:NSString.class]) {
 					NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
 					releaseDateString = nil;

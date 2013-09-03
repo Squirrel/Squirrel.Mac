@@ -11,5 +11,5 @@
 extern NSString * const SQRLUpdaterJSONURLKey;
 extern NSString * const SQRLUpdaterJSONReleaseNotesKey;
 extern NSString * const SQRLUpdaterJSONNameKey;
-extern NSString * const SQRLUpdaterJSONPubDateKey;
+extern NSString * const SQRLUpdaterJSONPublicationDateKey;
 extern NSString * const SQRLUpdaterJSONLulzURLKey;
