@@ -120,10 +120,10 @@ module Codesign
 		protected
 
 		def self.which_codesign
-			codesign = (`xcrun -f codesign` || `which codesign`)
+			codesign = `/bin/bash -c "[ ! -z \"$(which xcrun)\" ] && codesign_path=$(xcrun --find codesign); [ ! -x \"${codesign_path}\" ] && codesign_path=$(which codesign); echo -n \"\\${codesign_path}\""`
 			return nil unless codesign
-
-			codesign.chomp
+			return nil unless File.executable?(codesign)
+			codesign
 		end
 	end
 end
