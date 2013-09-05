@@ -116,7 +116,7 @@ static void SQRLSignalHandler(int sig) {
 - (NSURL *)baseTemporaryDirectoryURL {
 	if (_baseTemporaryDirectoryURL == nil) {
 		NSURL *globalTemporaryDirectory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
-		_baseTemporaryDirectoryURL = [globalTemporaryDirectory URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
+		_baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
 		
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
@@ -144,7 +144,7 @@ static void SQRLSignalHandler(int sig) {
 #pragma mark Fixtures
 
 - (NSURL *)testApplicationURL {
-	NSURL *fixtureURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
+	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
 		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
 		STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
@@ -176,7 +176,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (NSString *)testApplicationBundleVersion {
-	NSURL *plistURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app/Contents/Info.plist"];
+	NSURL *plistURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app/Contents/Info.plist"];
 
 	NSDictionary *plist = [NSDictionary dictionaryWithContentsOfURL:plistURL];
 	if (plist == nil) return nil;
