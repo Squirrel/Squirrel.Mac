@@ -7,13 +7,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>English</string>
 	<key>CFBundleExecutable</key>
-	<string>com.github.Squirrel.ShipIt</string>
+	<string>com.github.Squirrel.TestApplication.TestService</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.github.Squirrel.ShipIt</string>
+	<string>com.github.Squirrel.TestApplication.TestService</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>com.github.Squirrel.ShipIt</string>
+	<string>com.github.Squirrel.TestApplication.TestService</string>
 	<key>CFBundlePackageType</key>
 	<string>XPC!</string>
 	<key>CFBundleShortVersionString</key>
@@ -25,23 +25,21 @@
 	<key>DTCompiler</key>
 	<string>com.apple.compilers.llvm.clang.1_0</string>
 	<key>DTPlatformBuild</key>
-	<string>5A11365j</string>
+	<string>5A11365x</string>
 	<key>DTPlatformVersion</key>
 	<string>GM</string>
 	<key>DTSDKBuild</key>
-	<string>13A524b</string>
+	<string>13A538c</string>
 	<key>DTSDKName</key>
 	<string>macosx10.9</string>
 	<key>DTXcode</key>
 	<string>0500</string>
 	<key>DTXcodeBuild</key>
-	<string>5A11365j</string>
+	<string>5A11365x</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2013 GitHub. All rights reserved.</string>
 	<key>XPCService</key>
 	<dict>
-		<key>RunLoopType</key>
-		<string>NSRunLoop</string>
 		<key>ServiceType</key>
 		<string>Application</string>
 	</dict>
