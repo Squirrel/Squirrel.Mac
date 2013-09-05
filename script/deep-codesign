@@ -184,6 +184,13 @@ puts "Signing these targets:"
 puts "="*22
 print "\n"
 
+# Sort into nested-most first, outer targets might include inner targets
+# in their ResourceRules
+targets = targets.sort_by do |target|
+	target.path.size
+end
+targets.reverse!
+
 targets.each do |target|
 	puts "=> #{target.path}"
 	Codesign::Task.sign(target, codesign_identity)
