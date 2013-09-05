@@ -1518,6 +1518,7 @@
 				534FF36F17D8E90A0020A51A /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		D014AC0A17B97885007D79D0 /* Build configuration list for PBXNativeTarget "ShipIt" */ = {
 			isa = XCConfigurationList;
