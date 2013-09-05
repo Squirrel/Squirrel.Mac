@@ -1,5 +1,10 @@
 #!/usr/bin/env ruby
 
+def exit_error(description)
+	puts "{ 'error': '#{description}' }"
+	exit 1
+end
+
 module Targets
 	class Object
 		def self.match(path)
@@ -101,8 +106,7 @@ module Codesign
 		def self.sign(target, identity)
 			codesign = which_codesign
 			if codesign.nil?
-				puts "{ 'error': 'couldn't find codesign utility' }"
-				exit 0
+				exit_error("couldn't find codesign utility")
 			end
 
 			result = `#{codesign} --sign '#{identity}' --force --preserve-metadata=identifier,entitlements,resource-rules,requirements --verbose '#{target.path}'`
@@ -122,21 +126,18 @@ end
 
 codesign_identity = ENV['CODE_SIGN_IDENTITY']
 unless codesign_identity
-	puts "{ 'error': 'No codesign identity provided' }"
-	exit 0
+	exit_error("No codesign identity provided")
 end
 
 build_dir = ENV['CONFIGURATION_BUILD_DIR']
 product_name = ENV['FULL_PRODUCT_NAME']
 unless build_dir && product_name
-	puts "{ 'error': 'Path to built product not provided' }"
-	exit 0
+	exit_error("Path to built product not provided")
 end
 
 input_path = File.join(build_dir, product_name)
 unless File.exists?(input_path)
-	puts "{ 'error': 'Built product doesn't exist at path provided' }"
-	exit 0
+	exit_error("Built product doesn't exist at path provided")
 end
 
 targets = [ ]
@@ -150,8 +151,7 @@ end
 
 root_target = match_path input_path
 if root_target.nil?
-	puts "{ 'error': 'Built product is not a known file structure, cannot deep codesign' }"
-	exit 0
+	exit_error("Built product is not a known file structure, cannot deep codesign")
 end
 
 # Recursion base case can't use build_dir because there can be >1 product
