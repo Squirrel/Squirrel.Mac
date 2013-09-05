@@ -13,7 +13,7 @@ __block NSString *codesignPath = nil;
 beforeAll(^ {
 	NSTask *findCodesignTask = [[NSTask alloc] init];
 	findCodesignTask.launchPath = @"/bin/bash";
-	findCodesignTask.arguments = @[ @"-c", @"codesign_path=$(xcrun -f codesign); [ -z \"${codesign_path}\" ] && codesign_path=$(which codesign); echo -n \"${codesign_path}\"" ];
+	findCodesignTask.arguments = @[ @"-x", @"-c", @"[ ! -z \"$(which xcrun)\" ] && codesign_path=$(xcrun --find codesign); [ ! -x \"${codesign_path}\" ] && codesign_path=$(which codesign); echo -n \"${codesign_path}\"" ];
 	findCodesignTask.standardOutput = [NSPipe pipe];
 
 	[findCodesignTask launch];
