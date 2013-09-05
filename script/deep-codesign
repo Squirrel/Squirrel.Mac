@@ -24,7 +24,10 @@ module Targets
 
 	class Bundle < Object
 		def self.match(path)
-			super && File.extname(path).match(/\.(.+)/)[1] == extension
+			return false unless super
+
+			return false unless match = File.extname(path).match(/\.(.+)/)
+			return match[1] == extension
 		end
 
 		def contents_directories
