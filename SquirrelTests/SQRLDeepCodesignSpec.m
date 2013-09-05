@@ -51,7 +51,7 @@ void (^resignTestApplicationPreserveEverythingButTheRequirements)(void) = ^{
 void (^deepCodesignTestApplication)(void) = ^{
 	NSURL *testApplicationLocation = self.testApplicationURL;
 
-	NSBundle *testsBundle = [NSBundle bundleWithIdentifier:@"com.github.SquirrelTests"];
+	NSBundle *testsBundle = [NSBundle bundleForClass:self.class];
 	NSURL *deepCodesignLocation = [testsBundle URLForResource:@"deep-codesign" withExtension:nil];
 	expect([deepCodesignLocation resourceValuesForKeys:@[NSURLIsExecutableKey] error:NULL][NSURLIsExecutableKey]).to.beTruthy();
 
