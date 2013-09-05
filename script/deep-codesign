@@ -112,6 +112,7 @@ module Codesign
 				exit_error("couldn't find codesign utility")
 			end
 
+			$stdout.flush
 			result = `#{codesign} --sign '#{identity}' --force --preserve-metadata=identifier,entitlements,resource-rules,requirements --verbose '#{target.path}'`
 			puts result
 		end
