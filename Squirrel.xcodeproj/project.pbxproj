@@ -12,6 +12,8 @@
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
 		534FF36A17D8E90A0020A51A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 534FF36917D8E90A0020A51A /* main.m */; };
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
+		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
+		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -239,6 +241,14 @@
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		534FF36817D8E90A0020A51A /* TestService-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestService-Prefix.pch"; sourceTree = "<group>"; };
 		534FF36917D8E90A0020A51A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDeepCodesignSpec.m; sourceTree = "<group>"; };
+		53710D7D17D8F5C300A992DE /* bootstrap */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = bootstrap; sourceTree = "<group>"; };
+		53710D7E17D8F5C300A992DE /* cibuild */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = cibuild; sourceTree = "<group>"; };
+		53710D7F17D8F5C300A992DE /* deep-codesign */ = {isa = PBXFileReference; lastKnownFileType = text; path = "deep-codesign"; sourceTree = "<group>"; };
+		53710D8017D8F5C300A992DE /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.md; sourceTree = "<group>"; };
+		53710D8117D8F5C300A992DE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
+		53710D8217D8F5C300A992DE /* targets.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = targets.awk; sourceTree = "<group>"; };
+		53710D8317D8F5C300A992DE /* xcodebuild.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = xcodebuild.awk; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
@@ -397,6 +407,21 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		53710D7C17D8F5C300A992DE /* Scripts */ = {
+			isa = PBXGroup;
+			children = (
+				53710D7D17D8F5C300A992DE /* bootstrap */,
+				53710D7E17D8F5C300A992DE /* cibuild */,
+				53710D7F17D8F5C300A992DE /* deep-codesign */,
+				53710D8017D8F5C300A992DE /* LICENSE.md */,
+				53710D8117D8F5C300A992DE /* README.md */,
+				53710D8217D8F5C300A992DE /* targets.awk */,
+				53710D8317D8F5C300A992DE /* xcodebuild.awk */,
+			);
+			name = Scripts;
+			path = script;
+			sourceTree = "<group>";
+		};
 		D014AC0317B97885007D79D0 /* ShipIt */ = {
 			isa = PBXGroup;
 			children = (
@@ -454,6 +479,7 @@
 				D08D4E0E17B451500012B22D /* TestApplication */,
 				D014AC0317B97885007D79D0 /* ShipIt */,
 				D0C22BD9179CC00E00158214 /* Frameworks */,
+				53710D7C17D8F5C300A992DE /* Scripts */,
 				D0C22C07179CC02E00158214 /* Configuration */,
 				D0C22BD8179CC00E00158214 /* Products */,
 			);
@@ -638,6 +664,7 @@
 			children = (
 				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
 				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
+				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
 				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
 				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
@@ -924,6 +951,7 @@
 				D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */,
 				D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */,
 				D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */,
+				53710D8417D8F5CB00A992DE /* deep-codesign in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -999,6 +1027,7 @@
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
+				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
