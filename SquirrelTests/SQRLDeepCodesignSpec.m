@@ -86,13 +86,7 @@ void (^deepCodesignTestApplication)(void) = ^{
 	resignTestApplicationPreserveEverythingButTheRequirements();
 };
 
-it(@"should deep sign the test application", ^{
-	deepCodesignTestApplication();
-});
-
-it(@"should deep verify after signing", ^{
-	deepCodesignTestApplication();
-
+EXPExpect * (^expectDeepVerify)(void) = ^ EXPExpect * {
 	NSTask *deepVerifyTask = [[NSTask alloc] init];
 	deepVerifyTask.launchPath = codesignPath;
 	deepVerifyTask.arguments = @[ @"--deep-verify", @"--verbose=4", self.testApplicationURL.path ];
@@ -100,7 +94,17 @@ it(@"should deep verify after signing", ^{
 	[deepVerifyTask launch];
 	[deepVerifyTask waitUntilExit];
 
-	expect(@(deepVerifyTask.terminationStatus)).to.equal(@(0));
+	return expect(@(deepVerifyTask.terminationStatus == 0));
+};
+
+it(@"should deep sign the test application", ^{
+	deepCodesignTestApplication();
+});
+
+it(@"should deep verify after signing", ^{
+	expectDeepVerify().to.beFalsy();
+	deepCodesignTestApplication();
+	expectDeepVerify().to.beTruthy();
 });
 
 SpecEnd
