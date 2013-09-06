@@ -39,8 +39,8 @@ When your application terminates, it should tell Squirrel to install any updates
 }
 ```
 
-Update JSON
-===========
+Update JSON Format
+==================
 
 Squirrel requests the URL you provide with `Accept: application/json` and expects the following schema in response:
 
