@@ -8,10 +8,21 @@
 
 SpecBegin(SQRLDeepCodesign)
 
+NSMutableDictionary * (^environmentSuitableForChildProcess)(void) = ^ {
+	NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
+	NSArray *environmentKeys = environment.allKeys;
+	NSIndexSet *objcEnvironmentVariables = [environmentKeys indexesOfObjectsPassingTest:^(NSString *variable, NSUInteger idx, BOOL *stop) {
+		return [variable hasPrefix:@"OBJC"];
+	}];
+	[environment removeObjectsForKeys:[environmentKeys objectsAtIndexes:objcEnvironmentVariables]];
+	return environment;
+};
+
 NSTask * (^codesignTaskWithArguments)(NSArray *) = ^ (NSArray *arguments) {
 	NSTask *task = [[NSTask alloc] init];
 	task.launchPath = @"/usr/bin/xcrun";
 	task.arguments = [@[ @"codesign" ] arrayByAddingObjectsFromArray:arguments];
+	task.environment = environmentSuitableForChildProcess();
 	return task;
 };
 
@@ -41,7 +52,7 @@ void (^deepCodesignTestApplication)(void) = ^{
 
 	NSTask *deepCodesignTask = [[NSTask alloc] init];
 	deepCodesignTask.launchPath = deepCodesignLocation.path;
-	NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
+	NSMutableDictionary *environment = environmentSuitableForChildProcess();
 	[environment addEntriesFromDictionary:@{
 		@"CODE_SIGN_IDENTITY": @"-",
 		@"CONFIGURATION_BUILD_DIR": testApplicationLocation.URLByDeletingLastPathComponent.path,
