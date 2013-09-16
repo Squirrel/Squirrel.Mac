@@ -8,39 +8,23 @@
 
 SpecBegin(SQRLDeepCodesign)
 
-__block NSString *codesignPath = nil;
-
-beforeAll(^ {
-	NSTask *findCodesignTask = [[NSTask alloc] init];
-	findCodesignTask.launchPath = @"/bin/bash";
-	findCodesignTask.arguments = @[ @"-x", @"-c", @"[ ! -z \"$(which xcrun)\" ] && codesign_path=$(xcrun --find codesign); [ ! -x \"${codesign_path}\" ] && codesign_path=$(which codesign); echo -n \"${codesign_path}\"" ];
-	findCodesignTask.standardOutput = [NSPipe pipe];
-
-	[findCodesignTask launch];
-
-	// Assume that the default pipe buffer is large enough to hold the path
-	[findCodesignTask waitUntilExit];
-	expect(@(findCodesignTask.terminationStatus)).to.equal(@(0));
-
-	NSData *findCodesignOutputData = ((NSPipe *)findCodesignTask.standardOutput).fileHandleForReading.readDataToEndOfFile;
-	codesignPath = [[NSString alloc] initWithData:findCodesignOutputData encoding:NSUTF8StringEncoding];
-	expect(codesignPath).notTo.beNil();
-
-	expect([NSFileManager.defaultManager fileExistsAtPath:codesignPath]).to.beTruthy();
-});
+NSTask * (^codesignTaskWithArguments)(NSArray *) = ^ (NSArray *arguments) {
+	NSTask *task = [[NSTask alloc] init];
+	task.launchPath = @"/usr/bin/xcrun";
+	task.arguments = [@[ @"codesign" ] arrayByAddingObjectsFromArray:arguments];
+	return task;
+};
 
 void (^resignTestApplicationPreserveEverythingButTheRequirements)(void) = ^{
 	NSURL *testApplicationLocation = self.testApplicationURL;
 
-	NSTask *resignCodesignTask = [[NSTask alloc] init];
-	resignCodesignTask.launchPath = codesignPath;
-	resignCodesignTask.arguments = @[
+	NSTask *resignCodesignTask = codesignTaskWithArguments(@[
 		@"--sign", @"-",
 		@"--force",
 		@"--verbose=4",
 		@"--preserve-metadata=identifier,entitlements,resource-rules",
 		testApplicationLocation.path,
-	];
+	]);
 
 	[resignCodesignTask launch];
 	[resignCodesignTask waitUntilExit];
@@ -87,9 +71,11 @@ void (^deepCodesignTestApplication)(void) = ^{
 };
 
 EXPExpect * (^expectDeepVerify)(void) = ^ EXPExpect * {
-	NSTask *deepVerifyTask = [[NSTask alloc] init];
-	deepVerifyTask.launchPath = codesignPath;
-	deepVerifyTask.arguments = @[ @"--deep-verify", @"--verbose=4", self.testApplicationURL.path ];
+	NSTask *deepVerifyTask = codesignTaskWithArguments(@[
+		@"--deep-verify",
+		@"--verbose=4",
+		self.testApplicationURL.path
+	]);
 
 	[deepVerifyTask launch];
 	[deepVerifyTask waitUntilExit];
