@@ -131,6 +131,27 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
+		if (![response isKindOfClass:NSHTTPURLResponse.class]) {
+			NSLog(@"Response must be HTTP");
+
+			[self finishAndSetIdle];
+			return;
+		}
+
+		NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+		if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+			NSLog(@"Update request wasn't successful, code %ld", (long)httpResponse.statusCode);
+
+			[self finishAndSetIdle];
+			return;
+		}
+
+		// Nothing to update to, this isn't an error we need to log
+		if (httpResponse.statusCode == /* No Content */ 204) {
+			return;
+		}
+
+		// We expect data for all other success codes
 		if (data == nil) {
 			NSLog(@"No data received for request %@", request);
 			
