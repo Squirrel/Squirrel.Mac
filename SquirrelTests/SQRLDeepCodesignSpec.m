@@ -41,7 +41,7 @@ void (^deepCodesignTestApplication)(void) = ^{
 
 	NSTask *deepCodesignTask = [[NSTask alloc] init];
 	deepCodesignTask.launchPath = deepCodesignLocation.path;
-	NSMutableDictionary *environment = [NSMutableDictionary dictionaryWithDictionary:NSProcessInfo.processInfo.environment];
+	NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
 	[environment addEntriesFromDictionary:@{
 		@"CODE_SIGN_IDENTITY": @"-",
 		@"CONFIGURATION_BUILD_DIR": testApplicationLocation.URLByDeletingLastPathComponent.path,
