@@ -29,7 +29,7 @@ void (^resignTestApplicationPreserveEverythingButTheRequirements)(void) = ^{
 	[resignCodesignTask launch];
 	[resignCodesignTask waitUntilExit];
 
-	expect(@(resignCodesignTask.terminationStatus)).to.equal(@(0));
+	expect(resignCodesignTask.terminationStatus).to.equal(0);
 };
 
 void (^deepCodesignTestApplication)(void) = ^{
@@ -52,7 +52,7 @@ void (^deepCodesignTestApplication)(void) = ^{
 	[deepCodesignTask launch];
 	[deepCodesignTask waitUntilExit];
 
-	expect(@(deepCodesignTask.terminationStatus)).to.equal(@(0));
+	expect(deepCodesignTask.terminationStatus).to.equal(0);
 
 	/*
 		By signing test application's contents, which are covered by test
@@ -70,7 +70,7 @@ void (^deepCodesignTestApplication)(void) = ^{
 	resignTestApplicationPreserveEverythingButTheRequirements();
 };
 
-EXPExpect * (^expectDeepVerify)(void) = ^ EXPExpect * {
+BOOL (^deepVerify)(void) = ^ BOOL {
 	NSTask *deepVerifyTask = codesignTaskWithArguments(@[
 		@"--deep-verify",
 		@"--verbose=4",
@@ -80,7 +80,7 @@ EXPExpect * (^expectDeepVerify)(void) = ^ EXPExpect * {
 	[deepVerifyTask launch];
 	[deepVerifyTask waitUntilExit];
 
-	return expect(@(deepVerifyTask.terminationStatus == 0));
+	return deepVerifyTask.terminationStatus == 0;
 };
 
 it(@"should deep sign the test application", ^{
@@ -88,9 +88,9 @@ it(@"should deep sign the test application", ^{
 });
 
 it(@"should deep verify after signing", ^{
-	expectDeepVerify().to.beFalsy();
+	expect(deepVerify()).to.beFalsy();
 	deepCodesignTestApplication();
-	expectDeepVerify().to.beTruthy();
+	expect(deepVerify()).to.beTruthy();
 });
 
 SpecEnd
