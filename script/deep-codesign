@@ -107,23 +107,21 @@ end
 module Codesign
 	class Task
 		def self.sign(target, identity)
-			codesign = which_codesign
-			if codesign.nil?
-				exit_error("couldn't find codesign utility")
-			end
-
-			$stdout.flush
-			result = `#{codesign} --sign '#{identity}' --force --preserve-metadata=identifier,entitlements,resource-rules,requirements --verbose '#{target.path}'`
-			puts result
+			codesign_with_arguments([ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,resource-rules,requirements", "--verbose", target.path ])
 		end
 
 		protected
 
-		def self.which_codesign
-			codesign = `/bin/bash -c "[ ! -z \"$(which xcrun)\" ] && codesign_path=$(xcrun --find codesign); [ ! -x \"${codesign_path}\" ] && codesign_path=$(which codesign); echo -n \"\\${codesign_path}\""`
-			return nil unless codesign
-			return nil unless File.executable?(codesign)
-			codesign
+		def self.codesign_with_arguments(arguments)
+			$stdout.flush
+
+			pid = fork
+			if pid.nil?
+				exec("/usr/bin/xcrun", *([ "codesign" ].concat(arguments)))
+			else
+				Process.wait(pid)
+				exit_error("codesign failed") unless $?.exitstatus == 0
+			end
 		end
 	end
 end
