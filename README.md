@@ -19,7 +19,7 @@ release you want it to, based on criteria in the request.
 3. Add a Squirrel.framework as a target dependency
 4. Link Squirrel.framework and add it to a Copy Files build phase which copies
 it into your Frameworks directory
-5. Ensure your Runpath Search Paths (LD_RUNPATH_SEARCH_PATHS) includes the
+5. Ensure your Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`) includes the
 Frameworks directory Squirrel.framework is copied into
 
 Once Squirrel is added to your project, you need to configure and start it.
