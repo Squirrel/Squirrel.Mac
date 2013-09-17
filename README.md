@@ -12,6 +12,9 @@ The JSON resource Squirrel requests can be a static resource that you generate
 each time you release a new version, or dynamically generated to point to any
 release you want it to, based on criteria in the request.
 
+Squirrel’s installer is designed to be fault tolerant and to ensure that the
+updates it installs are valid.
+
 # Adopting Squirrel
 
 1. Add the Squirrel repository as a git submodule
