@@ -140,7 +140,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 		NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
 		if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-			NSLog(@"Update request wasn't successful, code %ld", (long)httpResponse.statusCode);
+			NSLog(@"Update request wasn't successful, code %ld body %@", (long)httpResponse.statusCode, [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
 
 			[self finishAndSetIdle];
 			return;
