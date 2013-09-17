@@ -65,12 +65,6 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // Downloads and installs updates from GitHub.com The Website.
 @interface SQRLUpdater : NSObject
 
-// The GitHub username for the current user of the app, if any.
-//
-// This is used to check for prerelease software that the user may be able to
-// see.
-@property (nonatomic, copy) NSString *githubUsername;
-
 // The current state of the manager.
 //
 // This property is KVO-compliant.
@@ -79,17 +73,27 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // Whether or not to relaunch after installing an update.
 //
 // This will be reset to NO whenever update installation fails.
-@property (atomic, readwrite) BOOL shouldRelaunch;
+@property (atomic) BOOL shouldRelaunch;
 
-// The API endpoint from which to receive information about updates.
+// The request that will be sent to check for updates.
 //
-// This can be set to a local URL for testing.
-@property (atomic, copy) NSURL *APIEndpoint;
+// The default value is the argument that was originally passed to
+// -initWithUpdateRequest:.
+//
+// This property must never be set to nil.
+@property (atomic, copy) NSURLRequest *updateRequest;
 
-// Returns the singleton updater.
+// Initializes an updater that will send the given request to check for updates.
 //
-// APIEndpoint must be configured before checking for updates
-+ (instancetype)sharedUpdater;
+// This is the designated initializer for this class.
+//
+// updateRequest - A request to send to check for updates. This request can be
+//                 customized as desired, like by including an `Authorization`
+//                 header to authenticate with a private update server, or
+//                 pointing to a local URL for testing. This must not be nil.
+//
+// Returns the initialized `SQRLUpdater`.
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest;
 
 // If one isn't already running, kicks off a check for updates.
 //
@@ -114,5 +118,11 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // completionHandler - A block to invoke when updating in place has completed or failed.
 //                     The app should immediately terminate once this block is invoked.
 - (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler;
+
+@end
+
+@interface SQRLUpdater (Unavailable)
+
+- (id)init __attribute__((unavailable("Use -initWithUpdateRequest: instead")));
 
 @end
