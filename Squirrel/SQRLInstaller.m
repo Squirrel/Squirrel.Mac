@@ -11,6 +11,7 @@
 #import "SQRLCodeSignatureVerifier.h"
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
+#import <ReactiveCocoa/EXTScope.h>
 #import <sys/xattr.h>
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";

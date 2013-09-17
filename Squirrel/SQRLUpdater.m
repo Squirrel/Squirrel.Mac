@@ -12,6 +12,7 @@
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLZipArchiver.h"
+#import <ReactiveCocoa/EXTScope.h>
 
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";

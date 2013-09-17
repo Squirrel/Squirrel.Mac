@@ -7,7 +7,6 @@
 //
 
 #import "SQRLTestCase.h"
-#import "EXTScope.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 

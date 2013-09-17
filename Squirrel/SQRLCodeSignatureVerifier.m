@@ -7,6 +7,7 @@
 //
 
 #import "SQRLCodeSignatureVerifier.h"
+#import <ReactiveCocoa/EXTScope.h>
 #import <Security/Security.h>
 
 NSString * const SQRLCodeSignatureVerifierErrorDomain = @"SQRLCodeSignatureVerifierErrorDomain";
