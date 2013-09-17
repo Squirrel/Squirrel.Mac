@@ -40,7 +40,7 @@ that it has downloaded:
 
 ```objc
 - (void)applicationWillTerminate:(NSNotification *)notification {
-	[SQRLUpdater.sharedUpdate installUpdateIfNeeded:^(BOOL success, NSError *error) {
+	[SQRLUpdater.sharedUpdater installUpdateIfNeeded:^(BOOL success, NSError *error) {
 
 	}];
 }
