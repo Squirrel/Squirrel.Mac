@@ -56,6 +56,7 @@ expects the following schema in response:
 	"url": "http://mycompany.com/myapp/releases/myrelease",
 	"name": "My Release Name",
 	"notes": "Theses are some release notes innit",
+	"pub_date": "Tue Sep 03 10:22:41 -0700 2013",
 }
 ```
 
