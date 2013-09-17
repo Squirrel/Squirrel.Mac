@@ -19,7 +19,7 @@ updates it installs are valid.
 
 1. Add the Squirrel repository as a git submodule
 1. Add a reference to Squirrel.xcodeproj to your project
-1. Add a Squirrel.framework as a target dependency
+1. Add Squirrel.framework as a target dependency
 1. Link Squirrel.framework and add it to a Copy Files build phase which copies
 it into your Frameworks directory
 1. Ensure your Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`) includes the
