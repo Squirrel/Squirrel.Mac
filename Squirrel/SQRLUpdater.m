@@ -100,6 +100,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 #pragma mark Checking for Updates
 
 - (void)checkForUpdates {
+	NSParameterAssert(self.updateRequest != nil);
+
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
 	
 	if (self.state != SQRLUpdaterStateIdle) return; //We have a new update installed already, you crazy fool!
@@ -107,6 +109,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	
 	NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 		if (data == nil) {
 			NSLog(@"No data received for request %@", request);

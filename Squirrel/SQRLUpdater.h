@@ -77,9 +77,11 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 
 // The request that will be sent to check for updates.
 //
-// This will be the argument that was originally passed to
+// The default value is the argument that was originally passed to
 // -initWithUpdateRequest:.
-@property (nonatomic, copy, readonly) NSURLRequest *updateRequest;
+//
+// This property must never be set to nil.
+@property (atomic, copy) NSURLRequest *updateRequest;
 
 // Initializes an updater that will send the given request to check for updates.
 //
