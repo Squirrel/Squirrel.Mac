@@ -55,19 +55,18 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 #pragma mark Lifecycle
 
-+ (instancetype)sharedUpdater {
-	static SQRLUpdater *sharedInstance = nil;
-	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^{
-		sharedInstance = [[self alloc] init];
-	});
-	
-	return sharedInstance;
+- (id)init {
+	NSAssert(NO, @"Use -initWithUpdateRequest: instead");
+	return nil;
 }
 
-- (instancetype)init {
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest {
+	NSParameterAssert(updateRequest != nil);
+
 	self = [super init];
 	if (self == nil) return nil;
+
+	_updateRequest = [updateRequest copy];
 	
 	_updateQueue = [[NSOperationQueue alloc] init];
 	self.updateQueue.maxConcurrentOperationCount = 1;
@@ -93,8 +92,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
-	[self assertCanCheckForUpdates];
-
 	dispatch_async(dispatch_get_main_queue(), ^{
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
 	});
@@ -102,28 +99,13 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 #pragma mark Checking for Updates
 
-- (void)assertCanCheckForUpdates {
-	NSParameterAssert(self.APIEndpoint != nil);
-}
-
 - (void)checkForUpdates {
-	[self assertCanCheckForUpdates];
-
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
 	
 	if (self.state != SQRLUpdaterStateIdle) return; //We have a new update installed already, you crazy fool!
 	self.state = SQRLUpdaterStateCheckingForUpdate;
 	
-	NSString *appVersion = NSBundle.mainBundle.infoDictionary[(id)kCFBundleVersionKey];
-	NSString *OSVersion = NSProcessInfo.processInfo.sqrl_operatingSystemShortVersionString;
-	
-	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", self.APIEndpoint.absoluteString, [appVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [OSVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-	if (self.githubUsername.length > 0) {
-		CFStringRef escapedUsername = CFURLCreateStringByAddingPercentEscapes(NULL, (__bridge CFStringRef)self.githubUsername, NULL, CFSTR("?=&/#,\\"), kCFStringEncodingUTF8);
-		[requestString appendFormat:@"&username=%@", CFBridgingRelease(escapedUsername)];
-	}
-	
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+	NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 		if (data == nil) {
