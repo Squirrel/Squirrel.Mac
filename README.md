@@ -15,11 +15,11 @@ release you want it to, based on criteria in the request.
 # Adopting Squirrel
 
 1. Add the Squirrel repository as a git submodule
-2. Add a reference to Squirrel.xcodeproj to your project
-3. Add a Squirrel.framework as a target dependency
-4. Link Squirrel.framework and add it to a Copy Files build phase which copies
+1. Add a reference to Squirrel.xcodeproj to your project
+1. Add a Squirrel.framework as a target dependency
+1. Link Squirrel.framework and add it to a Copy Files build phase which copies
 it into your Frameworks directory
-5. Ensure your Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`) includes the
+1. Ensure your Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`) includes the
 Frameworks directory Squirrel.framework is copied into
 
 Once Squirrel is added to your project, you need to configure and start it.
