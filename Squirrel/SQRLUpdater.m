@@ -8,6 +8,7 @@
 
 #import "SQRLUpdater.h"
 #import "NSError+SQRLVerbosityExtensions.h"
+#import "NSProcessInfo+SQRLVersionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
@@ -105,12 +106,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	NSParameterAssert(self.APIEndpoint != nil);
 }
 
-- (NSString *)OSVersionString {
-	NSURL *versionPlistURL = [NSURL fileURLWithPath:@"/System/Library/CoreServices/SystemVersion.plist"];
-	NSDictionary *versionPlist = [NSDictionary dictionaryWithContentsOfURL:versionPlistURL];
-	return versionPlist[@"ProductUserVisibleVersion"];
-}
-
 - (void)checkForUpdates {
 	[self assertCanCheckForUpdates];
 
@@ -120,7 +115,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	self.state = SQRLUpdaterStateCheckingForUpdate;
 	
 	NSString *appVersion = NSBundle.mainBundle.infoDictionary[(id)kCFBundleVersionKey];
-	NSString *OSVersion = self.OSVersionString;
+	NSString *OSVersion = NSProcessInfo.processInfo.sqrl_operatingSystemShortVersionString;
 	
 	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", self.APIEndpoint.absoluteString, [appVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [OSVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
 	if (self.githubUsername.length > 0) {

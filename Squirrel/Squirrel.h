@@ -6,4 +6,5 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import <Squirrel/NSProcessInfo+SQRLVersionExtensions.h>
 #import <Squirrel/SQRLUpdater.h>
