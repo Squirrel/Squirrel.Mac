@@ -8,6 +8,12 @@
 
 #import "TestAppDelegate.h"
 
+@interface TestAppDelegate ()
+
+@property (nonatomic, strong) SQRLUpdater *updater;
+
+@end
+
 @implementation TestAppDelegate
 
 #pragma mark Lifecycle
@@ -31,13 +37,14 @@
 
 	NSLog(@"Installing update from URL %@", updateURLString);
 
-	SQRLUpdater.sharedUpdater.APIEndpoint = [NSURL URLWithString:updateURLString];
-	[SQRLUpdater.sharedUpdater addObserver:self forKeyPath:@"state" options:0 context:NULL];
-	[SQRLUpdater.sharedUpdater checkForUpdates];
+	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
+	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
+	[self.updater addObserver:self forKeyPath:@"state" options:0 context:NULL];
+	[self.updater checkForUpdates];
 }
 
 - (void)dealloc {
-	[SQRLUpdater.sharedUpdater removeObserver:self forKeyPath:@"state"];
+	[self.updater removeObserver:self forKeyPath:@"state"];
 }
 
 #pragma mark KVO
