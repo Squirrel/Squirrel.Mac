@@ -29,6 +29,7 @@ Once Squirrel is added to your project, you need to configure and start it.
 
 ```objc
 #import <Squirrel/Squirrel.h>
+
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://mycompany.com/myapp/latest"]]];
 	[self.updater startAutomaticChecksWithInterval:/* 4 Hours */ 60 * 60 * 4];
@@ -38,14 +39,22 @@ Once Squirrel is added to your project, you need to configure and start it.
 
 Squirrel will periodically request and automatically download any updates.
 
-When your application terminates, it should tell Squirrel to install any updates
-that it has downloaded:
+Before your application terminates, it should tell Squirrel to install any
+updates that it has downloaded:
 
 ```objc
-- (void)applicationWillTerminate:(NSNotification *)notification {
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
 	[self.updater installUpdateIfNeeded:^(BOOL success, NSError *error) {
+		if (success) {
+			NSLog(@"Successfully installed an update");
+		} else {
+			NSLog(@"Failed to update: %@", error);
+		}
 
+		[sender replyToApplicationShouldTerminate:YES];
 	}];
+
+	return NSTerminateLater;
 }
 ```
 
