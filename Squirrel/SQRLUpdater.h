@@ -25,17 +25,8 @@ typedef enum : NSUInteger {
 // Posted when an update is available to be installed.
 extern NSString * const SQRLUpdaterUpdateAvailableNotification;
 
-// Associated with a string containing the release notes for the available
-// update.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
-
-// Associated with a string containing the release name for the available
-// update.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
-
-// Associated with an NSDate representing the day that the release became
-// available.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey;
+// Associated with an SQRLUpdate object.
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey;
 
 // Asscociated with a string containing the bundle version for the available
 // update.

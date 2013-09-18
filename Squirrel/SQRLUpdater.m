@@ -17,9 +17,7 @@
 #import "SQRLUpdate+Private.h"
 
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
-NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseDateKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationUpdateKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey = @"SQRLUpdaterUpdateAvailableNotificationBundleVersionKey";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
@@ -198,9 +196,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				}
 
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-				if (update.releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = update.releaseNotes;
-				if (update.releaseName != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = update.releaseName;
-				if (update.releaseDate != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseDateKey] = update.releaseDate;
+				userInfo[SQRLUpdaterUpdateAvailableNotificationUpdateKey] = update;
 
 				NSString *bundleVersion = [updateBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
 				if (bundleVersion != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationBundleVersionKey] = bundleVersion;
