@@ -40,19 +40,8 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	if (![releaseDateString isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
 	} else {
-		NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-		formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+		_releaseDate = [[self tryDateFormats:releaseDateString] copy];
 
-		NSArray *dateFormats = @[
-			@"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZ",
-			@"EEE MMM dd HH:mm:ss Z yyyy", // Central backwards compatibility
-		];
-
-		for (NSString *currentDateFormat in dateFormats) {
-			formatter.dateFormat = currentDateFormat;
-			_releaseDate = [[formatter dateFromString:releaseDateString] copy];
-			if (_releaseDate != nil) break;
-		}
 		if (_releaseDate == nil) {
 			NSLog(@"Could not parse publication date for update. %@", releaseDateString);
 		}
@@ -66,6 +55,33 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	}
 
 	return self;
+}
+
+- (NSDate *)tryDateFormats:(NSString *)string {
+	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+	formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+
+	NSArray *dateFormats = @[
+		@"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZZ", // ISO 8601 Time Zone with ':'
+		@"EEE MMM dd HH:mm:ss Z yyyy", // Central backwards compatibility
+	];
+
+	for (NSString *currentDateFormat in dateFormats) {
+		formatter.dateFormat = currentDateFormat;
+		NSDate *date = [formatter dateFromString:string];
+		if (date != nil) return date;
+	}
+
+	// If neither match, try removing the ':' in the time zone
+	NSRegularExpression *timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:(NSRegularExpressionOptions)0 error:NULL];
+
+	string = [timeZoneSuffix stringByReplacingMatchesInString:string options:(NSMatchingOptions)0 range:NSMakeRange(0, [string length]) withTemplate:@"$1$2$3"];
+
+	formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
+	NSDate *date = [formatter dateFromString:string];
+	if (date != nil) return date;
+
+	return nil;
 }
 
 @end
