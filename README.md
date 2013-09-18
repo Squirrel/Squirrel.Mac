@@ -30,9 +30,9 @@ Once Squirrel is added to your project, you need to configure and start it.
 ```objc
 #import <Squirrel/Squirrel.h>
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
-	SQRLUpdater.sharedUpdater.APIEndpoint = [NSURL URLWithString:@"https://mycompany.com/myapp/latest"];
-	[SQRLUpdater.sharedUpdater startAutomaticChecksWithInterval:/* 4 Hours */ 60 * 60 * 4];
-	[SQRLUpdater.sharedUpdater checkForUpdates];
+	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://mycompany.com/myapp/latest"]]];
+	[self.updater startAutomaticChecksWithInterval:/* 4 Hours */ 60 * 60 * 4];
+	[self.updater checkForUpdates];
 }
 ```
 
@@ -43,7 +43,7 @@ that it has downloaded:
 
 ```objc
 - (void)applicationWillTerminate:(NSNotification *)notification {
-	[SQRLUpdater.sharedUpdater installUpdateIfNeeded:^(BOOL success, NSError *error) {
+	[self.updater installUpdateIfNeeded:^(BOOL success, NSError *error) {
 
 	}];
 }
