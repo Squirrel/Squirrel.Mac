@@ -214,8 +214,17 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				} else {
 					NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 					formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-					formatter.dateFormat = @"EEE MMM dd HH:mm:ss Z yyyy";
-					releaseDate = [formatter dateFromString:releaseDateString];
+
+					NSArray *dateFormats = @[
+						@"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZ",
+						@"EEE MMM dd HH:mm:ss Z yyyy", // Central backwards compatibility
+					];
+
+					for (NSString *currentDateFormat in dateFormats) {
+						formatter.dateFormat = currentDateFormat;
+						releaseDate = [formatter dateFromString:releaseDateString];
+						if (releaseDate != nil) break;
+					}
 					if (releaseDate == nil) {
 						NSLog(@"Could not parse publication date for update. %@", releaseDateString);
 					}
