@@ -54,7 +54,6 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 @property (nonatomic, strong, readonly) NSURL *targetBundleURL;
 @property (nonatomic, strong, readonly) NSURL *updateBundleURL;
-@property (nonatomic, strong, readonly) NSURL *backupURL;
 @property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
 
 // Invoked when the installer needs to begin some uninterruptible work.
@@ -85,10 +84,9 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	SQRLInstallerTransactionLock.name = @"com.github.Squirrel.ShipIt.SQRLInstallerTransactionLock";
 }
 
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL requirementData:(NSData *)requirementData {
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL requirementData:(NSData *)requirementData {
 	NSParameterAssert(targetBundleURL != nil);
 	NSParameterAssert(updateBundleURL != nil);
-	NSParameterAssert(backupURL != nil);
 	NSParameterAssert(requirementData != nil);
 	
 	self = [super init];
@@ -105,7 +103,6 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	_verifier = [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
 	_targetBundleURL = targetBundleURL;
 	_updateBundleURL = updateBundleURL;
-	_backupURL = backupURL;
 	
 	return self;
 }
@@ -199,11 +196,12 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	// This will actually create the directory no matter what we do, but it's
 	// okay. We'll just overwrite it in the next step.
 	NSError *error = nil;
-	NSURL *backupBundleURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.backupURL create:NO error:&error];
+	NSURL *temporaryURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
+	NSURL *backupBundleURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:temporaryURL create:NO error:&error];
 	if (backupBundleURL == nil) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary backup folder in %@", nil), self.backupURL],
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary backup folder in %@", nil), temporaryURL],
 			} mutableCopy];
 
 			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
