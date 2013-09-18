@@ -32,8 +32,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	NSString *name = JSON[SQRLUpdateJSONNameKey];
 	if (![name isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring release name of an unsupported type: %@", name);
-	}
-	else {
+	} else {
 		_releaseName = [name copy];
 	}
 
