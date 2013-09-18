@@ -41,10 +41,6 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey;
 // update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
 
-// Associated with an NSURL to a side-splittingly hilarious image to show for
-// the available update.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
-
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
 
