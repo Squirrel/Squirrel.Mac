@@ -12,15 +12,11 @@
 
 - (id)initWithJSON:(id)JSON;
 
-/*
-	Underlying json the update was initialised with
-	Custom properties that Squirrel doesn't parse can be retrieved from this
- */
+// Underlying json the update was initialised with.
+// Custom properties that Squirrel doesn't parse can be retrieved from this.
 @property (readonly, copy, nonatomic) id json;
 
-/*
-	Standard Squirrel properties
- */
+#pragma mark Standard Squirrel properties
 
 @property (readonly, copy, nonatomic) NSString *releaseNotes;
 @property (readonly, copy, nonatomic) NSString *releaseName;
