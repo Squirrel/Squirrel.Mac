@@ -68,7 +68,7 @@ expects the following schema in response:
 	"url": "http://mycompany.com/myapp/releases/myrelease",
 	"name": "My Release Name",
 	"notes": "Theses are some release notes innit",
-	"pub_date": "Tue Sep 03 10:22:41 -0700 2013",
+	"pub_date": "2013-09-18T12:29:53+01:00",
 }
 ```
 
@@ -78,6 +78,8 @@ Squirrel will request "url" with `Accept: application/zip` and only supports
 installing ZIP updates. If future update formats are supported their MIME type
 will be added to the `Accept` header so that your server can return the
 appropriate format.
+
+"pub_date" if present must be formatted according to ISO 8601
 
 # User Interface
 
