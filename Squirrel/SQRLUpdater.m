@@ -8,6 +8,7 @@
 
 #import "SQRLUpdater.h"
 #import "NSError+SQRLVerbosityExtensions.h"
+#import "NSProcessInfo+SQRLVersionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
@@ -16,12 +17,14 @@
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseDateKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey = @"SQRLUpdaterUpdateAvailableNotificationBundleVersionKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdaterUpdateAvailableNotificationLulzURLKey";
 
 NSString * const SQRLUpdaterJSONURLKey = @"url";
 NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdaterJSONNameKey = @"name";
+NSString * const SQRLUpdaterJSONPublicationDateKey = @"pub_date";
 NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
@@ -52,19 +55,18 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 #pragma mark Lifecycle
 
-+ (instancetype)sharedUpdater {
-	static SQRLUpdater *sharedInstance = nil;
-	static dispatch_once_t onceToken;
-	dispatch_once(&onceToken, ^{
-		sharedInstance = [[self alloc] init];
-	});
-	
-	return sharedInstance;
+- (id)init {
+	NSAssert(NO, @"Use -initWithUpdateRequest: instead");
+	return nil;
 }
 
-- (instancetype)init {
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest {
+	NSParameterAssert(updateRequest != nil);
+
 	self = [super init];
 	if (self == nil) return nil;
+
+	_updateRequest = [updateRequest copy];
 	
 	_updateQueue = [[NSOperationQueue alloc] init];
 	self.updateQueue.maxConcurrentOperationCount = 1;
@@ -90,8 +92,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
-	[self assertCanCheckForUpdates];
-
 	dispatch_async(dispatch_get_main_queue(), ^{
 		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
 	});
@@ -99,35 +99,17 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 #pragma mark Checking for Updates
 
-- (void)assertCanCheckForUpdates {
-	NSParameterAssert(self.APIEndpoint != nil);
-}
-
-- (NSString *)OSVersionString {
-	NSURL *versionPlistURL = [NSURL fileURLWithPath:@"/System/Library/CoreServices/SystemVersion.plist"];
-	NSDictionary *versionPlist = [NSDictionary dictionaryWithContentsOfURL:versionPlistURL];
-	return versionPlist[@"ProductUserVisibleVersion"];
-}
-
 - (void)checkForUpdates {
-	[self assertCanCheckForUpdates];
+	NSParameterAssert(self.updateRequest != nil);
 
 	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
 	
 	if (self.state != SQRLUpdaterStateIdle) return; //We have a new update installed already, you crazy fool!
 	self.state = SQRLUpdaterStateCheckingForUpdate;
 	
-	NSString *appVersion = NSBundle.mainBundle.infoDictionary[(id)kCFBundleVersionKey];
-	NSString *OSVersion = self.OSVersionString;
-	
-	NSMutableString *requestString = [NSMutableString stringWithFormat:@"%@?version=%@&os_version=%@", self.APIEndpoint.absoluteString, [appVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding], [OSVersion stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding]];
-	if (self.githubUsername.length > 0) {
-		CFStringRef escapedUsername = CFURLCreateStringByAddingPercentEscapes(NULL, (__bridge CFStringRef)self.githubUsername, NULL, CFSTR("?=&/#,\\"), kCFStringEncodingUTF8);
-		[requestString appendFormat:@"&username=%@", CFBridgingRelease(escapedUsername)];
-	}
-	
-	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:requestString]];
+	NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
 	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
 		if (data == nil) {
 			NSLog(@"No data received for request %@", request);
@@ -225,6 +207,20 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					name = nil;
 				}
 				
+				NSDate *releaseDate = nil;
+				NSString *releaseDateString = JSON[SQRLUpdaterJSONPublicationDateKey];
+				if (![releaseDateString isKindOfClass:NSString.class]) {
+					NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
+				} else {
+					NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+					formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+					formatter.dateFormat = @"EEE MMM dd HH:mm:ss Z yyyy";
+					releaseDate = [formatter dateFromString:releaseDateString];
+					if (releaseDate == nil) {
+						NSLog(@"Could not parse publication date for update. %@", releaseDateString);
+					}
+				}
+				
 				NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
 				if (![releaseNotes isKindOfClass:NSString.class]) {
 					NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
@@ -244,6 +240,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 				if (releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = releaseNotes;
 				if (name != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = name;
+				if (releaseDate != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseDateKey] = releaseDate;
 				if (lulzURL != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationLulzURLKey] = lulzURL;
 
 				NSString *bundleVersion = [updateBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
