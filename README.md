@@ -3,12 +3,15 @@
 Squirrel is an OS X app updater framework which moves the decision for which
 version a client should be running out of the client and into the server.
 
-Instead of publishing a feed of versions from which your App must select,
+Instead of publishing a feed of versions from which your app must select,
 Squirrel updates to the version your server tells it to. This allows you to
-intelligently update your clients based on the information in the Squirrel
-request.
+intelligently update your clients based on the request you give to Squirrel.
 
-The JSON resource Squirrel requests can be a static resource that you generate
+Your request can include authentication details, custom headers or a request
+body so that your server has the context it needs in order to supply the most
+suitable update.
+
+The update JSON Squirrel requests can be a static resource that you generate
 each time you release a new version, or dynamically generated to point to any
 release you want it to, based on criteria in the request.
 
