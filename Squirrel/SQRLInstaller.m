@@ -312,12 +312,15 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			// destination by hand, then perform a move.
 			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
 
-			if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:errorPtr]) {
-				NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
-				return YES;
-			} else {
+			NSError *moveItemError = nil;
+			if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&moveItemError]) {
+				NSLog(@"Couldn't move bundle across volumes %@", moveItemError.sqrl_verboseDescription);
+				if (errorPtr != NULL) *errorPtr = moveItemError;
 				return NO;
 			}
+
+			NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
+			return YES;
 		}
 
 		if (errorPtr != NULL) {
