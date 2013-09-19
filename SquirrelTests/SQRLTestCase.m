@@ -289,7 +289,7 @@ static void SQRLSignalHandler(int sig) {
 	if (directoryURL == nil) {
 		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -type SPARSE -size 10m -quiet", destinationURL.path, name];
 	} else {
-		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format SPARSE -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDSP -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
 	}
 
 	expect(system(createInvocation.UTF8String)).to.equal(0);
