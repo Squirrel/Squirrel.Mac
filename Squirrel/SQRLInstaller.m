@@ -243,17 +243,24 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 	} @finally {
-		NSError *error = nil;
-		if (![NSFileManager.defaultManager fileExistsAtPath:self.targetBundleURL.path] || ![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
-			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
+		NSError *verifyTargetError = nil;
+		if (![self verifyTargetURL:self.targetBundleURL error:&verifyTargetError]) {
+			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, verifyTargetError);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 
-			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
+			NSError *installBackupError = nil;
+			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&installBackupError]) {
+				NSLog(@"Restored backup bundle to %@", self.targetBundleURL);
 				[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
 			} else {
-				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, error.sqrl_verboseDescription);
+				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, installBackupError.sqrl_verboseDescription);
 			}
+
+			if (errorPtr != NULL) *errorPtr = verifyTargetError;
+			return NO;
 		}
+
+		[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
 	}
 
 	return YES;
@@ -362,6 +369,20 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	}
 
 	return YES;
+}
+
+- (BOOL)verifyTargetURL:(NSURL *)targetURL error:(NSError **)errorPtr {
+	if (![NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
+		if (errorPtr != NULL) {
+			NSDictionary *errorInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn\u2019t replace app with updated version", nil),
+			};
+			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:errorInfo];
+		}
+		return NO;
+	}
+
+	return [self.verifier verifyCodeSignatureOfBundle:targetURL error:errorPtr];
 }
 
 @end
