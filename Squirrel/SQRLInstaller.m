@@ -195,16 +195,15 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 	// This will actually create the directory no matter what we do, but it's
 	// okay. We'll just overwrite it in the next step.
-	NSError *error = nil;
-	NSURL *temporaryURL = [NSURL fileURLWithPath:NSTemporaryDirectory()];
-	NSURL *backupBundleURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:temporaryURL create:NO error:&error];
+	NSError *backupBundleURLError = nil;
+	NSURL *backupBundleURL = [self backupURLAppropriateForURL:self.targetBundleURL error:&backupBundleURLError];
 	if (backupBundleURL == nil) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary backup folder in %@", nil), temporaryURL],
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)],
 			} mutableCopy];
 
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+			if (backupBundleURLError != nil) userInfo[NSUnderlyingErrorKey] = backupBundleURLError;
 
 			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
 		}
@@ -213,6 +212,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	}
 
 	@try {
+		NSError *error = nil;
 		// First, move the target out of place and into the backup location.
 		if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 			if (errorPtr != NULL) {
@@ -257,6 +257,40 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	}
 
 	return YES;
+}
+
+- (NSURL *)backupURLAppropriateForURL:(NSURL *)targetURL error:(NSError **)errorPtr {
+	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:targetURL];
+
+	NSURL *backupDirectory = [temporaryDirectory URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
+	if (![NSFileManager.defaultManager createDirectoryAtURL:backupDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
+
+	return [backupDirectory URLByAppendingPathComponent:targetURL.lastPathComponent];
+}
+
+- (NSURL *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL {
+	NSURL *backupURL = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
+	if (backupURL != nil) return backupURL;
+	return [NSURL fileURLWithPath:NSTemporaryDirectory()];
+}
+
+- (NSURL *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
+	FSRef targetFSRef;
+	if (!CFURLGetFSRef((__bridge CFURLRef)targetURL, &targetFSRef)) {
+		return nil;
+	}
+
+	FSCatalogInfo catalogInfo;
+	if (FSGetCatalogInfo(&targetFSRef, kFSCatInfoVolume, &catalogInfo, NULL, NULL, NULL) != noErr) {
+		return nil;
+	}
+
+	FSRef temporaryDirectoryFSRef;
+	if (FSFindFolder(catalogInfo.volume, kTemporaryFolderType, kCreateFolder, &temporaryDirectoryFSRef) != noErr) {
+		return nil;
+	}
+
+	return CFBridgingRelease(CFURLCreateFromFSRef(kCFAllocatorDefault, &temporaryDirectoryFSRef));
 }
 
 - (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
