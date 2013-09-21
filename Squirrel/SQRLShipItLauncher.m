@@ -61,7 +61,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 	BOOL created = (squirrelAppSupportURL == nil) ? NO : [NSFileManager.defaultManager createDirectoryAtURL:squirrelAppSupportURL withIntermediateDirectories:NO attributes:nil error:&error];
 
-	if (created) {
+	if (!created) {
 		NSLog(@"Could not create Application Support folder: %@", error);
 	} else {
 		jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [squirrelAppSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
