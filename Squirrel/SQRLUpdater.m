@@ -120,9 +120,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		}
 
 		SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:JSON];
-
-		if (update.updateURL == nil) { //Hmm… we got returned something without a URL, whatever it is… we aren't interested in it.
-			NSLog(@"Update JSON is missing a URL: %@", JSON);
+		if (update == nil) {
+			NSLog(@"Update JSON is invalid: %@", JSON);
 
 			[self finishAndSetIdle];
 			return;

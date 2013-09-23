@@ -25,10 +25,16 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	_JSON = [JSON copy];
 
 	NSString *urlString = JSON[SQRLUpdateJSONURLKey];
-	if (![urlString isKindOfClass:NSString.class]) {
+	if (urlString == nil || ![urlString isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring update URL of an unsupported type: %@", urlString);
+		return nil;
 	} else {
 		_updateURL = [NSURL URLWithString:urlString];
+
+		if ([_updateURL scheme] == nil || [_updateURL host] == nil || [_updateURL path] == nil) {
+			NSLog(@"Ignoring update URL of an unsupported syntax: %@", urlString);
+			return nil;
+		}
 	}
 
 	NSString *name = JSON[SQRLUpdateJSONNameKey];
