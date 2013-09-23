@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLUpdate.h"
+#import <Squirrel/SQRLUpdate.h>
 
 extern NSString * const SQRLUpdateJSONURLKey;
 extern NSString * const SQRLUpdateJSONReleaseNotesKey;

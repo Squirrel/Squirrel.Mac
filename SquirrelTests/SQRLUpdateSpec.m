@@ -6,7 +6,6 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLUpdate.h"
 #import "SQRLUpdate+Private.h"
 
 SpecBegin(SQRLUpdate);
