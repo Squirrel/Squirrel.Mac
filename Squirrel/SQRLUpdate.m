@@ -48,7 +48,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	if (![releaseDateString isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
 	} else {
-		_releaseDate = [[self tryDateFormats:releaseDateString] copy];
+		_releaseDate = [[SQRLUpdate dateFromString:releaseDateString] copy];
 
 		if (_releaseDate == nil) {
 			NSLog(@"Could not parse publication date for update. %@", releaseDateString);
@@ -65,7 +65,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	return self;
 }
 
-- (NSDate *)tryDateFormats:(NSString *)string {
++ (NSDate *)dateFromString:(NSString *)string {
 	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 	formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
 
@@ -81,15 +81,16 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	}
 
 	// If neither match, try removing the ':' in the time zone
-	NSRegularExpression *timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:(NSRegularExpressionOptions)0 error:NULL];
+	static NSRegularExpression *timeZoneSuffix = nil;
+	static dispatch_once_t timeZoneSuffixPredicate = 0;
+	dispatch_once(&timeZoneSuffixPredicate, ^ {
+		timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:(NSRegularExpressionOptions)0 error:NULL];
+	});
 
-	string = [timeZoneSuffix stringByReplacingMatchesInString:string options:(NSMatchingOptions)0 range:NSMakeRange(0, [string length]) withTemplate:@"$1$2$3"];
+	string = [timeZoneSuffix stringByReplacingMatchesInString:string options:(NSMatchingOptions)0 range:NSMakeRange(0, string.length) withTemplate:@"$1$2$3"];
 
 	formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
-	NSDate *date = [formatter dateFromString:string];
-	if (date != nil) return date;
-
-	return nil;
+	return [formatter dateFromString:string];
 }
 
 @end
