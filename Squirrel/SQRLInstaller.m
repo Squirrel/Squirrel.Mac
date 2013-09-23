@@ -193,17 +193,18 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 		return NO;
 	}
 
-	// This will actually create the directory no matter what we do, but it's
-	// okay. We'll just overwrite it in the next step.
-	NSError *backupBundleURLError = nil;
-	NSURL *backupBundleURL = [self backupURLAppropriateForURL:self.targetBundleURL error:&backupBundleURLError];
-	if (backupBundleURL == nil) {
+	NSError *error = nil;
+
+	// This must directory must be removed once we succeed otherwise it ends up
+	// in the user's trash directory on reboot
+	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:self.targetBundleURL error:&error];
+	if (temporaryDirectory == nil) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)],
 			} mutableCopy];
 
-			if (backupBundleURLError != nil) userInfo[NSUnderlyingErrorKey] = backupBundleURLError;
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
 			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
 		}
@@ -211,8 +212,9 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 		return NO;
 	}
 
+	NSURL *backupBundleURL = [temporaryDirectory URLByAppendingPathComponent:self.targetBundleURL.lastPathComponent];
+
 	@try {
-		NSError *error = nil;
 		// First, move the target out of place and into the backup location.
 		if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
 			if (errorPtr != NULL) {
@@ -243,61 +245,49 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 	} @finally {
-		NSError *verifyTargetError = nil;
-		if (![self verifyTargetURL:self.targetBundleURL error:&verifyTargetError]) {
-			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, verifyTargetError);
+		if (![self verifyTargetURL:self.targetBundleURL error:&error]) {
+			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 
 			NSError *installBackupError = nil;
 			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&installBackupError]) {
 				NSLog(@"Restored backup bundle to %@", self.targetBundleURL);
-				[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
+				[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
 			} else {
 				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, installBackupError.sqrl_verboseDescription);
+				// Leave the temporary directory in place so that it's restored to trash on reboot
 			}
 
-			if (errorPtr != NULL) *errorPtr = verifyTargetError;
+			if (errorPtr != NULL) *errorPtr = error;
 			return NO;
 		}
 
-		[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
+		[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
 	}
 
 	return YES;
 }
 
-- (NSURL *)backupURLAppropriateForURL:(NSURL *)targetURL error:(NSError **)errorPtr {
-	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:targetURL];
+- (NSURL *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL error:(NSError **)errorPtr {
+	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
+	if (temporaryDirectory != nil) return temporaryDirectory;
 
-	NSURL *backupDirectory = [temporaryDirectory URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
-	if (![NSFileManager.defaultManager createDirectoryAtURL:backupDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
+	temporaryDirectory = [[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
+	if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
 
-	return [backupDirectory URLByAppendingPathComponent:targetURL.lastPathComponent];
-}
-
-- (NSURL *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL {
-	NSURL *backupURL = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
-	if (backupURL != nil) return backupURL;
-	return [NSURL fileURLWithPath:NSTemporaryDirectory()];
+	return temporaryDirectory;
 }
 
 - (NSURL *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
-	FSRef targetFSRef;
-	if (!CFURLGetFSRef((__bridge CFURLRef)targetURL, &targetFSRef)) {
-		return nil;
-	}
+	NSURL *volumeURL = nil; NSError *volumeURLError = nil;
+	BOOL getVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&volumeURLError];
+	if (!getVolumeURL) return nil;
 
-	FSCatalogInfo catalogInfo;
-	if (FSGetCatalogInfo(&targetFSRef, kFSCatInfoVolume, &catalogInfo, NULL, NULL, NULL) != noErr) {
-		return nil;
-	}
+	NSError *itemReplacementDirectoryError = nil;
+	NSURL *itemReplacementDirectory = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&itemReplacementDirectoryError];
+	if (itemReplacementDirectory == nil) return nil;
 
-	FSRef temporaryDirectoryFSRef;
-	if (FSFindFolder(catalogInfo.volume, kTemporaryFolderType, kCreateFolder, &temporaryDirectoryFSRef) != noErr) {
-		return nil;
-	}
-
-	return CFBridgingRelease(CFURLCreateFromFSRef(kCFAllocatorDefault, &temporaryDirectoryFSRef));
+	return itemReplacementDirectory;
 }
 
 - (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
