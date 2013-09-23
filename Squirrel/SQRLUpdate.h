@@ -23,11 +23,11 @@
 //		@"pub_date" - A string, optional, in ISO 8601 syntax with the components
 //					  yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZZ when the release became
 //					  available.
-- (id)initWithJSON:(id)JSON;
+- (instancetype)initWithJSON:(NSDictionary *)JSON __attribute__((nonnull (1)));
 
 // Underlying JSON the update was initialised with.
 // Custom properties that Squirrel doesn't parse can be retrieved from this.
-@property (readonly, copy, nonatomic) id json;
+@property (readonly, copy, nonatomic) NSDictionary *JSON;
 
 #pragma mark Standard Squirrel properties
 

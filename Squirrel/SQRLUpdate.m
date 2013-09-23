@@ -16,11 +16,13 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 @implementation SQRLUpdate
 
-- (id)initWithJSON:(id)JSON {
+- (instancetype)initWithJSON:(NSDictionary *)JSON {
+	NSParameterAssert(JSON != nil);
+
 	self = [self init];
 	if (self == nil) return nil;
 
-	_json = [JSON copy];
+	_JSON = [JSON copy];
 
 	NSString *urlString = JSON[SQRLUpdateJSONURLKey];
 	if (![urlString isKindOfClass:NSString.class]) {
