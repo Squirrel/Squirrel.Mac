@@ -13,16 +13,7 @@
 
 // Initialises an update from an `updateRequest` response body.
 //
-// JSON	- Must not be nil, expected to conform to the schema defined below.
-//		@"url"		- A string, required, in URL syntax for the update that should
-//					  be installed for this update.
-//		@"notes"	- A string, optional, the release notes for the update, your
-//					  application may choose to display these to the user.
-//		@"name"		- A string, optional, the name of the update,could be a
-//					  version number or something more whimsical.
-//		@"pub_date" - A string, optional, in ISO 8601 syntax with the components
-//					  yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZZ when the release became
-//					  available.
+// JSON - Must not be nil, schema defined in README.
 - (instancetype)initWithJSON:(NSDictionary *)JSON __attribute__((nonnull (1)));
 
 // Underlying JSON the update was initialised with.
@@ -31,13 +22,13 @@
 
 #pragma mark Standard Squirrel properties
 
-// Optional, from the "notes" key in `JSON`
+// Release notes for the update
 @property (readonly, copy, nonatomic) NSString *releaseNotes;
 
-// Optional, from the "name" key in `JSON`
+// Release name for the update
 @property (readonly, copy, nonatomic) NSString *releaseName;
 
-// Optional, from the "pub_date" key in `JSON`
+// Release date for the update
 @property (readonly, copy, nonatomic) NSDate *releaseDate;
 
 @end

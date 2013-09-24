@@ -15,7 +15,7 @@ extern NSString * const SQRLUpdateJSONPublicationDateKey;
 
 @interface SQRLUpdate ()
 
-// Required, from the "url" key in `JSON`
+// Location of the update package to download for installation
 @property (readonly, copy, nonatomic) NSURL *updateURL;
 
 @end
