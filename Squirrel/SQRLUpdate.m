@@ -84,10 +84,10 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	static NSRegularExpression *timeZoneSuffix = nil;
 	static dispatch_once_t timeZoneSuffixPredicate = 0;
 	dispatch_once(&timeZoneSuffixPredicate, ^ {
-		timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:(NSRegularExpressionOptions)0 error:NULL];
+		timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:0 error:NULL];
 	});
 
-	string = [timeZoneSuffix stringByReplacingMatchesInString:string options:(NSMatchingOptions)0 range:NSMakeRange(0, string.length) withTemplate:@"$1$2$3"];
+	string = [timeZoneSuffix stringByReplacingMatchesInString:string options:0 range:NSMakeRange(0, string.length) withTemplate:@"$1$2$3"];
 
 	formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
 	return [formatter dateFromString:string];
