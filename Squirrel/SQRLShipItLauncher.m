@@ -11,6 +11,7 @@
 #import "SQRLArguments.h"
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
+#import <Security/Security.h>
 
 NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
 
@@ -18,7 +19,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 @implementation SQRLShipItLauncher
 
-- (xpc_connection_t)launch:(NSError **)errorPtr {
++ (xpc_connection_t)launchPrivileged:(BOOL)privileged error:(NSError **)errorPtr {
 	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
@@ -26,8 +27,48 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
 	NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 
+	CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
+
+	AuthorizationRef authorization = NULL;
+	if (privileged) {
+		AuthorizationItem rightItems[] = {
+			{
+				.name = kSMRightModifySystemDaemons,
+			},
+		};
+		AuthorizationRights rights = {
+			.count = sizeof(rightItems)/sizeof(*rightItems),
+			.items = rightItems,
+		};
+
+		NSString *prompt = [NSString stringWithFormat:NSLocalizedString(@"%@ is installing an updated version.", @"SQRLShipItLauncher, launch shipit, authorization prompt"), currentApp.localizedName];
+
+		AuthorizationItem environmentItems[] = {
+			{
+				.name = kAuthorizationEnvironmentPrompt,
+				.valueLength = strlen(prompt.UTF8String),
+				.value = (void *)prompt.UTF8String,
+			},
+		};
+		AuthorizationEnvironment environment = {
+			.count = sizeof(environmentItems)/sizeof(*environmentItems),
+			.items = environmentItems,
+		};
+
+		OSStatus authorizationError = AuthorizationCreate(&rights, &environment, kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights, &authorization);
+		if (authorizationError != noErr) {
+			if (errorPtr != NULL) {
+				*errorPtr = [NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil];
+			}
+			return NULL;
+		}
+	}
+	@onExit {
+		if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDefaults);
+	};
+
 	CFErrorRef cfError;
-	if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, NULL, true, &cfError)) {
+	if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, authorization, true, &cfError)) {
 		#if DEBUG
 		NSLog(@"Could not remove previous ShipIt job: %@", cfError);
 		#endif
@@ -70,13 +111,16 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	NSLog(@"ShipIt job dictionary: %@", jobDict);
 	#endif
 
-	if (!SMJobSubmit(kSMDomainUserLaunchd, (__bridge CFDictionaryRef)jobDict, NULL, &cfError)) {
-		if (errorPtr) *errorPtr = (__bridge id)cfError;
-		if (cfError != NULL) CFRelease(cfError);
+	if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDict, authorization, &cfError)) {
+		if (errorPtr) {
+			*errorPtr = CFBridgingRelease(cfError);
+		} else {
+			CFRelease(cfError);
+		}
 		return NULL;
 	}
 
-	xpc_connection_t connection = xpc_connection_create_mach_service(jobLabel.UTF8String, NULL, 0);
+	xpc_connection_t connection = xpc_connection_create_mach_service(jobLabel.UTF8String, NULL, privileged ? XPC_CONNECTION_MACH_SERVICE_PRIVILEGED : 0);
 	if (connection == NULL) {
 		if (errorPtr != NULL) {
 			NSDictionary *userInfo = @{
