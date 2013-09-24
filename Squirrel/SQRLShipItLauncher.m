@@ -27,7 +27,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 
 	CFErrorRef cfError;
-	if (SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)jobLabel, NULL, true, &cfError)) {
+	if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, NULL, true, &cfError)) {
 		#if DEBUG
 		NSLog(@"Could not remove previous ShipIt job: %@", cfError);
 		#endif
