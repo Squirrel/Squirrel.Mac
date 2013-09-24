@@ -31,7 +31,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	} else {
 		_updateURL = [NSURL URLWithString:urlString];
 
-		if ([_updateURL scheme] == nil || [_updateURL host] == nil || [_updateURL path] == nil) {
+		if (_updateURL.scheme == nil || _updateURL.host == nil || _updateURL.path == nil) {
 			NSLog(@"Ignoring update URL of an unsupported syntax: %@", urlString);
 			return nil;
 		}
