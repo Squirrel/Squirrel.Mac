@@ -27,6 +27,19 @@ it(@"should extract a zip archive created by the Finder", ^{
 	expect(error).to.beNil();
 });
 
+it(@"should fail to extract a nonexistent zip archive", ^{
+	NSError *error = nil;
+	BOOL success = [[SQRLZipArchiver unzipArchiveAtURL:[self.temporaryDirectoryURL URLByAppendingPathComponent:@"foo.zip"] intoDirectoryAtURL:self.temporaryDirectoryURL] asynchronouslyWaitUntilCompleted:&error];
+	expect(success).to.beFalsy();
+
+	NSLog(@"%@", error);
+
+	expect(error).notTo.beNil();
+	expect(error.domain).to.equal(SQRLZipArchiverErrorDomain);
+	expect(error.code).to.equal(SQRLZipArchiverShellTaskFailed);
+	expect(error.userInfo[SQRLZipArchiverExitCodeErrorKey]).notTo.equal(0);
+});
+
 it(@"should create a zip archive readable by itself", ^{
 	NSURL *zipURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.zip"];
 
