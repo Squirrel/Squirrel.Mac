@@ -210,6 +210,10 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *updateParentURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.baseTemporaryDirectoryURL create:YES error:&error];
 	STAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
 
+	[self addCleanupBlock:^{
+		[NSFileManager.defaultManager removeItemAtURL:updateParentURL error:NULL];
+	}];
+
 	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
