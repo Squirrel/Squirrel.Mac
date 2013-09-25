@@ -243,7 +243,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 	} @finally {
-		if (![self verifyTargetURL:self.targetBundleURL error:&error]) {
+		if (![self.verifier verifyCodeSignatureOfBundle:targetURL error:&error]) {
 			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 
@@ -364,20 +364,6 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	}
 
 	return YES;
-}
-
-- (BOOL)verifyTargetURL:(NSURL *)targetURL error:(NSError **)errorPtr {
-	if (![NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
-		if (errorPtr != NULL) {
-			NSDictionary *errorInfo = @{
-				NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn’t replace app with updated version", nil),
-			};
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:errorInfo];
-		}
-		return NO;
-	}
-
-	return [self.verifier verifyCodeSignatureOfBundle:targetURL error:errorPtr];
 }
 
 @end
