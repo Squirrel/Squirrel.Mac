@@ -64,7 +64,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		}
 	}
 	@onExit {
-		if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDefaults);
+		if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
 	};
 
 	CFErrorRef cfError;
