@@ -19,9 +19,9 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 
 // Attempts to launch the ShipIt service.
 //
-// privileged - determines which launchd domain to launch the job in
-//              if true, shipit is launched in the root domain, otherwise it is
-//              launched in the current user domain
+// privileged - Determines which launchd domain to launch the job in.
+//              If true, shipit is launched in the root domain, otherwise it is
+//              launched in the current user’s domain.
 // error      - If not NULL, set to any error that occurs.
 //
 // Returns the XPC connection established, or NULL if an error occurs. The

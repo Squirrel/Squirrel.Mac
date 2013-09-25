@@ -37,7 +37,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			},
 		};
 		AuthorizationRights rights = {
-			.count = sizeof(rightItems)/sizeof(*rightItems),
+			.count = sizeof(rightItems) / sizeof(*rightItems),
 			.items = rightItems,
 		};
 
@@ -51,7 +51,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			},
 		};
 		AuthorizationEnvironment environment = {
-			.count = sizeof(environmentItems)/sizeof(*environmentItems),
+			.count = sizeof(environmentItems) / sizeof(*environmentItems),
 			.items = environmentItems,
 		};
 
@@ -112,7 +112,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	#endif
 
 	if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDict, authorization, &cfError)) {
-		if (errorPtr) {
+		if (errorPtr != NULL) {
 			*errorPtr = CFBridgingRelease(cfError);
 		} else {
 			CFRelease(cfError);

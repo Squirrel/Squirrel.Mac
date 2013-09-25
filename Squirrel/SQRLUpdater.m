@@ -324,7 +324,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 	// If we can't determine whether it can be written, assume nonprivileged and
 	// wait for another more canonical error
-	NSNumber *targetWritable = nil; NSError *targetWritableError = nil;
+	NSNumber *targetWritable = nil;
+	NSError *targetWritableError = nil;
 	BOOL getWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
 
 	NSError *error = nil;
