@@ -283,15 +283,13 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 }
 
 - (NSURL *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
-	NSURL *volumeURL = nil; NSError *volumeURLError = nil;
-	BOOL getVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&volumeURLError];
+	NSError *error = nil;
+
+	NSURL *volumeURL = nil;
+	BOOL getVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&error];
 	if (!getVolumeURL) return nil;
 
-	NSError *itemReplacementDirectoryError = nil;
-	NSURL *itemReplacementDirectory = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&itemReplacementDirectoryError];
-	if (itemReplacementDirectory == nil) return nil;
-
-	return itemReplacementDirectory;
+	return [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&error];
 }
 
 - (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
