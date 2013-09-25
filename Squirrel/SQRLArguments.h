@@ -25,7 +25,6 @@ extern const char * const SQRLShipItCommandKey;
 //
 //	- SQRLTargetBundleURLKey
 //	- SQRLUpdateBundleURLKey
-//	- SQRLBackupURLKey
 //	- SQRLShouldRelaunchKey
 //	- SQRLWaitForConnectionKey
 //
@@ -59,12 +58,6 @@ extern const char * const SQRLTargetBundleURLKey;
 //
 // This argument is required.
 extern const char * const SQRLUpdateBundleURLKey;
-
-// Associated with a string representation of the URL to a directory in which
-// the target bundle should be backed up before beginning installation.
-//
-// This argument is required.
-extern const char * const SQRLBackupURLKey;
 
 // Associated with a boolean which indicates whether the application should be
 // launched after being updated.
