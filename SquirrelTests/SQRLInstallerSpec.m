@@ -7,6 +7,7 @@
 //
 
 #import "SQRLCodeSignatureVerifier.h"
+#import "SQRLInstaller.h"
 
 SpecBegin(SQRLInstaller)
 
@@ -23,7 +24,6 @@ beforeEach(^{
 
 	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
 	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, false);
 
@@ -72,23 +72,6 @@ it(@"should install an update from another volume", ^{
 	__block BOOL installed = NO;
 
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect([self errorFromObject:event]).to.beNil();
-
-		installed = YES;
-	});
-
-	expect(installed).will.beTruthy();
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
-});
-
-it(@"should back up to another volume while updating", ^{
-	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication Backup" fromDirectory:nil];
-
-	__block BOOL installed = NO;
-
-	xpc_dictionary_set_string(message, SQRLBackupURLKey, diskImageURL.absoluteString.UTF8String);
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect([self errorFromObject:event]).to.beNil();
@@ -210,6 +193,16 @@ describe(@"signal handling", ^{
 			expect(error).to.beNil();
 		}
 	});
+});
+
+it(@"should install an update in process", ^{
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:[self createTestApplicationUpdate] requirementData:self.testApplicationCodeSigningRequirementData];
+	expect(installer).notTo.beNil();
+
+	NSError *installError = nil;
+	BOOL install = [installer installUpdateWithError:&installError];
+	expect(install).to.beTruthy();
+	expect(installError).to.beNil();
 });
 
 SpecEnd

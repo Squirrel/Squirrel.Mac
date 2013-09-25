@@ -210,6 +210,10 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *updateParentURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.baseTemporaryDirectoryURL create:YES error:&error];
 	STAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
 
+	[self addCleanupBlock:^{
+		[NSFileManager.defaultManager removeItemAtURL:updateParentURL error:NULL];
+	}];
+
 	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
@@ -289,7 +293,7 @@ static void SQRLSignalHandler(int sig) {
 	if (directoryURL == nil) {
 		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -type SPARSE -size 10m -quiet", destinationURL.path, name];
 	} else {
-		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDSP -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -format UDSP -size 10m -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
 	}
 
 	expect(system(createInvocation.UTF8String)).to.equal(0);
