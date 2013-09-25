@@ -195,8 +195,6 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 	NSError *error = nil;
 
-	// This must directory must be removed once we succeed otherwise it ends up
-	// in the user's trash directory on reboot
 	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:self.targetBundleURL error:&error];
 	if (temporaryDirectory == nil) {
 		if (errorPtr != NULL) {
@@ -262,6 +260,8 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 
+		// This directory must be removed once we succeed otherwise it ends up
+		// in the user's trash directory on reboot
 		[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
 	}
 
