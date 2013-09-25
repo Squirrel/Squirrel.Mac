@@ -35,6 +35,7 @@
 		D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
+		D0964B2217F2DD4D00D88BF7 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */; };
 		D097B9BD17BB4777006C3FEB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */; };
 		D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */ = {isa = PBXBuildFile; fileRef = D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */; };
@@ -58,7 +59,6 @@
 		D0F3F03717E83928003AFA6B /* libSpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F02B17E83918003AFA6B /* libSpecta.a */; };
 		D0F3F06317E83B03003AFA6B /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
 		D0F3F06417E83B0B003AFA6B /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
-		D0F3F06717E83B13003AFA6B /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
 		D0F3F06817E83B27003AFA6B /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
@@ -86,6 +86,20 @@
 			proxyType = 1;
 			remoteGlobalIDString = D08D4E0B17B451500012B22D;
 			remoteInfo = TestApplication;
+		};
+		D0964B1B17F2DD4500D88BF7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = D05AD39417F2D56F0080895B;
+			remoteInfo = "ReactiveCocoa-Mac";
+		};
+		D0964B2017F2DD4A00D88BF7 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = D05AD39317F2D56F0080895B;
+			remoteInfo = "ReactiveCocoa-Mac";
 		};
 		D0C22BF3179CC00E00158214 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -207,13 +221,6 @@
 			remoteInfo = "ReactiveCocoa-iOS-UIKitTestHostTests";
 		};
 		D0F3F06117E83AFF003AFA6B /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */;
-			proxyType = 1;
-			remoteGlobalIDString = 88037F8215056328001A5B19;
-			remoteInfo = ReactiveCocoa;
-		};
-		D0F3F06517E83B11003AFA6B /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */;
 			proxyType = 1;
@@ -346,7 +353,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0F3F06717E83B13003AFA6B /* ReactiveCocoa.framework in Frameworks */,
+				D0964B2217F2DD4D00D88BF7 /* libReactiveCocoa-Mac.a in Frameworks */,
 				D097B9BD17BB4777006C3FEB /* IOKit.framework in Frameworks */,
 				D014AC1F17B979C4007D79D0 /* Cocoa.framework in Frameworks */,
 				D014AC1D17B979B7007D79D0 /* Security.framework in Frameworks */,
@@ -674,6 +681,7 @@
 				D0F3F05C17E83A1D003AFA6B /* ReactiveCocoaTests-iOS.octest */,
 				D0F3F05E17E83A1D003AFA6B /* ReactiveCocoa-iOS-UIKitTestHost.app */,
 				D0F3F06017E83A1D003AFA6B /* ReactiveCocoa-iOS-UIKitTestHostTests.octest */,
+				D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -704,7 +712,7 @@
 			buildRules = (
 			);
 			dependencies = (
-				D0F3F06617E83B11003AFA6B /* PBXTargetDependency */,
+				D0964B2117F2DD4A00D88BF7 /* PBXTargetDependency */,
 			);
 			name = ShipIt;
 			productName = ShipIt;
@@ -820,6 +828,13 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = "libReactiveCocoa-Mac.a";
+			remoteRef = D0964B1B17F2DD4500D88BF7 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		D0F3F01F17E83918003AFA6B /* libExpecta.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1037,6 +1052,11 @@
 			target = D08D4E0B17B451500012B22D /* TestApplication */;
 			targetProxy = D08D4E4B17B4520C0012B22D /* PBXContainerItemProxy */;
 		};
+		D0964B2117F2DD4A00D88BF7 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "ReactiveCocoa-Mac";
+			targetProxy = D0964B2017F2DD4A00D88BF7 /* PBXContainerItemProxy */;
+		};
 		D0C22BF4179CC00E00158214 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = D0C22BD6179CC00E00158214 /* Squirrel */;
@@ -1056,11 +1076,6 @@
 			isa = PBXTargetDependency;
 			name = ReactiveCocoa;
 			targetProxy = D0F3F06117E83AFF003AFA6B /* PBXContainerItemProxy */;
-		};
-		D0F3F06617E83B11003AFA6B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			name = ReactiveCocoa;
-			targetProxy = D0F3F06517E83B11003AFA6B /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
