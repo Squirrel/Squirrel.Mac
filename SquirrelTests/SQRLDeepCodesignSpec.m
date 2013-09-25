@@ -9,12 +9,14 @@
 SpecBegin(SQRLDeepCodesign)
 
 NSMutableDictionary * (^environmentSuitableForChildProcess)(void) = ^ {
+	// Remove environment variables that configure the Obj-C runtime
+	// Specifically OBJC_DISABLE_GC so that child processes aren't forced to
+	// adopt the GC preference of the test suite
 	NSMutableDictionary *environment = [NSProcessInfo.processInfo.environment mutableCopy];
-	NSArray *environmentKeys = environment.allKeys;
-	NSIndexSet *objcEnvironmentVariables = [environmentKeys indexesOfObjectsPassingTest:^(NSString *variable, NSUInteger idx, BOOL *stop) {
+	NSSet *objcEnvironmentVariables = [environment keysOfEntriesPassingTest:^(NSString *variable, id obj, BOOL *stop) {
 		return [variable hasPrefix:@"OBJC"];
 	}];
-	[environment removeObjectsForKeys:[environmentKeys objectsAtIndexes:objcEnvironmentVariables]];
+	[environment removeObjectsForKeys:objcEnvironmentVariables.allObjects];
 	return environment;
 };
 
