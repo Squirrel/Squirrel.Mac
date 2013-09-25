@@ -13,20 +13,13 @@
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLZipArchiver.h"
+#import "SQRLUpdate.h"
+#import "SQRLUpdate+Private.h"
 #import <ReactiveCocoa/EXTScope.h>
 
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
-NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseNameKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey = @"SQRLUpdaterUpdateAvailableNotificationReleaseDateKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationUpdateKey";
 NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey = @"SQRLUpdaterUpdateAvailableNotificationBundleVersionKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey = @"SQRLUpdaterUpdateAvailableNotificationLulzURLKey";
-
-NSString * const SQRLUpdaterJSONURLKey = @"url";
-NSString * const SQRLUpdaterJSONReleaseNotesKey = @"notes";
-NSString * const SQRLUpdaterJSONNameKey = @"name";
-NSString * const SQRLUpdaterJSONPublicationDateKey = @"pub_date";
-NSString * const SQRLUpdaterJSONLulzURLKey = @"lulz";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 const NSInteger SQRLUpdaterErrorNoUpdateWaiting = 1;
@@ -126,10 +119,10 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 			[self finishAndSetIdle];
 			return;
 		}
-		
-		NSString *urlString = JSON[SQRLUpdaterJSONURLKey];
-		if (![urlString isKindOfClass:NSString.class]) { //Hmm… we got returned something without a URL, whatever it is… we aren't interested in it.
-			NSLog(@"Update JSON is missing a URL: %@", JSON);
+
+		SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:JSON];
+		if (update == nil) {
+			NSLog(@"Update JSON is invalid: %@", JSON);
 
 			[self finishAndSetIdle];
 			return;
@@ -158,7 +151,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		
 		self.downloadFolder = [NSURL fileURLWithPath:[fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(tempDirectoryNameCString)] isDirectory:YES];
 		
-		NSURL *zipDownloadURL = [NSURL URLWithString:urlString];
+		NSURL *zipDownloadURL = update.updateURL;
 		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
 
 		NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
@@ -201,48 +194,9 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					[self finishAndSetIdle];
 					return;
 				}
-				
-				NSString *name = JSON[SQRLUpdaterJSONNameKey];
-				if (![name isKindOfClass:NSString.class]) {
-					NSLog(@"Ignoring release name of an unsupported type: %@", name);
-					name = nil;
-				}
-				
-				NSDate *releaseDate = nil;
-				NSString *releaseDateString = JSON[SQRLUpdaterJSONPublicationDateKey];
-				if (![releaseDateString isKindOfClass:NSString.class]) {
-					NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
-				} else {
-					NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-					formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
-					formatter.dateFormat = @"EEE MMM dd HH:mm:ss Z yyyy";
-					releaseDate = [formatter dateFromString:releaseDateString];
-					if (releaseDate == nil) {
-						NSLog(@"Could not parse publication date for update. %@", releaseDateString);
-					}
-				}
-				
-				NSString *releaseNotes = JSON[SQRLUpdaterJSONReleaseNotesKey];
-				if (![releaseNotes isKindOfClass:NSString.class]) {
-					NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
-					releaseNotes = nil;
-				}
-
-				NSString *lulzURLString = JSON[SQRLUpdaterJSONLulzURLKey];
-				NSURL *lulzURL = nil;
-				if ([lulzURLString isKindOfClass:NSString.class]) {
-					lulzURL = [NSURL URLWithString:lulzURLString];
-				} else {
-					NSLog(@"Ignoring lulz URL of an unsupported type: %@", lulzURLString);
-				}
-
-				if (lulzURL == nil) lulzURL = [self randomLulzURL];
 
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-				if (releaseNotes != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey] = releaseNotes;
-				if (name != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseNameKey] = name;
-				if (releaseDate != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationReleaseDateKey] = releaseDate;
-				if (lulzURL != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationLulzURLKey] = lulzURL;
+				userInfo[SQRLUpdaterUpdateAvailableNotificationUpdateKey] = update;
 
 				NSString *bundleVersion = [updateBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
 				if (bundleVersion != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationBundleVersionKey] = bundleVersion;
@@ -257,17 +211,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		
 		self.state = SQRLUpdaterStateDownloadingUpdate;
 	}];
-}
-
-- (NSURL *)randomLulzURL {
-	NSArray *lulz = @[
-		@"http://blog.lmorchard.com/wp-content/uploads/2013/02/well_done_sir.gif",
-		@"http://i255.photobucket.com/albums/hh150/hayati_h2/tumblr_lfmpar9EUd1qdzjnp.gif",
-		@"http://media.tumblr.com/tumblr_lv1j4x1pJM1qbewag.gif",
-		@"http://i.imgur.com/UmpOi.gif",
-	];
-
-	return [NSURL URLWithString:lulz[arc4random_uniform(lulz.count)]];
 }
 
 - (void)finishAndSetIdle {

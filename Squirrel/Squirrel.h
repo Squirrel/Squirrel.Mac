@@ -8,3 +8,4 @@
 
 #import <Squirrel/NSProcessInfo+SQRLVersionExtensions.h>
 #import <Squirrel/SQRLUpdater.h>
+#import <Squirrel/SQRLUpdate.h>
