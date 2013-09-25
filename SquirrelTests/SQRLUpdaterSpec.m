@@ -12,15 +12,9 @@
 SpecBegin(SQRLUpdater)
 
 NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
-	__block BOOL finished = NO;
-
 	NSURL *zippedUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.zip"];
-	[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL completion:^(BOOL success) {
-		expect(success).to.beTruthy();
-		finished = YES;
-	}];
-
-	expect(finished).will.beTruthy();
+	BOOL success = [[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL] asynchronouslyWaitUntilCompleted:NULL];
+	expect(success).to.beTruthy();
 
 	NSDictionary *updateInfo = @{
 		SQRLUpdateJSONURLKey: zippedUpdateURL.absoluteString
@@ -32,7 +26,7 @@ NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
 	expect(error).to.beNil();
 
 	NSURL *JSONURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.json"];
-	BOOL success = [JSON writeToURL:JSONURL options:NSDataWritingAtomic error:&error];
+	success = [JSON writeToURL:JSONURL options:NSDataWritingAtomic error:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 

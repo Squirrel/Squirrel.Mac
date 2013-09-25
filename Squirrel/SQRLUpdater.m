@@ -17,6 +17,7 @@
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLUpdate+Private.h"
 #import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
 NSString * const SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey";
@@ -172,39 +173,38 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
 			
-			[SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder completion:^(BOOL unzipped) {
-				if (!unzipped) {
+			[[SQRLZipArchiver
+				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder]
+				subscribeError:^(NSError *error) {
 					NSLog(@"Could not extract update.");
 					[self finishAndSetIdle];
-					return;
-				}
+				} completed:^{
+					NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
+					NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
+					if (updateBundle == nil) {
+						NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
+						[self finishAndSetIdle];
+						return;
+					}
 
-				NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
-				NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
-				if (updateBundle == nil) {
-					NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
-					[self finishAndSetIdle];
-					return;
-				}
+					NSError *error = nil;
+					BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
+					if (!verified) {
+						NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
+						[self finishAndSetIdle];
+						return;
+					}
 
-				NSError *error = nil;
-				BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
-				if (!verified) {
-					NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
-					[self finishAndSetIdle];
-					return;
-				}
-
-				NSDictionary *userInfo = @{
-					SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]
-				};
-				
-				self.state = SQRLUpdaterStateAwaitingRelaunch;
-				
-				dispatch_async(dispatch_get_main_queue(), ^{
-					[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-				});
-			}];
+					NSDictionary *userInfo = @{
+						SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]
+					};
+					
+					self.state = SQRLUpdaterStateAwaitingRelaunch;
+					
+					dispatch_async(dispatch_get_main_queue(), ^{
+						[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
+					});
+				}];
 		}];
 		
 		self.state = SQRLUpdaterStateDownloadingUpdate;
