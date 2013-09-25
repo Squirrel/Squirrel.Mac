@@ -7,6 +7,7 @@
 //
 
 #import "SQRLUpdater.h"
+#import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSProcessInfo+SQRLVersionExtensions.h"
 #import "SQRLArguments.h"
@@ -198,8 +199,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 				userInfo[SQRLUpdaterUpdateAvailableNotificationUpdateKey] = update;
 
-				NSString *bundleVersion = [updateBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
-				if (bundleVersion != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationBundleVersionKey] = bundleVersion;
+				if (updateBundle.sqrl_bundleVersion != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationBundleVersionKey] = updateBundle.sqrl_bundleVersion;
 				
 				self.state = SQRLUpdaterStateAwaitingRelaunch;
 				

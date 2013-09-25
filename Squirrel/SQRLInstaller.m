@@ -7,6 +7,7 @@
 //
 
 #import "SQRLInstaller.h"
+#import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import <IOKit/pwr_mgt/IOPMLib.h>
@@ -184,8 +185,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 		return NO;
 	}
 
-	NSString *bundleVersion = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
-	if (bundleVersion == nil) {
+	if (targetBundle.sqrl_bundleVersion == nil) {
 		if (errorPtr != NULL) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Target bundle %@ has an invalid version", nil), self.targetBundleURL],
