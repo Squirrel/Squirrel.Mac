@@ -18,6 +18,5 @@ const char * const SQRLProcessIdentifierKey = "SQRLProcessIdentifierKey";
 const char * const SQRLBundleIdentifierKey = "SQRLBundleIdentifierKey";
 const char * const SQRLTargetBundleURLKey = "SQRLTargetBundleURLKey";
 const char * const SQRLUpdateBundleURLKey = "SQRLUpdateBundleURLKey";
-const char * const SQRLBackupURLKey = "SQRLBackupURLKey";
 const char * const SQRLShouldRelaunchKey = "SQRLShouldRelaunchKey";
 const char * const SQRLCodeSigningRequirementKey = "SQRLCodeSigningRequirementKey";

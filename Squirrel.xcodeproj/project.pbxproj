@@ -14,6 +14,8 @@
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
+		533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
+		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
@@ -380,6 +382,7 @@
 				D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */,
 				F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */,
 				F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */,
+				533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */,
 				D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1045,6 +1048,7 @@
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
+				533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 			);

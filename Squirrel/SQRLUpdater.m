@@ -339,7 +339,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
 	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, currentApplication.bundleURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
-	xpc_dictionary_set_string(message, SQRLBackupURLKey, self.applicationSupportURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
 	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
 	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
