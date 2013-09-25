@@ -7,6 +7,7 @@
 //
 
 #import "SQRLCodeSignatureVerifier.h"
+#import "SQRLInstaller.h"
 
 SpecBegin(SQRLInstaller)
 
@@ -192,6 +193,16 @@ describe(@"signal handling", ^{
 			expect(error).to.beNil();
 		}
 	});
+});
+
+it(@"should install an update in process", ^{
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:[self createTestApplicationUpdate] requirementData:self.testApplicationCodeSigningRequirementData];
+	expect(installer).notTo.beNil();
+
+	NSError *installError = nil;
+	BOOL install = [installer installUpdateWithError:&installError];
+	expect(install).to.beTruthy();
+	expect(installError).to.beNil();
 });
 
 SpecEnd
