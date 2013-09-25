@@ -370,7 +370,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	if (![NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
 		if (errorPtr != NULL) {
 			NSDictionary *errorInfo = @{
-				NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn\u2019t replace app with updated version", nil),
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn’t replace app with updated version", nil),
 			};
 			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:errorInfo];
 		}
