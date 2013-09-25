@@ -14,6 +14,10 @@
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
+		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
+		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
+		53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -252,6 +256,10 @@
 		53710D8117D8F5C300A992DE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		53710D8217D8F5C300A992DE /* targets.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = targets.awk; sourceTree = "<group>"; };
 		53710D8317D8F5C300A992DE /* xcodebuild.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = xcodebuild.awk; sourceTree = "<group>"; };
+		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
+		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
+		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
+		53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SQRLUpdate+Private.h"; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
@@ -285,7 +293,6 @@
 		D097B9BC17BB4777006C3FEB /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
 		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
-		D09D247A17B5A3DD0001FAF8 /* SQRLUpdater+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLUpdater+Private.h"; sourceTree = "<group>"; };
 		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -667,10 +674,12 @@
 				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
 				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
-				D09D247A17B5A3DD0001FAF8 /* SQRLUpdater+Private.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
 				D000218C17BACEFF0050109A /* SQRLZipArchiver.h */,
 				D000218D17BACEFF0050109A /* SQRLZipArchiver.m */,
+				53AACF4917E9CA0500B41027 /* SQRLUpdate.h */,
+				53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */,
+				53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -686,6 +695,7 @@
 				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
+				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -725,6 +735,8 @@
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
+				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
+				53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
 				D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */,
 			);
@@ -1033,6 +1045,7 @@
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
+				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1041,6 +1054,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
