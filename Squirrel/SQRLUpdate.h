@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 // Update parsed from a response to the `SQRLUpdater.updateRequest`.
-@interface SQRLUpdate : NSObject
+@interface SQRLUpdate : NSObject <NSCopying>
 
 // Initialises an update from an `updateRequest` response body.
 //

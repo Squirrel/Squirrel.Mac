@@ -16,6 +16,8 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 @implementation SQRLUpdate
 
+#pragma mark Lifecycle
+
 - (instancetype)initWithJSON:(NSDictionary *)JSON {
 	NSParameterAssert(JSON != nil);
 
@@ -65,6 +67,8 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	return self;
 }
 
+#pragma mark Parsing
+
 + (NSDate *)dateFromString:(NSString *)string {
 	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
 	formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
@@ -91,6 +95,25 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 	formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
 	return [formatter dateFromString:string];
+}
+
+#pragma mark NSCopying
+
+- (id)copyWithZone:(NSZone *)zone {
+	return self;
+}
+
+#pragma mark NSObject
+
+- (NSUInteger)hash {
+	return self.JSON.hash;
+}
+
+- (BOOL)isEqual:(SQRLUpdate *)update {
+	if (self == update) return YES;
+	if (![update isKindOfClass:SQRLUpdate.class]) return NO;
+
+	return [self.JSON isEqual:update.JSON];
 }
 
 @end
