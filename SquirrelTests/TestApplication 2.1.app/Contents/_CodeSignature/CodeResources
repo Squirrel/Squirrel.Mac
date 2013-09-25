@@ -6,7 +6,7 @@
 	<dict>
 		<key>Frameworks/Squirrel.framework/Versions/A/Headers/SQRLUpdater.h</key>
 		<data>
-		X4AMgMQ/LYI5pOjFnh+/oTmKtPs=
+		yfc9EBkVvjinm/Z3buJasJDRYao=
 		</data>
 		<key>Frameworks/Squirrel.framework/Versions/A/Headers/Squirrel.h</key>
 		<data>
@@ -14,7 +14,11 @@
 		</data>
 		<key>Frameworks/Squirrel.framework/Versions/A/Resources/Info.plist</key>
 		<data>
-		AKcQS6XTznVliyg2NuxBDHdQDhE=
+		gnif085lSrUuKbJMaJtjApPeRV4=
+		</data>
+		<key>Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt</key>
+		<data>
+		DAcuH+A4QXA9Va6w4tMj9RVeoUc=
 		</data>
 		<key>Frameworks/Squirrel.framework/Versions/A/Resources/en.lproj/InfoPlist.strings</key>
 		<data>
@@ -22,23 +26,15 @@
 		</data>
 		<key>Frameworks/Squirrel.framework/Versions/A/Squirrel</key>
 		<data>
-		U3DrbUxXIM82O+C1C+UCPD/gPWE=
-		</data>
-		<key>Frameworks/Squirrel.framework/XPCServices/com.github.Squirrel.ShipIt.xpc/Contents/Info.plist</key>
-		<data>
-		5vFjsEpC9fWhqv56EFyWpD5fNcU=
-		</data>
-		<key>Frameworks/Squirrel.framework/XPCServices/com.github.Squirrel.ShipIt.xpc/Contents/MacOS/com.github.Squirrel.ShipIt</key>
-		<data>
-		ZC89wezRyg2gkDCop21gFSWQypA=
-		</data>
-		<key>Frameworks/Squirrel.framework/XPCServices/com.github.Squirrel.ShipIt.xpc/Contents/Resources/en.lproj/InfoPlist.strings</key>
-		<data>
-		MiLKDDnrUKr4EmuvhS5VQwxHGK8=
+		Sk9oGJtkjeuRent6Dhjvahbyppg=
 		</data>
 		<key>Info.plist</key>
 		<data>
-		e/KvcFRm9KWGmA4cz7cZVhFwcHY=
+		9mfi/JrIN9ymq6T3kkmN33mcV+0=
+		</data>
+		<key>Library/LoginItems/unused-helper</key>
+		<data>
+		RlmG68PoNeC201D8Ph+/ey7VDT8=
 		</data>
 		<key>MacOS/unused-helper</key>
 		<data>
@@ -52,9 +48,13 @@
 		<data>
 		JSXVFs6HM2n+zHg/CS52CwLD6Gg=
 		</data>
-		<key>Resources/Base.lproj/MainMenu.nib</key>
+		<key>Resources/Images.xcassets/AppIcon.appiconset/Contents.json</key>
 		<data>
-		EE8MaKyidgy2oLnxGNwpG9nviHs=
+		blQQRsk7zEj8eWhtdMUT1q1XKrU=
+		</data>
+		<key>Resources/MainMenu.nib</key>
+		<data>
+		elsWTHipHvBGwbJqewqk3zDT/Ko=
 		</data>
 		<key>Resources/ResourceRules.plist</key>
 		<data>
@@ -65,6 +65,18 @@
 		YKJIFIsxneJuNkJNJQIcJIjiPOg=
 		</data>
 		<key>Resources/en.lproj/InfoPlist.strings</key>
+		<data>
+		MiLKDDnrUKr4EmuvhS5VQwxHGK8=
+		</data>
+		<key>XPCServices/com.github.Squirrel.TestApplication.TestService.xpc/Contents/Info.plist</key>
+		<data>
+		IY7ZjllbdyJjdz7+BeivxRh9yfE=
+		</data>
+		<key>XPCServices/com.github.Squirrel.TestApplication.TestService.xpc/Contents/MacOS/com.github.Squirrel.TestApplication.TestService</key>
+		<data>
+		ypUrw+nBdWf8uXgHAymWYAniOsQ=
+		</data>
+		<key>XPCServices/com.github.Squirrel.TestApplication.TestService.xpc/Contents/Resources/en.lproj/InfoPlist.strings</key>
 		<data>
 		MiLKDDnrUKr4EmuvhS5VQwxHGK8=
 		</data>
