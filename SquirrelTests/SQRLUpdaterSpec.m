@@ -6,8 +6,8 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLUpdater+Private.h"
 #import "SQRLZipArchiver.h"
+#import "SQRLUpdate+Private.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -23,7 +23,7 @@ NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
 	expect(finished).will.beTruthy();
 
 	NSDictionary *updateInfo = @{
-		SQRLUpdaterJSONURLKey: zippedUpdateURL.absoluteString
+		SQRLUpdateJSONURLKey: zippedUpdateURL.absoluteString
 	};
 
 	NSError *error = nil;
