@@ -39,6 +39,8 @@
 		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
 		D0964B2217F2DD4D00D88BF7 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */; };
+		D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = D0964B3617F2E01500D88BF7 /* SQRLDownloadedUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D0964B3717F2E01500D88BF7 /* SQRLDownloadedUpdate.m */; };
 		D097B9BD17BB4777006C3FEB /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */; };
 		D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */ = {isa = PBXBuildFile; fileRef = D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */; };
@@ -303,6 +305,8 @@
 		D08D4E1A17B451500012B22D /* TestAppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TestAppDelegate.h; sourceTree = "<group>"; };
 		D08D4E1B17B451500012B22D /* TestAppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TestAppDelegate.m; sourceTree = "<group>"; };
 		D08D4E2017B451500012B22D /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Images.xcassets; sourceTree = "<group>"; };
+		D0964B3617F2E01500D88BF7 /* SQRLDownloadedUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloadedUpdate.h; sourceTree = "<group>"; };
+		D0964B3717F2E01500D88BF7 /* SQRLDownloadedUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadedUpdate.m; sourceTree = "<group>"; };
 		D097B9BC17BB4777006C3FEB /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
 		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
@@ -470,6 +474,8 @@
 				53AACF4917E9CA0500B41027 /* SQRLUpdate.h */,
 				53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */,
 				53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */,
+				D0964B3617F2E01500D88BF7 /* SQRLDownloadedUpdate.h */,
+				D0964B3717F2E01500D88BF7 /* SQRLDownloadedUpdate.m */,
 			);
 			name = Updates;
 			sourceTree = "<group>";
@@ -728,6 +734,7 @@
 			files = (
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
+				D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
 				D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */,
 			);
@@ -1046,6 +1053,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */,
+				D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
 				D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */,
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
