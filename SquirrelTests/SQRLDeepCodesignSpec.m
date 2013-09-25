@@ -50,7 +50,13 @@ void (^deepCodesignTestApplication)(void) = ^{
 
 	NSBundle *testsBundle = [NSBundle bundleForClass:self.class];
 	NSURL *deepCodesignLocation = [testsBundle URLForResource:@"deep-codesign" withExtension:nil];
-	expect([deepCodesignLocation resourceValuesForKeys:@[NSURLIsExecutableKey] error:NULL][NSURLIsExecutableKey]).to.beTruthy();
+
+	NSNumber *executable = nil;
+	NSError *executableError = nil;
+	BOOL getExecutable = [deepCodesignLocation getResourceValue:&executable forKey:NSURLIsExecutableKey error:&executableError];
+	expect(getExecutable).to.beTruthy();
+	expect(executable.boolValue).to.beTruthy();
+	expect(executableError).to.beNil();
 
 	NSTask *deepCodesignTask = [[NSTask alloc] init];
 	deepCodesignTask.launchPath = deepCodesignLocation.path;
