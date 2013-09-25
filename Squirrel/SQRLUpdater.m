@@ -14,13 +14,12 @@
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLZipArchiver.h"
-#import "SQRLUpdate.h"
+#import "SQRLDownloadedUpdate.h"
 #import "SQRLUpdate+Private.h"
 #import <ReactiveCocoa/EXTScope.h>
 
 NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
-NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationUpdateKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey = @"SQRLUpdaterUpdateAvailableNotificationBundleVersionKey";
+NSString * const SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 const NSInteger SQRLUpdaterErrorNoUpdateWaiting = 1;
@@ -196,10 +195,9 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					return;
 				}
 
-				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-				userInfo[SQRLUpdaterUpdateAvailableNotificationUpdateKey] = update;
-
-				if (updateBundle.sqrl_bundleVersion != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationBundleVersionKey] = updateBundle.sqrl_bundleVersion;
+				NSDictionary *userInfo = @{
+					SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]
+				};
 				
 				self.state = SQRLUpdaterStateAwaitingRelaunch;
 				

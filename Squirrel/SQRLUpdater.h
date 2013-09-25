@@ -25,12 +25,8 @@ typedef enum : NSUInteger {
 // Posted when an update is available to be installed.
 extern NSString * const SQRLUpdaterUpdateAvailableNotification;
 
-// Associated with an SQRLUpdate object.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey;
-
-// Asscociated with a string containing the bundle version for the available
-// update.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
+// Associated with an SQRLDownloadedUpdate object.
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey;
 
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
