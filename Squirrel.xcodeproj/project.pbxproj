@@ -10,7 +10,6 @@
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
-		53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -463,6 +462,36 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		D0964B2817F2DEE700D88BF7 /* Updates */ = {
+			isa = PBXGroup;
+			children = (
+				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
+				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
+				53AACF4917E9CA0500B41027 /* SQRLUpdate.h */,
+				53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */,
+				53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */,
+			);
+			name = Updates;
+			sourceTree = "<group>";
+		};
+		D0964B3417F2DEF500D88BF7 /* Archives */ = {
+			isa = PBXGroup;
+			children = (
+				D000218C17BACEFF0050109A /* SQRLZipArchiver.h */,
+				D000218D17BACEFF0050109A /* SQRLZipArchiver.m */,
+			);
+			name = Archives;
+			sourceTree = "<group>";
+		};
+		D0964B3517F2DF3100D88BF7 /* XPC */ = {
+			isa = PBXGroup;
+			children = (
+				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
+				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
+			);
+			name = XPC;
+			sourceTree = "<group>";
+		};
 		D0C22BCD179CC00E00158214 = {
 			isa = PBXGroup;
 			children = (
@@ -618,15 +647,9 @@
 		D0C22C49179CC14400158214 /* Classes */ = {
 			isa = PBXGroup;
 			children = (
-				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
-				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
-				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
-				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
-				D000218C17BACEFF0050109A /* SQRLZipArchiver.h */,
-				D000218D17BACEFF0050109A /* SQRLZipArchiver.m */,
-				53AACF4917E9CA0500B41027 /* SQRLUpdate.h */,
-				53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */,
-				53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */,
+				D0964B2817F2DEE700D88BF7 /* Updates */,
+				D0964B3417F2DEF500D88BF7 /* Archives */,
+				D0964B3517F2DF3100D88BF7 /* XPC */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -706,7 +729,6 @@
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
-				53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */,
 				D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
