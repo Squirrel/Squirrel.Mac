@@ -272,7 +272,11 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
 	if (temporaryDirectory != nil) return temporaryDirectory;
 
-	temporaryDirectory = [[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
+	temporaryDirectory = [NSURL fileURLWithPathComponents:@[
+		NSTemporaryDirectory(),
+		[NSString stringWithFormat:@"com~github~ShipIt"],
+		NSProcessInfo.processInfo.globallyUniqueString,
+	]];
 	if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
 
 	return temporaryDirectory;
