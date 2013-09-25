@@ -243,7 +243,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 	} @finally {
-		if (![self.verifier verifyCodeSignatureOfBundle:targetURL error:&error]) {
+		if (![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
 			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 
