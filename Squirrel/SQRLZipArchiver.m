@@ -140,7 +140,8 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 					userInfo[SQRLZipArchiverExitCodeErrorKey] = exitStatus;
 
 					NSString *errorString = [[NSString alloc] initWithData:errorData encoding:NSUTF8StringEncoding];
-					if (errorString != nil) userInfo[NSLocalizedDescriptionKey] = errorString;
+					errorString = [errorString stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+					if (errorString.length > 0) userInfo[NSLocalizedDescriptionKey] = errorString;
 
 					return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
 				}];
