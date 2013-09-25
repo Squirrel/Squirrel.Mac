@@ -43,11 +43,19 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 		NSString *prompt = [NSString stringWithFormat:NSLocalizedString(@"%@ is installing an updated version.", @"SQRLShipItLauncher, launch shipit, authorization prompt"), currentApp.localizedName];
 
+		NSString *iconName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
+		NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle.resourceURL URLByAppendingPathComponent:iconName].path);
+
 		AuthorizationItem environmentItems[] = {
 			{
 				.name = kAuthorizationEnvironmentPrompt,
 				.valueLength = strlen(prompt.UTF8String),
 				.value = (void *)prompt.UTF8String,
+			},
+			{
+				.name = kAuthorizationEnvironmentIcon,
+				.valueLength = iconPath == nil ? 0 : strlen(iconPath.UTF8String),
+				.value = (void *)iconPath.UTF8String,
 			},
 		};
 		AuthorizationEnvironment environment = {
