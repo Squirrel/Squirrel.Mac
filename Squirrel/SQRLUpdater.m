@@ -310,6 +310,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		return;
 	}
 
+	NSURL *targetURL = currentApplication.bundleURL;
+
 	NSData *requirementData = self.verifier.requirementData;
 	if (requirementData == nil) {
 		NSDictionary *userInfo = @{
@@ -320,10 +322,14 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		return;
 	}
 
-	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
+	// If we can't determine whether it can be written, assume nonprivileged and
+	// wait for another more canonical error
+	NSNumber *targetWritable = nil;
+	NSError *targetWritableError = nil;
+	BOOL getWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
 
 	NSError *error = nil;
-	xpc_connection_t connection = [launcher launch:&error];
+	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:(getWritable && !targetWritable.boolValue) error:&error];
 	if (connection == NULL) {
 		completionHandler(NO, error);
 		return;
@@ -337,7 +343,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	};
 
 	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, currentApplication.bundleURL.absoluteString.UTF8String);
+	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
 	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
@@ -362,4 +368,3 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 }
 
 @end
-
