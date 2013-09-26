@@ -41,7 +41,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			.items = rightItems,
 		};
 
-		NSString *prompt = [NSString stringWithFormat:NSLocalizedString(@"%@ is installing an updated version.", @"SQRLShipItLauncher, launch shipit, authorization prompt"), currentApp.localizedName];
+		NSString *prompt = NSLocalizedString(@"An update is ready to install.", @"SQRLShipItLauncher, launch shipit, authorization prompt");
 
 		NSString *iconName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
 		NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle.resourceURL URLByAppendingPathComponent:iconName].path);
