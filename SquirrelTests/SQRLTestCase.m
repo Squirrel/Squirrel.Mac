@@ -261,10 +261,8 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (xpc_connection_t)connectToShipIt {
-	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
-
 	NSError *error = nil;
-	xpc_connection_t connection = [launcher launch:&error];
+	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:NO error:&error];
 	STAssertTrue(connection != NULL, @"Could not open XPC connection: %@", error);
 	
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
