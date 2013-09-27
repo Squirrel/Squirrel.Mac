@@ -11,7 +11,9 @@
 // The domain for errors originating within SQRLUpdate.
 extern NSString * const SQRLUpdateErrorDomain;
 
-// SQRLUpdateErrorInvalidJSON - JSON didn't conform to expected schema
+// Error codes in the `SQRLUpdateErrorDomain` domain.
+//
+// SQRLUpdateErrorInvalidJSON - JSON didn't conform to expected schema.
 enum : NSInteger {
 	SQRLUpdateErrorInvalidJSON = -1,
 };

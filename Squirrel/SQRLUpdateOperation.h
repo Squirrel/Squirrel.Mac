@@ -13,17 +13,21 @@
 @class SQRLUpdate;
 @class SQRLCodeSignatureVerifier;
 
-// Error domain for errors originating from SQRLUpdateOperation
+// Error domain for errors originating from `SQRLUpdateOperation`.
 extern NSString * const SQRLUpdateOperationErrorDomain;
 
+// Error codes in the `SQRLUpdateOperationErrorDomain` domain.
+//
+// SQRLUpdateOperationErrorMissingUpdateBundle - no update found in the
+//                                               unarchived update
 enum {
 	SQRLUpdateOperationErrorMissingUpdateBundle = -1,
 };
 
-// Checks for and downloads updates
+// Checks for and downloads updates.
 @interface SQRLUpdateOperation : NSOperation
 
-// Intialiser
+// Intialiser.
 //
 // updateRequest - Must not be nil, response expected to conform to the
 //                 SQRLUpdate schema.

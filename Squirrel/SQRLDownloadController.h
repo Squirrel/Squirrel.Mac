@@ -8,12 +8,12 @@
 
 #import <Foundation/Foundation.h>
 
-// Store metadata for download resumption, and manage the disk locations for
+// Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
 @interface SQRLDownloadController : NSObject
 
 // Clean the resumable download state, removes downloaded data and tracking
-// state
+// state.
 + (void)removeAllResumableDownloads;
 
 // `NSString`, ETag of the latest response, subsequent responses should match
@@ -24,7 +24,7 @@
 // yet.
 extern NSString * const SQRLDownloadETagKey;
 
-// `NSURL`, location of local cache file. Should have its
+// `NSURL`, location of local cache file.
 //
 // Present in new downloads, but no file will exist at the location yet.
 extern NSString * const SQRLDownloadLocalFileKey;
@@ -40,7 +40,7 @@ extern NSString * const SQRLDownloadLocalFileKey;
 //  - SQRLDownloadLocalFileKey
 //
 // Downloads without an ETag header cannot be resumed and should not be written
-// to the download store
+// to the download store.
 + (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL;
 
 @end

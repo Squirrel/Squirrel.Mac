@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-// Combines an NSURLConnection with the NSOperation dependency model.
+// Combines an `NSURLConnection` with the `NSOperation` dependency model.
 @interface SQRLURLConnectionOperation : NSOperation
 
 // Initialiser.

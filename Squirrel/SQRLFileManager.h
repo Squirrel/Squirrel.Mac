@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-// Manages the file Squirrel writes to disk per application
+// Manages the file Squirrel writes to disk per application.
 @interface SQRLFileManager : NSObject
 
 // Determine the current app identifier, uses bundle identifier or app name.
