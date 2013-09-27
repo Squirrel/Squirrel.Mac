@@ -13,9 +13,17 @@ extern NSString * const SQRLUpdateJSONReleaseNotesKey;
 extern NSString * const SQRLUpdateJSONNameKey;
 extern NSString * const SQRLUpdateJSONPublicationDateKey;
 
-@interface SQRLUpdate ()
+@interface SQRLUpdate (Private)
 
 // Location of the update package to download for installation
 @property (readonly, copy, nonatomic) NSURL *updateURL;
+
+@end
+
+@interface SQRLUpdate ()
+
+// Location of the downloaded update package ready for installation, file://
+// scheme URL
+@property (copy, nonatomic) NSURL *downloadedUpdateURL;
 
 @end

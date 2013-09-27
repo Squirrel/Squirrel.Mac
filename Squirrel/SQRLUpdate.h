@@ -8,13 +8,30 @@
 
 #import <Foundation/Foundation.h>
 
+// The domain for errors originating within SQRLUpdate.
+extern NSString * const SQRLUpdateErrorDomain;
+
+// SQRLUpdateErrorInvalidJSON - JSON didn't conform to expected schema
+enum : NSInteger {
+	SQRLUpdateErrorInvalidJSON = -1,
+};
+
 // Update parsed from a response to the `SQRLUpdater.updateRequest`.
 @interface SQRLUpdate : NSObject
 
 // Initialises an update from an `updateRequest` response body.
 //
-// JSON - Must not be nil, schema defined in README.
-- (instancetype)initWithJSON:(NSDictionary *)JSON __attribute__((nonnull (1)));
+// Deserialises JSON from the response and invokes `+updateWithJSON:error:`.
+//
+// responseProvider - Must not be nil.
+// errorRef         - May be NULL.
++ (instancetype)updateWithResponseProvider:(NSData * (^)(NSError **))responseProvider error:(NSError **)errorRef __attribute__((nonnull (1)));
+
+// Initialises an update from already deserialised JSON.
+//
+// JSON     - Must not be nil, schema defined in README.
+// errorRef - May be NULL.
++ (instancetype)updateWithJSON:(NSDictionary *)JSON error:(NSError **)errorRef __attribute__((nonnull (1)));
 
 // Underlying JSON the update was initialised with.
 // Custom properties that Squirrel doesn't parse can be retrieved from this.

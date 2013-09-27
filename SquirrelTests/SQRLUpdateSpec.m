@@ -11,28 +11,38 @@
 SpecBegin(SQRLUpdate);
 
 it(@"should return nil when initialised without a url", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:@{}];
+	NSError *error = nil;
+	SQRLUpdate *update = [SQRLUpdate updateWithJSON:@{} error:&error];
 	expect(update).to.beNil();
+	expect(error).notTo.beNil();
 });
 
 it(@"should return nil when initialised with a url not in URL syntax", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:@{ @"url": @"test" }];
+	NSError *error = nil;
+	SQRLUpdate *update = [SQRLUpdate updateWithJSON:@{ @"url": @"test" } error:&error];
 	expect(update).to.beNil();
+	expect(error).notTo.beNil();
 });
 
 it(@"should return the initialised JSON for custom properties", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:@{ @"url": @"http://example.com/update", @"lulz": @"http://icanhas.cheezburger.com/" }];
+	NSError *error = nil;
+	SQRLUpdate *update = [SQRLUpdate updateWithJSON:@{ @"url": @"http://example.com/update", @"lulz": @"http://icanhas.cheezburger.com/" } error:&error];
 	expect(update.JSON[@"lulz"]).notTo.beNil();
+	expect(error).to.beNil();
 });
 
 it(@"should parse Central style dates", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:@{ @"url": @"http://example.com/update", SQRLUpdateJSONPublicationDateKey: @"Tue Sep 17 10:24:27 -0700 2013" }];
+	NSError *error = nil;
+	SQRLUpdate *update = [SQRLUpdate updateWithJSON:@{ @"url": @"http://example.com/update", SQRLUpdateJSONPublicationDateKey: @"Tue Sep 17 10:24:27 -0700 2013" } error:&error];
 	expect(update.releaseDate).notTo.beNil();
+	expect(error).to.beNil();
 });
 
 it(@"should parse ISO 8601 dates", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:@{ @"url": @"http://example.com/update", SQRLUpdateJSONPublicationDateKey: @"2013-09-18T13:17:07+01:00" }];
+	NSError *error = nil;
+	SQRLUpdate *update = [SQRLUpdate updateWithJSON:@{ @"url": @"http://example.com/update", SQRLUpdateJSONPublicationDateKey: @"2013-09-18T13:17:07+01:00" } error:&error];
 	expect(update.releaseDate).notTo.beNil();
+	expect(error).to.beNil();
 });
 
 SpecEnd

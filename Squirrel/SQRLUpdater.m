@@ -110,18 +110,15 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 			[self finishAndSetIdle];
 			return;
 		}
-		
-		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
-		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
-			NSLog(@"Instead of update information, server returned:\n%@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
 
-			[self finishAndSetIdle];
-			return;
-		}
+		NSData * (^responseProvider)(NSError **) = ^ (NSError **errorRef) {
+			return data;
+		};
 
-		SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:JSON];
+		NSError *error = nil;
+		SQRLUpdate *update = [SQRLUpdate updateWithResponseProvider:responseProvider error:&error];
 		if (update == nil) {
-			NSLog(@"Update JSON is invalid: %@", JSON);
+			NSLog(@"Update JSON is invalid: %@", error.sqrl_verboseDescription);
 
 			[self finishAndSetIdle];
 			return;
@@ -130,9 +127,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 		NSFileManager *fileManager = NSFileManager.defaultManager;
 		
 		NSString *tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:NSRunningApplication.currentApplication.bundleIdentifier];
-		NSError *directoryCreationError = nil;
-		if (![fileManager createDirectoryAtURL:[NSURL fileURLWithPath:tempDirectory] withIntermediateDirectories:YES attributes:nil error:&directoryCreationError]) {
-			NSLog(@"Could not create directory at %@: %@", tempDirectory, directoryCreationError.sqrl_verboseDescription);
+		if (![fileManager createDirectoryAtURL:[NSURL fileURLWithPath:tempDirectory] withIntermediateDirectories:YES attributes:nil error:&error]) {
+			NSLog(@"Could not create directory at %@: %@", tempDirectory, error.sqrl_verboseDescription);
 			[self finishAndSetIdle];
 			return;
 		}

@@ -14,26 +14,60 @@ NSString * const SQRLUpdateJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdateJSONNameKey = @"name";
 NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
+NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
+
+@interface SQRLUpdate ()
+@property (readwrite, copy, nonatomic) NSDictionary *JSON;
+@property (readwrite, copy, nonatomic) NSString *releaseNotes;
+@property (readwrite, copy, nonatomic) NSString *releaseName;
+@property (readwrite, copy, nonatomic) NSDate *releaseDate;
+
+@property (readwrite, copy, nonatomic) NSURL *updateURL;
+@end
+
 @implementation SQRLUpdate
 
-- (instancetype)initWithJSON:(NSDictionary *)JSON {
-	NSParameterAssert(JSON != nil);
++ (NSError *)invalidJSONErrorWithDescription:(NSString *)description {
+	NSDictionary *errorInfo = @{
+		NSLocalizedDescriptionKey: description,
+	};
+	return [NSError errorWithDomain:SQRLUpdateErrorDomain code:SQRLUpdateErrorInvalidJSON userInfo:errorInfo];
+}
 
-	self = [self init];
-	if (self == nil) return nil;
++ (instancetype)updateWithResponseProvider:(NSData * (^)(NSError **))responseProvider error:(NSError **)errorRef {
+	NSParameterAssert(responseProvider != nil);
 
-	_JSON = [JSON copy];
+	NSData *bodyData = responseProvider(errorRef);
+	if (bodyData == nil) return nil;
+
+	NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:errorRef];
+	if (JSON == nil) return nil;
+
+	if (![JSON isKindOfClass:NSDictionary.class]) {
+		if (errorRef != NULL) *errorRef = [self invalidJSONErrorWithDescription:NSLocalizedString(@"Root JSON object must be a Dictionary", nil)];
+		return nil;
+	}
+
+	return [self updateWithJSON:JSON error:errorRef];
+}
+
++ (instancetype)updateWithJSON:(NSDictionary *)JSON error:(NSError **)errorRef {
+	SQRLUpdate *update = [[self alloc] init];
+
+	update.JSON = JSON;
 
 	NSString *urlString = JSON[SQRLUpdateJSONURLKey];
 	if (urlString == nil || ![urlString isKindOfClass:NSString.class]) {
-		NSLog(@"Ignoring update URL of an unsupported type: %@", urlString);
+		if (errorRef != NULL) *errorRef = [self invalidJSONErrorWithDescription:NSLocalizedString(@"'url' must be present and of type String", nil)];
 		return nil;
 	} else {
-		_updateURL = [NSURL URLWithString:urlString];
+		NSURL *updateURL = [NSURL URLWithString:urlString];
 
-		if (_updateURL.scheme == nil || _updateURL.host == nil || _updateURL.path == nil) {
-			NSLog(@"Ignoring update URL of an unsupported syntax: %@", urlString);
+		if (updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
+			if (errorRef != NULL) *errorRef = [self invalidJSONErrorWithDescription:NSLocalizedString(@"'url' must be a URL", nil)];
 			return nil;
+		} else {
+			update.updateURL = updateURL;
 		}
 	}
 
@@ -41,17 +75,19 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	if (![name isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring release name of an unsupported type: %@", name);
 	} else {
-		_releaseName = [name copy];
+		update.releaseName = name;
 	}
 
 	NSString *releaseDateString = JSON[SQRLUpdateJSONPublicationDateKey];
 	if (![releaseDateString isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
 	} else {
-		_releaseDate = [[SQRLUpdate dateFromString:releaseDateString] copy];
+		NSDate *releaseDate = [self dateFromString:releaseDateString];
 
-		if (_releaseDate == nil) {
+		if (releaseDate == nil) {
 			NSLog(@"Could not parse publication date for update. %@", releaseDateString);
+		} else {
+			update.releaseDate = releaseDate;
 		}
 	}
 
@@ -59,10 +95,10 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	if (![releaseNotes isKindOfClass:NSString.class]) {
 		NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
 	} else {
-		_releaseNotes = [releaseNotes copy];
+		update.releaseNotes = releaseNotes;
 	}
 
-	return self;
+	return update;
 }
 
 + (NSDate *)dateFromString:(NSString *)string {
