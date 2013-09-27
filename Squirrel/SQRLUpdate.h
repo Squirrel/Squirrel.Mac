@@ -48,4 +48,9 @@ enum : NSInteger {
 // Release date for the update
 @property (readonly, copy, nonatomic) NSDate *releaseDate;
 
+#pragma mark Local properties
+
+// CFBundleVersion from the downloaded update's Info.plist
+@property (readonly, nonatomic) NSString *bundleVersion;
+
 @end

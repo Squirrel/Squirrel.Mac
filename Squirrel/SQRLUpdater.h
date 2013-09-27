@@ -6,21 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-// Represents the current state of the updater.
-//
-// SQRLUpdaterStateIdle              - Doing absolutely diddly squat.
-// SQRLUpdaterStateCheckingForUpdate - Checking for any updates from the server.
-// SQRLUpdaterStateDownloadingUpdate - Update found, downloading the .zip.
-// SQRLUpdaterStateUnzippingUpdate   - Unzipping the .app.
-// SQRLUpdaterStateAwaitingRelaunch  - Awaiting a relaunch to install
-//                                     the update.
-typedef enum : NSUInteger {
-	SQRLUpdaterStateIdle,
-	SQRLUpdaterStateCheckingForUpdate,
-	SQRLUpdaterStateDownloadingUpdate,
-	SQRLUpdaterStateUnzippingUpdate,
-	SQRLUpdaterStateAwaitingRelaunch,
-} SQRLUpdaterState;
+#import <Squirrel/Squirrel-Constants.h>
 
 // Posted when an update is available to be installed.
 extern NSString * const SQRLUpdaterUpdateAvailableNotification;
@@ -28,19 +14,11 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotification;
 // Associated with an SQRLUpdate object.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey;
 
-// Asscociated with a string containing the bundle version for the available
-// update.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
-
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
 
 // There is no update to be installed from -installUpdateIfNeeded:.
 extern const NSInteger SQRLUpdaterErrorNoUpdateWaiting;
-
-// The downloaded update does not contain an app bundle, or it was deleted on
-// disk before we could get to it.
-extern const NSInteger SQRLUpdaterErrorMissingUpdateBundle;
 
 // An error occurred in the out-of-process updater while it was setting up.
 extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;

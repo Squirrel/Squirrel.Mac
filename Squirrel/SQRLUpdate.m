@@ -129,4 +129,9 @@ NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
 	return [formatter dateFromString:string];
 }
 
+- (NSString *)bundleVersion {
+	NSDictionary *infoPlist = CFBridgingRelease(CFBundleCopyInfoDictionaryForURL((__bridge CFURLRef)self.downloadedUpdateURL));
+	return infoPlist[(__bridge NSString *)kCFBundleVersionKey];
+}
+
 @end
