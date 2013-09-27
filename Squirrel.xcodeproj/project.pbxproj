@@ -10,6 +10,8 @@
 		530F057D17F5E190008E38F7 /* SQRLZipOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F057B17F5E190008E38F7 /* SQRLZipOperation.h */; };
 		530F057E17F5E190008E38F7 /* SQRLZipOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F057C17F5E190008E38F7 /* SQRLZipOperation.m */; };
 		530F058017F5E19E008E38F7 /* SQRLZipOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F057F17F5E19E008E38F7 /* SQRLZipOperationSpec.m */; };
+		530F058317F5E385008E38F7 /* SQRLFileManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F058117F5E385008E38F7 /* SQRLFileManager.h */; };
+		530F058417F5E385008E38F7 /* SQRLFileManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F058217F5E385008E38F7 /* SQRLFileManager.m */; };
 		533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
@@ -249,6 +251,8 @@
 		530F057B17F5E190008E38F7 /* SQRLZipOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipOperation.h; sourceTree = "<group>"; };
 		530F057C17F5E190008E38F7 /* SQRLZipOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipOperation.m; sourceTree = "<group>"; };
 		530F057F17F5E19E008E38F7 /* SQRLZipOperationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipOperationSpec.m; sourceTree = "<group>"; };
+		530F058117F5E385008E38F7 /* SQRLFileManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLFileManager.h; sourceTree = "<group>"; };
+		530F058217F5E385008E38F7 /* SQRLFileManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileManager.m; sourceTree = "<group>"; };
 		534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestApplication.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		534FF36417D8E90A0020A51A /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -684,6 +688,8 @@
 				53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */,
 				530F057B17F5E190008E38F7 /* SQRLZipOperation.h */,
 				530F057C17F5E190008E38F7 /* SQRLZipOperation.m */,
+				530F058117F5E385008E38F7 /* SQRLFileManager.h */,
+				530F058217F5E385008E38F7 /* SQRLFileManager.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -740,6 +746,7 @@
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
+				530F058317F5E385008E38F7 /* SQRLFileManager.h in Headers */,
 				53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
 				530F057D17F5E190008E38F7 /* SQRLZipOperation.h in Headers */,
@@ -1049,6 +1056,7 @@
 				530F057E17F5E190008E38F7 /* SQRLZipOperation.m in Sources */,
 				D007290017B09732008C7DDE /* SQRLArguments.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
+				530F058417F5E385008E38F7 /* SQRLFileManager.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
