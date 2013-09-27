@@ -18,6 +18,9 @@
 		530F058C17F5E41B008E38F7 /* SQRLDownloadOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F058817F5E41B008E38F7 /* SQRLDownloadOperation.m */; };
 		530F058E17F5E42A008E38F7 /* SQRLDownloadOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F058D17F5E42A008E38F7 /* SQRLDownloadOperationSpec.m */; };
 		530F059117F5E488008E38F7 /* SQRLDownloadControllerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F059017F5E488008E38F7 /* SQRLDownloadControllerSpec.m */; };
+		530F059417F5EA6F008E38F7 /* SQRLURLConnectionOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F059217F5EA6F008E38F7 /* SQRLURLConnectionOperation.h */; };
+		530F059517F5EA6F008E38F7 /* SQRLURLConnectionOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F059317F5EA6F008E38F7 /* SQRLURLConnectionOperation.m */; };
+		530F059717F5EA7D008E38F7 /* SQRLURLConnectionOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F059617F5EA7D008E38F7 /* SQRLURLConnectionOperationSpec.m */; };
 		533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
@@ -265,6 +268,9 @@
 		530F058817F5E41B008E38F7 /* SQRLDownloadOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadOperation.m; sourceTree = "<group>"; };
 		530F058D17F5E42A008E38F7 /* SQRLDownloadOperationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadOperationSpec.m; sourceTree = "<group>"; };
 		530F059017F5E488008E38F7 /* SQRLDownloadControllerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadControllerSpec.m; sourceTree = "<group>"; };
+		530F059217F5EA6F008E38F7 /* SQRLURLConnectionOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLURLConnectionOperation.h; sourceTree = "<group>"; };
+		530F059317F5EA6F008E38F7 /* SQRLURLConnectionOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnectionOperation.m; sourceTree = "<group>"; };
+		530F059617F5EA7D008E38F7 /* SQRLURLConnectionOperationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnectionOperationSpec.m; sourceTree = "<group>"; };
 		534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestApplication.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		534FF36417D8E90A0020A51A /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -706,6 +712,8 @@
 				530F058617F5E41B008E38F7 /* SQRLDownloadController.m */,
 				530F058717F5E41B008E38F7 /* SQRLDownloadOperation.h */,
 				530F058817F5E41B008E38F7 /* SQRLDownloadOperation.m */,
+				530F059217F5EA6F008E38F7 /* SQRLURLConnectionOperation.h */,
+				530F059317F5EA6F008E38F7 /* SQRLURLConnectionOperation.m */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -724,6 +732,7 @@
 				530F057F17F5E19E008E38F7 /* SQRLZipOperationSpec.m */,
 				530F058D17F5E42A008E38F7 /* SQRLDownloadOperationSpec.m */,
 				530F059017F5E488008E38F7 /* SQRLDownloadControllerSpec.m */,
+				530F059617F5EA7D008E38F7 /* SQRLURLConnectionOperationSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -760,6 +769,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				530F059417F5EA6F008E38F7 /* SQRLURLConnectionOperation.h in Headers */,
 				530F058917F5E41B008E38F7 /* SQRLDownloadController.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
@@ -1081,6 +1091,7 @@
 				530F058C17F5E41B008E38F7 /* SQRLDownloadOperation.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */,
+				530F059517F5EA6F008E38F7 /* SQRLURLConnectionOperation.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 			);
@@ -1091,6 +1102,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
+				530F059717F5EA7D008E38F7 /* SQRLURLConnectionOperationSpec.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				530F058017F5E19E008E38F7 /* SQRLZipOperationSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
