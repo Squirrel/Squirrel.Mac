@@ -12,7 +12,7 @@
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLZipArchiver.h"
+#import "SQRLZipOperation.h"
 #import "SQRLUpdate.h"
 #import "SQRLUpdate+Private.h"
 
@@ -171,9 +171,14 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
 			
-			[SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder completion:^(BOOL unzipped) {
+			SQRLZipOperation *zipOperation = [SQRLZipOperation unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder];
+			[self.updateQueue addOperation:zipOperation];
+
+			NSOperation *finishOperation = [NSBlockOperation blockOperationWithBlock:^{
+				NSError *error = nil;
+				BOOL unzipped = zipOperation.completionProvider(&error);
 				if (!unzipped) {
-					NSLog(@"Could not extract update.");
+					NSLog(@"Could not extract update. %@", error.sqrl_verboseDescription);
 					[self finishAndSetIdle];
 					return;
 				}
@@ -186,7 +191,6 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					return;
 				}
 
-				NSError *error = nil;
 				BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
 				if (!verified) {
 					NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
@@ -206,6 +210,8 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 					[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
 				});
 			}];
+			[finishOperation addDependency:zipOperation];
+			[self.updateQueue addOperation:finishOperation];
 		}];
 		
 		self.state = SQRLUpdaterStateDownloadingUpdate;

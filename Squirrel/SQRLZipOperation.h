@@ -8,8 +8,10 @@
 
 #import <Foundation/Foundation.h>
 
+extern NSString * const SQRLZipOperationErrorDomain;
+
 // Uses `ditto` on the command line to zip and unzip archives.
-@interface SQRLZipArchiver : NSObject
+@interface SQRLZipOperation : NSOperation
 
 // Asynchronously creates a zip archive.
 //
@@ -21,7 +23,7 @@
 //                     into the archive. This must not be nil.
 // completionHandler - A block to invoke when zipping has succeeded or failed.
 //                     This must not be nil.
-+ (void)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL completion:(void (^)(BOOL success))completionHandler;
++ (instancetype)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL;
 
 // Asynchronously extracts a zip archive.
 //
@@ -31,6 +33,14 @@
 //                     the archive will be overridden. This must not be nil.
 // completionHandler - A block to invoke when unzipping has succeeded or failed.
 //                     This must not be nil.
-+ (void)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL completion:(void (^)(BOOL success))completionHandler;
++ (instancetype)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL;
+
+// When the operation `isFinished` this will be non nil and return the result of
+// the unzip.
+//
+// Returns a block which can be invoked to get the result
+//  - errorRef, may be NULL
+//  - Returns whether the archive/unarchive succeeded
+@property (readonly, copy, atomic) BOOL (^completionProvider)(NSError **errorRef);
 
 @end

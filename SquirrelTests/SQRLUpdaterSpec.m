@@ -6,27 +6,27 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLZipArchiver.h"
+#import "SQRLZipOperation.h"
 #import "SQRLUpdate+Private.h"
 
 SpecBegin(SQRLUpdater)
 
 NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
-	__block BOOL finished = NO;
-
 	NSURL *zippedUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.zip"];
-	[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL completion:^(BOOL success) {
-		expect(success).to.beTruthy();
-		finished = YES;
-	}];
 
-	expect(finished).will.beTruthy();
+	SQRLZipOperation *operation = [SQRLZipOperation createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL];
+	[operation start];
+	expect(operation.isFinished).will.beTruthy();
+
+	NSError *error = nil;
+	BOOL result = operation.completionProvider(&error);
+	expect(result).to.beTruthy();
+	expect(error).to.beNil();
 
 	NSDictionary *updateInfo = @{
 		SQRLUpdateJSONURLKey: zippedUpdateURL.absoluteString
 	};
 
-	NSError *error = nil;
 	NSData *JSON = [NSJSONSerialization dataWithJSONObject:updateInfo options:NSJSONWritingPrettyPrinted error:&error];
 	expect(JSON).notTo.beNil();
 	expect(error).to.beNil();
