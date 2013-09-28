@@ -63,6 +63,8 @@ static void SQRLSignalHandler(int sig) {
 + (void)load {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
+	
+	appSupportURL = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication"];
 
 	NSURL *stdoutShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
 	NSURL *stderrShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
