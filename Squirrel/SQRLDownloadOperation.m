@@ -114,7 +114,7 @@
 
 - (void)startDownload {
 	self.download = [self.downloadController downloadForRequest:self.request];
-	[self startRequest:[SQRLDownloadOperation requestWithOriginalRequest:self.request download:self.download]];
+	[self startRequest:[self.class requestWithOriginalRequest:self.request download:self.download]];
 }
 
 + (NSURLRequest *)requestWithOriginalRequest:(NSURLRequest *)originalRequest download:(SQRLResumableDownload *)download {
