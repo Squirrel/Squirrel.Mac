@@ -56,7 +56,6 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 @property (nonatomic, strong, readonly) NSURL *targetBundleURL;
 @property (nonatomic, strong, readonly) NSURL *updateBundleURL;
-@property (nonatomic, strong, readonly) NSURL *backupURL;
 @property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
 
 // Invoked when the installer needs to begin some uninterruptible work.
@@ -87,10 +86,9 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	SQRLInstallerTransactionLock.name = @"com.github.Squirrel.ShipIt.SQRLInstallerTransactionLock";
 }
 
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL requirementData:(NSData *)requirementData {
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL requirementData:(NSData *)requirementData {
 	NSParameterAssert(targetBundleURL != nil);
 	NSParameterAssert(updateBundleURL != nil);
-	NSParameterAssert(backupURL != nil);
 	NSParameterAssert(requirementData != nil);
 	
 	self = [super init];
@@ -107,7 +105,6 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 	_verifier = [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
 	_targetBundleURL = targetBundleURL;
 	_updateBundleURL = updateBundleURL;
-	_backupURL = backupURL;
 	
 	return self;
 }
@@ -197,14 +194,13 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 		return NO;
 	}
 
-	// This will actually create the directory no matter what we do, but it's
-	// okay. We'll just overwrite it in the next step.
 	NSError *error = nil;
-	NSURL *backupBundleURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.backupURL create:NO error:&error];
-	if (backupBundleURL == nil) {
+
+	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:self.targetBundleURL error:&error];
+	if (temporaryDirectory == nil) {
 		if (errorPtr != NULL) {
 			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary backup folder in %@", nil), self.backupURL],
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)],
 			} mutableCopy];
 
 			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
@@ -214,6 +210,8 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 		return NO;
 	}
+
+	NSURL *backupBundleURL = [temporaryDirectory URLByAppendingPathComponent:self.targetBundleURL.lastPathComponent];
 
 	@try {
 		// First, move the target out of place and into the backup location.
@@ -246,20 +244,53 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 	} @finally {
-		NSError *error = nil;
-		if (![NSFileManager.defaultManager fileExistsAtPath:self.targetBundleURL.path] || ![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
+		if (![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
 			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 
-			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&error]) {
-				[NSFileManager.defaultManager removeItemAtURL:backupBundleURL error:NULL];
+			NSError *installBackupError = nil;
+			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&installBackupError]) {
+				NSLog(@"Restored backup bundle to %@", self.targetBundleURL);
+				[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
 			} else {
-				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, error.sqrl_verboseDescription);
+				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, installBackupError.sqrl_verboseDescription);
+				// Leave the temporary directory in place so that it's restored to trash on reboot
 			}
+
+			if (errorPtr != NULL) *errorPtr = error;
+			return NO;
 		}
+
+		// This directory must be removed once we succeed otherwise it ends up
+		// in the user's trash directory on reboot
+		[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
 	}
 
 	return YES;
+}
+
+- (NSURL *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL error:(NSError **)errorPtr {
+	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
+	if (temporaryDirectory != nil) return temporaryDirectory;
+
+	temporaryDirectory = [NSURL fileURLWithPathComponents:@[
+		NSTemporaryDirectory(),
+		[NSString stringWithFormat:@"com~github~ShipIt"],
+		NSProcessInfo.processInfo.globallyUniqueString,
+	]];
+	if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
+
+	return temporaryDirectory;
+}
+
+- (NSURL *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
+	NSError *error = nil;
+
+	NSURL *volumeURL = nil;
+	BOOL getVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&error];
+	if (!getVolumeURL) return nil;
+
+	return [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&error];
 }
 
 - (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
@@ -274,12 +305,15 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			// destination by hand, then perform a move.
 			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
 
-			if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:errorPtr]) {
-				NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
-				return YES;
-			} else {
+			NSError *moveItemError = nil;
+			if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&moveItemError]) {
+				NSLog(@"Couldn't move bundle across volumes %@", moveItemError.sqrl_verboseDescription);
+				if (errorPtr != NULL) *errorPtr = moveItemError;
 				return NO;
 			}
+
+			NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
+			return YES;
 		}
 
 		if (errorPtr != NULL) {

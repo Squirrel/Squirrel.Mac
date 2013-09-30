@@ -62,6 +62,8 @@ static void SQRLSignalHandler(int sig) {
 + (void)load {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
+	
+	appSupportURL = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication"];
 
 	NSURL *stdoutShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
 	NSURL *stderrShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
@@ -209,6 +211,10 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *updateParentURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.baseTemporaryDirectoryURL create:YES error:&error];
 	STAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
 
+	[self addCleanupBlock:^{
+		[NSFileManager.defaultManager removeItemAtURL:updateParentURL error:NULL];
+	}];
+
 	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
@@ -256,10 +262,8 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (xpc_connection_t)connectToShipIt {
-	SQRLShipItLauncher *launcher = [[SQRLShipItLauncher alloc] init];
-
 	NSError *error = nil;
-	xpc_connection_t connection = [launcher launch:&error];
+	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:NO error:&error];
 	STAssertTrue(connection != NULL, @"Could not open XPC connection: %@", error);
 	
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
@@ -288,7 +292,7 @@ static void SQRLSignalHandler(int sig) {
 	if (directoryURL == nil) {
 		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -type SPARSE -size 10m -quiet", destinationURL.path, name];
 	} else {
-		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -format UDSP -volname '%@' -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
+		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -format UDSP -size 10m -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
 	}
 
 	expect(system(createInvocation.UTF8String)).to.equal(0);

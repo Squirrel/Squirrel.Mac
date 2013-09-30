@@ -42,7 +42,7 @@ extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 //                   nil.
 //
 // Returns an initialized installer, or nil if an error occurred.
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL backupURL:(NSURL *)backupURL requirementData:(NSData *)requirementData;
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL requirementData:(NSData *)requirementData;
 
 // Attempts to install the update specified at the time of initialization.
 - (BOOL)installUpdateWithError:(NSError **)errorPtr;

@@ -29,12 +29,38 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotification;
 // update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNotesKey;
 
-// Associated with a string containing the release name for the available update.
+// Associated with a string containing the release name for the available
+// update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseNameKey;
+
+// Associated with an NSDate representing the day that the release became
+// available.
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationReleaseDateKey;
+
+// Asscociated with a string containing the bundle version for the available
+// update.
+extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
 
 // Associated with an NSURL to a side-splittingly hilarious image to show for
 // the available update.
 extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
+
+// The domain for errors originating within SQRLUpdater.
+extern NSString * const SQRLUpdaterErrorDomain;
+
+// There is no update to be installed from -installUpdateIfNeeded:.
+extern const NSInteger SQRLUpdaterErrorNoUpdateWaiting;
+
+// The downloaded update does not contain an app bundle, or it was deleted on
+// disk before we could get to it.
+extern const NSInteger SQRLUpdaterErrorMissingUpdateBundle;
+
+// An error occurred in the out-of-process updater while it was setting up.
+extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;
+
+// The code signing requirement for the running application could not be
+// retrieved.
+extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 
 // Downloads and installs updates from GitHub.com The Website.
 @interface SQRLUpdater : NSObject
@@ -55,10 +81,17 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 // This will be reset to NO whenever update installation fails.
 @property (atomic, readwrite) BOOL shouldRelaunch;
 
+// The API endpoint from which to receive information about updates.
+//
+// This can be set to a local URL for testing.
+@property (atomic, copy) NSURL *APIEndpoint;
+
 // Returns the singleton updater.
+//
+// APIEndpoint must be configured before checking for updates
 + (instancetype)sharedUpdater;
 
-// If one isn't already running, kicks off a check for updates against central.
+// If one isn't already running, kicks off a check for updates.
 //
 // After the successful installation of an update, an
 // `SQRLUpdaterUpdateAvailableNotificationName` will be posted.
@@ -70,11 +103,16 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationLulzURLKey;
 // interval - The interval, in seconds, between each check.
 - (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
 
-// Enqueues a job that will wait for the app to terminate, then install a
-// previously downloaded, unzipped, and verified update.
+// Enqueues a job that will install a previously downloaded, unzipped, and verified
+// update after the app quits.
+//
+// This will disable sudden termination if the job is enqueued successfully.
 //
 // If `shouldRelaunch` is YES, the app will be launched back up after the update
 // is installed successfully.
-- (void)installUpdateIfNeeded;
+//
+// completionHandler - A block to invoke when updating in place has completed or failed.
+//                     The app should immediately terminate once this block is invoked.
+- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler;
 
 @end
