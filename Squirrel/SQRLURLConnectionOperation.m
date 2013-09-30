@@ -28,7 +28,7 @@
 // Ongoing accumumlated data from the connection
 @property (nonatomic, strong) NSMutableData *bodyData;
 
-@property (readwrite, copy, atomic) SQRLResponseProvider responseProvider;
+@property (readwrite, copy, atomic) NSData * (^responseProvider)(NSURLResponse **, NSError **);
 @end
 
 @implementation SQRLURLConnectionOperation
