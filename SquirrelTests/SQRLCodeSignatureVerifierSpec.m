@@ -23,7 +23,7 @@ beforeEach(^{
 
 it(@"should verify a valid bundle", ^{
 	NSError *error = nil;
-	BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+	BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 });
@@ -33,7 +33,7 @@ it(@"should fail to verify with different code signing requirements", ^{
 	expect(verifier).notTo.beNil();
 
 	NSError *error = nil;
-	BOOL success = [verifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+	BOOL success = [[verifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 	expect(success).to.beFalsy();
 	expect(error).notTo.beNil();
 });
@@ -49,7 +49,7 @@ describe(@"code signature changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -61,7 +61,7 @@ describe(@"code signature changes", ^{
 		corruptURL(codeSignatureURL);
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -75,7 +75,7 @@ describe(@"main executable changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:bundle.executableURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -87,7 +87,7 @@ describe(@"main executable changes", ^{
 		corruptURL(bundle.executableURL);
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -108,7 +108,7 @@ describe(@"helper executable changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:helperURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -120,7 +120,7 @@ describe(@"helper executable changes", ^{
 		corruptURL(helperURL);
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -141,7 +141,7 @@ describe(@"resource changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:resourceURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -153,7 +153,7 @@ describe(@"resource changes", ^{
 		corruptURL(resourceURL);
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -173,7 +173,7 @@ describe(@"framework changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:frameworkURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
@@ -185,7 +185,7 @@ describe(@"framework changes", ^{
 		corruptURL([frameworkURL URLByAppendingPathComponent:@"Contents/Versions/A/Squirrel"]);
 
 		NSError *error = nil;
-		BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL error:&error];
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();

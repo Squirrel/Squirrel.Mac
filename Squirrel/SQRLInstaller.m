@@ -13,6 +13,7 @@
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 #import <sys/xattr.h>
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
@@ -159,7 +160,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 - (BOOL)reallyInstallUpdateWithError:(NSError **)errorPtr {
 	// Verify the update bundle.
-	if (![self.verifier verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
+	if (![[self.verifier verifyCodeSignatureOfBundle:self.updateBundleURL] waitUntilCompleted:errorPtr]) {
 		return NO;
 	}
 
@@ -244,7 +245,7 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 			return NO;
 		}
 	} @finally {
-		if (![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
+		if (![[self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL] waitUntilCompleted:&error]) {
 			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
 			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
 

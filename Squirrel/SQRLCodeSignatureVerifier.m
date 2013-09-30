@@ -8,6 +8,7 @@
 
 #import "SQRLCodeSignatureVerifier.h"
 #import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Security/Security.h>
 
 NSString * const SQRLCodeSignatureVerifierErrorDomain = @"SQRLCodeSignatureVerifierErrorDomain";
@@ -73,16 +74,18 @@ const NSInteger SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode = -2;
 
 #pragma mark Verification
 
-- (BOOL)verifyCodeSignatureOfBundle:(NSURL *)bundleURL error:(NSError **)error {
-	SecStaticCodeRef staticCode = NULL;
-	
-	OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode);
-	@onExit {
-		if (staticCode != NULL) CFRelease(staticCode);
-	};
+- (RACSignal *)verifyCodeSignatureOfBundle:(NSURL *)bundleURL {
+	NSParameterAssert(bundleURL != nil);
 
-	if (result != noErr) {
-		if (error != NULL) {
+	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		SecStaticCodeRef staticCode = NULL;
+		
+		OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode);
+		@onExit {
+			if (staticCode != NULL) CFRelease(staticCode);
+		};
+
+		if (result != noErr) {
 			NSMutableDictionary *userInfo = [@{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to get static code for bundle %@", nil), bundleURL],
 			} mutableCopy];
@@ -90,20 +93,17 @@ const NSInteger SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode = -2;
 			NSString *failureReason = CFBridgingRelease(SecCopyErrorMessageString(result, NULL));
 			if (failureReason != nil) userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
 			
-			*error = [NSError errorWithDomain:SQRLCodeSignatureVerifierErrorDomain code:SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode userInfo:userInfo];
+			[subscriber sendError:[NSError errorWithDomain:SQRLCodeSignatureVerifierErrorDomain code:SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode userInfo:userInfo]];
+			return nil;
 		}
+		
+		CFErrorRef validityError = NULL;
+		result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures, self.requirement, &validityError);
+		@onExit {
+			if (validityError != NULL) CFRelease(validityError);
+		};
 
-		return NO;
-	}
-	
-	CFErrorRef validityError = NULL;
-	result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures, self.requirement, &validityError);
-	@onExit {
-		if (validityError != NULL) CFRelease(validityError);
-	};
-
-	if (result != noErr) {
-		if (error != NULL) {
+		if (result != noErr) {
 			NSMutableDictionary *userInfo = [@{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Code signature at URL %@ did not pass validation", nil), bundleURL],
 			} mutableCopy];
@@ -112,13 +112,13 @@ const NSInteger SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode = -2;
 			if (failureReason != nil) userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
 			if (validityError != NULL) userInfo[NSUnderlyingErrorKey] = (__bridge NSError *)validityError;
 			
-			*error = [NSError errorWithDomain:SQRLCodeSignatureVerifierErrorDomain code:SQRLCodeSignatureVerifierErrorDidNotPass userInfo:userInfo];
+			[subscriber sendError:[NSError errorWithDomain:SQRLCodeSignatureVerifierErrorDomain code:SQRLCodeSignatureVerifierErrorDidNotPass userInfo:userInfo]];
+			return nil;
 		}
-
-		return NO;
-	}
-	
-	return YES;
+		
+		[subscriber sendCompleted];
+		return nil;
+	}] setNameWithFormat:@"-verifyCodeSignatureOfBundle: %@", bundleURL];
 }
 
 @end

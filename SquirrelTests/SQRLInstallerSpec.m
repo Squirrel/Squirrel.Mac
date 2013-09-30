@@ -148,7 +148,7 @@ describe(@"signal handling", ^{
 			expect(terminated).will.beTruthy();
 
 			NSError *error = nil;
-			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
+			BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		});
@@ -188,7 +188,7 @@ describe(@"signal handling", ^{
 		// Any corruption of the target bundle is a critical failure.
 		if ([NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
 			NSError *error = nil;
-			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
+			BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		}

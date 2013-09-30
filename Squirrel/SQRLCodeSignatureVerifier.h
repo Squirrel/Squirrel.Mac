@@ -18,6 +18,8 @@ extern const NSInteger SQRLCodeSignatureVerifierErrorDidNotPass;
 // code.
 extern const NSInteger SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode;
 
+@class RACSignal;
+
 // Implements the verification of Apple code signatures.
 @interface SQRLCodeSignatureVerifier : NSObject
 
@@ -40,10 +42,10 @@ extern const NSInteger SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode;
 
 // Verifies the code signature of the specified bundle.
 //
-// bundleURL - The URL to the bundle to verify on disk.
-// error     - If not NULL, set to any error that occurs.
+// bundleURL - The URL to the bundle to verify on disk. This must not be nil.
 //
-// Returns NO if the bundle's code signature did not pass verification.
-- (BOOL)verifyCodeSignatureOfBundle:(NSURL *)bundleURL error:(NSError **)error;
+// Returns a signal which will synchronously send completed on success, or error
+// if the code signature was not verified successfully.
+- (RACSignal *)verifyCodeSignatureOfBundle:(NSURL *)bundleURL;
 
 @end

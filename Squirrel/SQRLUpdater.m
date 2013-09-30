@@ -188,23 +188,22 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 						return;
 					}
 
-					NSError *error = nil;
-					BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
-					if (!verified) {
-						NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
-						[self finishAndSetIdle];
-						return;
-					}
-
-					NSDictionary *userInfo = @{
-						SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]
-					};
-					
-					self.state = SQRLUpdaterStateAwaitingRelaunch;
-					
-					dispatch_async(dispatch_get_main_queue(), ^{
-						[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-					});
+					[[self.verifier
+						verifyCodeSignatureOfBundle:updateBundle.bundleURL]
+						subscribeError:^(NSError *error) {
+							NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
+							[self finishAndSetIdle];
+						} completed:^{
+							NSDictionary *userInfo = @{
+								SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]
+							};
+							
+							self.state = SQRLUpdaterStateAwaitingRelaunch;
+							
+							dispatch_async(dispatch_get_main_queue(), ^{
+								[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
+							});
+						}];
 				}];
 		}];
 		
