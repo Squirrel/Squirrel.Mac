@@ -263,10 +263,10 @@ static void SQRLSignalHandler(int sig) {
 
 - (xpc_connection_t)connectToShipIt {
 	NSError *error = nil;
-	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:NO error:&error];
-	STAssertTrue(connection != NULL, @"Could not open XPC connection: %@", error);
+	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
+	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
 	
-	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+	xpc_connection_set_event_handler(connection.object, ^(xpc_object_t event) {
 		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
 			if (event == XPC_ERROR_CONNECTION_INVALID) {
 				STFail(@"ShipIt connection invalid: %@", [self errorFromObject:event]);
@@ -277,11 +277,11 @@ static void SQRLSignalHandler(int sig) {
 	});
 
 	[self addCleanupBlock:^{
-		xpc_connection_cancel(connection);
+		xpc_connection_cancel(connection.object);
 	}];
 
-	xpc_connection_resume(connection);
-	return connection;
+	xpc_connection_resume(connection.object);
+	return connection.object;
 }
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {

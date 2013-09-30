@@ -12,10 +12,11 @@
 #import "NSProcessInfo+SQRLVersionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
-#import "SQRLShipItLauncher.h"
-#import "SQRLZipArchiver.h"
 #import "SQRLDownloadedUpdate.h"
+#import "SQRLShipItLauncher.h"
 #import "SQRLUpdate+Private.h"
+#import "SQRLXPCObject.h"
+#import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -327,43 +328,42 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	NSError *targetWritableError = nil;
 	BOOL getWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
 
-	NSError *error = nil;
-	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:(getWritable && !targetWritable.boolValue) error:&error];
-	if (connection == NULL) {
-		completionHandler(NO, error);
-		return;
-	}
-	
-	[NSProcessInfo.processInfo disableSuddenTermination];
+	[[SQRLShipItLauncher
+		launchPrivileged:(getWritable && !targetWritable.boolValue)]
+		subscribeNext:^(SQRLXPCObject *connection) {
+			[NSProcessInfo.processInfo disableSuddenTermination];
 
-	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
-	@onExit {
-		xpc_release(message);
-	};
-
-	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
-	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
-	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
-	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
-	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
-
-	xpc_connection_resume(connection);
-	xpc_connection_send_message_with_reply(connection, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
-		BOOL success = xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey);
-		NSError *error = nil;
-		if (!success) {
-			const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
-			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: @(errorStr) ?: NSLocalizedString(@"An unknown error occurred within ShipIt", nil),
+			xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+			@onExit {
+				xpc_release(message);
 			};
 
-			error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo];
-			[NSProcessInfo.processInfo enableSuddenTermination];
-		}
+			xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
+			xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
+			xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
+			xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
+			xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
+			xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 
-		completionHandler(success, error);
-	});
+			xpc_connection_resume(connection.object);
+			xpc_connection_send_message_with_reply(connection.object, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
+				BOOL success = xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey);
+				NSError *error = nil;
+				if (!success) {
+					const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
+					NSDictionary *userInfo = @{
+						NSLocalizedDescriptionKey: @(errorStr) ?: NSLocalizedString(@"An unknown error occurred within ShipIt", nil),
+					};
+
+					error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo];
+					[NSProcessInfo.processInfo enableSuddenTermination];
+				}
+
+				completionHandler(success, error);
+			});
+		} error:^(NSError *error) {
+			completionHandler(NO, error);
+		}];
 }
 
 @end

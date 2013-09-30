@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class RACSignal;
+
 // The domain for errors originating within SQRLShipItLauncher.
 extern NSString * const SQRLShipItLauncherErrorDomain;
 
@@ -22,11 +24,12 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 // privileged - Determines which launchd domain to launch the job in.
 //              If true, shipit is launched in the root domain, otherwise it is
 //              launched in the current user’s domain.
-// error      - If not NULL, set to any error that occurs.
 //
-// Returns the XPC connection established, or NULL if an error occurs. The
-// connection will be automatically released once it has completed or received
-// an error. Retain the connection if you'll still need it after that point.
-+ (xpc_connection_t)launchPrivileged:(BOOL)privileged error:(NSError **)error;
+// Returns a signal which will send a `SQRLXPCObject` containing the
+// `xpc_connection_t` then complete, or error, on a background scheduler. The
+// `xpc_connection_t` will be automatically retained while the connection
+// remains open. If you need to retain it for longer, hang on to the
+// `SQRLXPCObject`.
++ (RACSignal *)launchPrivileged:(BOOL)privileged;
 
 @end
