@@ -37,6 +37,8 @@
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
 		53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */; };
+		53B0A39817F99AF000F67F6E /* SQRLResumableDownload.h in Headers */ = {isa = PBXBuildFile; fileRef = 53B0A39617F99AF000F67F6E /* SQRLResumableDownload.h */; };
+		53B0A39917F99AF000F67F6E /* SQRLResumableDownload.m in Sources */ = {isa = PBXBuildFile; fileRef = 53B0A39717F99AF000F67F6E /* SQRLResumableDownload.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D007290017B09732008C7DDE /* SQRLArguments.m in Sources */ = {isa = PBXBuildFile; fileRef = D00728FF17B09732008C7DDE /* SQRLArguments.m */; };
 		D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -294,6 +296,8 @@
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
 		53AACF5317E9CB7500B41027 /* SQRLUpdate+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SQRLUpdate+Private.h"; sourceTree = "<group>"; };
+		53B0A39617F99AF000F67F6E /* SQRLResumableDownload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLResumableDownload.h; sourceTree = "<group>"; };
+		53B0A39717F99AF000F67F6E /* SQRLResumableDownload.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLResumableDownload.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
 		D00728FF17B09732008C7DDE /* SQRLArguments.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLArguments.m; path = Squirrel/SQRLArguments.m; sourceTree = SOURCE_ROOT; };
 		D007290817B0973E008C7DDE /* SQRLArguments.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = SQRLArguments.h; path = Squirrel/SQRLArguments.h; sourceTree = SOURCE_ROOT; };
@@ -721,6 +725,8 @@
 				530F058617F5E41B008E38F7 /* SQRLDownloadController.m */,
 				530F058717F5E41B008E38F7 /* SQRLDownloadOperation.h */,
 				530F058817F5E41B008E38F7 /* SQRLDownloadOperation.m */,
+				53B0A39617F99AF000F67F6E /* SQRLResumableDownload.h */,
+				53B0A39717F99AF000F67F6E /* SQRLResumableDownload.m */,
 				530F059217F5EA6F008E38F7 /* SQRLURLConnectionOperation.h */,
 				530F059317F5EA6F008E38F7 /* SQRLURLConnectionOperation.m */,
 			);
@@ -781,6 +787,7 @@
 				530F059417F5EA6F008E38F7 /* SQRLURLConnectionOperation.h in Headers */,
 				530F058917F5E41B008E38F7 /* SQRLDownloadController.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
+				53B0A39817F99AF000F67F6E /* SQRLResumableDownload.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				F6EB2169179D03AA001108CF /* EXTScope.h in Headers */,
 				530F058B17F5E41B008E38F7 /* SQRLDownloadOperation.h in Headers */,
@@ -1103,6 +1110,7 @@
 				530F058C17F5E41B008E38F7 /* SQRLDownloadOperation.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */,
+				53B0A39917F99AF000F67F6E /* SQRLResumableDownload.m in Sources */,
 				530F059517F5EA6F008E38F7 /* SQRLURLConnectionOperation.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,

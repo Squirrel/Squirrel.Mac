@@ -11,6 +11,7 @@
 #import "EXTKeyPathCoding.h"
 
 #import "SQRLDownloadController.h"
+#import "SQRLResumableDownload.h"
 
 @interface SQRLDownloadOperation () <NSURLConnectionDataDelegate>
 // Operation state
@@ -27,7 +28,7 @@
 // Download controller for resumable state
 @property (nonatomic, strong, readonly) SQRLDownloadController *downloadController;
 // Download retrieved from the download controller, resume state
-@property (nonatomic, copy) NSDictionary *download;
+@property (nonatomic, strong) SQRLResumableDownload *download;
 
 // Connection to retreive the remote object
 @property (nonatomic, strong) NSURLConnection *connection;
@@ -118,19 +119,19 @@
 	[self startRequest:[SQRLDownloadOperation requestWithOriginalRequest:self.request download:self.download]];
 }
 
-+ (NSURLRequest *)requestWithOriginalRequest:(NSURLRequest *)request download:(NSDictionary *)download {
-	NSHTTPURLResponse *response = download[SQRLDownloadHTTPResponseKey];
++ (NSURLRequest *)requestWithOriginalRequest:(NSURLRequest *)originalRequest download:(SQRLResumableDownload *)download {
+	NSHTTPURLResponse *response = download.response;
 	NSString *ETag = [self ETagFromResponse:response];
-	if (ETag == nil) return request;
+	if (ETag == nil) return originalRequest;
 
-	NSURL *downloadLocation = download[SQRLDownloadLocalFileURLKey];
+	NSURL *downloadLocation = download.fileURL;
 
 	NSNumber *alreadyDownloadedSize = nil;
 	NSError *alreadyDownloadedSizeError = nil;
 	BOOL getAlreadyDownloadedSize = [downloadLocation getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
-	if (!getAlreadyDownloadedSize) return request;
+	if (!getAlreadyDownloadedSize) return originalRequest;
 
-	NSMutableURLRequest *newRequest = [request mutableCopy];
+	NSMutableURLRequest *newRequest = [originalRequest mutableCopy];
 	[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
 	[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forKey:@"Range"];
 	return newRequest;
@@ -186,14 +187,15 @@
 }
 
 - (void)recordDownloadWithResponse:(NSHTTPURLResponse *)response {
-	NSMutableDictionary *newDownload = [self.download mutableCopy];
-	newDownload[SQRLDownloadHTTPResponseKey] = response;
+	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:self.download.fileURL];
+
 	[self.downloadController setDownload:newDownload forURL:self.request.URL];
+	self.download = newDownload;
 }
 
 - (void)removeDownloadFile {
 	NSError *error = nil;
-	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.download[SQRLDownloadLocalFileURLKey] error:&error];
+	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.download.fileURL error:&error];
 	if (!remove) {
 		if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return;
 
@@ -203,7 +205,7 @@
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.download[SQRLDownloadLocalFileURLKey] append:YES];
+	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.download.fileURL append:YES];
 
 	[outputStream open];
 	NSInteger written = [outputStream write:data.bytes maxLength:data.length];
@@ -217,7 +219,7 @@
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
 	NSURLResponse *response = self.response;
-	NSURL *localURL = self.download[SQRLDownloadLocalFileURLKey];
+	NSURL *localURL = self.download.fileURL;
 
 	self.completionProvider = ^ NSURL * (NSURLResponse **responseRef, NSError **errorRef) {
 		if (responseRef != NULL) *responseRef = response;

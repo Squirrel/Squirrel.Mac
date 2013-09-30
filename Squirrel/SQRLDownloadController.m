@@ -11,9 +11,7 @@
 #import <CommonCrypto/CommonDigest.h>
 
 #import "SQRLFileManager.h"
-
-NSString * const SQRLDownloadHTTPResponseKey = @"SQRLDownloadHTTPResponseKey";
-NSString * const SQRLDownloadLocalFileURLKey = @"SQRLDownloadLocalFileURLKey";
+#import "SQRLResumableDownload.h"
 
 @implementation SQRLDownloadController
 
@@ -107,9 +105,9 @@ NSString * const SQRLDownloadLocalFileURLKey = @"SQRLDownloadLocalFileURLKey";
 	return base16;
 }
 
-- (NSDictionary *)downloadForURL:(NSURL *)URL {
+- (SQRLResumableDownload *)downloadForURL:(NSURL *)URL {
 	__block NSError *downloadError = nil;
-	__block NSDictionary *download = nil;
+	__block SQRLResumableDownload *download = nil;
 
 	NSString *key = [self.class keyForURL:URL];
 
@@ -118,17 +116,15 @@ NSString * const SQRLDownloadLocalFileURLKey = @"SQRLDownloadLocalFileURLKey";
 	}];
 
 	if (download == nil) {
-		return @{
-			SQRLDownloadLocalFileURLKey: [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:URL]],
-		};
+		NSURL *localURL = [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:URL]];
+		return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:localURL];
 	}
 
 	return download;
 }
 
-- (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL {
-	NSArray *requiredKeys = @[ SQRLDownloadHTTPResponseKey, SQRLDownloadLocalFileURLKey ];
-	NSParameterAssert([[NSSet setWithArray:requiredKeys] isSubsetOfSet:[NSSet setWithArray:download.allKeys]]);
+- (void)setDownload:(SQRLResumableDownload *)download forURL:(NSURL *)URL {
+	NSParameterAssert(download.response != nil);
 
 	NSString *key = [self.class keyForURL:URL];
 

@@ -7,6 +7,7 @@
 //
 
 #import "SQRLDownloadController.h"
+#import "SQRLResumableDownload.h"
 
 SpecBegin(SQRLDownloadController)
 
@@ -22,10 +23,10 @@ NSURL * (^newTestURL)() = ^ () {
 };
 
 NSURL * (^newDownloadURL)() = ^ () {
-	NSDictionary *download = [downloadController downloadForURL:newTestURL()];
+	SQRLResumableDownload *download = [downloadController downloadForURL:newTestURL()];
 	expect(download).notTo.beNil();
 
-	NSURL *downloadURL = download[SQRLDownloadLocalFileURLKey];
+	NSURL *downloadURL = download.fileURL;
 	expect(downloadURL).notTo.beNil();
 
 	return downloadURL;
@@ -48,27 +49,24 @@ it(@"should return a path in a writable directory for new URLs", ^{
 it(@"should return the same path for the same URL", ^{
 	NSURL *testURL = newTestURL();
 
-	NSDictionary *download1 = [downloadController downloadForURL:testURL];
-	NSDictionary *download2 = [downloadController downloadForURL:testURL];
-
+	SQRLResumableDownload *download1 = [downloadController downloadForURL:testURL];
+	SQRLResumableDownload *download2 = [downloadController downloadForURL:testURL];
+ 
 	expect(download1).to.equal(download2);
 });
 
 it(@"should remember a response", ^{
 	NSURL *testURL = newTestURL();
+	NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:testURL statusCode:200 HTTPVersion:(__bridge NSString *)kCFHTTPVersion1_1 headerFields:@{ @"ETag": NSProcessInfo.processInfo.globallyUniqueString }];
 
-	NSDictionary *download1 = [downloadController downloadForURL:testURL];
+	SQRLResumableDownload *initialDownload = [downloadController downloadForURL:testURL];
 
-	NSMutableDictionary *newDownload = [download1 mutableCopy];
-	NSHTTPURLResponse *newDownloadResponse = [[NSHTTPURLResponse alloc] initWithURL:testURL statusCode:200 HTTPVersion:(__bridge NSString *)kCFHTTPVersion1_1 headerFields:@{ @"ETag": NSProcessInfo.processInfo.globallyUniqueString }];
-	newDownload[SQRLDownloadHTTPResponseKey] = newDownloadResponse;
-
+	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:initialDownload.fileURL];
 	[downloadController setDownload:newDownload forURL:testURL];
+	expect(initialDownload).notTo.equal(newDownload);
 
-	NSDictionary *download2 = [downloadController downloadForURL:testURL];
-	NSHTTPURLResponse *download2Response = download2[SQRLDownloadHTTPResponseKey];
-	expect(newDownloadResponse.URL).to.equal(download2Response.URL);
-	expect(newDownloadResponse.allHeaderFields).to.equal(download2Response.allHeaderFields);
+	SQRLResumableDownload *resumedDownload = [downloadController downloadForURL:testURL];
+	expect(resumedDownload).to.equal(newDownload);
 });
 
 SpecEnd
