@@ -13,8 +13,7 @@
 
 // Initialiser.
 //
-// request - Must be non nil, response body is accumulated in memory and
-//           delivered in the `responseProvider`.
+// request - Must be non nil.
 - (instancetype)initWithRequest:(NSURLRequest *)request __attribute__((nonnull (1)));
 
 typedef NSData * (^SQRLResponseProvider)(NSURLResponse **responseRef, NSError **errorRef);
