@@ -65,7 +65,10 @@
 		if (propertyListData == nil) return;
 
 		NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-		if (propertyList == nil) return;
+		if (propertyList == nil) {
+			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil];
+			return;
+		}
 
 		block(propertyList);
 
@@ -90,14 +93,23 @@
 			propertyList = @{};
 		} else {
 			propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-			if (propertyList == nil) return;
+			if (propertyList == nil) {
+				if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil];
+				return;
+			}
 		}
 
 		NSDictionary *newPropertyList = block(propertyList);
-		if ([newPropertyList isEqual:propertyList]) return;
+		if ([newPropertyList isEqual:propertyList]) {
+			result = YES;
+			return;
+		}
 
 		NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
-		if (newData == nil) return;
+		if (newData == nil) {
+			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil];
+			return;
+		}
 
 		BOOL write = [newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef];
 		if (!write) return;
