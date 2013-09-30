@@ -52,7 +52,7 @@ typedef enum : NSInteger {
 
 	_controlQueue = [[NSOperationQueue alloc] init];
 	_controlQueue.maxConcurrentOperationCount = 1;
-	_controlQueue.name = @"com.github.Squirrel.zip.control";
+	_controlQueue.name = @"com.github.Squirrel.SQRLZipOperation.controlQueue";
 
 	_completionProvider = [^ BOOL (NSError **errorRef) {
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];

@@ -49,7 +49,7 @@
 
 	_controlQueue = [[NSOperationQueue alloc] init];
 	_controlQueue.maxConcurrentOperationCount = 1;
-	_controlQueue.name = @"com.github.Squirrel.download.control";
+	_controlQueue.name = @"com.github.Squirrel.SQRLDownloadOperation.controlQueue";
 
 	_downloadController = [SQRLDownloadController defaultDownloadController];
 

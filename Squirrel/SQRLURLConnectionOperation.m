@@ -43,7 +43,7 @@
 
 	_controlQueue = [[NSOperationQueue alloc] init];
 	_controlQueue.maxConcurrentOperationCount = 1;
-	_controlQueue.name = @"com.github.Squirrel.connection.control";
+	_controlQueue.name = @"com.github.Squirrel.SQRLURLConnectionOperation.controlQueue";
 
 	_responseProvider = [^ NSData * (NSURLResponse **responseRef, NSError **errorRef) {
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];

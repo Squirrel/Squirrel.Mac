@@ -49,14 +49,14 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 	self = [self init];
 	if (self == nil) return nil;
 
-	NSString *queuePrefix = @"com.github.Squirrel.update";
+	NSString *queuePrefix = @"com.github.Squirrel.SQRLUpdateOperation";
 
 	_controlQueue = [[NSOperationQueue alloc] init];
 	_controlQueue.maxConcurrentOperationCount = 1;
-	_controlQueue.name = [NSString stringWithFormat:@"%@.control", queuePrefix];
+	_controlQueue.name = [NSString stringWithFormat:@"%@.controlQueue", queuePrefix];
 
 	 _workQueue = [[NSOperationQueue alloc] init];
-	 _workQueue.name = [NSString stringWithFormat:@"%@.work", queuePrefix];
+	 _workQueue.name = [NSString stringWithFormat:@"%@.workQueue", queuePrefix];
 
 	_updateRequest = [updateRequest copy];
 	_verifier = verifier;
