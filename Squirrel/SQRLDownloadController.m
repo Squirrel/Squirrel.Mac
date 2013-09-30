@@ -98,9 +98,11 @@
 }
 
 + (NSString *)base16:(NSData *)data {
+	char const *alphabet = "0123456789ABCDEF"; // <http://tools.ietf.org/html/rfc4648#section-8>
 	NSMutableString *base16 = [NSMutableString stringWithCapacity:data.length * 2];
 	for (NSUInteger idx = 0; idx < data.length; idx++) {
-		[base16 appendFormat:@"%X", (unsigned int)*((uint8_t *)data.bytes + idx)];
+		uint8_t byte = *((uint8_t *)data.bytes + idx);
+		[base16 appendFormat:@"%c%c", alphabet[(byte & /* 0b11110000 */ 240) >> 4], alphabet[(byte & /* 0b00001111 */ 15)]];
 	}
 	return base16;
 }
