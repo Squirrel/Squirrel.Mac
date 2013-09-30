@@ -106,6 +106,8 @@
 }
 
 - (SQRLResumableDownload *)downloadForURL:(NSURL *)URL {
+	NSParameterAssert(URL != nil);
+	
 	__block NSError *downloadError = nil;
 	__block SQRLResumableDownload *download = nil;
 
@@ -125,6 +127,7 @@
 
 - (void)setDownload:(SQRLResumableDownload *)download forURL:(NSURL *)URL {
 	NSParameterAssert(download.response != nil);
+	NSParameterAssert(URL != nil);
 
 	NSString *key = [self.class keyForURL:URL];
 
