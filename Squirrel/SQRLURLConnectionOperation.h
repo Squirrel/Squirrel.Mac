@@ -16,8 +16,6 @@
 // request - Must be non nil.
 - (instancetype)initWithRequest:(NSURLRequest *)request __attribute__((nonnull (1)));
 
-typedef NSData * (^SQRLResponseProvider)(NSURLResponse **responseRef, NSError **errorRef);
-
 // When the operation `isFinished` this will be non nil and can be used to
 // retrieve the response and body data of the request.
 //
@@ -33,6 +31,6 @@ typedef NSData * (^SQRLResponseProvider)(NSURLResponse **responseRef, NSError **
 //  - responseRef, can be NULL.
 //  - errorRef, can be NULL.
 //  - Returns the response body data.
-@property (readonly, copy, atomic) SQRLResponseProvider responseProvider;
+@property (readonly, copy, atomic) NSData * (^responseProvider)(NSURLResponse **responseRef, NSError **errorRef);
 
 @end
