@@ -11,10 +11,8 @@
 #import "EXTKeyPathCoding.h"
 
 @interface SQRLURLConnectionOperation () <NSURLConnectionDataDelegate>
-// Operation state
-@property (nonatomic, assign) BOOL isExecuting;
-// Operation state
-@property (nonatomic, assign) BOOL isFinished;
+@property (atomic, assign) BOOL isExecuting;
+@property (atomic, assign) BOOL isFinished;
 
 // Request the operation was initialised with
 @property (nonatomic, copy, readonly) NSURLRequest *request;
