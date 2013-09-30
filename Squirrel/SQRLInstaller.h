@@ -23,6 +23,8 @@ extern const NSInteger SQRLInstallerErrorCouldNotOpenTarget;
 // The target bundle has an invalid version set.
 extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 
+@class RACSignal;
+
 // Performs the installation of an update.
 //
 // This class is meant to be used only after the app that will be updated has
@@ -45,6 +47,9 @@ extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL requirementData:(NSData *)requirementData;
 
 // Attempts to install the update specified at the time of initialization.
-- (BOOL)installUpdateWithError:(NSError **)errorPtr;
+//
+// Returns a signal which will send completed on success, or error, on
+// a background scheduler.
+- (RACSignal *)installUpdate;
 
 @end

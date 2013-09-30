@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
@@ -58,7 +59,7 @@ static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
 		NSLog(@"Beginning installation");
 
 		NSError *error = nil;
-		if (![installer installUpdateWithError:&error]) {
+		if (![[installer installUpdate] waitUntilCompleted:&error]) {
 			NSString *message = [NSString stringWithFormat:@"Error installing update: %@", error.sqrl_verboseDescription];
 			NSLog(@"%@", message);
 

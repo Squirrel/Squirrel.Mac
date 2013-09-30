@@ -149,223 +149,283 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 #pragma mark Installation
 
-- (BOOL)installUpdateWithError:(NSError **)errorPtr {
-	[self beginTransaction];
-	@try {
-		return [self reallyInstallUpdateWithError:errorPtr];
-	} @finally {
-		[self endTransaction];
-	}
+- (RACSignal *)installUpdate {
+	return [[[[[[[[[self.verifier
+		verifyCodeSignatureOfBundle:self.updateBundleURL]
+		subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]]
+		then:^{
+			return [self clearQuarantineForDirectory:self.targetBundleURL];
+		}]
+		then:^{
+			return [self verifyTargetBundleExists];
+		}]
+		then:^{
+			return [[[self
+				temporaryDirectoryAppropriateForURL:self.targetBundleURL]
+				catch:^(NSError *error) {
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)];
+					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
+				}]
+				flattenMap:^(NSURL *temporaryDirectoryURL) {
+					NSURL *backupBundleURL = [temporaryDirectoryURL URLByAppendingPathComponent:self.targetBundleURL.lastPathComponent];
+					return [[self
+						installUpdateBackingUpToURL:backupBundleURL]
+						doCompleted:^{
+							// This directory must be removed once we succeed, or else it ends
+							// up in the user's trash directory on reboot.
+							[NSFileManager.defaultManager removeItemAtURL:temporaryDirectoryURL error:NULL];
+						}];
+				}];
+		}]
+		initially:^{
+			[self beginTransaction];
+		}]
+		finally:^{
+			[self endTransaction];
+		}]
+		replay]
+		setNameWithFormat:@"-installUpdate"];
 }
 
-- (BOOL)reallyInstallUpdateWithError:(NSError **)errorPtr {
-	// Verify the update bundle.
-	if (![[self.verifier verifyCodeSignatureOfBundle:self.updateBundleURL] waitUntilCompleted:errorPtr]) {
-		return NO;
-	}
+- (RACSignal *)installUpdateBackingUpToURL:(NSURL *)backupBundleURL {
+	NSParameterAssert(backupBundleURL != nil);
 
-	// Clear the quarantine bit on the update.
-	if (![self clearQuarantineForDirectory:self.targetBundleURL error:errorPtr]) {
-		return NO;
-	}
-	
-	// Create a backup location for the original bundle.
-	NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
-	if (targetBundle == nil) {
-		if (errorPtr != NULL) {
+	// First, move the target out of place and into the backup location.
+	return [[[[[[self
+		installItemAtURL:backupBundleURL fromURL:self.targetBundleURL]
+		catch:^(NSError *error) {
+			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL];
+			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
+		}]
+		then:^{
+			// Move the new bundle into place.
+			return [[self
+				installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL]
+				catch:^(NSError *error) {
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL];
+					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorReplacingTarget toError:error]];
+				}];
+		}]
+		then:^{
+			// Verify that the target bundle is valid after installation.
+			return [self verifyTargetBundleCodeSignatureRecoveringUsingBackupAtURL:backupBundleURL];
+		}]
+		catch:^(NSError *error) {
+			// Verify that the target bundle didn't get corrupted during
+			// failure. Try recovering it if it did.
+			return [[self
+				verifyTargetBundleCodeSignatureRecoveringUsingBackupAtURL:backupBundleURL]
+				then:^{
+					// Recovery succeeded, but we still want to pass
+					// through the original error.
+					return [RACSignal error:error];
+				}];
+		}]
+		setNameWithFormat:@"-installUpdateBackingUpToURL: %@", backupBundleURL];
+}
+
+- (RACSignal *)verifyTargetBundleExists {
+	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
+		if (targetBundle == nil) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"URL %@ could not be opened as a bundle", nil), self.targetBundleURL],
 			};
 
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotOpenTarget userInfo:userInfo];
+			[subscriber sendError:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotOpenTarget userInfo:userInfo]];
+			return nil;
 		}
-
-		return NO;
-	}
-
-	if (targetBundle.sqrl_bundleVersion == nil) {
-		if (errorPtr != NULL) {
+		
+		if (targetBundle.sqrl_bundleVersion == nil) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Target bundle %@ has an invalid version", nil), self.targetBundleURL],
 			};
 
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidBundleVersion userInfo:userInfo];
+			[subscriber sendError:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidBundleVersion userInfo:userInfo]];
+			return nil;
 		}
 
-		return NO;
-	}
+		[subscriber sendCompleted];
+		return nil;
+	}] setNameWithFormat:@"-targetBundle"];
+}
 
-	NSError *error = nil;
+- (RACSignal *)verifyTargetBundleCodeSignatureRecoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
+	NSParameterAssert(backupBundleURL != nil);
 
-	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:self.targetBundleURL error:&error];
-	if (temporaryDirectory == nil) {
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)],
-			} mutableCopy];
-
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
-		}
-
-		return NO;
-	}
-
-	NSURL *backupBundleURL = [temporaryDirectory URLByAppendingPathComponent:self.targetBundleURL.lastPathComponent];
-
-	@try {
-		// First, move the target out of place and into the backup location.
-		if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
-			if (errorPtr != NULL) {
-				NSMutableDictionary *userInfo = [@{
-					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
-				} mutableCopy];
-
-				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-				*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
-			}
-
-			return NO;
-		}
-		
-		// Move the new bundle into place.
-		if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&error]) {
-			if (errorPtr != NULL) {
-				NSMutableDictionary *userInfo = [@{
-					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL],
-				} mutableCopy];
-
-				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-				*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:userInfo];
-			}
-
-			return NO;
-		}
-	} @finally {
-		if (![[self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL] waitUntilCompleted:&error]) {
+	return [[[[[self.verifier
+		verifyCodeSignatureOfBundle:self.targetBundleURL]
+		doError:^(NSError *error) {
 			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
-			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
-
-			NSError *installBackupError = nil;
-			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&installBackupError]) {
-				NSLog(@"Restored backup bundle to %@", self.targetBundleURL);
-				[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
-			} else {
-				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, installBackupError.sqrl_verboseDescription);
-				// Leave the temporary directory in place so that it's restored to trash on reboot
-			}
-
-			if (errorPtr != NULL) *errorPtr = error;
-			return NO;
-		}
-
-		// This directory must be removed once we succeed otherwise it ends up
-		// in the user's trash directory on reboot
-		[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
-	}
-
-	return YES;
+		}]
+		catch:^(NSError *error) {
+			return [[[[self
+				installItemAtURL:self.targetBundleURL fromURL:backupBundleURL]
+				initially:^{
+					[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
+				}]
+				doCompleted:^{
+					NSLog(@"Restored backup bundle to %@", self.targetBundleURL);
+				}]
+				doError:^(NSError *recoveryError) {
+					NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, recoveryError.sqrl_verboseDescription);
+				}];
+		}]
+		replay]
+		setNameWithFormat:@"-verifyTargetBundleCodeSignatureRecoveringUsingBackupAtURL: %@", backupBundleURL];
 }
 
-- (NSURL *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL error:(NSError **)errorPtr {
-	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
-	if (temporaryDirectory != nil) return temporaryDirectory;
-
-	temporaryDirectory = [NSURL fileURLWithPathComponents:@[
-		NSTemporaryDirectory(),
-		[NSString stringWithFormat:@"com~github~ShipIt"],
-		NSProcessInfo.processInfo.globallyUniqueString,
-	]];
-	if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
-
-	return temporaryDirectory;
-}
-
-- (NSURL *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
-	NSError *error = nil;
-
-	NSURL *volumeURL = nil;
-	BOOL getVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&error];
-	if (!getVolumeURL) return nil;
-
-	return [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&error];
-}
-
-- (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
+- (RACSignal *)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
-	// rename() is atomic, NSFileManager sucks.
-	if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) != 0) {
-		int code = errno;
-		if (code == EXDEV) {
-			// If the locations lie on two different volumes, remove the
-			// destination by hand, then perform a move.
-			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
-
-			NSError *moveItemError = nil;
-			if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&moveItemError]) {
-				NSLog(@"Couldn't move bundle across volumes %@", moveItemError.sqrl_verboseDescription);
-				if (errorPtr != NULL) *errorPtr = moveItemError;
-				return NO;
-			}
-
-			NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
-			return YES;
-		}
-
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-			
-			const char *desc = strerror(code);
-			if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
-
-			*errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
-		}
-
-		return NO;
-	}
-
-	NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
-	return YES;
-}
-
-- (BOOL)clearQuarantineForDirectory:(NSURL *)directory error:(NSError **)error {
-	NSParameterAssert(directory != nil);
-
-	NSFileManager *manager = [[NSFileManager alloc] init];
-	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:nil options:0 errorHandler:^(NSURL *URL, NSError *error) {
-		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
-		return YES;
-	}];
-
-	for (NSURL *URL in enumerator) {
-		const char *path = URL.path.fileSystemRepresentation;
-		if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
-			int code = errno;
-			if (code == ENOATTR) {
-				// This just means the extended attribute was never set on the
-				// file to begin with.
-				continue;
-			}
-
-			if (error != NULL) {
+	return [[[[[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			// rename() is atomic, NSFileManager sucks.
+			if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) == 0) {
+				[subscriber sendCompleted];
+			} else {
+				int code = errno;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 				
 				const char *desc = strerror(code);
 				if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
 
-				*error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
+				[subscriber sendError:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
 			}
 
-			return NO;
-		}
-	}
+			return nil;
+		}]
+		doCompleted:^{
+			NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
+		}]
+		catch:^(NSError *error) {
+			if (![error.domain isEqual:NSPOSIXErrorDomain] || error.code != EXDEV) return [RACSignal error:error];
 
-	return YES;
+			// If the locations lie on two different volumes, remove the
+			// destination by hand, then perform a move.
+			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+
+			if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&error]) {
+				NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
+				return [RACSignal empty];
+			} else {
+				// TODO: Wrap `error` with this message instead.
+				NSLog(@"Couldn't move bundle across volumes %@", error.sqrl_verboseDescription);
+				return [RACSignal error:error];
+			}
+		}]
+		replay]
+		setNameWithFormat:@"-installItemAtURL: %@ fromURL: %@", targetURL, sourceURL];
+}
+
+#pragma mark Temporary Directories
+
+- (RACSignal *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL {
+	NSParameterAssert(targetURL != nil);
+
+	RACSignal *manualTemporaryDirectory = [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		NSURL *temporaryDirectoryURL = [NSURL fileURLWithPathComponents:@[
+			NSTemporaryDirectory(),
+			[NSString stringWithFormat:@"com~github~ShipIt"],
+			NSProcessInfo.processInfo.globallyUniqueString,
+		]];
+
+		NSError *error = nil;
+		if ([NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error]) {
+			[subscriber sendNext:temporaryDirectoryURL];
+			[subscriber sendCompleted];
+		} else {
+			[subscriber sendError:error];
+		}
+
+		return nil;
+	}];
+
+	return [[[[self
+		temporaryDirectoryAppropriateForVolumeOfURL:targetURL]
+		concat:manualTemporaryDirectory]
+		take:1]
+		setNameWithFormat:@"-temporaryDirectoryAppropriateForURL: %@", targetURL];
+}
+
+- (RACSignal *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
+	NSParameterAssert(targetURL != nil);
+
+	return [[[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			NSError *error = nil;
+			NSURL *volumeURL = nil;
+			BOOL gotVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&error];
+			if (!gotVolumeURL) {
+				[subscriber sendError:error];
+				return nil;
+			}
+
+			if (volumeURL != nil) [subscriber sendNext:volumeURL];
+			[subscriber sendCompleted];
+
+			return nil;
+		}]
+		flattenMap:^(NSURL *volumeURL) {
+			NSError *error = nil;
+			NSURL *temporaryDirectoryURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&error];
+			if (temporaryDirectoryURL == nil) {
+				return [RACSignal error:error];
+			} else {
+				return [RACSignal return:temporaryDirectoryURL];
+			}
+		}]
+		setNameWithFormat:@"-temporaryDirectoryAppropriateForVolumeOfURL: %@", targetURL];
+}
+
+#pragma Quarantine Bit Removal
+
+- (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory {
+	NSParameterAssert(directory != nil);
+
+	return [[[[RACSignal
+		defer:^{
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:nil options:0 errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
+				return YES;
+			}];
+
+			return enumerator.rac_sequence.signal;
+		}]
+		flattenMap:^(NSURL *URL) {
+			const char *path = URL.path.fileSystemRepresentation;
+			if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
+				int code = errno;
+
+				// This code just means the extended attribute was never set on the
+				// file to begin with.
+				if (code != ENOATTR) {
+					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+					
+					const char *desc = strerror(code);
+					if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
+
+					return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+				}
+			}
+
+			return [RACSignal empty];
+		}]
+		replay]
+		setNameWithFormat:@"-clearQuarantineForDirectory: %@", directory];
+}
+
+#pragma mark Error Handling
+
+- (NSError *)errorByAddingDescription:(NSString *)description code:(NSInteger)code toError:(NSError *)error {
+	NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+
+	if (description != nil) userInfo[NSLocalizedDescriptionKey] = description;
+	if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+	return [NSError errorWithDomain:SQRLInstallerErrorDomain code:code userInfo:userInfo];
 }
 
 @end

@@ -200,7 +200,7 @@ it(@"should install an update in process", ^{
 	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
-	BOOL install = [installer installUpdateWithError:&installError];
+	BOOL install = [[installer installUpdate] waitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });
