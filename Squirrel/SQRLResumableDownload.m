@@ -31,8 +31,8 @@ static NSString * const SQRLResumableDownloadFileURLKey = @"fileURL";
 	self = [self init];
 	if (self == nil) return nil;
 
-	_response = [[decoder decodeObjectOfClass:NSHTTPURLResponse.class forKey:SQRLResumableDownloadResponseKey] copy];
-	_fileURL = [[decoder decodeObjectOfClass:NSURL.class forKey:SQRLResumableDownloadFileURLKey] copy];
+	_response = [[decoder decodeObjectForKey:SQRLResumableDownloadResponseKey] copy];
+	_fileURL = [[decoder decodeObjectForKey:SQRLResumableDownloadFileURLKey] copy];
 
 	return self;
 }
