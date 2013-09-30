@@ -8,13 +8,13 @@
 
 #import <Foundation/Foundation.h>
 
-// Manages the file Squirrel writes to disk per application.
-@interface SQRLFileManager : NSObject
+// Provides the file locations that Squirrel uses per application.
+@interface SQRLDirectoryManager : NSObject
 
 // Determine the current app identifier, uses bundle identifier or app name.
 //
-// Calls `fileManagerWithAppIdentifier:`.
-+ (instancetype)fileManagerForCurrentApplication;
+// Calls `initWithAppIdentifier:`.
++ (instancetype)directoryManagerForCurrentApplication;
 
 // Designated initialiser.
 //
@@ -25,10 +25,12 @@
 // The file to store resumable download state in.
 - (NSURL *)URLForResumableDownloadStateFile;
 
-// The directory to store update downloads in prior to installation.
+// The directory to store update downloads in prior to installation. The
+// directory is created for you.
 - (NSURL *)URLForDownloadDirectory;
 
-// The directory to unpack updates into prior to to installation.
+// The directory to unpack updates into prior to to installation. The
+// directory is created for you.
 - (NSURL *)URLForUnpackDirectory;
 
 @end

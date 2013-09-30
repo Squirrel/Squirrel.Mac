@@ -15,7 +15,7 @@
 #import "SQRLURLConnectionOperation.h"
 #import "SQRLDownloadOperation.h"
 #import "SQRLZipOperation.h"
-#import "SQRLFileManager.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLCodeSignatureVerifier.h"
 
 NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDomain";
@@ -189,7 +189,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 }
 
 - (void)unpackUpdate:(SQRLUpdate *)update archiveURL:(NSURL *)archiveURL {
-	NSURL *unpackDirectory = SQRLFileManager.fileManagerForCurrentApplication.URLForUnpackDirectory;
+	NSURL *unpackDirectory = SQRLDirectoryManager.directoryManagerForCurrentApplication.URLForUnpackDirectory;
 
 	NSURL *currentUnpackDirectory = [unpackDirectory URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
 

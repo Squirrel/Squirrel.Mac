@@ -10,7 +10,7 @@
 
 #import <CommonCrypto/CommonCrypto.h>
 
-#import "SQRLFileManager.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloadController ()
@@ -44,11 +44,11 @@
 }
 
 - (NSURL *)downloadStoreDirectory {
-	return SQRLFileManager.fileManagerForCurrentApplication.URLForDownloadDirectory;
+	return SQRLDirectoryManager.directoryManagerForCurrentApplication.URLForDownloadDirectory;
 }
 
 - (NSURL *)downloadStoreIndexFileLocation {
-	return SQRLFileManager.fileManagerForCurrentApplication.URLForResumableDownloadStateFile;
+	return SQRLDirectoryManager.directoryManagerForCurrentApplication.URLForResumableDownloadStateFile;
 }
 
 - (BOOL)removeAllResumableDownloads:(NSError **)errorRef {

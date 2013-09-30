@@ -10,8 +10,8 @@
 		530F057D17F5E190008E38F7 /* SQRLZipOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F057B17F5E190008E38F7 /* SQRLZipOperation.h */; };
 		530F057E17F5E190008E38F7 /* SQRLZipOperation.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F057C17F5E190008E38F7 /* SQRLZipOperation.m */; };
 		530F058017F5E19E008E38F7 /* SQRLZipOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F057F17F5E19E008E38F7 /* SQRLZipOperationSpec.m */; };
-		530F058317F5E385008E38F7 /* SQRLFileManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F058117F5E385008E38F7 /* SQRLFileManager.h */; };
-		530F058417F5E385008E38F7 /* SQRLFileManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F058217F5E385008E38F7 /* SQRLFileManager.m */; };
+		530F058317F5E385008E38F7 /* SQRLDirectoryManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F058117F5E385008E38F7 /* SQRLDirectoryManager.h */; };
+		530F058417F5E385008E38F7 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F058217F5E385008E38F7 /* SQRLDirectoryManager.m */; };
 		530F058917F5E41B008E38F7 /* SQRLDownloadController.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F058517F5E41B008E38F7 /* SQRLDownloadController.h */; };
 		530F058A17F5E41B008E38F7 /* SQRLDownloadController.m in Sources */ = {isa = PBXBuildFile; fileRef = 530F058617F5E41B008E38F7 /* SQRLDownloadController.m */; };
 		530F058B17F5E41B008E38F7 /* SQRLDownloadOperation.h in Headers */ = {isa = PBXBuildFile; fileRef = 530F058717F5E41B008E38F7 /* SQRLDownloadOperation.h */; };
@@ -265,8 +265,8 @@
 		530F057B17F5E190008E38F7 /* SQRLZipOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipOperation.h; sourceTree = "<group>"; };
 		530F057C17F5E190008E38F7 /* SQRLZipOperation.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipOperation.m; sourceTree = "<group>"; };
 		530F057F17F5E19E008E38F7 /* SQRLZipOperationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipOperationSpec.m; sourceTree = "<group>"; };
-		530F058117F5E385008E38F7 /* SQRLFileManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLFileManager.h; sourceTree = "<group>"; };
-		530F058217F5E385008E38F7 /* SQRLFileManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileManager.m; sourceTree = "<group>"; };
+		530F058117F5E385008E38F7 /* SQRLDirectoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDirectoryManager.h; sourceTree = "<group>"; };
+		530F058217F5E385008E38F7 /* SQRLDirectoryManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManager.m; sourceTree = "<group>"; };
 		530F058517F5E41B008E38F7 /* SQRLDownloadController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloadController.h; sourceTree = "<group>"; };
 		530F058617F5E41B008E38F7 /* SQRLDownloadController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadController.m; sourceTree = "<group>"; };
 		530F058717F5E41B008E38F7 /* SQRLDownloadOperation.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloadOperation.h; sourceTree = "<group>"; };
@@ -719,8 +719,8 @@
 				5332D13317F5F4C500F7089E /* SQRLUpdateOperation.m */,
 				530F057B17F5E190008E38F7 /* SQRLZipOperation.h */,
 				530F057C17F5E190008E38F7 /* SQRLZipOperation.m */,
-				530F058117F5E385008E38F7 /* SQRLFileManager.h */,
-				530F058217F5E385008E38F7 /* SQRLFileManager.m */,
+				530F058117F5E385008E38F7 /* SQRLDirectoryManager.h */,
+				530F058217F5E385008E38F7 /* SQRLDirectoryManager.m */,
 				530F058517F5E41B008E38F7 /* SQRLDownloadController.h */,
 				530F058617F5E41B008E38F7 /* SQRLDownloadController.m */,
 				530F058717F5E41B008E38F7 /* SQRLDownloadOperation.h */,
@@ -793,7 +793,7 @@
 				530F058B17F5E41B008E38F7 /* SQRLDownloadOperation.h in Headers */,
 				5332D13417F5F4C500F7089E /* SQRLUpdateOperation.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
-				530F058317F5E385008E38F7 /* SQRLFileManager.h in Headers */,
+				530F058317F5E385008E38F7 /* SQRLDirectoryManager.h in Headers */,
 				53AACF5517E9CB7500B41027 /* SQRLUpdate+Private.h in Headers */,
 				F6EB216A179D03AE001108CF /* EXTKeyPathCoding.h in Headers */,
 				5332D13D17F5F8E200F7089E /* Squirrel-Constants.h in Headers */,
@@ -1106,7 +1106,7 @@
 				5332D13517F5F4C500F7089E /* SQRLUpdateOperation.m in Sources */,
 				530F058A17F5E41B008E38F7 /* SQRLDownloadController.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
-				530F058417F5E385008E38F7 /* SQRLFileManager.m in Sources */,
+				530F058417F5E385008E38F7 /* SQRLDirectoryManager.m in Sources */,
 				530F058C17F5E41B008E38F7 /* SQRLDownloadOperation.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				533076E417EB685B00BDCCE0 /* SQRLInstaller.m in Sources */,

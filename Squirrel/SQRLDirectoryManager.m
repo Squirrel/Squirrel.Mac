@@ -6,15 +6,15 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLFileManager.h"
+#import "SQRLDirectoryManager.h"
 
-@interface SQRLFileManager ()
+@interface SQRLDirectoryManager ()
 @property (nonatomic, copy, readonly) NSString *appIdentifier;
 @end
 
-@implementation SQRLFileManager
+@implementation SQRLDirectoryManager
 
-+ (instancetype)fileManagerForCurrentApplication {
++ (instancetype)directoryManagerForCurrentApplication {
 	NSString *identifier = nil;
 
 	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
