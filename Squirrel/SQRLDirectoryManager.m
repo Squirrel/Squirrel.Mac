@@ -35,6 +35,8 @@
 }
 
 - (instancetype)initWithAppIdentifier:(NSString *)appIdentifier {
+	NSParameterAssert(appIdentifier != nil);
+	
 	self = [self init];
 	if (self == nil) return nil;
 
