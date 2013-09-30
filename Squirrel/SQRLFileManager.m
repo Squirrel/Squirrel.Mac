@@ -51,9 +51,13 @@
 - (NSURL *)cacheSubdirectoryWithName:(NSString *)subdirectoryName {
 	NSURL *directory = self.class.cacheDirectory;
 	directory = [directory URLByAppendingPathComponent:[self.appIdentifier stringByReplacingOccurrencesOfString:@"." withString:@"~"]];
-	directory = [directory URLByAppendingPathComponent:subdirectoryName];
+	if (subdirectoryName != nil) directory = [directory URLByAppendingPathComponent:subdirectoryName];
 	[NSFileManager.defaultManager createDirectoryAtURL:directory withIntermediateDirectories:YES attributes:nil error:NULL];
 	return directory;
+}
+
+- (NSURL *)URLForResumableDownloadStateFile {
+	return [[self cacheSubdirectoryWithName:nil] URLByAppendingPathComponent:@"Index.plist"];
 }
 
 - (NSURL *)URLForDownloadDirectory {

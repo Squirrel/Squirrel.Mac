@@ -22,6 +22,9 @@
 //                 application.
 - (instancetype)initWithAppIdentifier:(NSString *)appIdentifier;
 
+// The file to store resumable download state in.
+- (NSURL *)URLForResumableDownloadStateFile;
+
 // The directory to store update downloads in prior to installation.
 - (NSURL *)URLForDownloadDirectory;
 

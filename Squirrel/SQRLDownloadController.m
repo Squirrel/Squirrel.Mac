@@ -23,12 +23,12 @@
 	return SQRLFileManager.fileManagerForCurrentApplication.URLForDownloadDirectory;
 }
 
-- (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
-	return [NSFileManager.defaultManager removeItemAtURL:self.downloadStoreDirectory error:errorRef];
+- (NSURL *)downloadStoreIndexFileLocation {
+	return SQRLFileManager.fileManagerForCurrentApplication.URLForResumableDownloadStateFile;
 }
 
-- (NSURL *)downloadStoreIndexFileLocation {
-	return [self.downloadStoreDirectory URLByAppendingPathComponent:@"Index.plist"];
+- (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
+	return [NSFileManager.defaultManager removeItemAtURL:self.downloadStoreDirectory error:errorRef];
 }
 
 - (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
