@@ -147,7 +147,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 	[self.controlQueue addOperation:finishOperation];
 }
 
-- (void)parseUpdateWithResponseProvider:(SQRLResponseProvider)responseProvider {
+- (void)parseUpdateWithResponseProvider:(NSData * (^)(NSURLResponse **, NSError **))responseProvider {
 	NSData * (^provider)(NSError **) = ^ (NSError **errorRef) {
 		return responseProvider(NULL, errorRef);
 	};
