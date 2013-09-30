@@ -15,17 +15,12 @@
 @implementation SQRLDirectoryManager
 
 + (instancetype)directoryManagerForCurrentApplication {
-	NSString *identifier = nil;
+	NSString *identifier = NSBundle.mainBundle.bundleIdentifier ?: [NSBundle.mainBundle objectForInfoDictionaryKey:(__bridge NSString *)kCFBundleNameKey];
 
-	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
-	identifier = currentApplication.bundleIdentifier;
-
+	// Should only fallback to when running under otest where
+	// NSBundle.mainBundle doesn't return useful data
 	if (identifier == nil) {
-		NSDictionary *infoPlist = CFBridgingRelease(CFBundleCopyInfoDictionaryForURL((__bridge CFURLRef)currentApplication.bundleURL));
-		identifier = infoPlist[(id)kCFBundleNameKey];
-	}
-
-	if (identifier == nil) {
+		NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 		identifier = currentApplication.localizedName;
 	}
 
@@ -36,7 +31,7 @@
 
 - (instancetype)initWithAppIdentifier:(NSString *)appIdentifier {
 	NSParameterAssert(appIdentifier != nil);
-	
+
 	self = [self init];
 	if (self == nil) return nil;
 
