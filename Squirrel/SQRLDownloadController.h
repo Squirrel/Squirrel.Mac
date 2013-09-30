@@ -8,6 +8,19 @@
 
 #import <Foundation/Foundation.h>
 
+// `NSHTTPURLResponse`, the latest response, subsequent responses should match
+// this if they intend to append to the local file, otherwise the local file
+// should be truncated.
+//
+// Absent from the download dictionary if there's no local download for the URL
+// yet.
+extern NSString * const SQRLDownloadHTTPResponseKey;
+
+// `NSURL`, location of local cache file.
+//
+// Present in new downloads, but no file will exist at the location yet.
+extern NSString * const SQRLDownloadLocalFileURLKey;
+
 // Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
 @interface SQRLDownloadController : NSObject
@@ -20,19 +33,6 @@
 // state.
 - (void)removeAllResumableDownloads;
 
-// `NSString`, ETag of the latest response, subsequent responses should match
-// this if they intend to append to the local file, otherwise the local file
-// should be truncated.
-//
-// Absent from the download dictionary if there's no local download for the URL
-// yet.
-extern NSString * const SQRLDownloadETagKey;
-
-// `NSURL`, location of local cache file.
-//
-// Present in new downloads, but no file will exist at the location yet.
-extern NSString * const SQRLDownloadLocalFileKey;
-
 // Retrieve a previously started download, or initialise a new download, callers
 // don't need to know whether a download has been previously started or not.
 - (NSDictionary *)downloadForURL:(NSURL *)URL;
@@ -40,8 +40,8 @@ extern NSString * const SQRLDownloadLocalFileKey;
 // Store metadata for a download so that it can be resumed later.
 //
 // Required keys
-//  - SQRLDownloadETagKey
-//  - SQRLDownloadLocalFileKey
+//  - SQRLDownloadHTTPResponseKey
+//  - SQRLDownloadLocalFileURLKey
 //
 // Downloads without an ETag header cannot be resumed and should not be written
 // to the download store.

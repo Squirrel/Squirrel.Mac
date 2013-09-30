@@ -24,6 +24,8 @@
 // Serial queue for managing operation state
 @property (nonatomic, strong, readonly) NSOperationQueue *controlQueue;
 
+// Download controller for resumable state
+@property (nonatomic, strong, readonly) SQRLDownloadController *downloadController;
 // Download retrieved from the download controller, resume state
 @property (nonatomic, copy) NSDictionary *download;
 
@@ -49,6 +51,8 @@
 	_controlQueue = [[NSOperationQueue alloc] init];
 	_controlQueue.maxConcurrentOperationCount = 1;
 	_controlQueue.name = @"com.github.Squirrel.download.control";
+
+	_downloadController = [SQRLDownloadController defaultDownloadController];
 
 	return self;
 }
@@ -110,29 +114,37 @@
 #pragma mark Download
 
 - (void)startDownload {
-	self.download = [SQRLDownloadController.defaultDownloadController downloadForURL:self.request.URL];
+	self.download = [self.downloadController downloadForURL:self.request.URL];
 	[self startRequest:[SQRLDownloadOperation requestWithOriginalRequest:self.request download:self.download]];
 }
 
 + (NSURLRequest *)requestWithOriginalRequest:(NSURLRequest *)request download:(NSDictionary *)download {
+	NSHTTPURLResponse *response = download[SQRLDownloadHTTPResponseKey];
+	NSString *ETag = [self ETagFromResponse:response];
+	if (ETag == nil) return request;
+
+	NSURL *downloadLocation = download[SQRLDownloadLocalFileURLKey];
+
+	NSNumber *alreadyDownloadedSize = nil;
+	NSError *alreadyDownloadedSizeError = nil;
+	BOOL getAlreadyDownloadedSize = [downloadLocation getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
+	if (!getAlreadyDownloadedSize) return request;
+
 	NSMutableURLRequest *newRequest = [request mutableCopy];
-
-	NSString *downloadETag = download[SQRLDownloadETagKey];
-	do {
-		if (downloadETag == nil) break;
-
-		NSURL *downloadLocation = download[SQRLDownloadLocalFileKey];
-
-		NSNumber *alreadyDownloadedSize = nil;
-		NSError *alreadyDownloadedSizeError = nil;
-		BOOL getAlreadyDownloadedSize = [downloadLocation getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
-		if (!getAlreadyDownloadedSize) break;
-
-		[newRequest setValue:downloadETag forHTTPHeaderField:@"If-Range"];
-		[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forKey:@"Range"];
-	} while (0);
-
+	[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
+	[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forKey:@"Range"];
 	return newRequest;
+}
+
++ (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
+	__block NSString *ETag = nil;
+	[response.allHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString *header, NSString *value, BOOL *stop) {
+		if ([header caseInsensitiveCompare:@"ETag"] != NSOrderedSame) return;
+
+		ETag = value;
+		*stop = YES;
+	}];
+	return ETag;
 }
 
 - (void)startRequest:(NSURLRequest *)request {
@@ -170,27 +182,18 @@
 		// downloaded bytes, great success!
 	}
 
-	__block NSString *ETag = nil;
-	[[httpResponse allHeaderFields] enumerateKeysAndObjectsUsingBlock:^ (NSString *header, NSString *value, BOOL *stop) {
-		if ([header caseInsensitiveCompare:@"ETag"] != NSOrderedSame) return;
-
-		ETag = value;
-		*stop = YES;
-	}];
-	if (ETag != nil) {
-		[self recordDownloadWithETag:ETag];
-	}
+	[self recordDownloadWithResponse:httpResponse];
 }
 
-- (void)recordDownloadWithETag:(NSString *)ETag {
+- (void)recordDownloadWithResponse:(NSHTTPURLResponse *)response {
 	NSMutableDictionary *newDownload = [self.download mutableCopy];
-	newDownload[SQRLDownloadETagKey] = ETag;
-	[SQRLDownloadController.defaultDownloadController setDownload:newDownload forURL:self.request.URL];
+	newDownload[SQRLDownloadHTTPResponseKey] = response;
+	[self.downloadController setDownload:newDownload forURL:self.request.URL];
 }
 
 - (void)removeDownloadFile {
 	NSError *error = nil;
-	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.download[SQRLDownloadLocalFileKey] error:&error];
+	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.download[SQRLDownloadLocalFileURLKey] error:&error];
 	if (!remove) {
 		if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return;
 
@@ -200,7 +203,7 @@
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.download[SQRLDownloadLocalFileKey] append:YES];
+	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.download[SQRLDownloadLocalFileURLKey] append:YES];
 
 	[outputStream open];
 	NSInteger written = [outputStream write:data.bytes maxLength:data.length];
@@ -214,7 +217,7 @@
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
 	NSURLResponse *response = self.response;
-	NSURL *localURL = self.download[SQRLDownloadLocalFileKey];
+	NSURL *localURL = self.download[SQRLDownloadLocalFileURLKey];
 
 	self.completionProvider = ^ NSURL * (NSURLResponse **responseRef, NSError **errorRef) {
 		if (responseRef != NULL) *responseRef = response;

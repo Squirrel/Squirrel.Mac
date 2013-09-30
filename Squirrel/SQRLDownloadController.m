@@ -12,8 +12,8 @@
 
 #import "SQRLFileManager.h"
 
-NSString * const SQRLDownloadETagKey = @"SQRLDownloadETagKey";
-NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
+NSString * const SQRLDownloadHTTPResponseKey = @"SQRLDownloadHTTPResponseKey";
+NSString * const SQRLDownloadLocalFileURLKey = @"SQRLDownloadLocalFileURLKey";
 
 @implementation SQRLDownloadController
 
@@ -119,7 +119,7 @@ NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
 
 	if (download == nil) {
 		return @{
-			SQRLDownloadLocalFileKey: [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:URL]],
+			SQRLDownloadLocalFileURLKey: [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:URL]],
 		};
 	}
 
@@ -127,7 +127,7 @@ NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
 }
 
 - (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL {
-	NSArray *requiredKeys = @[ SQRLDownloadETagKey, SQRLDownloadLocalFileKey ];
+	NSArray *requiredKeys = @[ SQRLDownloadHTTPResponseKey, SQRLDownloadLocalFileURLKey ];
 	NSParameterAssert([[NSSet setWithArray:requiredKeys] isSubsetOfSet:[NSSet setWithArray:download.allKeys]]);
 
 	NSString *key = [self.class keyForURL:URL];

@@ -25,7 +25,7 @@ NSURL * (^newDownloadURL)() = ^ () {
 	NSDictionary *download = [downloadController downloadForURL:newTestURL()];
 	expect(download).notTo.beNil();
 
-	NSURL *downloadURL = download[SQRLDownloadLocalFileKey];
+	NSURL *downloadURL = download[SQRLDownloadLocalFileURLKey];
 	expect(downloadURL).notTo.beNil();
 
 	return downloadURL;
@@ -54,18 +54,21 @@ it(@"should return the same path for the same URL", ^{
 	expect(download1).to.equal(download2);
 });
 
-it(@"should remember an ETag", ^{
+it(@"should remember a response", ^{
 	NSURL *testURL = newTestURL();
 
 	NSDictionary *download1 = [downloadController downloadForURL:testURL];
 
 	NSMutableDictionary *newDownload = [download1 mutableCopy];
-	newDownload[SQRLDownloadETagKey] = NSProcessInfo.processInfo.globallyUniqueString;
+	NSHTTPURLResponse *newDownloadResponse = [[NSHTTPURLResponse alloc] initWithURL:testURL statusCode:200 HTTPVersion:(__bridge NSString *)kCFHTTPVersion1_1 headerFields:@{ @"ETag": NSProcessInfo.processInfo.globallyUniqueString }];
+	newDownload[SQRLDownloadHTTPResponseKey] = newDownloadResponse;
 
 	[downloadController setDownload:newDownload forURL:testURL];
 
 	NSDictionary *download2 = [downloadController downloadForURL:testURL];
-	expect(download2).to.equal(newDownload);
+	NSHTTPURLResponse *download2Response = download2[SQRLDownloadHTTPResponseKey];
+	expect(newDownloadResponse.URL).to.equal(download2Response.URL);
+	expect(newDownloadResponse.allHeaderFields).to.equal(download2Response.allHeaderFields);
 });
 
 SpecEnd
