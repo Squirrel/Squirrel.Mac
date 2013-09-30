@@ -61,7 +61,8 @@
 }
 
 - (NSURL *)URLForUnpackDirectory {
-	// noindex so that Spotlight doesn't pick up apps pending update
+	// noindex so that Spotlight doesn't pick up apps pending update and add
+	// them to the Launch Services database
 	return [self cacheSubdirectoryWithName:@"unpack.noindex"];
 }
 
