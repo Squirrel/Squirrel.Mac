@@ -8,7 +8,7 @@
 
 #import "SQRLDownloadController.h"
 
-#import <CommonCrypto/CommonDigest.h>
+#import <CommonCrypto/CommonCrypto.h>
 
 #import "SQRLFileManager.h"
 #import "SQRLResumableDownload.h"
