@@ -172,7 +172,7 @@
 	NSString *key = [self.class keyForURL:URL];
 
 	NSError *writeError = nil;
-	__unused BOOL write = [self coordinateWritingIndex:&writeError byAccessor:^(NSDictionary *index) {
+	[self coordinateWritingIndex:&writeError byAccessor:^(NSDictionary *index) {
 		NSMutableDictionary *newIndex = [index mutableCopy];
 
 		if (download != nil) {
