@@ -31,9 +31,6 @@ extern NSString * const SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKe
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
 
-// There is no update to be installed from -installUpdateIfNeeded:.
-extern const NSInteger SQRLUpdaterErrorNoUpdateWaiting;
-
 // The downloaded update does not contain an app bundle, or it was deleted on
 // disk before we could get to it.
 extern const NSInteger SQRLUpdaterErrorMissingUpdateBundle;
@@ -44,6 +41,8 @@ extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;
 // The code signing requirement for the running application could not be
 // retrieved.
 extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
+
+@class RACSignal;
 
 // Downloads and installs updates from GitHub.com The Website.
 @interface SQRLUpdater : NSObject
@@ -98,9 +97,11 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // If `shouldRelaunch` is YES, the app will be launched back up after the update
 // is installed successfully.
 //
-// completionHandler - A block to invoke when updating in place has completed or failed.
-//                     The app should immediately terminate once this block is invoked.
-- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler;
+// Returns a signal which will send a `SQRLDownloadedUpdate` then complete on
+// a background scheduler once the update is ready to be installed. If no update
+// is available for installation, the signal will complete without sending any
+// values.
+- (RACSignal *)prepareUpdateForInstallation;
 
 @end
 

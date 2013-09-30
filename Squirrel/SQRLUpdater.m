@@ -24,7 +24,6 @@ NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAva
 NSString * const SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey";
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
-const NSInteger SQRLUpdaterErrorNoUpdateWaiting = 1;
 const NSInteger SQRLUpdaterErrorMissingUpdateBundle = 2;
 const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
@@ -174,36 +173,30 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 			self.state = SQRLUpdaterStateUnzippingUpdate;
 			
-			[[SQRLZipArchiver
+			[[[[[[[SQRLZipArchiver
 				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder]
-				subscribeError:^(NSError *error) {
-					NSLog(@"Could not extract update.");
-					[self finishAndSetIdle];
-				} completed:^{
-					NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
-					NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
-					if (updateBundle == nil) {
-						NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
-						[self finishAndSetIdle];
-						return;
-					}
-
-					[[self.verifier
+				then:^{
+					return [self updateBundleMatchingCurrentApplicationInDirectory:self.downloadFolder];
+				}]
+				flattenMap:^(NSBundle *updateBundle) {
+					return [[self.verifier
 						verifyCodeSignatureOfBundle:updateBundle.bundleURL]
-						subscribeError:^(NSError *error) {
-							NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
-							[self finishAndSetIdle];
-						} completed:^{
-							NSDictionary *userInfo = @{
-								SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]
-							};
-							
-							self.state = SQRLUpdaterStateAwaitingRelaunch;
-							
-							dispatch_async(dispatch_get_main_queue(), ^{
-								[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-							});
+						then:^{
+							SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
+							return [RACSignal return:downloadedUpdate];
 						}];
+				}]
+				doNext:^(id _) {
+					self.state = SQRLUpdaterStateAwaitingRelaunch;
+				}]
+				doError:^(NSError *error) {
+					NSLog(@"Could not install update: %@", error.sqrl_verboseDescription);
+					[self finishAndSetIdle];
+				}]
+				deliverOn:RACScheduler.mainThreadScheduler]
+				subscribeNext:^(SQRLDownloadedUpdate *downloadedUpdate) {
+					NSDictionary *userInfo = @{ SQRLUpdaterUpdateAvailableNotificationDownloadedUpdateKey: downloadedUpdate };
+					[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
 				}];
 		}];
 		
@@ -227,39 +220,54 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 
 #pragma mark Installing Updates
 
-- (NSBundle *)applicationBundleWithIdentifier:(NSString *)bundleIdentifier inDirectory:(NSURL *)directory {
-	NSParameterAssert(bundleIdentifier != nil);
+- (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory {
+	NSParameterAssert(directory != nil);
 
-	if (directory == nil) return nil;
+	NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
+	return [[[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
+				return YES;
+			}];
+			
+			NSURL *updateBundleURL = [enumerator.rac_sequence objectPassingTest:^(NSURL *URL) {
+				NSString *type = nil;
+				NSError *error = nil;
+				if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
+					NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
+					return NO;
+				}
 
-	NSFileManager *manager = [[NSFileManager alloc] init];
-	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
-		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
-		return YES;
-	}];
+				if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
 
-	for (NSURL *URL in enumerator) {
-		NSString *type = nil;
-		NSError *error = nil;
-		if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
-			NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
-			continue;
-		}
+				NSBundle *bundle = [NSBundle bundleWithURL:URL];
+				if (bundle == nil) {
+					NSLog(@"Could not open application bundle at %@", URL);
+					return NO;
+				}
 
-		if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) continue;
+				return [bundle.bundleIdentifier isEqual:bundleIdentifier];
+			}];
 
-		NSBundle *bundle = [NSBundle bundleWithURL:URL];
-		if (bundle == nil) {
-			NSLog(@"Could not open application bundle at %@", URL);
-			continue;
-		}
+			if (updateBundleURL != nil) {
+				[subscriber sendNext:updateBundleURL];
+				[subscriber sendCompleted];
+			} else {
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), NSRunningApplication.currentApplication.bundleIdentifier, directory],
+				};
 
-		if ([bundle.bundleIdentifier isEqual:bundleIdentifier]) {
-			return bundle;
-		}
-	}
+				[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]];
+			}
 
-	return nil;
+			return nil;
+		}]
+		map:^(NSURL *URL) {
+			return [NSBundle bundleWithURL:URL];
+		}]
+		setNameWithFormat:@"-applicationBundleMatchingCurrentApplicationInDirectory: %@", directory];
 }
 
 - (NSURL *)applicationSupportURL {
@@ -281,88 +289,94 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	return appSupportURL;
 }
 
-- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler {
-	__typeof__(completionHandler) originalHandler = [completionHandler copy];
-
-	completionHandler = ^(BOOL success, NSError *error) {
-		if (!success) [self finishAndSetIdle];
-		originalHandler(success, error);
-	};
-
-	if (self.state != SQRLUpdaterStateAwaitingRelaunch) {
-		NSDictionary *userInfo = @{
-			NSLocalizedDescriptionKey: NSLocalizedString(@"No update to install", nil),
-		};
-
-		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorNoUpdateWaiting userInfo:userInfo]);
-		return;
-	}
-	
-	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
-	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];
-	if (updateBundle == nil) {
-		NSDictionary *userInfo = @{
-			NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), currentApplication.bundleIdentifier, self.downloadFolder],
-		};
-
-		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]);
-		return;
-	}
-
-	NSURL *targetURL = currentApplication.bundleURL;
-
-	NSData *requirementData = self.verifier.requirementData;
-	if (requirementData == nil) {
-		NSDictionary *userInfo = @{
-			NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not load code signing requirement for %@", nil), currentApplication.bundleIdentifier],
-		};
-
-		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorRetrievingCodeSigningRequirement userInfo:userInfo]);
-		return;
-	}
-
-	// If we can't determine whether it can be written, assume nonprivileged and
-	// wait for another more canonical error
-	NSNumber *targetWritable = nil;
-	NSError *targetWritableError = nil;
-	BOOL getWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
-
-	[[SQRLShipItLauncher
-		launchPrivileged:(getWritable && !targetWritable.boolValue)]
-		subscribeNext:^(SQRLXPCObject *connection) {
-			[NSProcessInfo.processInfo disableSuddenTermination];
-
-			xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
-			@onExit {
-				xpc_release(message);
+- (RACSignal *)codeSigningRequirementData {
+	return [[RACSignal defer:^{
+		NSData *requirementData = self.verifier.requirementData;
+		if (requirementData != nil) {
+			return [RACSignal return:requirementData];
+		} else {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not load code signing requirement for %@", nil), NSRunningApplication.currentApplication.bundleIdentifier],
 			};
 
-			xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-			xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
-			xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
-			xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
-			xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
-			xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
+			return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorRetrievingCodeSigningRequirement userInfo:userInfo]];
+		}
+	}] setNameWithFormat:@"-codeSigningRequirementData"];
+}
 
-			xpc_connection_resume(connection.object);
-			xpc_connection_send_message_with_reply(connection.object, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
-				BOOL success = xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey);
-				NSError *error = nil;
-				if (!success) {
+- (RACSignal *)prepareUpdateForInstallation {
+	if (self.state != SQRLUpdaterStateAwaitingRelaunch) return [RACSignal empty];
+
+	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+	return [[[[[[[RACSignal
+		zip:@[
+			[self updateBundleMatchingCurrentApplicationInDirectory:self.downloadFolder],
+			[self codeSigningRequirementData],
+		] reduce:^(NSBundle *updateBundle, NSData *requirementData) {
+			NSNumber *targetWritable = nil;
+			NSError *targetWritableError = nil;
+			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
+
+			return [[SQRLShipItLauncher
+				// If we can't determine whether it can be written, assume nonprivileged and
+				// wait for another, more canonical error.
+				launchPrivileged:(gotWritable && !targetWritable.boolValue)]
+				flattenMap:^(SQRLXPCObject *connection) {
+					xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+
+					SQRLXPCObject *wrappedMessage = [[SQRLXPCObject alloc] initWithXPCObject:message];
+					xpc_release(message);
+
+					xpc_dictionary_set_string(wrappedMessage.object, SQRLShipItCommandKey, SQRLShipItInstallCommand);
+					xpc_dictionary_set_string(wrappedMessage.object, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
+					xpc_dictionary_set_string(wrappedMessage.object, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
+					xpc_dictionary_set_bool(wrappedMessage.object, SQRLShouldRelaunchKey, self.shouldRelaunch);
+					xpc_dictionary_set_bool(wrappedMessage.object, SQRLWaitForConnectionKey, true);
+					xpc_dictionary_set_data(wrappedMessage.object, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
+
+					xpc_connection_resume(connection.object);
+					return [self sendMessage:wrappedMessage overConnection:connection];
+				}];
+		}]
+		flatten]
+		initially:^{
+			[NSProcessInfo.processInfo disableSuddenTermination];
+		}]
+		finally:^{
+			[NSProcessInfo.processInfo enableSuddenTermination];
+		}]
+		doError:^(NSError *error) {
+			[self finishAndSetIdle];
+		}]
+		replay]
+		setNameWithFormat:@"-prepareUpdateForInstallation"];
+}
+
+- (RACSignal *)sendMessage:(SQRLXPCObject *)message overConnection:(SQRLXPCObject *)connection {
+	NSParameterAssert(message != nil);
+	NSParameterAssert(connection != nil);
+
+	return [[[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			xpc_connection_send_message_with_reply(connection.object, message.object, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
+				if (xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey)) {
+					SQRLXPCObject *wrappedReply = [[SQRLXPCObject alloc] initWithXPCObject:reply];
+					[subscriber sendNext:wrappedReply];
+					[subscriber sendCompleted];
+				} else {
 					const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
 					NSDictionary *userInfo = @{
 						NSLocalizedDescriptionKey: @(errorStr) ?: NSLocalizedString(@"An unknown error occurred within ShipIt", nil),
 					};
 
-					error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo];
-					[NSProcessInfo.processInfo enableSuddenTermination];
+					[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
 				}
-
-				completionHandler(success, error);
 			});
-		} error:^(NSError *error) {
-			completionHandler(NO, error);
-		}];
+			
+			return nil;
+		}]
+		replay]
+		setNameWithFormat:@"-sendMessage: %@ overConnection: %@", message, connection];
 }
 
 @end

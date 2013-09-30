@@ -7,6 +7,8 @@
 //
 
 #import "TestAppDelegate.h"
+#import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 @interface TestAppDelegate ()
 
@@ -39,33 +41,42 @@
 
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
-	[self.updater addObserver:self forKeyPath:@"state" options:0 context:NULL];
+
+	@weakify(self);
+
+	RACSignal *updates = [[[[[[RACObserve(self.updater, state)
+		filter:^ BOOL (NSNumber *state) {
+			return state.unsignedIntegerValue == SQRLUpdaterStateAwaitingRelaunch;
+		}]
+		flattenMap:^(id _) {
+			@strongify(self);
+			return [self.updater prepareUpdateForInstallation];
+		}]
+		doNext:^(SQRLDownloadedUpdate *update) {
+			NSLog(@"Update ready to install: %@", update);
+		}]
+		catch:^(NSError *error) {
+			NSLog(@"Error in updater: %@", error);
+			return [RACSignal return:nil];
+		}]
+		setNameWithFormat:@"updates"]
+		logAll];
+	
+	RACSignal *idling = [[[[RACObserve(self.updater, state)
+		skip:1]
+		filter:^ BOOL (NSNumber *state) {
+			return state.unsignedIntegerValue == SQRLUpdaterStateIdle;
+		}]
+		setNameWithFormat:@"idling"]
+		logAll];
+
+	RACSignal *termination = [[RACSignal
+		merge:@[ updates, idling ]]
+		mapReplace:self];
+	
+	[NSApp rac_liftSelector:@selector(terminate:) withSignals:termination, nil];
+
 	[self.updater checkForUpdates];
-}
-
-- (void)dealloc {
-	[self.updater removeObserver:self forKeyPath:@"state"];
-}
-
-#pragma mark KVO
-
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(SQRLUpdater *)updater change:(NSDictionary *)change context:(void *)context {
-	NSParameterAssert([updater isKindOfClass:SQRLUpdater.class]);
-
-	if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
-		[updater installUpdateIfNeeded:^(BOOL success, NSError *error) {
-			if (success) {
-				NSLog(@"Update installed");
-			} else {
-				NSLog(@"Error in updater: %@", error);
-			}
-
-			[NSApp terminate:self];
-		}];
-	} else if (updater.state == SQRLUpdaterStateIdle) {
-		NSLog(@"Updater reset to idle state, terminating");
-		[NSApp terminate:self];
-	}
 }
 
 @end
