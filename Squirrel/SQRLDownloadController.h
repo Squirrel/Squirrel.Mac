@@ -20,7 +20,7 @@
 
 // Clean the resumable download state, removes downloaded data and tracking
 // state.
-- (void)removeAllResumableDownloads;
+- (BOOL)removeAllResumableDownloads:(NSError **)errorRef;
 
 // Retrieve a previously started download, or initialise a new download, callers
 // don't need to know whether a download has been previously started or not.

@@ -23,8 +23,8 @@
 	return SQRLFileManager.fileManagerForCurrentApplication.URLForDownloadDirectory;
 }
 
-- (void)removeAllResumableDownloads {
-	[NSFileManager.defaultManager removeItemAtURL:self.downloadStoreDirectory error:NULL];
+- (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
+	return [NSFileManager.defaultManager removeItemAtURL:self.downloadStoreDirectory error:errorRef];
 }
 
 - (NSURL *)downloadStoreIndexFileLocation {

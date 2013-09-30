@@ -8,6 +8,7 @@
 
 #import "SQRLDownloadController.h"
 #import "SQRLResumableDownload.h"
+#import "NSError+SQRLVerbosityExtensions.h"
 
 SpecBegin(SQRLDownloadController)
 
@@ -15,7 +16,10 @@ __block SQRLDownloadController *downloadController = nil;
 
 beforeAll(^{
 	downloadController = SQRLDownloadController.defaultDownloadController;
-	[downloadController removeAllResumableDownloads];
+
+	NSError *removeError = nil;
+	BOOL remove = [downloadController removeAllResumableDownloads:&removeError];
+	if (!remove) NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
 });
 
 NSURL * (^newTestURL)() = ^ () {
