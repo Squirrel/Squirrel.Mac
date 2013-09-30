@@ -12,9 +12,13 @@
 // where they're stored.
 @interface SQRLDownloadController : NSObject
 
+// Default download controller, stores downloads in the ~/Library/Caches
+// directory
++ (instancetype)defaultDownloadController;
+
 // Clean the resumable download state, removes downloaded data and tracking
 // state.
-+ (void)removeAllResumableDownloads;
+- (void)removeAllResumableDownloads;
 
 // `NSString`, ETag of the latest response, subsequent responses should match
 // this if they intend to append to the local file, otherwise the local file
@@ -31,7 +35,7 @@ extern NSString * const SQRLDownloadLocalFileKey;
 
 // Retrieve a previously started download, or initialise a new download, callers
 // don't need to know whether a download has been previously started or not.
-+ (NSDictionary *)downloadForURL:(NSURL *)URL;
+- (NSDictionary *)downloadForURL:(NSURL *)URL;
 
 // Store metadata for a download so that it can be resumed later.
 //
@@ -41,6 +45,6 @@ extern NSString * const SQRLDownloadLocalFileKey;
 //
 // Downloads without an ETag header cannot be resumed and should not be written
 // to the download store.
-+ (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL;
+- (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL;
 
 @end

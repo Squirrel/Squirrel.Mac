@@ -10,8 +10,11 @@
 
 SpecBegin(SQRLDownloadController)
 
+__block SQRLDownloadController *downloadController = nil;
+
 beforeAll(^{
-	[SQRLDownloadController removeAllResumableDownloads];
+	downloadController = SQRLDownloadController.defaultDownloadController;
+	[downloadController removeAllResumableDownloads];
 });
 
 NSURL * (^newTestURL)() = ^ () {
@@ -19,7 +22,7 @@ NSURL * (^newTestURL)() = ^ () {
 };
 
 NSURL * (^newDownloadURL)() = ^ () {
-	NSDictionary *download = [SQRLDownloadController downloadForURL:newTestURL()];
+	NSDictionary *download = [downloadController downloadForURL:newTestURL()];
 	expect(download).notTo.beNil();
 
 	NSURL *downloadURL = download[SQRLDownloadLocalFileKey];
@@ -45,8 +48,8 @@ it(@"should return a path in a writable directory for new URLs", ^{
 it(@"should return the same path for the same URL", ^{
 	NSURL *testURL = newTestURL();
 
-	NSDictionary *download1 = [SQRLDownloadController downloadForURL:testURL];
-	NSDictionary *download2 = [SQRLDownloadController downloadForURL:testURL];
+	NSDictionary *download1 = [downloadController downloadForURL:testURL];
+	NSDictionary *download2 = [downloadController downloadForURL:testURL];
 
 	expect(download1).to.equal(download2);
 });
@@ -54,14 +57,14 @@ it(@"should return the same path for the same URL", ^{
 it(@"should remember an ETag", ^{
 	NSURL *testURL = newTestURL();
 
-	NSDictionary *download1 = [SQRLDownloadController downloadForURL:testURL];
+	NSDictionary *download1 = [downloadController downloadForURL:testURL];
 
 	NSMutableDictionary *newDownload = [download1 mutableCopy];
 	newDownload[SQRLDownloadETagKey] = NSProcessInfo.processInfo.globallyUniqueString;
 
-	[SQRLDownloadController setDownload:newDownload forURL:testURL];
+	[downloadController setDownload:newDownload forURL:testURL];
 
-	NSDictionary *download2 = [SQRLDownloadController downloadForURL:testURL];
+	NSDictionary *download2 = [downloadController downloadForURL:testURL];
 	expect(download2).to.equal(newDownload);
 });
 

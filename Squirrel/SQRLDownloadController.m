@@ -17,19 +17,23 @@ NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
 
 @implementation SQRLDownloadController
 
-+ (NSURL *)downloadStoreDirectory {
++ (instancetype)defaultDownloadController {
+	return [[self alloc] init];
+}
+
+- (NSURL *)downloadStoreDirectory {
 	return SQRLFileManager.fileManagerForCurrentApplication.URLForDownloadDirectory;
 }
 
-+ (void)removeAllResumableDownloads {
+- (void)removeAllResumableDownloads {
 	[NSFileManager.defaultManager removeItemAtURL:self.downloadStoreDirectory error:NULL];
 }
 
-+ (NSURL *)downloadStoreIndexFileLocation {
+- (NSURL *)downloadStoreIndexFileLocation {
 	return [self.downloadStoreDirectory URLByAppendingPathComponent:@"Index.plist"];
 }
 
-+ (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
+- (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
 	__block BOOL result = NO;
@@ -48,7 +52,7 @@ NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
 	return result;
 }
 
-+ (BOOL)coordinateWritingIndex:(NSError **)errorRef byAccessor:(NSDictionary * (^)(NSDictionary *))block {
+- (BOOL)coordinateWritingIndex:(NSError **)errorRef byAccessor:(NSDictionary * (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
 	__block BOOL result = NO;
@@ -103,11 +107,11 @@ NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
 	return base16;
 }
 
-+ (NSDictionary *)downloadForURL:(NSURL *)URL {
+- (NSDictionary *)downloadForURL:(NSURL *)URL {
 	__block NSError *downloadError = nil;
 	__block NSDictionary *download = nil;
 
-	NSString *key = [self keyForURL:URL];
+	NSString *key = [self.class keyForURL:URL];
 
 	[self coordinateReadingIndex:&downloadError byAccessor:^(NSDictionary *index) {
 		download = index[key];
@@ -115,18 +119,18 @@ NSString * const SQRLDownloadLocalFileKey = @"SQRLDownloadLocalFileKey";
 
 	if (download == nil) {
 		return @{
-			SQRLDownloadLocalFileKey: [self.downloadStoreDirectory URLByAppendingPathComponent:[self fileNameForURL:URL]],
+			SQRLDownloadLocalFileKey: [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:URL]],
 		};
 	}
 
 	return download;
 }
 
-+ (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL {
+- (void)setDownload:(NSDictionary *)download forURL:(NSURL *)URL {
 	NSArray *requiredKeys = @[ SQRLDownloadETagKey, SQRLDownloadLocalFileKey ];
 	NSParameterAssert([[NSSet setWithArray:requiredKeys] isSubsetOfSet:[NSSet setWithArray:download.allKeys]]);
 
-	NSString *key = [self keyForURL:URL];
+	NSString *key = [self.class keyForURL:URL];
 
 	NSError *writeError = nil;
 	__unused BOOL write = [self coordinateWritingIndex:&writeError byAccessor:^(NSDictionary *index) {

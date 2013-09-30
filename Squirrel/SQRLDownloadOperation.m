@@ -110,7 +110,7 @@
 #pragma mark Download
 
 - (void)startDownload {
-	self.download = [SQRLDownloadController downloadForURL:self.request.URL];
+	self.download = [SQRLDownloadController.defaultDownloadController downloadForURL:self.request.URL];
 	[self startRequest:[SQRLDownloadOperation requestWithOriginalRequest:self.request download:self.download]];
 }
 
@@ -185,7 +185,7 @@
 - (void)recordDownloadWithETag:(NSString *)ETag {
 	NSMutableDictionary *newDownload = [self.download mutableCopy];
 	newDownload[SQRLDownloadETagKey] = ETag;
-	[SQRLDownloadController setDownload:newDownload forURL:self.request.URL];
+	[SQRLDownloadController.defaultDownloadController setDownload:newDownload forURL:self.request.URL];
 }
 
 - (void)removeDownloadFile {
