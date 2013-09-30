@@ -13,10 +13,34 @@
 #import "SQRLFileManager.h"
 #import "SQRLResumableDownload.h"
 
+@interface SQRLDownloadController ()
+@property (nonatomic, assign, readonly) dispatch_queue_t indexQueue;
+@end
+
 @implementation SQRLDownloadController
 
 + (instancetype)defaultDownloadController {
-	return [[self alloc] init];
+	static SQRLDownloadController *defaultDownloadController = nil;
+	static dispatch_once_t defaultDownloadControllerPredicate = 0;
+
+	dispatch_once(&defaultDownloadControllerPredicate, ^{
+		defaultDownloadController = [[self alloc] init];
+	});
+
+	return defaultDownloadController;
+}
+
+- (id)init {
+	self = [super init];
+	if (self == nil) return nil;
+
+	_indexQueue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadController.index", DISPATCH_QUEUE_CONCURRENT);
+
+	return self;
+}
+
+- (void)dealloc {
+	dispatch_release(_indexQueue);
 }
 
 - (NSURL *)downloadStoreDirectory {
@@ -36,16 +60,17 @@
 
 	__block BOOL result = NO;
 
-	NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-	[coordinator coordinateReadingItemAtURL:self.downloadStoreIndexFileLocation options:0 error:errorRef byAccessor:^(NSURL *newURL) {
-		NSData *propertyListData = [NSData dataWithContentsOfURL:newURL options:0 error:errorRef];
+	dispatch_sync(self.indexQueue, ^{
+		NSData *propertyListData = [NSData dataWithContentsOfURL:self.downloadStoreIndexFileLocation options:0 error:errorRef];
 		if (propertyListData == nil) return;
 
 		NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
 		if (propertyList == nil) return;
 
 		block(propertyList);
-	}];
+
+		result = YES;
+	});
 
 	return result;
 }
@@ -55,11 +80,12 @@
 
 	__block BOOL result = NO;
 
-	NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-	[coordinator coordinateWritingItemAtURL:self.downloadStoreIndexFileLocation options:0 error:errorRef byAccessor:^(NSURL *newURL) {
+	dispatch_barrier_sync(self.indexQueue, ^{
+		NSURL *fileLocation = self.downloadStoreIndexFileLocation;
+
 		NSDictionary *propertyList = nil;
 
-		NSData *propertyListData = [NSData dataWithContentsOfURL:newURL options:0 error:NULL];
+		NSData *propertyListData = [NSData dataWithContentsOfURL:fileLocation options:0 error:NULL];
 		if (propertyListData == nil) {
 			propertyList = @{};
 		} else {
@@ -73,11 +99,11 @@
 		NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
 		if (newData == nil) return;
 
-		BOOL write = [newData writeToURL:newURL options:NSDataWritingAtomic error:errorRef];
+		BOOL write = [newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef];
 		if (!write) return;
 
 		result = YES;
-	}];
+	});
 
 	return result;
 }
@@ -110,7 +136,7 @@
 - (SQRLResumableDownload *)downloadForURL:(NSURL *)URL {
 	NSParameterAssert(URL != nil);
 	
-	__block NSError *downloadError = nil;
+	NSError *downloadError = nil;
 	__block SQRLResumableDownload *download = nil;
 
 	NSString *key = [self.class keyForURL:URL];
