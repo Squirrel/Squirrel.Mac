@@ -145,31 +145,31 @@
 	return base16;
 }
 
-- (SQRLResumableDownload *)downloadForURL:(NSURL *)URL {
-	NSParameterAssert(URL != nil);
+- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request {
+	NSParameterAssert(request != nil);
 	
 	NSError *downloadError = nil;
 	__block SQRLResumableDownload *download = nil;
 
-	NSString *key = [self.class keyForURL:URL];
+	NSString *key = [self.class keyForURL:request.URL];
 
 	[self coordinateReadingIndex:&downloadError byAccessor:^(NSDictionary *index) {
 		download = index[key];
 	}];
 
 	if (download == nil) {
-		NSURL *localURL = [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:URL]];
+		NSURL *localURL = [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
 		return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:localURL];
 	}
 
 	return download;
 }
 
-- (void)setDownload:(SQRLResumableDownload *)download forURL:(NSURL *)URL {
+- (void)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request {
 	NSParameterAssert(download.response != nil);
-	NSParameterAssert(URL != nil);
+	NSParameterAssert(request != nil);
 
-	NSString *key = [self.class keyForURL:URL];
+	NSString *key = [self.class keyForURL:request.URL];
 
 	NSError *writeError = nil;
 	[self coordinateWritingIndex:&writeError byAccessor:^(NSDictionary *index) {

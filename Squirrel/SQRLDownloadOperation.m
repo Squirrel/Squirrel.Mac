@@ -113,7 +113,7 @@
 #pragma mark Download
 
 - (void)startDownload {
-	self.download = [self.downloadController downloadForURL:self.request.URL];
+	self.download = [self.downloadController downloadForRequest:self.request];
 	[self startRequest:[SQRLDownloadOperation requestWithOriginalRequest:self.request download:self.download]];
 }
 
@@ -187,7 +187,7 @@
 - (void)recordDownloadWithResponse:(NSHTTPURLResponse *)response {
 	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:self.download.fileURL];
 
-	[self.downloadController setDownload:newDownload forURL:self.request.URL];
+	[self.downloadController setDownload:newDownload forRequest:self.request];
 	self.download = newDownload;
 }
 

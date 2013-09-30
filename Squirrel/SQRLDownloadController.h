@@ -30,12 +30,12 @@
 //
 // URL - Must not be nil, pass the URL whose response body is going to be saved
 //       to disk.
-- (SQRLResumableDownload *)downloadForURL:(NSURL *)URL;
+- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request;
 
 // Store metadata for a download so that it can be resumed later.
 //
 // download - Must have a response, this is asserted.
 // URL      - Must not be nil.
-- (void)setDownload:(SQRLResumableDownload *)download forURL:(NSURL *)URL;
+- (void)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request;
 
 @end
