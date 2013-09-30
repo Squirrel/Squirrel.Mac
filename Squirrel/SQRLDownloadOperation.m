@@ -113,7 +113,13 @@
 #pragma mark Download
 
 - (void)startDownload {
-	self.download = [self.downloadController downloadForRequest:self.request];
+	NSError *error = nil;
+	self.download = [self.downloadController downloadForRequest:self.request error:&error];
+	if (self.download == nil) {
+		[self completeWithError:error];
+		return;
+	}
+
 	[self startRequest:[self.class requestWithOriginalRequest:self.request download:self.download]];
 }
 

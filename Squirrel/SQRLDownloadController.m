@@ -14,6 +14,7 @@
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloadController ()
+@property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 @property (nonatomic, assign, readonly) dispatch_queue_t indexQueue;
 @end
 
@@ -34,6 +35,8 @@
 	self = [super init];
 	if (self == nil) return nil;
 
+	_directoryManager = [SQRLDirectoryManager directoryManagerForCurrentApplication];
+
 	_indexQueue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadController.index", DISPATCH_QUEUE_CONCURRENT);
 
 	return self;
@@ -43,16 +46,12 @@
 	dispatch_release(_indexQueue);
 }
 
-- (NSURL *)downloadStoreDirectory {
-	return SQRLDirectoryManager.directoryManagerForCurrentApplication.URLForDownloadDirectory;
+- (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
+	return [NSFileManager.defaultManager removeItemAtURL:self.directoryManager.URLForContainerDirectory error:errorRef];
 }
 
 - (NSURL *)downloadStoreIndexFileLocation {
-	return SQRLDirectoryManager.directoryManagerForCurrentApplication.URLForResumableDownloadStateFile;
-}
-
-- (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
-	return [NSFileManager.defaultManager removeItemAtURL:self.downloadStoreDirectory error:errorRef];
+	return [self.directoryManager.URLForContainerDirectory URLByAppendingPathComponent:@"Index.plist"];
 }
 
 - (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
@@ -111,8 +110,9 @@
 			return;
 		}
 
-		BOOL write = [newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef];
-		if (!write) return;
+		if (![NSFileManager.defaultManager createDirectoryAtURL:self.directoryManager.URLForContainerDirectory withIntermediateDirectories:YES attributes:nil error:errorRef]) return;
+
+		if (![newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef]) return;
 
 		result = YES;
 	});
@@ -145,9 +145,9 @@
 	return base16;
 }
 
-- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request {
+- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request error:(NSError **)errorRef {
 	NSParameterAssert(request != nil);
-	
+
 	NSError *downloadError = nil;
 	__block SQRLResumableDownload *download = nil;
 
@@ -158,7 +158,10 @@
 	}];
 
 	if (download == nil) {
-		NSURL *localURL = [self.downloadStoreDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
+		NSURL *downloadDirectory = self.directoryManager.URLForDownloadDirectory;
+		if (![NSFileManager.defaultManager createDirectoryAtURL:downloadDirectory withIntermediateDirectories:YES attributes:nil error:errorRef]) return nil;
+
+		NSURL *localURL = [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
 		return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:localURL];
 	}
 

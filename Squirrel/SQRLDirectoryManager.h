@@ -22,15 +22,16 @@
 //                 application.
 - (instancetype)initWithAppIdentifier:(NSString *)appIdentifier;
 
-// The file to store resumable download state in.
-- (NSURL *)URLForResumableDownloadStateFile;
+// The root directory for the per app identifier Squirrel files. Callers must
+// create the directory themselves.
+- (NSURL *)URLForContainerDirectory;
 
-// The directory to store update downloads in prior to installation. The
-// directory is created for you.
+// The directory to store update downloads in prior to installation. Callers
+// must create the directory themselves.
 - (NSURL *)URLForDownloadDirectory;
 
-// The directory to unpack updates into prior to to installation. The
-// directory is created for you.
+// The directory to unpack updates into prior to to installation. Callers must
+// create the directory themselves.
 - (NSURL *)URLForUnpackDirectory;
 
 @end

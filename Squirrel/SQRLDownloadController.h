@@ -26,11 +26,14 @@
 // don't need to know whether a download has been previously started or not.
 //
 // When a previous download cannot be found, a new download is returned. Callers
-// should write downloaded data to the fileURL.
+// should write downloaded data to the fileURL. If a new download cannot be
+// started, the error parameter (if non `NULL`) will be populated.
 //
-// URL - Must not be nil, pass the URL whose response body is going to be saved
-//       to disk.
-- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request;
+// request  - Must not be nil, pass the request whose response body will be
+//            saved to disk.
+// errorRef - May be `NULL`, populated if there is an error preparing a new
+//            resumable download.
+- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request error:(NSError **)errorRef;
 
 // Store metadata for a download so that it can be resumed later.
 //
