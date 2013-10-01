@@ -77,7 +77,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 3;
 	
 	_updateQueue = [[NSOperationQueue alloc] init];
 	self.updateQueue.maxConcurrentOperationCount = 1;
-	self.updateQueue.name = @"com.github.Squirrel.updateCheckingQueue";
+	self.updateQueue.name = @"com.github.Squirrel.SQRLUpdater.updateQueue";
 
 	_verifier = [[SQRLCodeSignatureVerifier alloc] init];
 	if (_verifier == nil) return nil;
