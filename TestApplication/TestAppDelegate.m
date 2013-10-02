@@ -42,8 +42,19 @@
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 
-	[[[[self.updater.checkForUpdatesCommand
-		execute:RACUnit.defaultUnit]
+	[[[[[[[[RACSignal
+		defer:^{
+			return [self.updater.checkForUpdatesCommand execute:RACUnit.defaultUnit];
+		}]
+		doNext:^(SQRLDownloadedUpdate *update) {
+			NSLog(@"Got a candidate update: %@", update);
+		}]
+		// Retry until we get the expected release.
+		delay:0.1]
+		repeat]
+		skipUntilBlock:^(SQRLDownloadedUpdate *update) {
+			return [update.releaseName isEqual:@"Final"];
+		}]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Update ready to install: %@", update);
 		}]
