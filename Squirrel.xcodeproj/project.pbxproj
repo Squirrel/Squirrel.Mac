@@ -70,6 +70,8 @@
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0C2AA9417FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */; };
+		D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */; };
 		D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0D97E4417B58FC400301C72 /* ResourceRules.plist */; };
 		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
@@ -401,6 +403,8 @@
 		D0C22C4B179CC15100158214 /* SQRLUpdater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdater.m; sourceTree = "<group>"; };
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
+		D0C2AA9117FC105C0075D1D1 /* SQRLXPCConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLXPCConnection.h; sourceTree = "<group>"; };
+		D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLXPCConnection.m; sourceTree = "<group>"; };
 		D0D97E4417B58FC400301C72 /* ResourceRules.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = ResourceRules.plist; sourceTree = "<group>"; };
 		D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSError+SQRLVerbosityExtensions.h"; path = "Squirrel/NSError+SQRLVerbosityExtensions.h"; sourceTree = SOURCE_ROOT; };
 		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = SOURCE_ROOT; };
@@ -783,6 +787,19 @@
 			name = Specs;
 			sourceTree = "<group>";
 		};
+		D0C2AA8517FC103D0075D1D1 /* XPC */ = {
+			isa = PBXGroup;
+			children = (
+				D007290817B0973E008C7DDE /* SQRLArguments.h */,
+				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
+				D0C2AA9117FC105C0075D1D1 /* SQRLXPCConnection.h */,
+				D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */,
+				D049803217F9181D001EE042 /* SQRLXPCObject.h */,
+				D049803317F9181D001EE042 /* SQRLXPCObject.m */,
+			);
+			name = XPC;
+			sourceTree = "<group>";
+		};
 		D0EDBE9F17B0C6930058BC3C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
@@ -790,12 +807,9 @@
 				D0964B3B17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m */,
 				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
-				D007290817B0973E008C7DDE /* SQRLArguments.h */,
-				D00728FF17B09732008C7DDE /* SQRLArguments.m */,
 				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */,
 				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */,
-				D049803217F9181D001EE042 /* SQRLXPCObject.h */,
-				D049803317F9181D001EE042 /* SQRLXPCObject.m */,
+				D0C2AA8517FC103D0075D1D1 /* XPC */,
 			);
 			name = Shared;
 			path = Squirrel;
@@ -1185,6 +1199,7 @@
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */,
+				D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */,
 				D0964B3E17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
@@ -1208,6 +1223,7 @@
 				D0964B3D17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignatureVerifier.m in Sources */,
 				D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */,
+				D0C2AA9417FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
 				D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
 				D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */,
