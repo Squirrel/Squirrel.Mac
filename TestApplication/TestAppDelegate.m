@@ -42,7 +42,7 @@
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 
-	[[[[[[[[RACSignal
+	[[[[[[[[[[RACSignal
 		defer:^{
 			return [self.updater.checkForUpdatesCommand execute:RACUnit.defaultUnit];
 		}]
@@ -55,9 +55,11 @@
 		skipUntilBlock:^(SQRLDownloadedUpdate *update) {
 			return [update.releaseName isEqual:@"Final"];
 		}]
+		take:1]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Update ready to install: %@", update);
 		}]
+		timeout:10 onScheduler:RACScheduler.mainThreadScheduler]
 		catch:^(NSError *error) {
 			NSLog(@"Error in updater: %@", error);
 			return [RACSignal empty];
