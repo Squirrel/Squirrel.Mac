@@ -129,7 +129,9 @@ static void handleConnection(xpc_connection_t client) {
 				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
 				xpc_connection_send_message_with_reply(remoteConnection, reply, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t event) {
 					if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
-						NSLog(@"Expected connection termination, got %@", NSStringFromXPCObject(event));
+						// The client sent us a new command, so disregard our
+						// previous plan.
+						NSLog(@"Canceling previously planned installation because of message %@", NSStringFromXPCObject(event));
 						return;
 					}
 
