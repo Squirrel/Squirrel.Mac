@@ -42,41 +42,18 @@
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 
-	@weakify(self);
-
-	RACSignal *updates = [[[[[[RACObserve(self.updater, state)
-		filter:^ BOOL (NSNumber *state) {
-			return state.unsignedIntegerValue == SQRLUpdaterStateAwaitingRelaunch;
-		}]
-		flattenMap:^(id _) {
-			@strongify(self);
-			return [self.updater prepareUpdateForInstallation];
-		}]
+	[[[[self.updater.checkForUpdatesCommand
+		execute:RACUnit.defaultUnit]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Update ready to install: %@", update);
 		}]
 		catch:^(NSError *error) {
 			NSLog(@"Error in updater: %@", error);
-			return [RACSignal return:nil];
+			return [RACSignal empty];
 		}]
-		setNameWithFormat:@"updates"]
-		logAll];
-	
-	RACSignal *idling = [[[[RACObserve(self.updater, state)
-		skip:1]
-		filter:^ BOOL (NSNumber *state) {
-			return state.unsignedIntegerValue == SQRLUpdaterStateIdle;
-		}]
-		setNameWithFormat:@"idling"]
-		logAll];
-
-	RACSignal *termination = [[RACSignal
-		merge:@[ updates, idling ]]
-		mapReplace:self];
-	
-	[NSApp rac_liftSelector:@selector(terminate:) withSignals:termination, nil];
-
-	[self.updater checkForUpdates];
+		subscribeCompleted:^{
+			[NSApp terminate:self];
+		}];
 }
 
 @end
