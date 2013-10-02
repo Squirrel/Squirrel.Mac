@@ -73,14 +73,14 @@ static RACSignal *signalOfDeferredInstallationSignal(SQRLXPCObject *event) {
 			xpc_transaction_begin();
 			NSLog(@"Beginning installation");
 		}]
+		finally:^{
+			xpc_transaction_end();
+		}]
 		doCompleted:^{
 			NSLog(@"Installation completed successfully");
 		}]
 		doError:^(NSError *error) {
 			NSLog(@"Installation error: %@", error);
-		}]
-		finally:^{
-			xpc_transaction_end();
 		}]
 		replayLazily]
 		setNameWithFormat:@"installationSignal"];
@@ -174,7 +174,9 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
-	return [[[[[[[[client.events
+	return [[[[[[[[[[[client
+		autoconnect]
+		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 		doNext:^(SQRLXPCObject *event) {
 			NSLog(@"Got event on client connection: %@", event);
 		}]
@@ -189,20 +191,25 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return handleEvent(event, client);
 		}]
 		switchToLatest]
+		initially:^{
+			xpc_transaction_begin();
+		}]
+		finally:^{
+			xpc_transaction_end();
+		}]
 		doCompleted:^{
 			// When a client connection and all of its tasks complete without
 			// issue (but _not_ when they're disposed from handleService), exit
 			// ShipIt cleanly.
 			exit(EXIT_SUCCESS);
 		}]
-		initially:^{
-			[client resume];
-		}]
 		setNameWithFormat:@"handleClient %@", client];
 }
 
 static void handleService(SQRLXPCConnection *service) {
-	[[[[[[[service.events
+	[[[[[[[[service
+		autoconnect]
+		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]]
 		catch:^(NSError *error) {
 			NSLog(@"XPC error from service: %@", error);
 			return [RACSignal empty];
@@ -217,9 +224,6 @@ static void handleService(SQRLXPCConnection *service) {
 			return handleClient(client);
 		}]
 		switchToLatest]
-		initially:^{
-			[service resume];
-		}]
 		subscribeError:^(NSError *error) {
 			NSLog(@"%@", error);
 		} completed:^{

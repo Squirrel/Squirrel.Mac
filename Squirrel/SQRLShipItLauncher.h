@@ -25,11 +25,10 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 //              If true, shipit is launched in the root domain, otherwise it is
 //              launched in the current user’s domain.
 //
-// Returns a signal which will send a `SQRLXPCObject` containing the
-// `xpc_connection_t` then complete, or error, on a background scheduler. The
-// `xpc_connection_t` will be automatically retained while the connection
-// remains open. If you need to retain it for longer, hang on to the
-// `SQRLXPCObject`.
+// Returns a signal which will send a `SQRLXPCConnection` then complete, or
+// error, on a background scheduler. The underlying `xpc_connection_t` will be
+// automatically retained while the connection remains open. If you need to
+// retain it for longer, hang on to the `SQRLXPCConnection`.
 + (RACSignal *)launchPrivileged:(BOOL)privileged;
 
 @end

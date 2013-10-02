@@ -15,6 +15,7 @@
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLUpdate+Private.h"
+#import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
@@ -351,18 +352,13 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+
 	return [[[[[[self
 		codeSigningRequirementData]
 		flattenMap:^(NSData *requirementData) {
-			NSNumber *targetWritable = nil;
-			NSError *targetWritableError = nil;
-			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
-
-			return [[SQRLShipItLauncher
-				// If we can't determine whether it can be written, assume nonprivileged and
-				// wait for another, more canonical error.
-				launchPrivileged:(gotWritable && !targetWritable.boolValue)]
-				flattenMap:^(SQRLXPCObject *connection) {
+			return [[self
+				connectToShipIt]
+				flattenMap:^(SQRLXPCConnection *connection) {
 					xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
 
 					SQRLXPCObject *wrappedMessage = [[SQRLXPCObject alloc] initWithXPCObject:message];
@@ -375,7 +371,6 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 					xpc_dictionary_set_bool(wrappedMessage.object, SQRLWaitForConnectionKey, true);
 					xpc_dictionary_set_data(wrappedMessage.object, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 
-					xpc_connection_resume(connection.object);
 					return [self sendMessage:wrappedMessage overConnection:connection];
 				}];
 		}]
@@ -389,28 +384,43 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
 }
 
-- (RACSignal *)sendMessage:(SQRLXPCObject *)message overConnection:(SQRLXPCObject *)connection {
+- (RACSignal *)connectToShipIt {
+	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+
+	return [[[[RACSignal
+		defer:^{
+			NSNumber *targetWritable = nil;
+			NSError *targetWritableError = nil;
+			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
+
+			// If we can't determine whether it can be written, assume nonprivileged and
+			// wait for another, more canonical error.
+			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
+		}]
+		doNext:^(SQRLXPCConnection *connection) {
+			[connection resume];
+		}]
+		replayLazily]
+		setNameWithFormat:@"-connectToShipIt"];
+}
+
+- (RACSignal *)sendMessage:(SQRLXPCObject *)message overConnection:(SQRLXPCConnection *)connection {
 	NSParameterAssert(message != nil);
 	NSParameterAssert(connection != nil);
 
-	return [[[RACSignal
-		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-			xpc_connection_send_message_with_reply(connection.object, message.object, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
-				if (xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey)) {
-					SQRLXPCObject *wrappedReply = [[SQRLXPCObject alloc] initWithXPCObject:reply];
-					[subscriber sendNext:wrappedReply];
-					[subscriber sendCompleted];
-				} else {
-					const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
-					NSDictionary *userInfo = @{
-						NSLocalizedDescriptionKey: (errorStr != NULL ? @(errorStr) : NSLocalizedString(@"An unknown error occurred within ShipIt", nil)),
-					};
+	return [[[[connection
+		sendMessageExpectingReply:message]
+		flattenMap:^(SQRLXPCObject *reply) {
+			if (xpc_dictionary_get_bool(reply.object, SQRLShipItSuccessKey)) {
+				return [RACSignal return:reply];
+			} else {
+				const char *errorStr = xpc_dictionary_get_string(reply.object, SQRLShipItErrorKey);
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: (errorStr != NULL ? @(errorStr) : NSLocalizedString(@"An unknown error occurred within ShipIt", nil)),
+				};
 
-					[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
-				}
-			});
-			
-			return nil;
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
+			}
 		}]
 		replay]
 		setNameWithFormat:@"-sendMessage: %@ overConnection: %@", message, connection];

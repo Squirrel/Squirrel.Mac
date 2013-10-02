@@ -30,7 +30,7 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 	self = [super initWithXPCObject:connection];
 	if (self == nil) return nil;
 
-	_events = [[RACReplaySubject replaySubjectWithCapacity:1] setNameWithFormat:@"%@ -events", self];
+	_events = [[RACSubject subject] setNameWithFormat:@"%@ -events", self];
 
 	if (connection != NULL) {
 		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
@@ -62,6 +62,24 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 
 - (void)resume {
 	if (self.object != NULL) xpc_connection_resume(self.object);
+}
+
+- (RACSignal *)autoconnect {
+	return [[[[RACSignal
+		createSignal:^(id<RACSubscriber> subscriber) {
+			RACDisposable *eventsDisposable = [self.events subscribe:subscriber];
+			[self resume];
+
+			return [RACDisposable disposableWithBlock:^{
+				// Ordering is important here, because we don't want subscribers
+				// to receive completion.
+				[eventsDisposable dispose];
+				[self cancel];
+			}];
+		}]
+		publish]
+		autoconnect]
+		setNameWithFormat:@"%@ -autoconnect", self];
 }
 
 #pragma mark Communication

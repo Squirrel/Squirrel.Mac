@@ -9,7 +9,7 @@
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
 #import "SQRLArguments.h"
-#import "SQRLXPCObject.h"
+#import "SQRLXPCConnection.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
@@ -158,7 +158,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			}
 		});
 
-		SQRLXPCObject *boxedConnection = [[SQRLXPCObject alloc] initWithXPCObject:connection];
+		SQRLXPCConnection *boxedConnection = [[SQRLXPCConnection alloc] initWithXPCObject:connection];
 		[subscriber sendNext:boxedConnection];
 		[subscriber sendCompleted];
 	}] setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];

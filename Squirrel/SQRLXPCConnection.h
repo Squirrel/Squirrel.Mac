@@ -57,4 +57,11 @@ extern const NSInteger SQRLXPCErrorTerminationImminent;
 // complete on a background thread.
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message;
 
+// Lazily resumes the receiver and passes through its `events`.
+//
+// Returns a signal which resumes the connection upon first subscription, then
+// sends its events. Whenever all subscriptions to the returned signal are
+// disposed, the connection will be canceled.
+- (RACSignal *)autoconnect;
+
 @end
