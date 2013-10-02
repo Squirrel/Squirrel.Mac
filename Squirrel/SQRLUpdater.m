@@ -342,7 +342,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 			return [RACSignal return:downloadedUpdate];
 		}]
 		flattenMap:^(SQRLDownloadedUpdate *downloadedUpdate) {
-			return [self prepareUpdateForInstallation:downloadedUpdate];
+			return [[self prepareUpdateForInstallation:downloadedUpdate] then:^{
+				return [RACSignal return:downloadedUpdate];
+			}];
 		}]
 		setNameWithFormat:@"-verifyAndInstallUpdate: %@ fromBundle: %@", update, updateBundle];
 }
