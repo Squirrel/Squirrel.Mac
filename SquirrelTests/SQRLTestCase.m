@@ -62,17 +62,20 @@ static void SQRLSignalHandler(int sig) {
 + (void)load {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
-	
-	appSupportURL = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication.ShipIt"];
 
-	NSURL *stdoutShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
-	NSURL *stderrShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
+	NSURL *stdoutTestApp = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication.ShipIt/ShipIt_stdout.log"];
+	NSURL *stderrTestApp = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication.ShipIt/ShipIt_stderr.log"];
+	NSURL *stdoutOCUnit = [appSupportURL URLByAppendingPathComponent:@"otest.ShipIt/ShipIt_stdout.log"];
+	NSURL *stderrOCUnit = [appSupportURL URLByAppendingPathComponent:@"otest.ShipIt/ShipIt_stderr.log"];
 
-	[[NSData data] writeToURL:stdoutShipIt atomically:YES];
-	[[NSData data] writeToURL:stderrShipIt atomically:YES];
+	[[NSData data] writeToURL:stdoutTestApp atomically:YES];
+	[[NSData data] writeToURL:stderrTestApp atomically:YES];
+	[[NSData data] writeToURL:stdoutOCUnit atomically:YES];
+	[[NSData data] writeToURL:stderrOCUnit atomically:YES];
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", stdoutShipIt.path, stderrShipIt.path ]];
-	NSAssert([readShipIt isRunning], @"Could not start task %@ to read %@ and %@", readShipIt, stdoutShipIt, stderrShipIt);
+	NSArray *args = @[ @"-f", stdoutTestApp.path, stderrTestApp.path, stdoutOCUnit.path, stderrOCUnit.path ];
+	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:args];
+	NSAssert([readShipIt isRunning], @"Could not start task %@ with arguments: %@", readShipIt, args);
 
 	atexit_b(^{
 		[readShipIt terminate];
