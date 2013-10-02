@@ -12,8 +12,14 @@
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
+#import "SQRLXPCConnection.h"
+#import "SQRLXPCObject.h"
 
-typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
+// The domain for errors generated here.
+static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
+
+// A key required for a command was not provided.
+static const NSInteger SQRLShipItErrorRequiredKeyMissing = 1;
 
 // How long to wait after connection termination before installing an update.
 //
@@ -28,141 +34,197 @@ typedef BOOL (^SQRLInstallationHandler)(NSString **errorString);
 // a command line tool.
 static const NSTimeInterval SQRLUpdaterInstallationDelay = 0.1;
 
-static NSString *NSStringFromXPCObject(xpc_object_t object) {
-	char *desc = xpc_copy_description(object);
-	NSString *str = @(desc);
-	free(desc);
-
-	return str;
-}
-
-static SQRLInstallationHandler prepareInstallation(xpc_object_t event) {
-	NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLTargetBundleURLKey))] filePathURL];
-	NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event, SQRLUpdateBundleURLKey))] filePathURL];
-	if (targetBundleURL == nil || updateBundleURL == nil) return nil;
-
+// Prepares installation based on the information in the given XPC event.
+//
+// Returns a signal which will error if information required for installation
+// is missing, or else send a cold inner signal that will actually perform the
+// installation when subscribed to.
+static RACSignal *signalOfDeferredInstallationSignal(SQRLXPCObject *event) {
 	size_t requirementDataLen = 0;
-	const void *requirementDataPtr = xpc_dictionary_get_data(event, SQRLCodeSigningRequirementKey, &requirementDataLen);
-	if (requirementDataPtr == NULL) return nil;
+	const void *requirementDataPtr = xpc_dictionary_get_data(event.object, SQRLCodeSigningRequirementKey, &requirementDataLen);
+
+	NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLTargetBundleURLKey))] filePathURL];
+	NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLUpdateBundleURLKey))] filePathURL];
+
+	if (targetBundleURL == nil || updateBundleURL == nil || requirementDataPtr == NULL) {
+		return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorRequiredKeyMissing userInfo:@{ NSLocalizedDescriptionKey: @"Required key not provided" }]];
+	}
 
 	NSData *requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
-	BOOL shouldRelaunch = xpc_dictionary_get_bool(event, SQRLShouldRelaunchKey);
+	BOOL shouldRelaunch = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
 
-	return ^(NSString **errorString) {
-		xpc_transaction_begin();
-		@onExit {
+	RACSignal *installationSignal = [[[[[[[[RACSignal
+		defer:^{
+			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL requirementData:requirementData];
+			return [installer installUpdate];
+		}]
+		then:^{
+			if (!shouldRelaunch) return [RACSignal empty];
+
+			NSError *error = nil;
+			if ([NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+				NSLog(@"Application relaunched");
+				return [RACSignal empty];
+			} else {
+				return [RACSignal error:error];
+			}
+		}]
+		initially:^{
+			xpc_transaction_begin();
+			NSLog(@"Beginning installation");
+		}]
+		doCompleted:^{
+			NSLog(@"Installation completed successfully");
+		}]
+		doError:^(NSError *error) {
+			NSLog(@"Installation error: %@", error);
+		}]
+		finally:^{
 			xpc_transaction_end();
-		};
-
-		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL requirementData:requirementData];
-
-		NSLog(@"Beginning installation");
-
-		NSError *error = nil;
-		if (![[installer installUpdate] waitUntilCompleted:&error]) {
-			NSString *message = [NSString stringWithFormat:@"Error installing update: %@", error.sqrl_verboseDescription];
-			NSLog(@"%@", message);
-
-			if (errorString != NULL) *errorString = message;
-			return NO;
-		}
-		
-		NSLog(@"Installation completed successfully");
-		if (!shouldRelaunch) return YES;
-
-		if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-			NSString *message = [NSString stringWithFormat:@"Error relaunching target application at %@: %@", targetBundleURL, error.sqrl_verboseDescription];
-			NSLog(@"%@", message);
-
-			if (errorString != NULL) *errorString = message;
-			return NO;
-		}
-		
-		NSLog(@"Application relaunched");
-		return YES;
-	};
+		}]
+		replayLazily]
+		setNameWithFormat:@"installationSignal"];
+	
+	return [RACSignal return:installationSignal];
 }
 
-static void handleConnection(xpc_connection_t client) {
-	NSLog(@"Got client connection: %s", xpc_copy_description(client));
+static SQRLXPCObject *replyFromDictionary(SQRLXPCObject *dictionary) {
+	xpc_object_t reply = xpc_dictionary_create_reply(dictionary.object);
+	if (reply == NULL) return nil;
 
-	xpc_connection_set_event_handler(client, ^(xpc_object_t event) {
-		NSLog(@"Got event on client connection: %s", xpc_copy_description(event));
+	SQRLXPCObject *wrappedReply = [[SQRLXPCObject alloc] initWithXPCObject:reply];
+	xpc_release(reply);
 
-		xpc_type_t type = xpc_get_type(event);
-		if (type == XPC_TYPE_ERROR) {
-			NSLog(@"XPC error: %@", NSStringFromXPCObject(event));
-			return;
-		} else if (type != XPC_TYPE_DICTIONARY) {
-			NSLog(@"Expected XPC dictionary, not %@", NSStringFromXPCObject(event));
-			return;
-		}
+	return wrappedReply;
+}
 
-		xpc_object_t reply = xpc_dictionary_create_reply(event);
-		if (reply == NULL) {
-			NSLog(@"Received dictionary without a remote connection: %@", NSStringFromXPCObject(event));
-		}
+static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
+	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
+	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
-		@onExit {
-			if (reply != NULL) xpc_release(reply);
-		};
+	SQRLXPCConnection *remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(event.object)];
 
-		const char *command = xpc_dictionary_get_string(event, SQRLShipItCommandKey);
-		if (strcmp(command, SQRLShipItInstallCommand) == 0) {
-			SQRLInstallationHandler handler = prepareInstallation(event);
-			if (handler == nil) {
-				if (reply != NULL) {
-					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, false);
-					xpc_dictionary_set_string(reply, SQRLShipItErrorKey, "Required key not provided");
-					xpc_connection_send_message(xpc_dictionary_get_remote_connection(reply), reply);
-				}
-
-				return;
-			}
-
-			xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(event);
-			void (^exitWithSuccess)(BOOL) = ^(BOOL success) {
-				exit((success ? EXIT_SUCCESS : EXIT_FAILURE));
-			};
-
-			if (reply != NULL && xpc_dictionary_get_bool(event, SQRLWaitForConnectionKey)) {
-				xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, true);
-				xpc_connection_send_message_with_reply(remoteConnection, reply, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t event) {
-					if (event != XPC_ERROR_CONNECTION_INVALID && event != XPC_ERROR_CONNECTION_INTERRUPTED) {
-						// The client sent us a new command, so disregard our
-						// previous plan.
-						NSLog(@"Canceling previously planned installation because of message %@", NSStringFromXPCObject(event));
-						return;
-					}
-
-					NSLog(@"Waiting for %g seconds before installing", SQRLUpdaterInstallationDelay);
-
-					dispatch_time_t time = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(SQRLUpdaterInstallationDelay * NSEC_PER_SEC));
-					dispatch_after(time, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^{
-						BOOL success = handler(NULL);
-						exitWithSuccess(success);
-					});
-				});
+	return [[[signalOfDeferredInstallationSignal(event)
+		catch:^(NSError *error) {
+			SQRLXPCObject *reply = replyFromDictionary(event);
+			if (reply == nil) {
+				NSLog(@"Received dictionary without a remote connection: %@", event);
 			} else {
-				NSString *errorString = nil;
-				BOOL success = handler(&errorString);
-					
-				if (reply == NULL) {
-					exitWithSuccess(success);
-				} else {
-					xpc_dictionary_set_bool(reply, SQRLShipItSuccessKey, success);
-					if (errorString != nil) xpc_dictionary_set_string(reply, SQRLShipItErrorKey, errorString.UTF8String);
-
-					xpc_connection_send_message(remoteConnection, reply);
-					xpc_connection_send_barrier(remoteConnection, ^{
-						exitWithSuccess(success);
-					});
-				}
+				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
+				xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
+				xpc_connection_send_message(remoteConnection.object, reply.object);
 			}
-		}
-	});
-	
-	xpc_connection_resume(client);
+
+			return [RACSignal error:error];
+		}]
+		flattenMap:^(RACSignal *install) {
+			SQRLXPCObject *reply = replyFromDictionary(event);
+			if (reply == nil) {
+				NSLog(@"Received dictionary without a remote connection: %@", event);
+			}
+
+			if (remoteConnection != nil && xpc_dictionary_get_bool(event.object, SQRLWaitForConnectionKey)) {
+				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
+
+				return [[[remoteConnection
+					sendMessageExpectingReply:reply]
+					ignoreValues]
+					catch:^(NSError *error) {
+						if (![error.domain isEqual:SQRLXPCErrorDomain]) return [RACSignal error:error];
+						if (error.code != SQRLXPCErrorConnectionInterrupted && error.code != SQRLXPCErrorConnectionInvalid) return [RACSignal error:error];
+
+						// At this point, the client application has
+						// terminated, so actually begin installing.
+						[client cancel];
+						NSLog(@"Waiting for %g seconds before installing", SQRLUpdaterInstallationDelay);
+
+						return [[[RACSignal
+							interval:SQRLUpdaterInstallationDelay onScheduler:[RACScheduler scheduler]]
+							take:1]
+							flattenMap:^(id _) {
+								return install;
+							}];
+					}];
+			} else if (reply != nil) {
+				return [[install
+					doError:^(NSError *error) {
+						xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
+						xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
+						xpc_connection_send_message(remoteConnection.object, reply.object);
+
+						xpc_connection_send_barrier(remoteConnection.object, ^{
+							exit(EXIT_FAILURE);
+						});
+					}]
+					doCompleted:^{
+						xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
+						xpc_connection_send_message(remoteConnection.object, reply.object);
+
+						xpc_connection_send_barrier(remoteConnection.object, ^{
+							exit(EXIT_SUCCESS);
+						});
+					}];
+			} else {
+				return [install finally:^{
+					[client cancel];
+				}];
+			}
+		}]
+		setNameWithFormat:@"handleEvent %@ from %@", event, client];
+}
+
+static RACSignal *handleClient(SQRLXPCConnection *client) {
+	return [[[[[[[[client.events
+		doNext:^(SQRLXPCObject *event) {
+			NSLog(@"Got event on client connection: %@", event);
+		}]
+		catch:^(NSError *error) {
+			NSLog(@"XPC error from client: %@", error);
+			return [RACSignal empty];
+		}]
+		filter:^ BOOL (SQRLXPCObject *event) {
+			return xpc_get_type(event.object) == XPC_TYPE_DICTIONARY;
+		}]
+		map:^(SQRLXPCObject *event) {
+			return handleEvent(event, client);
+		}]
+		switchToLatest]
+		doCompleted:^{
+			// When a client connection and all of its tasks complete without
+			// issue (but _not_ when they're disposed from handleService), exit
+			// ShipIt cleanly.
+			exit(EXIT_SUCCESS);
+		}]
+		initially:^{
+			[client resume];
+		}]
+		setNameWithFormat:@"handleClient %@", client];
+}
+
+static void handleService(SQRLXPCConnection *service) {
+	[[[[[[[service.events
+		catch:^(NSError *error) {
+			NSLog(@"XPC error from service: %@", error);
+			return [RACSignal empty];
+		}]
+		map:^(SQRLXPCObject *event) {
+			return [[SQRLXPCConnection alloc] initWithXPCObject:event.object];
+		}]
+		doNext:^(SQRLXPCConnection *client) {
+			NSLog(@"Got client connection: %@", client);
+		}]
+		map:^(SQRLXPCConnection *client) {
+			return handleClient(client);
+		}]
+		switchToLatest]
+		initially:^{
+			[service resume];
+		}]
+		subscribeError:^(NSError *error) {
+			NSLog(@"%@", error);
+		} completed:^{
+			exit(EXIT_SUCCESS);
+		}];
 }
 
 int main(int argc, const char * argv[]) {
@@ -188,12 +250,8 @@ int main(int argc, const char * argv[]) {
 		@onExit {
 			xpc_release(service);
 		};
-		
-		xpc_connection_set_event_handler(service, ^(xpc_object_t connection) {
-			handleConnection(connection);
-		});
-		
-		xpc_connection_resume(service);
+
+		handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
 		dispatch_main();
 	}
 
