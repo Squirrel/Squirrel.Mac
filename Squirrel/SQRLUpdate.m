@@ -105,6 +105,10 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 #pragma mark NSObject
 
+- (NSString *)description {
+	return [NSString stringWithFormat:@"<%@: %p> %@", self.class, self, self.JSON];
+}
+
 - (NSUInteger)hash {
 	return self.JSON.hash;
 }
