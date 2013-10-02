@@ -403,7 +403,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				} else {
 					const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
 					NSDictionary *userInfo = @{
-						NSLocalizedDescriptionKey: @(errorStr) ?: NSLocalizedString(@"An unknown error occurred within ShipIt", nil),
+						NSLocalizedDescriptionKey: (errorStr != NULL ? @(errorStr) : NSLocalizedString(@"An unknown error occurred within ShipIt", nil)),
 					};
 
 					[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
