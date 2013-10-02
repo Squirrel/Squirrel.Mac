@@ -57,7 +57,7 @@
 		}]
 		take:1]
 		doNext:^(id _) {
-			NSLog(@"***** INSTALLING UPDATE *****");
+			NSLog(@"***** READY TO INSTALL UPDATE *****");
 		}]
 		timeout:10 onScheduler:RACScheduler.mainThreadScheduler]
 		catch:^(NSError *error) {
