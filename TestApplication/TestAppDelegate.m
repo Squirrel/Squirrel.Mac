@@ -23,8 +23,6 @@
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
 	NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
 	NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
-	
-	NSLog(@"Redirecting logging to %@", logPath);
 	freopen(logPath.fileSystemRepresentation, "a+", stderr);
 
 	atexit_b(^{
@@ -37,27 +35,29 @@
 		return;
 	}
 
-	NSLog(@"Installing update from URL %@", updateURLString);
-
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 
-	[[[[[[[[[[RACSignal
+	__block NSUInteger updateCheckCount = 1;
+
+	[[[[[[[[[RACSignal
 		defer:^{
+			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
+			updateCheckCount++;
+
 			return [self.updater.checkForUpdatesCommand execute:RACUnit.defaultUnit];
 		}]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Got a candidate update: %@", update);
 		}]
 		// Retry until we get the expected release.
-		delay:0.1]
 		repeat]
 		skipUntilBlock:^(SQRLDownloadedUpdate *update) {
 			return [update.releaseName isEqual:@"Final"];
 		}]
 		take:1]
-		doNext:^(SQRLDownloadedUpdate *update) {
-			NSLog(@"Update ready to install: %@", update);
+		doNext:^(id _) {
+			NSLog(@"***** INSTALLING UPDATE *****");
 		}]
 		timeout:10 onScheduler:RACScheduler.mainThreadScheduler]
 		catch:^(NSError *error) {

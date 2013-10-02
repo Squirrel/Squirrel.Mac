@@ -45,7 +45,7 @@ NSRunningApplication * (^launchWithMockUpdates)(NSURL *) = ^(NSURL *updateURL) {
 	//
 	// This exercises ShipIt's ability to discard previous commands and
 	// install an even newer update.
-	[NSThread sleepForTimeInterval:0.1];
+	[NSThread sleepForTimeInterval:0.3];
 
 	updateInfo[SQRLUpdateJSONNameKey] = @"Final";
 	writeUpdateInfo(updateInfo);
