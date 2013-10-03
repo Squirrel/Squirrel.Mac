@@ -14,7 +14,8 @@
 // SQRLShipItStateNothingToDo           - ShipIt has not been instructed to do
 //                                        anything yet.
 // SQRLShipItStateWaitingForTermination - Waiting for the parent application to
-//                                        exit.
+//                                        exit. This state will be entered even
+//                                        if there's no waiting to do.
 // SQRLShipItStateClearingQuarantine    - Clearing the quarantine flag on the
 //                                        update bundle so it can used without
 //                                        issue.
@@ -74,19 +75,16 @@ typedef enum : NSInteger {
 // installed.
 @property (atomic, assign) BOOL sqrl_relaunchAfterInstallation;
 
+// The current state of ShipIt.
+//
+// Setting this property will synchronize the user defaults to disk.
+@property (atomic, assign) SQRLShipItState sqrl_state;
+
 // The URL where the target bundle has been backed up to before installing the
 // update.
 //
 // This property is set automatically during the course of installation. It
 // should not be preset.
 @property (atomic, copy) NSURL *sqrl_backupBundleURL;
-
-// The current state of ShipIt.
-//
-// Setting this property will synchronize the user defaults to disk.
-//
-// This property is set automatically during the course of installation. It
-// should not be preset.
-@property (atomic, assign) SQRLShipItState sqrl_state;
 
 @end

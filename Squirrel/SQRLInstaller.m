@@ -237,22 +237,22 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 	switch (state) {
 		case SQRLShipItStateWaitingForTermination:
-			return [[[[RACSignal
-				zip:@[
-					[self waitForBundleIdentifier],
-					[self targetBundleURL]
-				] reduce:^(NSString *identifier, NSURL *bundleURL) {
-					// Don't wait for termination.
+			return [[[[self
+				waitForBundleIdentifier]
+				flattenMap:^(NSString *identifier) {
 					if (identifier == nil) return [RACSignal empty];
 
-					// This signal produces the only values that we actually
-					// want to return to the caller (namely, the applications
-					// we're watching for termination).
-					//
-					// TODO: Wait for termination in other installer states too.
-					return [self waitForTerminationOfApplicationAtURL:bundleURL bundleIdentifier:identifier];
+					return [[self
+						targetBundleURL]
+						flattenMap:^(NSURL *bundleURL) {
+							// This signal produces the only values that we actually
+							// want to return to the caller (namely, the applications
+							// we're watching for termination).
+							//
+							// TODO: Wait for termination in other installer states too.
+							return [self waitForTerminationOfApplicationAtURL:bundleURL bundleIdentifier:identifier];
+						}];
 				}]
-				flatten]
 				doCompleted:^{
 					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateClearingQuarantine;
 				}]

@@ -47,10 +47,7 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 			const char *identifier = xpc_dictionary_get_string(event.object, SQRLWaitForBundleIdentifierKey);
 			defaults.sqrl_waitForBundleIdentifier = (identifier != NULL ? @(identifier) : nil);
 
-			// Save all these values to disk in case the process terminates
-			// unexpectedly.
-			[defaults synchronize];
-
+			defaults.sqrl_state = SQRLShipItStateWaitingForTermination;
 			return [[[[SQRLInstaller.sharedInstaller.installUpdateCommand
 				execute:nil]
 				initially:^{

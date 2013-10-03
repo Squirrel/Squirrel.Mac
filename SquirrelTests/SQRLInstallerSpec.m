@@ -202,7 +202,7 @@ it(@"should install an update in process", ^{
 		SQRLUpdateBundleDefaultsKey: [self createTestApplicationUpdate].path,
 		SQRLApplicationSupportDefaultsKey: self.temporaryDirectoryURL.path,
 		SQRLRequirementDataDefaultsKey: self.testApplicationCodeSigningRequirementData,
-		SQRLStateDefaultsKey: @(SQRLShipItStateClearingQuarantine),
+		SQRLStateDefaultsKey: @(SQRLShipItStateWaitingForTermination),
 	}];
 
 	NSError *installError = nil;
