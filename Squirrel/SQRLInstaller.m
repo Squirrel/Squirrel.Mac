@@ -158,10 +158,12 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		setNameWithFormat:@"-retrieveDefaultsValueWithDescription: %@ block:", description];
 }
 
-- (RACSignal *)bundleIdentifier {
-	return [self retrieveDefaultsValueWithDescription:@"bundle identifier" block:^{
-		return NSUserDefaults.standardUserDefaults.sqrl_bundleIdentifier;
-	}];
+- (RACSignal *)waitForBundleIdentifier {
+	return [[RACSignal
+		defer:^{
+			return [RACSignal return:NSUserDefaults.standardUserDefaults.sqrl_waitForBundleIdentifier];
+		}]
+		setNameWithFormat:@"-waitForBundleIdentifier"];
 }
 
 - (RACSignal *)targetBundleURL {
@@ -186,6 +188,14 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	return [self retrieveDefaultsValueWithDescription:@"Application Support URL" block:^{
 		return NSUserDefaults.standardUserDefaults.sqrl_applicationSupportURL;
 	}];
+}
+
+- (RACSignal *)relaunchAfterInstallation {
+	return [[RACSignal
+		defer:^{
+			return [RACSignal return:@(NSUserDefaults.standardUserDefaults.sqrl_relaunchAfterInstallation)];
+		}]
+		setNameWithFormat:@"-relaunchAfterInstallation"];
 }
 
 - (RACSignal *)verifier {
@@ -229,12 +239,17 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		case SQRLShipItStateWaitingForTermination:
 			return [[[[RACSignal
 				zip:@[
-					[self bundleIdentifier],
+					[self waitForBundleIdentifier],
 					[self targetBundleURL]
 				] reduce:^(NSString *identifier, NSURL *bundleURL) {
+					// Don't wait for termination.
+					if (identifier == nil) return [RACSignal empty];
+
 					// This signal produces the only values that we actually
 					// want to return to the caller (namely, the applications
 					// we're watching for termination).
+					//
+					// TODO: Wait for termination in other installer states too.
 					return [self waitForTerminationOfApplicationAtURL:bundleURL bundleIdentifier:identifier];
 				}]
 				flatten]
@@ -337,10 +352,35 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				}]
 				flatten]
 				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateNothingToDo;
+					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateRelaunching;
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateVerifyingInPlace"];
+
+		case SQRLShipItStateRelaunching:
+			return [[[[[[[self
+				relaunchAfterInstallation]
+				flattenMap:^(NSNumber *shouldRelaunch) {
+					if (shouldRelaunch.boolValue) {
+						return [self targetBundleURL];
+					} else {
+						return [RACSignal empty];
+					}
+				}]
+				deliverOn:RACScheduler.mainThreadScheduler]
+				flattenMap:^(NSURL *bundleURL) {
+					NSError *error = nil;
+					if ([NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+						return [RACSignal empty];
+					} else {
+						return [RACSignal error:error];
+					}
+				}]
+				doCompleted:^{
+					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateNothingToDo;
+				}]
+				ignoreValues]
+				setNameWithFormat:@"SQRLShipItStateRelaunching"];
 		
 		default: {
 			NSDictionary *userInfo = @{

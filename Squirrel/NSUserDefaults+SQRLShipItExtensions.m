@@ -15,7 +15,8 @@ NSString * const SQRLBackupBundleKey = @"SQRLBackupBundleKey";
 NSString * const SQRLApplicationSupportKey = @"SQRLApplicationSupportKey";
 NSString * const SQRLRequirementDataKey = @"SQRLRequirementDataKey";
 NSString * const SQRLStateKey = @"SQRLStateKey";
-NSString * const SQRLBundleIdentifierKey = @"SQRLBundleIdentifierKey";
+NSString * const SQRLWaitForBundleIdentifierKey = @"SQRLWaitForBundleIdentifierKey";
+NSString * const SQRLShouldRelaunchKey = @"SQRLShouldRelaunchKey";
 
 @implementation NSUserDefaults (SQRLShipItExtensions)
 
@@ -96,17 +97,25 @@ NSString * const SQRLBundleIdentifierKey = @"SQRLBundleIdentifierKey";
 	}
 }
 
-- (NSString *)sqrl_bundleIdentifier {
-	return [self stringForKey:SQRLBundleIdentifierKey];
+- (NSString *)sqrl_waitForBundleIdentifier {
+	return [self stringForKey:SQRLWaitForBundleIdentifierKey];
 }
 
-- (void)setSqrl_bundleIdentifier:(NSString *)identifier {
+- (void)setSqrl_waitForBundleIdentifier:(NSString *)identifier {
 	if (identifier == nil) {
-		[self removeObjectForKey:SQRLBundleIdentifierKey];
+		[self removeObjectForKey:SQRLWaitForBundleIdentifierKey];
 	} else {
 		NSParameterAssert([identifier isKindOfClass:NSString.class]);
-		[self setObject:identifier forKey:SQRLBundleIdentifierKey];
+		[self setObject:identifier forKey:SQRLWaitForBundleIdentifierKey];
 	}
+}
+
+- (BOOL)sqrl_relaunchAfterInstallation {
+	return [self boolForKey:SQRLShouldRelaunchKey];
+}
+
+- (void)setSqrl_relaunchAfterInstallation:(BOOL)shouldRelaunch {
+	[self setBool:shouldRelaunch forKey:SQRLShouldRelaunchKey];
 }
 
 @end

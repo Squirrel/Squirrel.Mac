@@ -15,3 +15,4 @@ extern NSString * const SQRLApplicationSupportKey;
 extern NSString * const SQRLRequirementDataKey;
 extern NSString * const SQRLStateKey;
 extern NSString * const SQRLBundleIdentifierKey;
+extern NSString * const SQRLShouldRelaunchKey;
