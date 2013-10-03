@@ -198,11 +198,11 @@ describe(@"signal handling", ^{
 
 it(@"should install an update in process", ^{
 	[NSUserDefaults.standardUserDefaults registerDefaults:@{
-		SQRLTargetBundleKey: self.testApplicationURL.path,
-		SQRLUpdateBundleKey: [self createTestApplicationUpdate].path,
-		SQRLApplicationSupportKey: self.temporaryDirectoryURL.path,
-		SQRLRequirementDataKey: self.testApplicationCodeSigningRequirementData,
-		SQRLStateKey: @(SQRLShipItStateClearingQuarantine),
+		SQRLTargetBundleDefaultsKey: self.testApplicationURL.path,
+		SQRLUpdateBundleDefaultsKey: [self createTestApplicationUpdate].path,
+		SQRLApplicationSupportDefaultsKey: self.temporaryDirectoryURL.path,
+		SQRLRequirementDataDefaultsKey: self.testApplicationCodeSigningRequirementData,
+		SQRLStateDefaultsKey: @(SQRLShipItStateClearingQuarantine),
 	}];
 
 	NSError *installError = nil;

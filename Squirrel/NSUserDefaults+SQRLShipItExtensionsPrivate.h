@@ -8,11 +8,11 @@
 
 #import "NSUserDefaults+SQRLShipItExtensions.h"
 
-extern NSString * const SQRLTargetBundleKey;
-extern NSString * const SQRLUpdateBundleKey;
-extern NSString * const SQRLBackupBundleKey;
-extern NSString * const SQRLApplicationSupportKey;
-extern NSString * const SQRLRequirementDataKey;
-extern NSString * const SQRLStateKey;
-extern NSString * const SQRLBundleIdentifierKey;
-extern NSString * const SQRLShouldRelaunchKey;
+extern NSString * const SQRLTargetBundleDefaultsKey;
+extern NSString * const SQRLUpdateBundleDefaultsKey;
+extern NSString * const SQRLBackupBundleDefaultsKey;
+extern NSString * const SQRLApplicationSupportDefaultsKey;
+extern NSString * const SQRLRequirementDataDefaultsKey;
+extern NSString * const SQRLStateDefaultsKey;
+extern NSString * const SQRLBundleIdentifierDefaultsKey;
+extern NSString * const SQRLShouldRelaunchDefaultsKey;

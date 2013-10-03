@@ -9,14 +9,14 @@
 #import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 
-NSString * const SQRLTargetBundleKey = @"SQRLTargetBundleKey";
-NSString * const SQRLUpdateBundleKey = @"SQRLUpdateBundleKey";
-NSString * const SQRLBackupBundleKey = @"SQRLBackupBundleKey";
-NSString * const SQRLApplicationSupportKey = @"SQRLApplicationSupportKey";
-NSString * const SQRLRequirementDataKey = @"SQRLRequirementDataKey";
-NSString * const SQRLStateKey = @"SQRLStateKey";
-NSString * const SQRLWaitForBundleIdentifierKey = @"SQRLWaitForBundleIdentifierKey";
-NSString * const SQRLShouldRelaunchKey = @"SQRLShouldRelaunchKey";
+NSString * const SQRLTargetBundleDefaultsKey = @"SQRLTargetBundleDefaultsKey";
+NSString * const SQRLUpdateBundleDefaultsKey = @"SQRLUpdateBundleDefaultsKey";
+NSString * const SQRLBackupBundleDefaultsKey = @"SQRLBackupBundleDefaultsKey";
+NSString * const SQRLApplicationSupportDefaultsKey = @"SQRLApplicationSupportDefaultsKey";
+NSString * const SQRLRequirementDataDefaultsKey = @"SQRLRequirementDataDefaultsKey";
+NSString * const SQRLStateDefaultsKey = @"SQRLStateDefaultsKey";
+NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"SQRLWaitForBundleIdentifierDefaultsKey";
+NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey";
 
 @implementation NSUserDefaults (SQRLShipItExtensions)
 
@@ -31,7 +31,7 @@ NSString * const SQRLShouldRelaunchKey = @"SQRLShouldRelaunchKey";
 	NSParameterAssert(key != nil);
 
 	if (fileURL == nil) {
-		[self removeObjectForKey:SQRLTargetBundleKey];
+		[self removeObjectForKey:SQRLTargetBundleDefaultsKey];
 	} else {
 		NSString *path = fileURL.filePathURL.path;
 		NSAssert(path != nil, @"URL does not point to a file path: %@", fileURL);
@@ -41,56 +41,56 @@ NSString * const SQRLShouldRelaunchKey = @"SQRLShouldRelaunchKey";
 }
 
 - (NSURL *)sqrl_targetBundleURL {
-	return [self sqrl_fileURLForKey:SQRLTargetBundleKey];
+	return [self sqrl_fileURLForKey:SQRLTargetBundleDefaultsKey];
 }
 
 - (void)setSqrl_targetBundleURL:(NSURL *)fileURL {
-	[self sqrl_setFileURL:fileURL forKey:SQRLTargetBundleKey];
+	[self sqrl_setFileURL:fileURL forKey:SQRLTargetBundleDefaultsKey];
 }
 
 - (NSURL *)sqrl_updateBundleURL {
-	return [self sqrl_fileURLForKey:SQRLUpdateBundleKey];
+	return [self sqrl_fileURLForKey:SQRLUpdateBundleDefaultsKey];
 }
 
 - (void)setSqrl_updateBundleURL:(NSURL *)fileURL {
-	[self sqrl_setFileURL:fileURL forKey:SQRLUpdateBundleKey];
+	[self sqrl_setFileURL:fileURL forKey:SQRLUpdateBundleDefaultsKey];
 }
 
 - (NSURL *)sqrl_backupBundleURL {
-	return [self sqrl_fileURLForKey:SQRLBackupBundleKey];
+	return [self sqrl_fileURLForKey:SQRLBackupBundleDefaultsKey];
 }
 
 - (void)setSqrl_backupBundleURL:(NSURL *)fileURL {
-	[self sqrl_setFileURL:fileURL forKey:SQRLBackupBundleKey];
+	[self sqrl_setFileURL:fileURL forKey:SQRLBackupBundleDefaultsKey];
 }
 
 - (NSURL *)sqrl_applicationSupportURL {
-	return [self sqrl_fileURLForKey:SQRLApplicationSupportKey];
+	return [self sqrl_fileURLForKey:SQRLApplicationSupportDefaultsKey];
 }
 
 - (void)setSqrl_applicationSupportURL:(NSURL *)fileURL {
-	[self sqrl_setFileURL:fileURL forKey:SQRLApplicationSupportKey];
+	[self sqrl_setFileURL:fileURL forKey:SQRLApplicationSupportDefaultsKey];
 }
 
 - (NSData *)sqrl_requirementData {
-	return [self dataForKey:SQRLRequirementDataKey];
+	return [self dataForKey:SQRLRequirementDataDefaultsKey];
 }
 
 - (void)setSqrl_requirementData:(NSData *)data {
 	if (data == nil) {
-		[self removeObjectForKey:SQRLRequirementDataKey];
+		[self removeObjectForKey:SQRLRequirementDataDefaultsKey];
 	} else {
 		NSParameterAssert([data isKindOfClass:NSData.class]);
-		[self setObject:data forKey:SQRLRequirementDataKey];
+		[self setObject:data forKey:SQRLRequirementDataDefaultsKey];
 	}
 }
 
 - (SQRLShipItState)sqrl_state {
-	return [self integerForKey:SQRLStateKey];
+	return [self integerForKey:SQRLStateDefaultsKey];
 }
 
 - (void)setSqrl_state:(SQRLShipItState)state {
-	[self setInteger:state forKey:SQRLStateKey];
+	[self setInteger:state forKey:SQRLStateDefaultsKey];
 
 	if (![self synchronize]) {
 		NSLog(@"Failed to synchronize user defaults %@", self);
@@ -98,24 +98,24 @@ NSString * const SQRLShouldRelaunchKey = @"SQRLShouldRelaunchKey";
 }
 
 - (NSString *)sqrl_waitForBundleIdentifier {
-	return [self stringForKey:SQRLWaitForBundleIdentifierKey];
+	return [self stringForKey:SQRLWaitForBundleIdentifierDefaultsKey];
 }
 
 - (void)setSqrl_waitForBundleIdentifier:(NSString *)identifier {
 	if (identifier == nil) {
-		[self removeObjectForKey:SQRLWaitForBundleIdentifierKey];
+		[self removeObjectForKey:SQRLWaitForBundleIdentifierDefaultsKey];
 	} else {
 		NSParameterAssert([identifier isKindOfClass:NSString.class]);
-		[self setObject:identifier forKey:SQRLWaitForBundleIdentifierKey];
+		[self setObject:identifier forKey:SQRLWaitForBundleIdentifierDefaultsKey];
 	}
 }
 
 - (BOOL)sqrl_relaunchAfterInstallation {
-	return [self boolForKey:SQRLShouldRelaunchKey];
+	return [self boolForKey:SQRLShouldRelaunchDefaultsKey];
 }
 
 - (void)setSqrl_relaunchAfterInstallation:(BOOL)shouldRelaunch {
-	[self setBool:shouldRelaunch forKey:SQRLShouldRelaunchKey];
+	[self setBool:shouldRelaunch forKey:SQRLShouldRelaunchDefaultsKey];
 }
 
 @end
