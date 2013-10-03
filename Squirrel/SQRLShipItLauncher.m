@@ -116,9 +116,15 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
 		jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
 		jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
+
+		// TODO
+		#if 0
 		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
 			@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
 		};
+		#else
+		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @NO;
+		#endif
 
 		jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
 			jobLabel: @YES
