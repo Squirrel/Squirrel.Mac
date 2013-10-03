@@ -1,7 +1,7 @@
 # Squirrel
 
-Squirrel is an OS X app updater framework which moves the decision for which
-version a client should be running out of the client and into the server.
+Squirrel is an OS X framework focused on making application updates **as safe
+and transparent as updates to a website**.
 
 Instead of publishing a feed of versions from which your app must select,
 Squirrel updates to the version your server tells it to. This allows you to
@@ -15,8 +15,8 @@ The update JSON Squirrel requests can be a static resource that you generate
 each time you release a new version, or dynamically generated to point to any
 release you want it to, based on criteria in the request.
 
-Squirrel’s installer is designed to be fault tolerant and to ensure that the
-updates it installs are valid.
+Squirrel’s installer is also designed to be fault tolerant, and ensure that any
+updates installed are valid.
 
 # Adopting Squirrel
 
