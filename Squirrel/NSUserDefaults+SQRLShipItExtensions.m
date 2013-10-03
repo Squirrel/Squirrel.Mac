@@ -7,14 +7,15 @@
 //
 
 #import "NSUserDefaults+SQRLShipItExtensions.h"
+#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 
-static NSString * const SQRLTargetBundleKey = @"SQRLTargetBundleKey";
-static NSString * const SQRLUpdateBundleKey = @"SQRLUpdateBundleKey";
-static NSString * const SQRLBackupBundleKey = @"SQRLBackupBundleKey";
-static NSString * const SQRLApplicationSupportKey = @"SQRLApplicationSupportKey";
-static NSString * const SQRLRequirementDataKey = @"SQRLRequirementDataKey";
-static NSString * const SQRLStateKey = @"SQRLStateKey";
-static NSString * const SQRLBundleIdentifierKey = @"SQRLBundleIdentifierKey";
+NSString * const SQRLTargetBundleKey = @"SQRLTargetBundleKey";
+NSString * const SQRLUpdateBundleKey = @"SQRLUpdateBundleKey";
+NSString * const SQRLBackupBundleKey = @"SQRLBackupBundleKey";
+NSString * const SQRLApplicationSupportKey = @"SQRLApplicationSupportKey";
+NSString * const SQRLRequirementDataKey = @"SQRLRequirementDataKey";
+NSString * const SQRLStateKey = @"SQRLStateKey";
+NSString * const SQRLBundleIdentifierKey = @"SQRLBundleIdentifierKey";
 
 @implementation NSUserDefaults (SQRLShipItExtensions)
 

@@ -7,6 +7,7 @@
 //
 
 #import "SQRLCodeSignatureVerifier.h"
+#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLInstaller.h"
 
 SpecBegin(SQRLInstaller)
@@ -196,11 +197,16 @@ describe(@"signal handling", ^{
 });
 
 it(@"should install an update in process", ^{
-	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:[self createTestApplicationUpdate] requirementData:self.testApplicationCodeSigningRequirementData];
-	expect(installer).notTo.beNil();
+	[NSUserDefaults.standardUserDefaults registerDefaults:@{
+		SQRLTargetBundleKey: self.testApplicationURL.path,
+		SQRLUpdateBundleKey: [self createTestApplicationUpdate].path,
+		SQRLApplicationSupportKey: self.temporaryDirectoryURL.path,
+		SQRLRequirementDataKey: self.testApplicationCodeSigningRequirementData,
+		SQRLStateKey: @(SQRLShipItStateClearingQuarantine),
+	}];
 
 	NSError *installError = nil;
-	BOOL install = [[installer installUpdate] waitUntilCompleted:&installError];
+	BOOL install = [[SQRLInstaller.sharedInstaller.installUpdateCommand execute:nil] waitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });
