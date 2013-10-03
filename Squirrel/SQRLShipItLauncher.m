@@ -94,8 +94,11 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
 		jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
 		jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
-		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @NO;
 		jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
+		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
+			@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
+		};
+
 		jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
 			jobLabel: @YES
 		};
