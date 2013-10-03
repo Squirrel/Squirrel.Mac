@@ -85,7 +85,7 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 
 	xpc_connection_t remoteConnection = xpc_dictionary_get_remote_connection(event.object);
 
-	return [[[[[[[installWithArgumentsFromEvent(event)
+	return [[[[[[installWithArgumentsFromEvent(event)
 		catch:^(NSError *error) {
 			SQRLXPCObject *reply = replyFromDictionary(event);
 			if (reply == nil) {
@@ -144,9 +144,6 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 			// Don't pass on the error, since we'll terminate when exit() is
 			// called above.
 			return [RACSignal empty];
-		}]
-		finally:^{
-			[client cancel];
 		}]
 		setNameWithFormat:@"handleEvent %@ from %@", event, client];
 }
