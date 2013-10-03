@@ -144,8 +144,6 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 		#if DEBUG
 		jobDict[@(LAUNCH_JOBKEY_DEBUG)] = @YES;
-
-		NSLog(@"ShipIt job dictionary: %@", jobDict);
 		#endif
 
 		if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDict, authorization, &cfError)) {
