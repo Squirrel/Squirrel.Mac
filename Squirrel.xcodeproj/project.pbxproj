@@ -40,6 +40,7 @@
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
 		D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
+		D061E3F417FD205C00CC134A /* NSUserDefaults+ShipItExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D061E3F317FD205C00CC134A /* NSUserDefaults+ShipItExtensions.m */; };
 		D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1117B451500012B22D /* InfoPlist.strings */; };
 		D08D4E1517B451500012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1417B451500012B22D /* main.m */; };
@@ -356,6 +357,8 @@
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		D049803217F9181D001EE042 /* SQRLXPCObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLXPCObject.h; sourceTree = "<group>"; };
 		D049803317F9181D001EE042 /* SQRLXPCObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLXPCObject.m; sourceTree = "<group>"; };
+		D061E3F217FD205C00CC134A /* NSUserDefaults+ShipItExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSUserDefaults+ShipItExtensions.h"; sourceTree = "<group>"; };
+		D061E3F317FD205C00CC134A /* NSUserDefaults+ShipItExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSUserDefaults+ShipItExtensions.m"; sourceTree = "<group>"; };
 		D08D4E0C17B451500012B22D /* TestApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D08D4E1017B451500012B22D /* TestApplication-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestApplication-Info.plist"; sourceTree = "<group>"; };
 		D08D4E1217B451500012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -530,6 +533,8 @@
 		D014AC0317B97885007D79D0 /* ShipIt */ = {
 			isa = PBXGroup;
 			children = (
+				D061E3F217FD205C00CC134A /* NSUserDefaults+ShipItExtensions.h */,
+				D061E3F317FD205C00CC134A /* NSUserDefaults+ShipItExtensions.m */,
 				D014AC0417B97885007D79D0 /* ShipIt-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
@@ -1197,6 +1202,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
+				D061E3F417FD205C00CC134A /* NSUserDefaults+ShipItExtensions.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */,
 				D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
