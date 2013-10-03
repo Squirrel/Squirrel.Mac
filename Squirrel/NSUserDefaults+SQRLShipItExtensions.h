@@ -1,5 +1,5 @@
 //
-//  NSUserDefaults+ShipItExtensions.h
+//  NSUserDefaults+SQRLShipItExtensions.h
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-10-02.
@@ -39,7 +39,7 @@ typedef enum : NSInteger {
 // User defaults settings to hold state about an enqueued or in-progress update
 // installation, so ShipIt can be safely terminated and relaunched, then continue
 // updating.
-@interface NSUserDefaults (ShipItExtensions)
+@interface NSUserDefaults (SQRLShipItExtensions)
 
 // The URL to the app bundle that should be replaced with an update.
 @property (atomic, copy) NSURL *sqrl_targetBundleURL;

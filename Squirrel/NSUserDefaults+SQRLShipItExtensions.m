@@ -1,12 +1,12 @@
 //
-//  NSUserDefaults+ShipItExtensions.m
+//  NSUserDefaults+SQRLShipItExtensions.m
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-10-02.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "NSUserDefaults+ShipItExtensions.h"
+#import "NSUserDefaults+SQRLShipItExtensions.h"
 
 static NSString * const SQRLTargetBundleKey = @"SQRLTargetBundleKey";
 static NSString * const SQRLUpdateBundleKey = @"SQRLUpdateBundleKey";
@@ -16,7 +16,7 @@ static NSString * const SQRLRequirementDataKey = @"SQRLRequirementDataKey";
 static NSString * const SQRLStateKey = @"SQRLStateKey";
 static NSString * const SQRLBundleIdentifierKey = @"SQRLBundleIdentifierKey";
 
-@implementation NSUserDefaults (ShipItExtensions)
+@implementation NSUserDefaults (SQRLShipItExtensions)
 
 // Safer than -URLForKey: because we explicitly disallow anything but file path
 // URLs.

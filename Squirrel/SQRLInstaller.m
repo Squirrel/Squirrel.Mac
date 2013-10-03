@@ -9,7 +9,7 @@
 #import "SQRLInstaller.h"
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
-#import "NSUserDefaults+ShipItExtensions.h"
+#import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
