@@ -63,6 +63,12 @@ typedef enum : NSInteger {
 // Setting this property will synchronize the user defaults to disk.
 @property (atomic, assign) SQRLShipItState sqrl_state;
 
+// The number of failures that have occurred during the current installation
+// attempt.
+//
+// TODO
+//@property (atomic, assign) NSUInteger sqrl_installationFailures;
+
 // The bundle identifier of the application being updated.
 @property (atomic, copy) NSString *sqrl_bundleIdentifier;
 
