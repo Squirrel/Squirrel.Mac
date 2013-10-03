@@ -206,7 +206,7 @@ it(@"should install an update in process", ^{
 	}];
 
 	NSError *installError = nil;
-	BOOL install = [[SQRLInstaller.sharedInstaller.installUpdateCommand execute:nil] waitUntilCompleted:&installError];
+	BOOL install = [[SQRLInstaller.sharedInstaller.installUpdateCommand execute:nil] asynchronouslyWaitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });
