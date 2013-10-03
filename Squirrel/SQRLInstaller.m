@@ -215,9 +215,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 	return [[[self
 		signalForState:state]
-		then:^{
+		concat:[RACSignal defer:^{
 			return [self signalForCurrentState];
-		}]
+		}]]
 		setNameWithFormat:@"-signalForCurrentState"];
 }
 
@@ -232,6 +232,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					[self bundleIdentifier],
 					[self targetBundleURL]
 				] reduce:^(NSString *identifier, NSURL *bundleURL) {
+					// This signal produces the only values that we actually
+					// want to return to the caller (namely, the applications
+					// we're watching for termination).
 					return [self waitForTerminationOfApplicationAtURL:bundleURL bundleIdentifier:identifier];
 				}]
 				flatten]
@@ -241,7 +244,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				setNameWithFormat:@"SQRLShipItStateWaitingForTermination"];
 
 		case SQRLShipItStateClearingQuarantine:
-			return [[[[self
+			return [[[[[self
 				updateBundleURL]
 				flattenMap:^(NSURL *bundleURL) {
 					return [self clearQuarantineForDirectory:bundleURL];
@@ -249,10 +252,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				doCompleted:^{
 					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateBackingUp;
 				}]
+				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateClearingQuarantine"];
 
 		case SQRLShipItStateBackingUp:
-			return [[[[[[[RACSignal
+			return [[[[[[[[RACSignal
 				zip:@[
 					[self targetBundleURL],
 					[self applicationSupportURL],
@@ -274,10 +278,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				finally:^{
 					[self endTransaction];
 				}]
+				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateBackingUp"];
 
 		case SQRLShipItStateInstalling:
-			return [[[[[[RACSignal
+			return [[[[[[[RACSignal
 				zip:@[
 					[self targetBundleURL],
 					[self updateBundleURL],
@@ -312,10 +317,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				finally:^{
 					[self endTransaction];
 				}]
+				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateInstalling"];
 
 		case SQRLShipItStateVerifyingInPlace:
-			return [[[[RACSignal
+			return [[[[[RACSignal
 				zip:@[
 					[self targetBundleURL],
 					[self backupBundleURL],
@@ -333,6 +339,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				doCompleted:^{
 					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateNothingToDo;
 				}]
+				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateVerifyingInPlace"];
 		
 		default: {
@@ -363,7 +370,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			return [application.bundleURL.URLByStandardizingPath isEqual:standardizedBundleURL];
 		}]
 		flattenMap:^(NSRunningApplication *application) {
-			return [self waitForTerminationOfProcessIdentifier:application.processIdentifier];
+			return [[self
+				waitForTerminationOfProcessIdentifier:application.processIdentifier]
+				mapReplace:application];
 		}]
 		setNameWithFormat:@"-waitForTerminationOfApplicationAtURL: %@ bundleIdentifier: %@", bundleURL, bundleIdentifier];
 }
@@ -372,6 +381,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	return [[RACSignal
 		createSignal:^(id<RACSubscriber> subscriber) {
 			dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_PROC, processIdentifier, DISPATCH_PROC_EXIT, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
+
+			dispatch_source_set_registration_handler(source, ^{
+				[subscriber sendNext:@(processIdentifier)];
+			});
+
 			dispatch_source_set_event_handler(source, ^{
 				[subscriber sendCompleted];
 			});
