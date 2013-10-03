@@ -25,8 +25,8 @@ beforeEach(^{
 
 	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
+	xpc_dictionary_set_string(message, SQRLApplicationSupportURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
-	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, false);
 
 	NSData *requirementData = self.testApplicationCodeSigningRequirementData;
 	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);

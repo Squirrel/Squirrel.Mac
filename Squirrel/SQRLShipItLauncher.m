@@ -21,14 +21,33 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 @implementation SQRLShipItLauncher
 
++ (NSString *)shipItJobLabel {
+	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
+	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
+	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+}
+
++ (NSURL *)shipItApplicationSupportURL {
+	NSError *error = nil;
+	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
+
+	BOOL created = NO;
+	NSURL *shipItAppSupportURL = [appSupportURL URLByAppendingPathComponent:self.shipItJobLabel];
+	if (shipItAppSupportURL != nil) {
+		created = [NSFileManager.defaultManager createDirectoryAtURL:shipItAppSupportURL withIntermediateDirectories:YES attributes:nil error:&error];
+	}
+
+	if (!created) {
+		NSLog(@"Could not create Application Support folder at %@: %@", shipItAppSupportURL, error);
+	}
+
+	return shipItAppSupportURL;
+}
+
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
 	return [[RACSignal startEagerlyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh] block:^(id<RACSubscriber> subscriber) {
 		NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 		NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
-
-		NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
-		NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
-		NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 
 		CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
@@ -79,6 +98,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
 		};
 
+		NSString *jobLabel = self.shipItJobLabel;
+
 		CFErrorRef cfError;
 		if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, authorization, true, &cfError)) {
 			#if DEBUG
@@ -111,17 +132,9 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			jobLabel
 		];
 
-		NSError *error = nil;
-		NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
-		NSURL *squirrelAppSupportURL = [appSupportURL URLByAppendingPathComponent:jobLabel];
-		BOOL created = (squirrelAppSupportURL == nil ? NO : [NSFileManager.defaultManager createDirectoryAtURL:squirrelAppSupportURL withIntermediateDirectories:YES attributes:nil error:&error]);
-
-		if (!created) {
-			NSLog(@"Could not create Application Support folder: %@", error);
-		} else {
-			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [squirrelAppSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
-			jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [squirrelAppSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
-		}
+		NSURL *appSupportURL = self.shipItApplicationSupportURL;
+		jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
+		jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
 
 		#if DEBUG
 		jobDict[@(LAUNCH_JOBKEY_DEBUG)] = @YES;

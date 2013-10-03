@@ -21,26 +21,22 @@ extern const char * const SQRLShipItCommandKey;
 // Specified for SQRLShipItCommandKey to indicate that an update should be
 // installed.
 //
-// The event can contain the following keys to configure the installation:
-//
-//	- SQRLTargetBundleURLKey
-//	- SQRLUpdateBundleURLKey
-//	- SQRLShouldRelaunchKey
-//	- SQRLWaitForConnectionKey
-//
-// If SQRLWaitForConnectionKey is set to `true`, ShipIt will respond
+// If `SQRLWaitForBundleIdentifierKey` is provided, ShipIt will respond
 // immediately indicating whether the initial setup was successful, then begin
-// installation shortly after the connection has been terminated by the client.
+// installation after the application has terminated.
 //
-// If SQRLWaitForConnectionKey is set to `false`, ShipIt will begin installation
-// immediately, and then reply with whether installation was successful.
+// If `SQRLWaitForBundleIdentifierKey` is not provided, ShipIt will begin
+// installation immediately, and then reply with whether installation was
+// successful.
 extern const char * const SQRLShipItInstallCommand;
 
-// Associated with a boolean, indicating whether ShipIt should wait for the
-// connection to terminate before beginning installation.
+// Associated with a string containing the bundle identifier of the parent
+// application, if ShipIt should wait for it to terminate before beginning
+// installation.
 //
-// This argument is required.
-extern const char * const SQRLWaitForConnectionKey;
+// This argument is optional. If not provided, installation will begin
+// immediately.
+extern const char * const SQRLWaitForBundleIdentifierKey;
 
 // Associated with a string representation of the URL to _replace_ on disk.
 //
@@ -58,6 +54,12 @@ extern const char * const SQRLTargetBundleURLKey;
 //
 // This argument is required.
 extern const char * const SQRLUpdateBundleURLKey;
+
+// Associated with a string representation of the URL to a persistent
+// Application Support folder that ShipIt can read/write to.
+//
+// This argument is required.
+extern const char * const SQRLApplicationSupportURLKey;
 
 // Associated with a boolean which indicates whether the application should be
 // launched after being updated.
