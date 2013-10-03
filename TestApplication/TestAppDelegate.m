@@ -21,9 +21,11 @@
 #pragma mark Lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
-	NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
+	NSString *bundlePath = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath;
+	NSString *logPath = [bundlePath.stringByDeletingLastPathComponent stringByAppendingPathComponent:@"TestApplication.log"];
 	freopen(logPath.fileSystemRepresentation, "a+", stderr);
+
+	NSLog(@"TestApplication launched at %@", bundlePath);
 
 	atexit_b(^{
 		NSLog(@"TestApplication quitting");

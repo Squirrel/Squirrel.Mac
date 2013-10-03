@@ -223,8 +223,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	SQRLShipItState state = NSUserDefaults.standardUserDefaults.sqrl_state;
 	if (state == SQRLShipItStateNothingToDo) return [RACSignal empty];
 
-	return [[[self
+	return [[[[self
 		signalForState:state]
+		logAll]
 		concat:[RACSignal defer:^{
 			return [self signalForCurrentState];
 		}]]
