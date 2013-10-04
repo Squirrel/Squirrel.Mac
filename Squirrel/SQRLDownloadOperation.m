@@ -83,12 +83,13 @@
 	[self.controlQueue addOperationWithBlock:^{
 		if (self.connection == nil) return;
 
-		[self.connection cancel];
 		[self finish];
 	}];
 }
 
 - (void)finish {
+	[self.connection cancel];
+
 	[self willChangeValueForKey:@keypath(self, isExecuting)];
 	self.isExecuting = NO;
 	[self didChangeValueForKey:@keypath(self, isExecuting)];
@@ -99,8 +100,6 @@
 }
 
 - (void)completeWithError:(NSError *)error {
-	[self.connection cancel];
-
 	self.completionProvider = ^ NSURL * (NSURLResponse **responseRef, NSError **errorRef) {
 		if (errorRef != NULL) *errorRef = error;
 		return nil;

@@ -80,12 +80,13 @@
 	[self.controlQueue addOperationWithBlock:^{
 		if (self.connection == nil) return;
 
-		[self.connection cancel];
 		[self finish];
 	}];
 }
 
 - (void)finish {
+	[self.connection cancel];
+
 	[self willChangeValueForKey:@keypath(self, isExecuting)];
 	self.isExecuting = NO;
 	[self didChangeValueForKey:@keypath(self, isExecuting)];
