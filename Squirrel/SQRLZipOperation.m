@@ -62,6 +62,10 @@ typedef enum : NSInteger {
 	return self;
 }
 
+- (BOOL)completionProvider:(NSError **)errorRef {
+	return self.completionProvider(errorRef);
+}
+
 + (instancetype)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL {
 	NSParameterAssert(zipArchiveURL != nil);
 	NSParameterAssert([zipArchiveURL isFileURL]);

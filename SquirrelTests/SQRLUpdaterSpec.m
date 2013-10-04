@@ -19,7 +19,7 @@ NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
 	expect(operation.isFinished).will.beTruthy();
 
 	NSError *error = nil;
-	BOOL result = operation.completionProvider(&error);
+	BOOL result = [operation completionProvider:&error];
 	expect(result).to.beTruthy();
 	expect(error).to.beNil();
 

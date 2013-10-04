@@ -35,12 +35,12 @@ extern NSString * const SQRLZipOperationErrorDomain;
 //                     This must not be nil.
 + (instancetype)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL;
 
-// When the operation `isFinished` this will be non nil and return the result of
-// the unzip.
+// When the operation `isFinished` this can be invoked to get the operation
+// result.
 //
-// Returns a block which can be invoked to get the result
-//  - errorRef, may be NULL
-//  - Returns whether the archive/unarchive succeeded
-@property (readonly, copy, atomic) BOOL (^completionProvider)(NSError **errorRef);
+// errorRef - may be NULL.
+//
+// Returns whether the zip/unzip operation succeeded.
+- (BOOL)completionProvider:(NSError **)errorRef;
 
 @end

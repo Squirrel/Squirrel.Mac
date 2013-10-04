@@ -219,7 +219,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 
 		NSError *error = nil;
 
-		BOOL unzip = zipOperation.completionProvider(&error);
+		BOOL unzip = [zipOperation completionProvider:&error];
 		if (!unzip) {
 			[self completeWithError:error];
 			return;

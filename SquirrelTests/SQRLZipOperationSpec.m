@@ -19,7 +19,7 @@ it(@"should extract a zip archive created by the Finder", ^{
 	expect(operation.isFinished).will.beTruthy();
 
 	NSError *error = nil;
-	BOOL result = operation.completionProvider(&error);
+	BOOL result = [operation completionProvider:&error];
 	expect(result).to.beTruthy();
 	expect(error).to.beNil();
 
@@ -39,7 +39,7 @@ it(@"should create a zip archive readable by itself", ^{
 	expect(zip.isFinished).will.beTruthy();
 
 	NSError *error = nil;
-	BOOL result = zip.completionProvider(&error);
+	BOOL result = [zip completionProvider:&error];
 	expect(result).to.beTruthy();
 	expect(error).to.beNil();
 
@@ -49,7 +49,7 @@ it(@"should create a zip archive readable by itself", ^{
 	[unzip start];
 	expect(unzip.isFinished).will.beTruthy();
 
-	result = unzip.completionProvider(&error);
+	result = [unzip completionProvider:&error];
 	expect(result).to.beTruthy();
 	expect(error).to.beNil();
 
