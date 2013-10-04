@@ -197,9 +197,10 @@
 	NSError *error = nil;
 	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.download.fileURL error:&error];
 	if (!remove) {
-		if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return;
+		if (![error.domain isEqualToString:NSCocoaErrorDomain] || error.code != NSFileNoSuchFileError) {
+			[self completeWithError:error];
+		}
 
-		[self completeWithError:error];
 		return;
 	}
 }
