@@ -224,19 +224,12 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	SQRLShipItState state = NSUserDefaults.standardUserDefaults.sqrl_state;
 	if (state == SQRLShipItStateNothingToDo) return [RACSignal empty];
 
-	return [[[[[[self
+	return [[[[self
 		signalForState:state]
 		logAll]
 		concat:[RACSignal defer:^{
 			return [self signalForCurrentState];
 		}]]
-		initially:^{
-			// Create a transaction around all states except waiting.
-			if (state != SQRLShipItStateWaitingForTermination) [self beginTransaction];
-		}]
-		finally:^{
-			if (state != SQRLShipItStateWaitingForTermination) [self endTransaction];
-		}]
 		setNameWithFormat:@"-signalForCurrentState"];
 }
 
@@ -245,30 +238,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	NSParameterAssert(state != SQRLShipItStateNothingToDo);
 
 	switch (state) {
-		case SQRLShipItStateWaitingForTermination:
-			return [[[[self
-				waitForBundleIdentifier]
-				flattenMap:^(NSString *identifier) {
-					if (identifier == nil) return [RACSignal empty];
-
-					return [[self
-						targetBundleURL]
-						flattenMap:^(NSURL *bundleURL) {
-							SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:bundleURL bundleIdentifier:identifier];
-
-							// This signal produces the only values that we actually
-							// want to return to the caller (namely, the applications
-							// we're watching for termination).
-							//
-							// TODO: Wait for termination in other installer states too.
-							return [listener waitForTermination];
-						}];
-				}]
-				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateClearingQuarantine;
-				}]
-				setNameWithFormat:@"SQRLShipItStateWaitingForTermination"];
-
 		case SQRLShipItStateClearingQuarantine:
 			return [[[[[self
 				updateBundleURL]

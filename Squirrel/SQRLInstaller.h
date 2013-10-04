@@ -46,9 +46,8 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 // When executed, attempts to install the update or resume an in-progress
 // installation.
 //
-// Each execution will send, on an unspecified scheduler, `NSRunningApplication`
-// objects that represent applications currently being watched for termination.
-// Once installation is complete, the execution signal will also complete.
+// Each execution will complete or error on an unspecified scheduler when
+// installation has completed or failed.
 @property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
 
 // Returns the singleton installer.

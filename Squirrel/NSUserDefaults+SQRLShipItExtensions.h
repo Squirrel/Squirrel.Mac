@@ -11,11 +11,7 @@
 // The current state of ShipIt, for persistence across relaunches and for
 // tolerance of system failures.
 //
-// SQRLShipItStateNothingToDo           - ShipIt has not been instructed to do
-//                                        anything yet.
-// SQRLShipItStateWaitingForTermination - Waiting for the parent application to
-//                                        exit. This state will be entered even
-//                                        if there's no waiting to do.
+// SQRLShipItStateNothingToDo           - ShipIt has not started installing yet.
 // SQRLShipItStateClearingQuarantine    - Clearing the quarantine flag on the
 //                                        update bundle so it can used without
 //                                        issue.
@@ -33,7 +29,6 @@
 // start up in a weird mode on a newer version.
 typedef enum : NSInteger {
 	SQRLShipItStateNothingToDo = 0,
-	SQRLShipItStateWaitingForTermination,
 	SQRLShipItStateClearingQuarantine,
 	SQRLShipItStateBackingUp,
 	SQRLShipItStateInstalling,

@@ -13,6 +13,7 @@
 #import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
+#import "SQRLTerminationListener.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
 
@@ -24,33 +25,42 @@ static const NSInteger SQRLShipItErrorRequiredKeyMissing = 1;
 
 // Starts installation based on the information in the given XPC event.
 static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
-	return [[[[RACSignal
-		defer:^{
-			size_t requirementDataLen = 0;
-			const void *requirementDataPtr = xpc_dictionary_get_data(event.object, SQRLCodeSigningRequirementKey, &requirementDataLen);
+	size_t requirementDataLen = 0;
+	const void *requirementDataPtr = xpc_dictionary_get_data(event.object, SQRLCodeSigningRequirementKey, &requirementDataLen);
 
-			NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLTargetBundleURLKey))] filePathURL];
-			NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLUpdateBundleURLKey))] filePathURL];
-			NSURL *applicationSupportURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLApplicationSupportURLKey))] filePathURL];
+	NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLTargetBundleURLKey))] filePathURL];
+	NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLUpdateBundleURLKey))] filePathURL];
+	NSURL *applicationSupportURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLApplicationSupportURLKey))] filePathURL];
 
-			if (targetBundleURL == nil || updateBundleURL == nil || applicationSupportURL == nil || requirementDataPtr == NULL) {
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorRequiredKeyMissing userInfo:@{ NSLocalizedDescriptionKey: @"Required key not provided" }]];
-			}
+	if (targetBundleURL == nil || updateBundleURL == nil || applicationSupportURL == nil || requirementDataPtr == NULL) {
+		return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorRequiredKeyMissing userInfo:@{ NSLocalizedDescriptionKey: @"Required key not provided" }]];
+	}
 
+	NSData *requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
+	BOOL shouldRelaunch = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
+
+	RACSignal *termination = [RACSignal empty];
+	const char *identifier = xpc_dictionary_get_string(event.object, SQRLWaitForBundleIdentifierKey);
+	if (identifier != NULL) {
+		SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:targetBundleURL bundleIdentifier:@(identifier)];
+		termination = [listener waitForTermination];
+	}
+
+	return [[[termination
+		doCompleted:^{
 			NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
 			defaults.sqrl_targetBundleURL = targetBundleURL;
 			defaults.sqrl_updateBundleURL = updateBundleURL;
 			defaults.sqrl_applicationSupportURL = applicationSupportURL;
-			defaults.sqrl_requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
-			defaults.sqrl_relaunchAfterInstallation = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
-
-			const char *identifier = xpc_dictionary_get_string(event.object, SQRLWaitForBundleIdentifierKey);
-			defaults.sqrl_waitForBundleIdentifier = (identifier != NULL ? @(identifier) : nil);
-
-			defaults.sqrl_state = SQRLShipItStateWaitingForTermination;
-			return [[[[SQRLInstaller.sharedInstaller.installUpdateCommand
+			defaults.sqrl_requirementData = requirementData;
+			defaults.sqrl_relaunchAfterInstallation = shouldRelaunch;
+			defaults.sqrl_state = SQRLShipItStateClearingQuarantine;
+		}]
+		then:^{
+			return [[[[[SQRLInstaller.sharedInstaller.installUpdateCommand
 				execute:nil]
 				initially:^{
+					xpc_transaction_begin();
 					NSLog(@"Beginning installation");
 				}]
 				doCompleted:^{
@@ -58,13 +68,10 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 				}]
 				doError:^(NSError *error) {
 					NSLog(@"Installation error: %@", error);
+				}]
+				finally:^{
+					xpc_transaction_end();
 				}];
-		}]
-		initially:^{
-			xpc_transaction_begin();
-		}]
-		finally:^{
-			xpc_transaction_end();
 		}]
 		setNameWithFormat:@"installWithArgumentsFromEvent(%@)", event];
 }
