@@ -52,15 +52,15 @@
 	return directory;
 }
 
-- (NSURL *)URLForContainerDirectory {
+- (NSURL *)containerDirectoryURL {
 	return [self cacheSubdirectoryWithName:nil];
 }
 
-- (NSURL *)URLForDownloadDirectory {
+- (NSURL *)downloadDirectoryURL {
 	return [self cacheSubdirectoryWithName:@"download"];
 }
 
-- (NSURL *)URLForUnpackDirectory {
+- (NSURL *)unpackDirectoryURL {
 	// noindex so that Spotlight doesn't pick up apps pending update and add
 	// them to the Launch Services database
 	return [self cacheSubdirectoryWithName:@"unpack.noindex"];

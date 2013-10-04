@@ -187,7 +187,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 }
 
 - (void)unpackUpdate:(SQRLUpdate *)update archiveURL:(NSURL *)archiveURL {
-	NSURL *unpackDirectory = SQRLDirectoryManager.directoryManagerForCurrentApplication.URLForUnpackDirectory;
+	NSURL *unpackDirectory = SQRLDirectoryManager.directoryManagerForCurrentApplication.unpackDirectoryURL;
 
 	NSURL *currentUnpackDirectory = [unpackDirectory URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
 

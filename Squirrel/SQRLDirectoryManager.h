@@ -24,14 +24,14 @@
 
 // The root directory for the per app identifier Squirrel files. Callers must
 // create the directory themselves.
-- (NSURL *)URLForContainerDirectory;
+@property (readonly, nonatomic) NSURL *containerDirectoryURL;
 
 // The directory to store update downloads in prior to installation. Callers
 // must create the directory themselves.
-- (NSURL *)URLForDownloadDirectory;
+@property (readonly, nonatomic) NSURL *downloadDirectoryURL;
 
 // The directory to unpack updates into prior to to installation. Callers must
 // create the directory themselves.
-- (NSURL *)URLForUnpackDirectory;
+@property (readonly, nonatomic) NSURL *unpackDirectoryURL;
 
 @end

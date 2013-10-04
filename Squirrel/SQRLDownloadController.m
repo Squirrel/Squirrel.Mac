@@ -47,11 +47,11 @@
 }
 
 - (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
-	return [NSFileManager.defaultManager removeItemAtURL:self.directoryManager.URLForContainerDirectory error:errorRef];
+	return [NSFileManager.defaultManager removeItemAtURL:self.directoryManager.containerDirectoryURL error:errorRef];
 }
 
 - (NSURL *)downloadStoreIndexFileLocation {
-	return [self.directoryManager.URLForContainerDirectory URLByAppendingPathComponent:@"Index.plist"];
+	return [self.directoryManager.containerDirectoryURL URLByAppendingPathComponent:@"Index.plist"];
 }
 
 - (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
@@ -110,7 +110,7 @@
 			return;
 		}
 
-		if (![NSFileManager.defaultManager createDirectoryAtURL:self.directoryManager.URLForContainerDirectory withIntermediateDirectories:YES attributes:nil error:errorRef]) return;
+		if (![NSFileManager.defaultManager createDirectoryAtURL:self.directoryManager.containerDirectoryURL withIntermediateDirectories:YES attributes:nil error:errorRef]) return;
 
 		if (![newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef]) return;
 
@@ -158,7 +158,7 @@
 	}];
 
 	if (download == nil) {
-		NSURL *downloadDirectory = self.directoryManager.URLForDownloadDirectory;
+		NSURL *downloadDirectory = self.directoryManager.downloadDirectoryURL;
 		if (![NSFileManager.defaultManager createDirectoryAtURL:downloadDirectory withIntermediateDirectories:YES attributes:nil error:errorRef]) return nil;
 
 		NSURL *localURL = [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
