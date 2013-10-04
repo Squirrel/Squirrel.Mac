@@ -46,7 +46,7 @@ it(@"should install an update", ^{
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-it(@"should install an update and relaunch", ^{
+fit(@"should install an update and relaunch", ^{
 	__block BOOL installed = NO;
 
 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
