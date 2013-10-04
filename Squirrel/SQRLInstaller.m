@@ -92,7 +92,14 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	@weakify(self);
 	_installUpdateCommand = [[RACCommand alloc] initWithSignalBlock:^(id _) {
 		@strongify(self);
-		return [self signalForCurrentState];
+		return [[[self
+			signalForCurrentState]
+			initially:^{
+				[self beginTransaction];
+			}]
+			finally:^{
+				[self endTransaction];
+			}];
 	}];
 	
 	return self;
