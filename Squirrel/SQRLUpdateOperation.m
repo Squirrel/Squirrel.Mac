@@ -137,6 +137,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 	NSOperation *finishOperation = [NSBlockOperation blockOperationWithBlock:^{
 		if (self.isCancelled) {
 			[self finish];
+			return;
 		}
 
 		[self parseUpdateWithResponseProvider:connectionOperation.responseProvider];
@@ -171,6 +172,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 	NSOperation *finishOperation = [NSBlockOperation blockOperationWithBlock:^{
 		if (self.isCancelled) {
 			[self finish];
+			return;
 		}
 
 		NSError *downloadURLError = nil;
