@@ -54,6 +54,11 @@
 
 	_downloadController = [SQRLDownloadController defaultDownloadController];
 
+	_completionProvider = [^ NSURL * (NSURLResponse **responseProvider, NSError **errorRef) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
+		return nil;
+	} copy];
+
 	return self;
 }
 
