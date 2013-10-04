@@ -52,13 +52,18 @@ extern const NSInteger SQRLXPCErrorTerminationImminent;
 // Resumes the connection from a suspended state.
 - (void)resume;
 
-// Sends the given message across the connection and listens for a reply.
+// Lazily sends the given message across the connection and listens for a reply.
 //
 // message - The message to send across the connection. This must not be nil.
 //
 // Returns a signal which will send any reply as a `SQRLXPCObject` then
 // complete on a background thread.
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message;
+
+// Lazily waits for the connection's message queue to be empty.
+//
+// Returns a signal which will send completed once the barrier is in effect.
+- (RACSignal *)waitForBarrier;
 
 // Lazily resumes the receiver and passes through its `events`.
 //

@@ -82,7 +82,9 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 #pragma mark Communication
 
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message {
-	return [[[RACSignal
+	NSParameterAssert(message != nil);
+
+	return [[RACSignal
 		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 			xpc_connection_send_message_with_reply(self.object, message.object, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(xpc_object_t event) {
 				[self sendEvent:event toSubscriber:subscriber];
@@ -91,8 +93,19 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 
 			return nil;
 		}]
-		replay]
 		setNameWithFormat:@"%@ -sendMessageExpectingReply: %@", self, message];
+}
+
+- (RACSignal *)waitForBarrier {
+	return [[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			xpc_connection_send_barrier(self.object, ^{
+				[subscriber sendCompleted];
+			});
+
+			return nil;
+		}]
+		setNameWithFormat:@"%@ -waitForBarrier", self];
 }
 
 - (void)sendEvent:(xpc_object_t)event toSubscriber:(id<RACSubscriber>)subscriber {
