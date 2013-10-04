@@ -368,8 +368,8 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 					xpc_dictionary_set_string(wrappedMessage.object, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 					xpc_dictionary_set_string(wrappedMessage.object, SQRLUpdateBundleURLKey, update.bundle.bundleURL.absoluteString.UTF8String);
 					xpc_dictionary_set_string(wrappedMessage.object, SQRLApplicationSupportURLKey, SQRLShipItLauncher.shipItApplicationSupportURL.absoluteString.UTF8String);
+					xpc_dictionary_set_string(wrappedMessage.object, SQRLWaitForBundleIdentifierKey, NSRunningApplication.currentApplication.bundleIdentifier.UTF8String);
 					xpc_dictionary_set_bool(wrappedMessage.object, SQRLShouldRelaunchKey, self.shouldRelaunch);
-					xpc_dictionary_set_bool(wrappedMessage.object, SQRLWaitForBundleIdentifierKey, NSRunningApplication.currentApplication.bundleIdentifier);
 					xpc_dictionary_set_data(wrappedMessage.object, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 
 					return [self sendMessage:wrappedMessage overConnection:connection];
