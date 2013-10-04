@@ -140,14 +140,12 @@
 }
 
 + (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
-	__block NSString *ETag = nil;
-	[response.allHeaderFields enumerateKeysAndObjectsUsingBlock:^(NSString *header, NSString *value, BOOL *stop) {
-		if ([header caseInsensitiveCompare:@"ETag"] != NSOrderedSame) return;
-
-		ETag = value;
-		*stop = YES;
-	}];
-	return ETag;
+	NSDictionary *headers = response.allHeaderFields;
+	for (NSString *header in headers) {
+		if ([header caseInsensitiveCompare:@"ETag"] != NSOrderedSame) continue;
+		return headers[header];
+	}
+	return nil;
 }
 
 - (void)startRequest:(NSURLRequest *)request {
