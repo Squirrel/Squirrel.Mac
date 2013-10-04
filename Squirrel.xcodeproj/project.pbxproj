@@ -37,6 +37,8 @@
 		D014AC1E17B979BD007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D014AC1F17B979C4007D79D0 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
+		D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
+		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D061E3F417FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D061E3F317FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m */; };
@@ -357,6 +359,8 @@
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
+		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
+		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
 		D049803217F9181D001EE042 /* SQRLXPCObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLXPCObject.h; sourceTree = "<group>"; };
 		D049803317F9181D001EE042 /* SQRLXPCObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLXPCObject.m; sourceTree = "<group>"; };
 		D061E3F217FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSUserDefaults+SQRLShipItExtensions.h"; sourceTree = "<group>"; };
@@ -543,6 +547,8 @@
 				D014AC0417B97885007D79D0 /* ShipIt-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
+				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
+				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
 			);
 			name = ShipIt;
 			path = Squirrel;
@@ -1208,6 +1214,7 @@
 			files = (
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D061E3F417FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m in Sources */,
+				D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */,
 				D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
@@ -1252,6 +1259,7 @@
 			files = (
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
+				D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,

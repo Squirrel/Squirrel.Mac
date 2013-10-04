@@ -11,6 +11,7 @@
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "SQRLCodeSignatureVerifier.h"
+#import "SQRLTerminationListener.h"
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
@@ -253,12 +254,14 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					return [[self
 						targetBundleURL]
 						flattenMap:^(NSURL *bundleURL) {
+							SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:bundleURL bundleIdentifier:identifier];
+
 							// This signal produces the only values that we actually
 							// want to return to the caller (namely, the applications
 							// we're watching for termination).
 							//
 							// TODO: Wait for termination in other installer states too.
-							return [self waitForTerminationOfApplicationAtURL:bundleURL bundleIdentifier:identifier];
+							return [listener waitForTermination];
 						}];
 				}]
 				doCompleted:^{
@@ -387,52 +390,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
 		}
 	}
-}
-
-#pragma mark Termination Listening
-
-- (RACSignal *)waitForTerminationOfApplicationAtURL:(NSURL *)bundleURL bundleIdentifier:(NSString *)bundleIdentifier {
-	NSParameterAssert(bundleURL != nil);
-	NSParameterAssert(bundleIdentifier != nil);
-
-	NSURL *standardizedBundleURL = bundleURL.URLByStandardizingPath;
-
-	return [[[[RACSignal
-		defer:^{
-			NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
-			return apps.rac_sequence.signal;
-		}]
-		filter:^(NSRunningApplication *application) {
-			return [application.bundleURL.URLByStandardizingPath isEqual:standardizedBundleURL];
-		}]
-		flattenMap:^(NSRunningApplication *application) {
-			return [[self
-				waitForTerminationOfProcessIdentifier:application.processIdentifier]
-				mapReplace:application];
-		}]
-		setNameWithFormat:@"-waitForTerminationOfApplicationAtURL: %@ bundleIdentifier: %@", bundleURL, bundleIdentifier];
-}
-
-- (RACSignal *)waitForTerminationOfProcessIdentifier:(pid_t)processIdentifier {
-	return [[RACSignal
-		createSignal:^(id<RACSubscriber> subscriber) {
-			dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_PROC, processIdentifier, DISPATCH_PROC_EXIT, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
-
-			dispatch_source_set_registration_handler(source, ^{
-				[subscriber sendNext:@(processIdentifier)];
-			});
-
-			dispatch_source_set_event_handler(source, ^{
-				[subscriber sendCompleted];
-			});
-
-			dispatch_resume(source);
-			return [RACDisposable disposableWithBlock:^{
-				dispatch_source_cancel(source);
-				dispatch_release(source);
-			}];
-		}]
-		setNameWithFormat:@"-waitForTerminationOfProcessIdentifier: %i", (int)processIdentifier];
 }
 
 #pragma mark Backing Up
