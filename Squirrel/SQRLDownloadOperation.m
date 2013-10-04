@@ -62,6 +62,10 @@
 	return self;
 }
 
+- (NSURL *)completionProvider:(NSURLResponse **)responseRef error:(NSError **)errorRef {
+	return self.completionProvider(responseRef, errorRef);
+}
+
 #pragma mark Operation
 
 - (BOOL)isConcurrent {

@@ -179,7 +179,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 		}
 
 		NSError *downloadURLError = nil;
-		NSURL *downloadURL = downloadOperation.completionProvider(NULL, &downloadURLError);
+		NSURL *downloadURL = [downloadOperation completionProvider:NULL error:&downloadURLError];
 		if (downloadURL == nil) {
 			[self completeWithError:downloadURLError];
 			return;

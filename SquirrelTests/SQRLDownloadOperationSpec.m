@@ -23,7 +23,7 @@ it(@"should download file:// scheme URLs", ^{
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 
-	NSURL *downloadURL = downloadOperation.completionProvider(NULL, &error);
+	NSURL *downloadURL = [downloadOperation completionProvider:NULL error:&error];
 	expect(downloadURL).notTo.beNil();
 	expect(error).to.beNil();
 

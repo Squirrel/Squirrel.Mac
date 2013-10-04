@@ -22,16 +22,17 @@
 //           automatically by subsequent download operations with the same URL.
 - (instancetype)initWithRequest:(NSURLRequest *)request __attribute__((nonnull (1)));
 
-// When the operation `isFinished` this will be non nil and return the result of
-// the download.
+// When the operation `isFinished` this can be invoked to get the operation
+// result, retrieve the response and the location that the download has been
+// written to.
 //
 // To use the `completionProvider` add a dependency to the download operation
-// and invoke the `completionProvider` when it runs.
+// and invoke the `completionProvider:error:` when it runs.
 //
-// Returns a block which can be invoked to get the response.
+// Returns a file URL to the download location.
 //  - responseRef, can be NULL.
 //  - errorRef, can be NULL.
 //  - Returns a file:// URL to the downloaded resource.
-@property (readonly, copy, atomic) NSURL * (^completionProvider)(NSURLResponse **responseRef, NSError **errorRef);
+- (NSURL *)completionProvider:(NSURLResponse **)responseRef error:(NSError **)errorRef;
 
 @end
