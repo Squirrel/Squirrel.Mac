@@ -31,7 +31,7 @@ static const NSInteger SQRLShipItErrorApplicationTerminatedTooEarly = 2;
 //
 // If `remoteConnection` is not nil, it will be notified when we're successfully
 // waiting for termination.
-static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCConnection *remoteConnection) {
+static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObject *reply, SQRLXPCConnection *remoteConnection) {
 	RACSignal *errorSignal = [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:@{ NSLocalizedDescriptionKey: @"Application terminated before setup finished" }]];
 
 	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
@@ -92,8 +92,6 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCCon
 		RACSignal *notification = [RACSignal empty];
 		if (waitForIdentifier != NULL && remoteConnection != nil) {
 			// Notify the remote connection about whether setup succeeded or failed.
-			SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
-
 			@synchronized (terminationConnection) {
 				if (receivedTerminationError) {
 					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
@@ -158,40 +156,46 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCCon
 }
 
 static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
-	SQRLXPCConnection *remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(event.object)];
+	SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
+
+	SQRLXPCConnection *remoteConnection = nil;
+	if (reply != nil) remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(reply.object)];
 
 	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
 	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
-	return [[[[[installWithArgumentsFromEvent(event, remoteConnection)
+	return [[[[installWithArgumentsFromEvent(event, reply, remoteConnection)
 		then:^{
-			if (remoteConnection == nil) return [RACSignal empty];
+			if (reply == nil) return [RACSignal empty];
 
-			SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
 			xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
 
-			return [RACSignal return:RACTuplePack(reply, @(EXIT_SUCCESS))];
+			return [RACSignal return:@(EXIT_SUCCESS)];
 		}]
 		catch:^(NSError *error) {
-			if (remoteConnection == nil) return [RACSignal error:error];
+			if (reply == nil) return [RACSignal error:error];
 
-			SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
 			xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
 			xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
 
-			return [RACSignal return:RACTuplePack(reply, @(EXIT_FAILURE))];
+			return [RACSignal return:@(EXIT_FAILURE)];
 		}]
-		reduceEach:^(SQRLXPCObject *reply, int exitCode) {
-			// If the remote client didn't terminate, tell it whether
-			// installation completed or failed.
-			xpc_connection_send_message(remoteConnection.object, reply.object);
-			return [[remoteConnection
-				waitForBarrier]
-				finally:^{
-					exit(exitCode);
+		flattenMap:^(NSNumber *exitCode) {
+			RACSignal *sendReply = [RACSignal empty];
+			
+			if (remoteConnection != nil) {
+				// If there's [still] a remote client, tell it whether
+				// installation completed or failed.
+				sendReply = [RACSignal defer:^{
+					xpc_connection_send_message(remoteConnection.object, reply.object);
+					return [remoteConnection waitForBarrier];
 				}];
+			}
+
+			return [sendReply finally:^{
+				exit(exitCode.intValue);
+			}];
 		}]
-		flatten]
 		setNameWithFormat:@"handleEvent %@ from %@", event, client];
 }
 

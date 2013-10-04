@@ -42,7 +42,7 @@
 
 	__block NSUInteger updateCheckCount = 1;
 
-	[[[[[[[[[RACSignal
+	[[[[[[[[[[RACSignal
 		defer:^{
 			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
 			updateCheckCount++;
@@ -65,6 +65,12 @@
 		catch:^(NSError *error) {
 			NSLog(@"Error in updater: %@", error);
 			return [RACSignal empty];
+		}]
+		then:^{
+			NSString *delayString = NSProcessInfo.processInfo.environment[@"SQRLUpdateDelay"];
+			if (delayString == nil) return [RACSignal empty];
+
+			return [[RACSignal interval:delayString.doubleValue onScheduler:RACScheduler.mainThreadScheduler] take:1];
 		}]
 		subscribeCompleted:^{
 			[NSApp terminate:self];

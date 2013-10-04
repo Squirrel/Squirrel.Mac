@@ -124,29 +124,6 @@ it(@"should not install an update if the connection closes too early", ^{
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
-it(@"should install an update after waiting a long time", ^{
-	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
-	xpc_dictionary_set_string(message, SQRLWaitForBundleIdentifierKey, app.bundleIdentifier.UTF8String);
-
-	__block BOOL ready = NO;
-
-	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect([self errorFromObject:event]).to.beNil();
-
-		ready = YES;
-	});
-
-	expect(ready).will.beTruthy();
-
-	NSDate *date = [NSDate dateWithTimeIntervalSinceNow:60];
-	[NSRunLoop.mainRunLoop runUntilDate:date];
-
-	[app terminate];
-	expect(app.terminated).will.beTruthy();
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
-});
-
 describe(@"signal handling", ^{
 	__block BOOL terminated;
 	__block void (^sendMessage)(void);
