@@ -44,6 +44,6 @@ enum {
 // Returns a block which can be invoked to get the completion status
 //  - errorRef, can be NULL
 //  - Returns a downloaded and ready to install SQRLUpdate
-@property (readonly, copy, atomic) SQRLUpdate * (^completionProvider)(NSError **errorRef);
+- (SQRLUpdate *)completionProvider:(NSError **)errorRef;
 
 @end

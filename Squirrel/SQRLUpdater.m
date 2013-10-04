@@ -127,7 +127,7 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 3;
 
 	NSOperation *finishOperation = [NSBlockOperation blockOperationWithBlock:^ {
 		NSError *updateError = nil;
-		SQRLUpdate *update = updateOperation.completionProvider(&updateError);
+		SQRLUpdate *update = [updateOperation completionProvider:&updateError];
 		if (update == nil) {
 			[self logUpdateError:updateError];
 			return;

@@ -71,6 +71,10 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 	return self;
 }
 
+- (SQRLUpdate *)completionProvider:(NSError **)errorRef {
+	return self.completionProvider(errorRef);
+}
+
 #pragma mark Operation Overrides
 
 - (BOOL)isConcurrent {
