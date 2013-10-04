@@ -8,6 +8,7 @@
 
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
+#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLArguments.h"
 #import "SQRLXPCConnection.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -44,7 +45,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	return shipItAppSupportURL;
 }
 
-+ (RACSignal *)launchPrivileged:(BOOL)privileged {
++ (RACSignal *)launchPrivileged:(BOOL)privileged resetState:(BOOL)resetState {
 	return [[RACSignal startEagerlyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh] block:^(id<RACSubscriber> subscriber) {
 		NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 		NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
@@ -116,27 +117,27 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
 		jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
 		jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
-
-		// TODO
-		#if 0
+		jobDict[@(LAUNCH_JOBKEY_THROTTLEINTERVAL)] = @2;
 		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
 			@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
 		};
-		#else
-		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @NO;
-		#endif
 
 		jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
 			jobLabel: @YES
 		};
 
-		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = @[
-			[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path,
+		NSMutableArray *arguments = [[NSMutableArray alloc] init];
+		[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
 
-			// Pass in the service name as the only argument, so ShipIt knows how to
-			// broadcast itself.
-			jobLabel
-		];
+		// Pass in the service name so ShipIt knows how to broadcast itself.
+		[arguments addObject:jobLabel];
+
+		if (resetState) {
+			[arguments addObject:[NSString stringWithFormat:@"-%@", SQRLStateDefaultsKey]];
+			[arguments addObject:@"0"];
+		}
+
+		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 
 		NSURL *appSupportURL = self.shipItApplicationSupportURL;
 		jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;

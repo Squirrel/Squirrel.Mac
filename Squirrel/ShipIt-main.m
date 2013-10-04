@@ -27,6 +27,26 @@ static const NSInteger SQRLShipItErrorRequiredKeyMissing = 1;
 // continued, it could be subject to race conditions.
 static const NSInteger SQRLShipItErrorApplicationTerminatedTooEarly = 2;
 
+// Resumes an installation that was started on a previous run.
+static void resumeInstallation(void) {
+	[[[[SQRLInstaller.sharedInstaller.installUpdateCommand
+		execute:nil]
+		initially:^{
+			xpc_transaction_begin();
+			NSLog(@"Resuming installation from state %i", (int)NSUserDefaults.standardUserDefaults.sqrl_state);
+		}]
+		finally:^{
+			xpc_transaction_end();
+		}]
+		subscribeError:^(NSError *error) {
+			NSLog(@"Installation error: %@", error);
+			exit(EXIT_FAILURE);
+		} completed:^{
+			NSLog(@"Installation completed successfully");
+			exit(EXIT_SUCCESS);
+		}];
+}
+
 // Starts installation based on the information in the given XPC event.
 //
 // If `remoteConnection` is not nil, it will be notified when we're successfully
@@ -269,19 +289,25 @@ int main(int argc, const char * argv[]) {
 		}
 
 		const char *serviceName = argv[1];
-		NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
 
-		xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
-		if (service == NULL) {
-			NSLog(@"Could not start Mach service \"%s\"", serviceName);
-			exit(EXIT_FAILURE);
+		if (NSUserDefaults.standardUserDefaults.sqrl_state != SQRLShipItStateNothingToDo) {
+			resumeInstallation();
+		} else {
+			xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+			if (service == NULL) {
+				NSLog(@"Could not start Mach service \"%s\"", serviceName);
+				exit(EXIT_FAILURE);
+			}
+
+			NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
+
+			@onExit {
+				xpc_release(service);
+			};
+
+			handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
 		}
 
-		@onExit {
-			xpc_release(service);
-		};
-
-		handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
 		dispatch_main();
 	}
 

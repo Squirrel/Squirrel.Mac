@@ -6,13 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "NSUserDefaults+SQRLShipItExtensions.h"
-
-extern NSString * const SQRLTargetBundleDefaultsKey;
-extern NSString * const SQRLUpdateBundleDefaultsKey;
-extern NSString * const SQRLBackupBundleDefaultsKey;
-extern NSString * const SQRLApplicationSupportDefaultsKey;
-extern NSString * const SQRLRequirementDataDefaultsKey;
-extern NSString * const SQRLStateDefaultsKey;
-extern NSString * const SQRLBundleIdentifierDefaultsKey;
-extern NSString * const SQRLShouldRelaunchDefaultsKey;
+// Preprocessor constants so that they're easily accessible across targets.
+#define SQRLTargetBundleDefaultsKey @"SQRLTargetBundleDefaultsKey"
+#define SQRLUpdateBundleDefaultsKey @"SQRLUpdateBundleDefaultsKey"
+#define SQRLBackupBundleDefaultsKey @"SQRLBackupBundleDefaultsKey"
+#define SQRLApplicationSupportDefaultsKey @"SQRLApplicationSupportDefaultsKey"
+#define SQRLRequirementDataDefaultsKey @"SQRLRequirementDataDefaultsKey"
+#define SQRLStateDefaultsKey @"SQRLStateDefaultsKey"
+#define SQRLWaitForBundleIdentifierDefaultsKey @"SQRLWaitForBundleIdentifierDefaultsKey"
+#define SQRLShouldRelaunchDefaultsKey @"SQRLShouldRelaunchDefaultsKey"

@@ -9,15 +9,6 @@
 #import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 
-NSString * const SQRLTargetBundleDefaultsKey = @"SQRLTargetBundleDefaultsKey";
-NSString * const SQRLUpdateBundleDefaultsKey = @"SQRLUpdateBundleDefaultsKey";
-NSString * const SQRLBackupBundleDefaultsKey = @"SQRLBackupBundleDefaultsKey";
-NSString * const SQRLApplicationSupportDefaultsKey = @"SQRLApplicationSupportDefaultsKey";
-NSString * const SQRLRequirementDataDefaultsKey = @"SQRLRequirementDataDefaultsKey";
-NSString * const SQRLStateDefaultsKey = @"SQRLStateDefaultsKey";
-NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"SQRLWaitForBundleIdentifierDefaultsKey";
-NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey";
-
 @implementation NSUserDefaults (SQRLShipItExtensions)
 
 // Safer than -URLForKey: because we explicitly disallow anything but file path

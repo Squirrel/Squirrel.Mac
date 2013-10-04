@@ -9,6 +9,7 @@
 #import "SQRLTestCase.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
+#import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
@@ -280,7 +281,7 @@ static void SQRLSignalHandler(int sig) {
 
 - (xpc_connection_t)connectToShipIt {
 	NSError *error = nil;
-	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
+	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO resetState:YES] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
 	
 	xpc_connection_set_event_handler(connection.object, ^(xpc_object_t event) {
@@ -295,6 +296,10 @@ static void SQRLSignalHandler(int sig) {
 
 	[self addCleanupBlock:^{
 		xpc_connection_cancel(connection.object);
+
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+
 		system("killall -KILL ShipIt");
 	}];
 

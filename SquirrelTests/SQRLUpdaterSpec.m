@@ -69,12 +69,8 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 	NSTimeInterval delay = 60;
 	NSRunningApplication *app = launchWithMockUpdates(updateURL, @{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
-	NSTimeInterval originalTimeout = Expecta.asynchronousTestTimeout;
 	Expecta.asynchronousTestTimeout = delay + 3;
-	{
-		expect(app.terminated).will.beTruthy();
-	}
-	Expecta.asynchronousTestTimeout = originalTimeout;
+	expect(app.terminated).will.beTruthy();
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });

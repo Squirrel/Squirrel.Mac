@@ -7,6 +7,7 @@
 //
 
 #import "SQRLCodeSignatureVerifier.h"
+#import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLInstaller.h"
 
@@ -156,63 +157,50 @@ describe(@"signal handling", ^{
 
 			// Apply a random delay before sending the termination signal, to
 			// fuzz out race conditions.
-			NSTimeInterval delay = (20 + arc4random_uniform(80)) / 1000.0;
-			NSLog(@"Waiting for %g seconds before sending signal", delay);
+			NSTimeInterval delay = arc4random_uniform(50) / 1000.0;
 			[NSThread sleepForTimeInterval:delay];
 		};
 	});
 
-	describe(@"with a guaranteed target bundle", ^{
-		afterEach(^{
-			// Wait until ShipIt isn't running anymore before verifying the code
-			// signature.
-			expect(terminated).will.beTruthy();
+	afterEach(^{
+		// Wait until ShipIt isn't running anymore before verifying the code
+		// signature.
+		expect(terminated).will.beTruthy();
 
-			NSError *error = nil;
-			BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
-			expect(success).to.beTruthy();
-			expect(error).to.beNil();
-		});
+		// Wait for the launchd throttle interval, then verify that ShipIt
+		// relaunched and finished installing the update.
+		Expecta.asynchronousTestTimeout = 5;
+		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
-		it(@"should handle SIGHUP", ^{
-			sendMessage();
-			system("killall -v -HUP ShipIt");
-		});
-
-		it(@"should handle SIGTERM", ^{
-			sendMessage();
-			system("killall -v -TERM ShipIt");
-		});
-
-		it(@"should handle SIGINT", ^{
-			sendMessage();
-			system("killall -v -INT ShipIt");
-		});
-
-		it(@"should handle SIGQUIT", ^{
-			sendMessage();
-			system("killall -v -QUIT ShipIt");
-		});
+		NSError *error = nil;
+		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
+		expect(success).to.beTruthy();
+		expect(error).to.beNil();
 	});
 
-	it(@"should leave the target missing or in a valid state after being sent SIGKILL", ^{
+	it(@"should handle SIGHUP", ^{
+		sendMessage();
+		system("killall -v -HUP ShipIt");
+	});
+
+	it(@"should handle SIGTERM", ^{
+		sendMessage();
+		system("killall -v -TERM ShipIt");
+	});
+
+	it(@"should handle SIGINT", ^{
+		sendMessage();
+		system("killall -v -INT ShipIt");
+	});
+
+	it(@"should handle SIGQUIT", ^{
+		sendMessage();
+		system("killall -v -QUIT ShipIt");
+	});
+
+	it(@"should handle SIGKILL", ^{
 		sendMessage();
 		system("killall -v -KILL ShipIt");
-
-		// Our behavior can't be as well-defined in the case of SIGKILL (since
-		// we get no opportunity to handle it), but we should at least guarantee
-		// that:
-		//
-		//  1. The target bundle is missing, or
-		//  2. The target bundle passes code signing.
-		//
-		// Any corruption of the target bundle is a critical failure.
-		if ([NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
-			NSError *error = nil;
-			BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
-			expect(success).to.beTruthy();
-			expect(error).to.beNil();
-		}
 	});
 });
 

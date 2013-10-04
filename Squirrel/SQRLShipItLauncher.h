@@ -29,13 +29,15 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 // Attempts to launch the ShipIt service.
 //
 // privileged - Determines which launchd domain to launch the job in.
-//              If true, shipit is launched in the root domain, otherwise it is
+//              If YES, ShipIt is launched in the root domain, otherwise it is
 //              launched in the current user’s domain.
+// resetState - Whether to reset the installer state so that it always starts
+//              clean. This is generally only appropriate for testing.
 //
 // Returns a signal which will send a `SQRLXPCConnection` then complete, or
 // error, on a background scheduler. The underlying `xpc_connection_t` will be
 // automatically retained while the connection remains open. If you need to
 // retain it for longer, hang on to the `SQRLXPCConnection`.
-+ (RACSignal *)launchPrivileged:(BOOL)privileged;
++ (RACSignal *)launchPrivileged:(BOOL)privileged resetState:(BOOL)resetState;
 
 @end

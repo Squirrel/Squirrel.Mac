@@ -42,7 +42,6 @@
 		D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D061E3F417FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D061E3F317FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m */; };
-		D061E40117FD580600CC134A /* NSUserDefaults+SQRLShipItExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D061E3F317FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m */; };
 		D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
 		D061E40317FD581C00CC134A /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
@@ -54,6 +53,7 @@
 		D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
+		D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D0964B2217F2DD4D00D88BF7 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */; };
 		D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = D0964B3617F2E01500D88BF7 /* SQRLDownloadedUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D0964B3717F2E01500D88BF7 /* SQRLDownloadedUpdate.m */; };
@@ -480,6 +480,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */,
 				D0F3F06817E83B27003AFA6B /* ReactiveCocoa.framework in Frameworks */,
 				D0F3F03617E83928003AFA6B /* libExpecta.a in Frameworks */,
 				D0F3F03717E83928003AFA6B /* libSpecta.a in Frameworks */,
@@ -542,7 +543,6 @@
 			isa = PBXGroup;
 			children = (
 				D061E3F217FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.h */,
-				D061E40017FD56FB00CC134A /* NSUserDefaults+SQRLShipItExtensionsPrivate.h */,
 				D061E3F317FD205C00CC134A /* NSUserDefaults+SQRLShipItExtensions.m */,
 				D014AC0417B97885007D79D0 /* ShipIt-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
@@ -823,6 +823,7 @@
 				D0964B3B17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m */,
 				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
+				D061E40017FD56FB00CC134A /* NSUserDefaults+SQRLShipItExtensionsPrivate.h */,
 				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */,
 				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */,
 				D0C2AA8517FC103D0075D1D1 /* XPC */,
@@ -1267,7 +1268,6 @@
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
-				D061E40117FD580600CC134A /* NSUserDefaults+SQRLShipItExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
