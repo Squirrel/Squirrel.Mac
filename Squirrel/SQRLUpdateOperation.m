@@ -93,13 +93,11 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 }
 
 - (void)cancel {
+	[super cancel];
+
 	[self.controlQueue addOperationWithBlock:^{
 		[self.workQueue cancelAllOperations];
-
-		[super cancel];
 	}];
-
-	[super cancel];
 }
 
 - (void)finish {

@@ -107,16 +107,14 @@ typedef enum : NSInteger {
 }
 
 - (void)cancel {
-	[self.controlQueue addOperationWithBlock:^{
-		if (self.dittoTask != nil) {
-			[self.dittoTask terminate];
-			// Wait until the task terminates before going isFinished
-		}
-
-		[super cancel];
-	}];
-
 	[super cancel];
+
+	[self.controlQueue addOperationWithBlock:^{
+		if (self.dittoTask == nil) return;
+
+		[self.dittoTask terminate];
+		// Wait until the task terminates before going isFinished
+	}];
 }
 
 - (void)finish {

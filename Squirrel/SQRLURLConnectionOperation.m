@@ -75,16 +75,14 @@
 }
 
 - (void)cancel {
-	[self.controlQueue addOperationWithBlock:^{
-		if (self.connection != nil) {
-			[self.connection cancel];
-			[self finish];
-		}
-
-		[super cancel];
-	}];
-
 	[super cancel];
+
+	[self.controlQueue addOperationWithBlock:^{
+		if (self.connection == nil) return;
+
+		[self.connection cancel];
+		[self finish];
+	}];
 }
 
 - (void)finish {
