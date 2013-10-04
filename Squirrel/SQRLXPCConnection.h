@@ -38,7 +38,10 @@ extern const NSInteger SQRLXPCErrorTerminationImminent;
 //
 // This will take over the connection's event handler.
 //
-// connection - The connection to wrap. This may be nil.
+// connection - The connection to wrap. This may be `NULL`, in which case the
+//              `SQRLXPCConnection` fails to initialize.
+//
+// Returns a wrapper, or nil if `connection` was `NULL`.
 - (id)initWithXPCObject:(xpc_connection_t)connection;
 
 // Cancels the connection.
