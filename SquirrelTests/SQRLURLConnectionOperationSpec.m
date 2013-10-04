@@ -23,7 +23,7 @@ it(@"should load file:// scheme URLs", ^{
 	[operation start];
 	expect(operation.isFinished).will.beTruthy();
 
-	NSData *bodyData = operation.responseProvider(NULL, &error);
+	NSData *bodyData = [operation responseProvider:NULL error:&error];
 	expect(bodyData).to.equal(testContents);
 	expect(error).to.beNil();
 });

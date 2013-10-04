@@ -25,9 +25,9 @@ enum : NSInteger {
 //
 // Deserialises JSON from the response and invokes `+updateWithJSON:error:`.
 //
-// responseProvider - Must not be nil.
-// errorRef         - May be NULL.
-+ (instancetype)updateWithResponseProvider:(NSData * (^)(NSError **))responseProvider error:(NSError **)errorRef __attribute__((nonnull (1)));
+// responseBody - Must not be nil.
+// errorRef     - May be NULL.
++ (instancetype)updateWithResponseBody:(NSData *)responseBody error:(NSError **)errorRef __attribute__((nonnull (1)));
 
 // Initialises an update from already deserialised JSON.
 //

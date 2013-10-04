@@ -140,19 +140,22 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 			return;
 		}
 
-		[self parseUpdateWithResponseProvider:connectionOperation.responseProvider];
+		NSError *error = nil;
+		NSData *bodyData = [connectionOperation responseProvider:NULL error:&error];
+		if (bodyData == nil) {
+			[self completeWithError:error];
+			return;
+		}
+
+		[self parseUpdateWithResponseBody:bodyData];
 	}];
 	[finishOperation addDependency:connectionOperation];
 	[self.controlQueue addOperation:finishOperation];
 }
 
-- (void)parseUpdateWithResponseProvider:(NSData * (^)(NSURLResponse **, NSError **))responseProvider {
-	NSData * (^provider)(NSError **) = ^ (NSError **errorRef) {
-		return responseProvider(NULL, errorRef);
-	};
-
+- (void)parseUpdateWithResponseBody:(NSData *)responseBody {
 	NSError *updateError = nil;
-	SQRLUpdate *update = [SQRLUpdate updateWithResponseProvider:provider error:&updateError];
+	SQRLUpdate *update = [SQRLUpdate updateWithResponseBody:responseBody error:&updateError];
 	if (update == nil) {
 		[self completeWithError:updateError];
 		return;

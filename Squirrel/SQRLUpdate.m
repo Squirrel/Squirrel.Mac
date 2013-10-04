@@ -34,13 +34,10 @@ NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
 	return [NSError errorWithDomain:SQRLUpdateErrorDomain code:SQRLUpdateErrorInvalidJSON userInfo:errorInfo];
 }
 
-+ (instancetype)updateWithResponseProvider:(NSData * (^)(NSError **))responseProvider error:(NSError **)errorRef {
-	NSParameterAssert(responseProvider != nil);
++ (instancetype)updateWithResponseBody:(NSData *)responseBody error:(NSError **)errorRef {
+	NSParameterAssert(responseBody != nil);
 
-	NSData *bodyData = responseProvider(errorRef);
-	if (bodyData == nil) return nil;
-
-	NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:errorRef];
+	NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:responseBody options:0 error:errorRef];
 	if (JSON == nil) return nil;
 
 	if (![JSON isKindOfClass:NSDictionary.class]) {

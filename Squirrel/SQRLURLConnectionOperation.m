@@ -53,6 +53,10 @@
 	return self;
 }
 
+- (NSData *)responseProvider:(NSURLResponse **)responseRef error:(NSError **)errorRef {
+	return self.responseProvider(responseRef, errorRef);
+}
+
 #pragma mark Operation
 
 - (BOOL)isConcurrent {

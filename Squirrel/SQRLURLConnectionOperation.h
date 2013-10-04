@@ -16,21 +16,20 @@
 // request - Must be non nil.
 - (instancetype)initWithRequest:(NSURLRequest *)request __attribute__((nonnull (1)));
 
-// When the operation `isFinished` this will be non nil and can be used to
-// retrieve the response and body data of the request.
+// When the operation `isFinished` this can be invoked to get the operation
+// result, retrieve the response and body data of the request.
 //
-// To use the `responseProvider` add a dependency to the connection operation
-// and invoke the `completionProvider` when it runs.
+// To use the `responseProvider:error:` add a dependency to the connection.
 //
 // The type signature of this block resembles
 // `+[NSURLConnection sendSynchronousRequest:returningResponse:error:]` but the
 // request is issued in a non blocking fashion, you can enqueue a large number
 // of these operations without blocking a large number of threads.
 //
-// Returns a block which can be invoked to get the response.
-//  - responseRef, can be NULL.
-//  - errorRef, can be NULL.
-//  - Returns the response body data.
-@property (readonly, copy, atomic) NSData * (^responseProvider)(NSURLResponse **responseRef, NSError **errorRef);
+// responseRef - Can be NULL.
+// errorRef - Can be NULL.
+//
+// Returns the body data or nil if there was an error.
+- (NSData *)responseProvider:(NSURLResponse **)responseRef error:(NSError **)errorRef;
 
 @end
