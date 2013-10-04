@@ -9,6 +9,7 @@
 #import "SQRLDownloadOperation.h"
 
 #import "EXTKeyPathCoding.h"
+#import "EXTScope.h"
 
 #import "SQRLDownloadController.h"
 #import "SQRLResumableDownload.h"
@@ -209,12 +210,28 @@
 	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.download.fileURL append:YES];
 
 	[outputStream open];
-	NSInteger written = [outputStream write:data.bytes maxLength:data.length];
-	[outputStream close];
+	@onExit {
+		[outputStream close];
+	};
 
-	if (written == -1) {
-		NSError *streamError = outputStream.streamError;
-		[self completeWithError:streamError];
+	uint8_t const *bytes = data.bytes;
+	size_t length = data.length;
+	while (1) {
+		NSInteger written = [outputStream write:bytes maxLength:length];
+		if (written == -1) {
+			NSError *streamError = outputStream.streamError;
+			if ([streamError.domain isEqualToString:NSPOSIXErrorDomain] && streamError.code == EINTR) continue;
+
+			[self completeWithError:streamError];
+			return;
+		}
+
+		if ((NSUInteger)written == length) {
+			return;
+		}
+
+		bytes += written;
+		length -= written;
 	}
 }
 
