@@ -25,7 +25,10 @@
 }
 
 - (void)dealloc {
-	xpc_release(_object);
+	if (_object != NULL) {
+		xpc_release(_object);
+		_object = NULL;
+	}
 }
 
 #pragma mark NSObject
