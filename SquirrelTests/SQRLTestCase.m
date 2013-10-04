@@ -295,6 +295,7 @@ static void SQRLSignalHandler(int sig) {
 
 	[self addCleanupBlock:^{
 		xpc_connection_cancel(connection.object);
+		system("killall -KILL ShipIt");
 	}];
 
 	xpc_connection_resume(connection.object);
