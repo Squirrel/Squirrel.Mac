@@ -223,12 +223,19 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	SQRLShipItState state = NSUserDefaults.standardUserDefaults.sqrl_state;
 	if (state == SQRLShipItStateNothingToDo) return [RACSignal empty];
 
-	return [[[[self
+	return [[[[[[self
 		signalForState:state]
 		logAll]
 		concat:[RACSignal defer:^{
 			return [self signalForCurrentState];
 		}]]
+		initially:^{
+			// Create a transaction around all states except waiting.
+			if (state != SQRLShipItStateWaitingForTermination) [self beginTransaction];
+		}]
+		finally:^{
+			if (state != SQRLShipItStateWaitingForTermination) [self endTransaction];
+		}]
 		setNameWithFormat:@"-signalForCurrentState"];
 }
 
@@ -272,7 +279,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				setNameWithFormat:@"SQRLShipItStateClearingQuarantine"];
 
 		case SQRLShipItStateBackingUp:
-			return [[[[[[[[RACSignal
+			return [[[[[[RACSignal
 				zip:@[
 					[self targetBundleURL],
 					[self applicationSupportURL],
@@ -288,17 +295,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				doCompleted:^{
 					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateInstalling;
 				}]
-				initially:^{
-					[self beginTransaction];
-				}]
-				finally:^{
-					[self endTransaction];
-				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateBackingUp"];
 
 		case SQRLShipItStateInstalling:
-			return [[[[[[[RACSignal
+			return [[[[[RACSignal
 				zip:@[
 					[self targetBundleURL],
 					[self updateBundleURL],
@@ -326,12 +327,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				flatten]
 				doCompleted:^{
 					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateVerifyingInPlace;
-				}]
-				initially:^{
-					[self beginTransaction];
-				}]
-				finally:^{
-					[self endTransaction];
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateInstalling"];
