@@ -185,20 +185,22 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
 	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
-	return [[[[installWithArgumentsFromEvent(event, reply, remoteConnection)
+	return [[[[[[installWithArgumentsFromEvent(event, reply, remoteConnection)
+		doCompleted:^{
+			if (reply != nil) {
+				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
+			}
+		}]
+		doError:^(NSError *error) {
+			if (reply != nil) {
+				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
+				xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
+			}
+		}]
 		then:^{
-			if (reply == nil) return [RACSignal empty];
-
-			xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
-
 			return [RACSignal return:@(EXIT_SUCCESS)];
 		}]
 		catch:^(NSError *error) {
-			if (reply == nil) return [RACSignal error:error];
-
-			xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
-			xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
-
 			return [RACSignal return:@(EXIT_FAILURE)];
 		}]
 		flattenMap:^(NSNumber *exitCode) {
@@ -221,7 +223,7 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
-	return [[[[[[[[[[[client
+	return [[[[[[[[[[client
 		autoconnect]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 		doNext:^(SQRLXPCObject *event) {
@@ -244,12 +246,6 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 		finally:^{
 			xpc_transaction_end();
 		}]
-		doCompleted:^{
-			// When a client connection and all of its tasks complete without
-			// issue (but _not_ when they're disposed from handleService), exit
-			// ShipIt cleanly.
-			exit(EXIT_SUCCESS);
-		}]
 		setNameWithFormat:@"handleClient %@", client];
 }
 
@@ -271,9 +267,7 @@ static void handleService(SQRLXPCConnection *service) {
 			return handleClient(client);
 		}]
 		switchToLatest]
-		subscribeError:^(NSError *error) {
-			NSLog(@"%@", error);
-		} completed:^{
+		subscribeCompleted:^{
 			exit(EXIT_SUCCESS);
 		}];
 }
