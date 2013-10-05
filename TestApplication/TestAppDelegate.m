@@ -7,6 +7,8 @@
 //
 
 #import "TestAppDelegate.h"
+#import "SQRLShipItLauncher.h"
+#import "SQRLStateManager.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -30,6 +32,11 @@
 	atexit_b(^{
 		NSLog(@"TestApplication quitting");
 	});
+
+	NSString *jobID = SQRLShipItLauncher.shipItJobLabel;
+	if (![SQRLStateManager clearStateWithIdentifier:jobID]) {
+		NSLog(@"Could not remove all preferences for %@", jobID);
+	}
 
 	NSString *updateURLString = NSProcessInfo.processInfo.environment[@"SQRLUpdateFromURL"];
 	if (updateURLString == nil) {

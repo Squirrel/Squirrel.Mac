@@ -9,6 +9,7 @@
 #import "SQRLTestCase.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLStateManager.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -280,21 +281,8 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (xpc_connection_t)connectToShipIt {
-	CFStringRef applicationID = CFBridgingRetain(SQRLShipItLauncher.shipItJobLabel);
-	@onExit {
-		CFRelease(applicationID);
-	};
-
-	NSLog(@"Resetting preferences for %@", applicationID);
-
-	CFArrayRef keys = CFPreferencesCopyKeyList(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	@onExit {
-		if (keys != NULL) CFRelease(keys);
-	};
-
-	// Clear all saved preferences for our ShipIt job.
-	CFPreferencesSetMultiple((__bridge CFDictionaryRef)@{}, keys, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	STAssertTrue(CFPreferencesSynchronize(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost), @"Could not remove all preferences for %@", applicationID);
+	NSString *applicationID = SQRLShipItLauncher.shipItJobLabel;
+	STAssertTrue([SQRLStateManager clearStateWithIdentifier:applicationID], @"Could not remove all preferences for %@", applicationID);
 
 	NSError *error = nil;
 	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];

@@ -7,6 +7,7 @@
 //
 
 #import "SQRLStateManager.h"
+#import <ReactiveCocoa/EXTScope.h>
 
 NSString * const SQRLTargetBundleDefaultsKey = @"SQRLTargetBundleDefaultsKey";
 NSString * const SQRLUpdateBundleDefaultsKey = @"SQRLUpdateBundleDefaultsKey";
@@ -159,6 +160,20 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 }
 
 #pragma mark Synchronization
+
++ (BOOL)clearStateWithIdentifier:(NSString *)identifier {
+	NSParameterAssert(identifier != nil);
+
+	NSLog(@"Resetting preferences for %@", identifier);
+
+	CFArrayRef keys = CFPreferencesCopyKeyList((__bridge CFStringRef)identifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	@onExit {
+		if (keys != NULL) CFRelease(keys);
+	};
+
+	CFPreferencesSetMultiple(NULL, keys, (__bridge CFStringRef)identifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	return CFPreferencesSynchronize((__bridge CFStringRef)identifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) == true;
+}
 
 - (BOOL)synchronize {
 	return CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) == true;

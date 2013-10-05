@@ -41,6 +41,7 @@
 		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D04752A317FFC9E5003B162E /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
 		D04752B017FFCA3E003B162E /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
+		D04752B117FFE1EE003B162E /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
 		D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
@@ -1231,6 +1232,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D04752B117FFE1EE003B162E /* SQRLStateManager.m in Sources */,
 				D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */,
 				D08D4E1517B451500012B22D /* main.m in Sources */,
 			);
