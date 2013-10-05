@@ -132,13 +132,13 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 - (id)objectForKeyedSubscript:(NSString *)key {
 	NSParameterAssert(key != nil);
 
-	return CFBridgingRelease(CFPreferencesCopyAppValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.applicationIdentifier));
+	return CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
 }
 
 - (void)setObject:(id)object forKeyedSubscript:(NSString *)key {
 	NSParameterAssert(key != nil);
 
-	CFPreferencesSetAppValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)object, (__bridge CFStringRef)self.applicationIdentifier);
+	CFPreferencesSetValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)object, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 }
 
 - (NSURL *)fileURLForKey:(NSString *)key {
@@ -160,7 +160,7 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 #pragma mark Synchronization
 
 - (BOOL)synchronize {
-	return CFPreferencesAppSynchronize((__bridge CFStringRef)self.applicationIdentifier) == true;
+	return CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) == true;
 }
 
 #pragma mark NSObject
