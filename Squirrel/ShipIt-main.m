@@ -10,10 +10,9 @@
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
-#import "NSUserDefaults+SQRLShipItExtensions.h"
-#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
+#import "SQRLStateManager.h"
 #import "SQRLTerminationListener.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
@@ -28,13 +27,23 @@ static const NSInteger SQRLShipItErrorRequiredKeyMissing = 1;
 // continued, it could be subject to race conditions.
 static const NSInteger SQRLShipItErrorApplicationTerminatedTooEarly = 2;
 
+// The state manager for this job.
+//
+// Set immediately upon startup.
+static SQRLStateManager *stateManager = nil;
+
+// The shared installer for this job.
+//
+// Set immediately upon startup.
+static SQRLInstaller *sharedInstaller = nil;
+
 // Resumes an installation that was started on a previous run.
 static void resumeInstallation(void) {
-	[[[[SQRLInstaller.sharedInstaller.installUpdateCommand
+	[[[[sharedInstaller.installUpdateCommand
 		execute:nil]
 		initially:^{
 			xpc_transaction_begin();
-			NSLog(@"Resuming installation from state %i", (int)NSUserDefaults.standardUserDefaults.sqrl_state);
+			NSLog(@"Resuming installation from state %i", (int)stateManager.state);
 		}]
 		finally:^{
 			xpc_transaction_end();
@@ -144,15 +153,14 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 			then:^{
 				xpc_transaction_begin();
 
-				NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
-				defaults.sqrl_targetBundleURL = targetBundleURL;
-				defaults.sqrl_updateBundleURL = updateBundleURL;
-				defaults.sqrl_applicationSupportURL = applicationSupportURL;
-				defaults.sqrl_requirementData = requirementData;
-				defaults.sqrl_relaunchAfterInstallation = shouldRelaunch;
-				defaults.sqrl_state = SQRLShipItStateClearingQuarantine;
+				stateManager.targetBundleURL = targetBundleURL;
+				stateManager.updateBundleURL = updateBundleURL;
+				stateManager.applicationSupportURL = applicationSupportURL;
+				stateManager.requirementData = requirementData;
+				stateManager.relaunchAfterInstallation = shouldRelaunch;
+				stateManager.state = SQRLShipItStateClearingQuarantine;
 
-				return [[[[[SQRLInstaller.sharedInstaller.installUpdateCommand
+				return [[[[[sharedInstaller.installUpdateCommand
 					execute:nil]
 					initially:^{
 						NSLog(@"Beginning installation");
@@ -279,7 +287,10 @@ int main(int argc, const char * argv[]) {
 
 		const char *serviceName = argv[1];
 
-		if (NSUserDefaults.standardUserDefaults.sqrl_state != SQRLShipItStateNothingToDo) {
+		stateManager = [[SQRLStateManager alloc] initWithIdentifier:@(serviceName)];
+		sharedInstaller = [[SQRLInstaller alloc] initWithStateManager:stateManager];
+
+		if (stateManager.state != SQRLShipItStateNothingToDo) {
 			resumeInstallation();
 		} else {
 			xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);

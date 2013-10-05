@@ -8,7 +8,6 @@
 
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
-#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLArguments.h"
 #import "SQRLXPCConnection.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>

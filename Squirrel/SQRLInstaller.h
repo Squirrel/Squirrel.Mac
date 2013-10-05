@@ -23,11 +23,11 @@ extern const NSInteger SQRLInstallerErrorCouldNotOpenTarget;
 // The target bundle has an invalid version set.
 extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 
-// `NSUserDefaults` does not contain the information we need to perform an
+// `SQRLStateManager` does not contain the information we need to perform an
 // installation.
 extern const NSInteger SQRLInstallerErrorMissingInstallationData;
 
-// The `SQRLShipItState` saved into `NSUserDefaults` is invalid, so installation
+// The `SQRLShipItState` saved into `SQRLStateManager` is invalid, so installation
 // cannot safely resume.
 extern const NSInteger SQRLInstallerErrorInvalidState;
 
@@ -35,9 +35,10 @@ extern const NSInteger SQRLInstallerErrorInvalidState;
 extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 
 @class RACCommand;
+@class SQRLStateManager;
 
-// Performs the installation of an update, using the values saved into
-// `NSUserDefaults`.
+// Performs the installation of an update, using the values saved into a
+// `SQRLStateManager`.
 //
 // This class is meant to be used only after the app that will be updated has
 // terminated.
@@ -50,7 +51,8 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 // installation has completed or failed.
 @property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
 
-// Returns the singleton installer.
-+ (instancetype)sharedInstaller;
+// Initializes an installer using the given state manager to read and write the
+// state of the installation.
+- (id)initWithStateManager:(SQRLStateManager *)stateManager;
 
 @end

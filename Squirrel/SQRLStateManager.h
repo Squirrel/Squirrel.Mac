@@ -1,8 +1,8 @@
 //
-//  NSUserDefaults+SQRLShipItExtensions.h
+//  SQRLStateManager.h
 //  Squirrel
 //
-//  Created by Justin Spahr-Summers on 2013-10-02.
+//  Created by Justin Spahr-Summers on 2013-10-04.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
@@ -36,50 +36,55 @@ typedef enum : NSInteger {
 	SQRLShipItStateRelaunching
 } SQRLShipItState;
 
-// User defaults settings to hold state about an enqueued or in-progress update
-// installation, so ShipIt can be safely terminated and relaunched, then continue
-// updating.
-@interface NSUserDefaults (SQRLShipItExtensions)
+// Persists state about an enqueued or in-progress update installation, so
+// ShipIt can be safely terminated and relaunched, then continue updating.
+@interface SQRLStateManager : NSObject
+
+// Initializes a state manager with the given unique identifier.
+//
+// identifier - A string to uniquely this application or job. This must not be
+//              nil.
+- (id)initWithIdentifier:(NSString *)identifier;
 
 // The URL to the app bundle that should be replaced with an update.
-@property (atomic, copy) NSURL *sqrl_targetBundleURL;
+@property (atomic, copy) NSURL *targetBundleURL;
 
 // The URL to the downloaded update's app bundle.
-@property (atomic, copy) NSURL *sqrl_updateBundleURL;
+@property (atomic, copy) NSURL *updateBundleURL;
 
 // The URL to an Application Support folder owned by ShipIt.
-@property (atomic, copy) NSURL *sqrl_applicationSupportURL;
+@property (atomic, copy) NSURL *applicationSupportURL;
 
 // A serialized `SecRequirementRef` describing what the update bundle must
 // satisfy in order to be valid.
-@property (atomic, copy) NSData *sqrl_requirementData;
+@property (atomic, copy) NSData *requirementData;
 
 // The number of failures that have occurred during the current installation
 // attempt.
 //
 // TODO
-//@property (atomic, assign) NSUInteger sqrl_installationFailures;
+//@property (atomic, assign) NSUInteger installationFailures;
 
 // The bundle identifier of the application being updated.
 //
 // If not nil, the installer will wait for applications matching this identifier
-// (and `sqrl_targetBundleURL`) to terminate before continuing.
-@property (atomic, copy) NSString *sqrl_waitForBundleIdentifier;
+// (and `targetBundleURL`) to terminate before continuing.
+@property (atomic, copy) NSString *waitForBundleIdentifier;
 
 // Whether to relaunch the application after an update is successfully
 // installed.
-@property (atomic, assign) BOOL sqrl_relaunchAfterInstallation;
+@property (atomic, assign) BOOL relaunchAfterInstallation;
 
 // The current state of ShipIt.
 //
-// Setting this property will synchronize the user defaults to disk.
-@property (atomic, assign) SQRLShipItState sqrl_state;
+// Setting this property will synchronize all settings to disk.
+@property (atomic, assign) SQRLShipItState state;
 
 // The URL where the target bundle has been backed up to before installing the
 // update.
 //
 // This property is set automatically during the course of installation. It
 // should not be preset.
-@property (atomic, copy) NSURL *sqrl_backupBundleURL;
+@property (atomic, copy) NSURL *backupBundleURL;
 
 @end

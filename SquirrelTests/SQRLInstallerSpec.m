@@ -7,9 +7,8 @@
 //
 
 #import "SQRLCodeSignatureVerifier.h"
-#import "NSUserDefaults+SQRLShipItExtensions.h"
-#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLInstaller.h"
+#import "SQRLStateManager.h"
 
 SpecBegin(SQRLInstaller)
 
@@ -205,16 +204,20 @@ describe(@"signal handling", ^{
 });
 
 it(@"should install an update in process", ^{
-	[NSUserDefaults.standardUserDefaults registerDefaults:@{
-		SQRLTargetBundleDefaultsKey: self.testApplicationURL.path,
-		SQRLUpdateBundleDefaultsKey: [self createTestApplicationUpdate].path,
-		SQRLApplicationSupportDefaultsKey: self.temporaryDirectoryURL.path,
-		SQRLRequirementDataDefaultsKey: self.testApplicationCodeSigningRequirementData,
-		SQRLStateDefaultsKey: @(SQRLShipItStateClearingQuarantine),
-	}];
+	SQRLStateManager *stateManager = [[SQRLStateManager alloc] initWithIdentifier:NSRunningApplication.currentApplication.localizedName];
+	expect(stateManager).notTo.beNil();
+
+	stateManager.targetBundleURL = self.testApplicationURL;
+	stateManager.updateBundleURL = [self createTestApplicationUpdate];
+	stateManager.applicationSupportURL = self.temporaryDirectoryURL;
+	stateManager.requirementData = self.testApplicationCodeSigningRequirementData;
+	stateManager.state = SQRLShipItStateClearingQuarantine;
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithStateManager:stateManager];
+	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
-	BOOL install = [[SQRLInstaller.sharedInstaller.installUpdateCommand execute:nil] asynchronouslyWaitUntilCompleted:&installError];
+	BOOL install = [[installer.installUpdateCommand execute:nil] asynchronouslyWaitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });

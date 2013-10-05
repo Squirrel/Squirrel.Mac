@@ -9,8 +9,8 @@
 #import "SQRLInstaller.h"
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
-#import "NSUserDefaults+SQRLShipItExtensions.h"
 #import "SQRLCodeSignatureVerifier.h"
+#import "SQRLStateManager.h"
 #import "SQRLTerminationListener.h"
 #import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
@@ -34,6 +34,9 @@ const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 @interface SQRLInstaller ()
+
+// The state manager to read and write from.
+@property (nonatomic, strong, readonly) SQRLStateManager *stateManager;
 
 // Tracks how many concurrent transactions are in progress.
 //
@@ -74,20 +77,13 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 #pragma mark Lifecycle
 
-+ (instancetype)sharedInstaller {
-	static id singleton;
-	static dispatch_once_t pred;
+- (id)initWithStateManager:(SQRLStateManager *)stateManager {
+	NSParameterAssert(stateManager != nil);
 
-	dispatch_once(&pred, ^{
-		singleton = [[self alloc] init];
-	});
-
-	return singleton;
-}
-
-- (id)init {
 	self = [super init];
 	if (self == nil) return nil;
+
+	_stateManager = stateManager;
 
 	@weakify(self);
 	_installUpdateCommand = [[RACCommand alloc] initWithSignalBlock:^(id _) {
@@ -114,7 +110,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 		[self replaceSignalHandlers:SIG_IGN];
 
-		NSString *details = [NSString stringWithFormat:@"%@ is being updated, and interrupting the process could corrupt the application", NSUserDefaults.standardUserDefaults.sqrl_targetBundleURL.path];
+		NSString *details = [NSString stringWithFormat:@"%@ is being updated, and interrupting the process could corrupt the application", self.stateManager.targetBundleURL.path];
 
 		IOPMAssertionID assertion;
 		IOReturn result = IOPMAssertionCreateWithDescription(kIOPMAssertionTypePreventSystemSleep, CFSTR("Updating"), (__bridge CFStringRef)details, NULL, NULL, SQRLInstallerPowerAssertionTimeout, kIOPMAssertionTimeoutActionLog, &assertion);
@@ -169,39 +165,39 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 - (RACSignal *)waitForBundleIdentifier {
 	return [[RACSignal
 		defer:^{
-			return [RACSignal return:NSUserDefaults.standardUserDefaults.sqrl_waitForBundleIdentifier];
+			return [RACSignal return:self.stateManager.waitForBundleIdentifier];
 		}]
 		setNameWithFormat:@"-waitForBundleIdentifier"];
 }
 
 - (RACSignal *)targetBundleURL {
 	return [self retrieveDefaultsValueWithDescription:@"target bundle URL" block:^{
-		return NSUserDefaults.standardUserDefaults.sqrl_targetBundleURL;
+		return self.stateManager.targetBundleURL;
 	}];
 }
 
 - (RACSignal *)backupBundleURL {
 	return [self retrieveDefaultsValueWithDescription:@"backup bundle URL" block:^{
-		return NSUserDefaults.standardUserDefaults.sqrl_backupBundleURL;
+		return self.stateManager.backupBundleURL;
 	}];
 }
 
 - (RACSignal *)updateBundleURL {
 	return [self retrieveDefaultsValueWithDescription:@"update bundle URL" block:^{
-		return NSUserDefaults.standardUserDefaults.sqrl_updateBundleURL;
+		return self.stateManager.updateBundleURL;
 	}];
 }
 
 - (RACSignal *)applicationSupportURL {
 	return [self retrieveDefaultsValueWithDescription:@"Application Support URL" block:^{
-		return NSUserDefaults.standardUserDefaults.sqrl_applicationSupportURL;
+		return self.stateManager.applicationSupportURL;
 	}];
 }
 
 - (RACSignal *)relaunchAfterInstallation {
 	return [[RACSignal
 		defer:^{
-			return [RACSignal return:@(NSUserDefaults.standardUserDefaults.sqrl_relaunchAfterInstallation)];
+			return [RACSignal return:@(self.stateManager.relaunchAfterInstallation)];
 		}]
 		setNameWithFormat:@"-relaunchAfterInstallation"];
 }
@@ -209,7 +205,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 - (RACSignal *)verifier {
 	return [[[self
 		retrieveDefaultsValueWithDescription:@"code signing requirement" block:^{
-			return NSUserDefaults.standardUserDefaults.sqrl_requirementData;
+			return self.stateManager.requirementData;
 		}]
 		flattenMap:^(NSData *requirementData) {
 			SecRequirementRef requirement = NULL;
@@ -228,7 +224,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 }
 
 - (RACSignal *)signalForCurrentState {
-	SQRLShipItState state = NSUserDefaults.standardUserDefaults.sqrl_state;
+	SQRLShipItState state = self.stateManager.state;
 	if (state == SQRLShipItStateNothingToDo) return [RACSignal empty];
 
 	return [[[[self
@@ -252,7 +248,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					return [self clearQuarantineForDirectory:bundleURL];
 				}]
 				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateBackingUp;
+					self.stateManager.state = SQRLShipItStateBackingUp;
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateClearingQuarantine"];
@@ -267,12 +263,10 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				}]
 				flatten]
 				doNext:^(NSURL *backupBundleURL) {
-					// Don't need to synchronize this change just yet, since
-					// it only matters after the state has transitioned anyways.
-					NSUserDefaults.standardUserDefaults.sqrl_backupBundleURL = backupBundleURL;
+					self.stateManager.backupBundleURL = backupBundleURL;
 				}]
 				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateInstalling;
+					self.stateManager.state = SQRLShipItStateInstalling;
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateBackingUp"];
@@ -305,7 +299,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				}]
 				flatten]
 				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateVerifyingInPlace;
+					self.stateManager.state = SQRLShipItStateVerifyingInPlace;
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateInstalling"];
@@ -327,7 +321,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				}]
 				flatten]
 				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateRelaunching;
+					self.stateManager.state = SQRLShipItStateRelaunching;
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateVerifyingInPlace"];
@@ -352,7 +346,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					}
 				}]
 				doCompleted:^{
-					NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateNothingToDo;
+					self.stateManager.state = SQRLShipItStateNothingToDo;
 				}]
 				ignoreValues]
 				setNameWithFormat:@"SQRLShipItStateRelaunching"];
