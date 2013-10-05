@@ -199,7 +199,16 @@ describe(@"signal handling", ^{
 
 	it(@"should handle SIGKILL", ^{
 		sendMessage();
-		system("killall -v -KILL ShipIt");
+
+		// SIGKILL is unique in that it'll always terminate ShipIt, so send it
+		// a few times to really test resumption.
+		for (int i = 0; i < 3; i++) {
+			system("killall -v -KILL ShipIt");
+
+			// Wait at least for the launchd throttle interval.
+			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);
+			[NSThread sleepForTimeInterval:delay];
+		}
 	});
 });
 
