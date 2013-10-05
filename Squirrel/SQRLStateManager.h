@@ -46,6 +46,11 @@ typedef enum : NSInteger {
 //              nil.
 - (id)initWithIdentifier:(NSString *)identifier;
 
+// Synchronizes all of the receiver's values to disk.
+//
+// Returns whether synchronization was successful.
+- (BOOL)synchronize;
+
 // The URL to the app bundle that should be replaced with an update.
 @property (atomic, copy) NSURL *targetBundleURL;
 

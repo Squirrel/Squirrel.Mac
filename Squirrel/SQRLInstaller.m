@@ -162,14 +162,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		setNameWithFormat:@"-retrieveDefaultsValueWithDescription: %@ block:", description];
 }
 
-- (RACSignal *)waitForBundleIdentifier {
-	return [[RACSignal
-		defer:^{
-			return [RACSignal return:self.stateManager.waitForBundleIdentifier];
-		}]
-		setNameWithFormat:@"-waitForBundleIdentifier"];
-}
-
 - (RACSignal *)targetBundleURL {
 	return [self retrieveDefaultsValueWithDescription:@"target bundle URL" block:^{
 		return self.stateManager.targetBundleURL;
@@ -260,12 +252,28 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				zip:@[
 					[self targetBundleURL],
 					[self applicationSupportURL],
-				] reduce:^(NSURL *bundleURL, NSURL *appSupportURL) {
-					return [self moveBundleAtURL:bundleURL intoBackupDirectoryAtURL:appSupportURL];
+					[[self backupBundleURL] catchTo:[RACSignal return:nil]],
+					[self verifier],
+				] reduce:^(NSURL *bundleURL, NSURL *appSupportURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					RACSignal *skipBackup = [RACSignal return:@NO];
+					if (backupBundleURL != nil) {
+						skipBackup = [self checkWhetherItemPreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingVerifier:verifier];
+					}
+
+					return [skipBackup flattenMap:^(NSNumber *skip) {
+						if (skip.boolValue) {
+							return [RACSignal empty];
+						} else {
+							return [self moveBundleAtURL:bundleURL intoBackupDirectoryAtURL:appSupportURL];
+						}
+					}];
 				}]
 				flatten]
 				doNext:^(NSURL *backupBundleURL) {
+					// Save the chosen backup URL as soon as we have it, so we
+					// can resume even if the state change hasn't taken effect.
 					self.stateManager.backupBundleURL = backupBundleURL;
+					[self.stateManager synchronize];
 				}]
 				doCompleted:^{
 					self.stateManager.state = SQRLShipItStateInstalling;
@@ -281,8 +289,15 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					[self backupBundleURL],
 					[self verifier]
 				] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
-					return [[[self
-						installItemAtURL:targetBundleURL fromURL:updateBundleURL]
+					return [[[[self
+						checkWhetherItemPreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingVerifier:verifier]
+						flattenMap:^(NSNumber *skip) {
+							if (skip.boolValue) {
+								return [RACSignal empty];
+							} else {
+								return [self installItemAtURL:targetBundleURL fromURL:updateBundleURL];
+							}
+						}]
 						catch:^(NSError *error) {
 							NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, updateBundleURL];
 							return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorReplacingTarget toError:error]];
@@ -388,15 +403,16 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			return [temporaryDirectoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
 		}]
 		flattenMap:^(NSURL *backupBundleURL) {
-			return [[[self
+			return [[[[self
 				installItemAtURL:backupBundleURL fromURL:targetBundleURL]
 				catch:^(NSError *error) {
 					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), targetBundleURL, backupBundleURL];
 					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 				}]
-				then:^{
-					return [RACSignal return:backupBundleURL];
-				}];
+				ignoreValues]
+				// Return the backup URL before doing any work, to increase
+				// fault tolerance.
+				startWith:backupBundleURL];
 		}]
 		setNameWithFormat:@"-moveBundleAtURL: %@ intoBackupDirectoryAtURL: %@", targetBundleURL, parentDirectoryURL];
 }
@@ -431,7 +447,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 - (RACSignal *)verifyCodeSignatureOfBundleAtURL:(NSURL *)bundleURL usingVerifier:(SQRLCodeSignatureVerifier *)verifier recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
 	NSParameterAssert(bundleURL != nil);
 	NSParameterAssert(verifier != nil);
-	NSParameterAssert(backupBundleURL != nil);
 
 	return [[[[verifier
 		verifyCodeSignatureOfBundle:bundleURL]
@@ -439,6 +454,8 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			NSLog(@"Bundle %@ is missing or corrupted: %@", bundleURL, error);
 		}]
 		catch:^(NSError *error) {
+			if (backupBundleURL == nil) return [RACSignal error:error];
+
 			return [[[[self
 				installItemAtURL:bundleURL fromURL:backupBundleURL]
 				initially:^{
@@ -452,6 +469,30 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				}];
 		}]
 		setNameWithFormat:@"-verifyCodeSignatureOfBundleAtURL: %@ usingVerifier: %@ recoveringUsingBackupAtURL: %@", bundleURL, verifier, backupBundleURL];
+}
+
+#pragma mark Installation
+
+- (RACSignal *)checkWhetherItemPreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingVerifier:(SQRLCodeSignatureVerifier *)verifier {
+	NSParameterAssert(targetURL != nil);
+	NSParameterAssert(sourceURL != nil);
+	NSParameterAssert(verifier != nil);
+
+	return [[[[self
+		verifyCodeSignatureOfBundleAtURL:targetURL usingVerifier:verifier recoveringUsingBackupAtURL:nil]
+		then:^{
+			return [RACSignal return:@YES];
+		}]
+		catch:^(NSError *error) {
+			BOOL directory;
+			if ([NSFileManager.defaultManager fileExistsAtPath:sourceURL.path isDirectory:&directory]) {
+				// If the source still exists, this isn't an error.
+				return [RACSignal return:@NO];
+			} else {
+				return [RACSignal error:error];
+			}
+		}]
+		setNameWithFormat:@"-checkWhetherItemPreviouslyAtURL: %@ wasInstalledAtURL: %@", sourceURL, targetURL];
 }
 
 - (RACSignal *)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
