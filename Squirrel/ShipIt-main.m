@@ -136,12 +136,14 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 				}];
 		}
 
-		RACDisposable *installationDisposable = [[[[RACSignal
+		RACDisposable *installationDisposable = [[[RACSignal
 			merge:@[
 				terminationConnection.signal,
 				notification
 			]]
-			doCompleted:^{
+			then:^{
+				xpc_transaction_begin();
+
 				NSUserDefaults *defaults = NSUserDefaults.standardUserDefaults;
 				defaults.sqrl_targetBundleURL = targetBundleURL;
 				defaults.sqrl_updateBundleURL = updateBundleURL;
@@ -149,12 +151,10 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 				defaults.sqrl_requirementData = requirementData;
 				defaults.sqrl_relaunchAfterInstallation = shouldRelaunch;
 				defaults.sqrl_state = SQRLShipItStateClearingQuarantine;
-			}]
-			then:^{
+
 				return [[[[[SQRLInstaller.sharedInstaller.installUpdateCommand
 					execute:nil]
 					initially:^{
-						xpc_transaction_begin();
 						NSLog(@"Beginning installation");
 					}]
 					doCompleted:^{
