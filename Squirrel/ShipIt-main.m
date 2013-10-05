@@ -77,8 +77,12 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 			return nil;
 		}
 
-		NSData *requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
-		BOOL shouldRelaunch = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
+		stateManager.targetBundleURL = targetBundleURL;
+		stateManager.updateBundleURL = updateBundleURL;
+		stateManager.applicationSupportURL = applicationSupportURL;
+		stateManager.requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
+		stateManager.relaunchAfterInstallation = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
+		stateManager.state = SQRLShipItStateClearingQuarantine;
 
 		RACSignal *termination = [RACSignal empty];
 		const char *waitForIdentifier = xpc_dictionary_get_string(event.object, SQRLWaitForBundleIdentifierKey);
@@ -151,18 +155,10 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 				notification
 			]]
 			then:^{
-				xpc_transaction_begin();
-
-				stateManager.targetBundleURL = targetBundleURL;
-				stateManager.updateBundleURL = updateBundleURL;
-				stateManager.applicationSupportURL = applicationSupportURL;
-				stateManager.requirementData = requirementData;
-				stateManager.relaunchAfterInstallation = shouldRelaunch;
-				stateManager.state = SQRLShipItStateClearingQuarantine;
-
 				return [[[[[sharedInstaller.installUpdateCommand
 					execute:nil]
 					initially:^{
+						xpc_transaction_begin();
 						NSLog(@"Beginning installation");
 					}]
 					doCompleted:^{
