@@ -314,9 +314,11 @@ static void SQRLSignalHandler(int sig) {
 		xpc_connection_cancel(connection.object);
 
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
-
-		system("killall -KILL ShipIt");
+		CFErrorRef error = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &error)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", error);
+			if (error != NULL) CFRelease(error);
+		}
 	}];
 
 	xpc_connection_resume(connection.object);
