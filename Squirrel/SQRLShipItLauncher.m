@@ -45,7 +45,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	return shipItAppSupportURL;
 }
 
-+ (RACSignal *)launchPrivileged:(BOOL)privileged resetState:(BOOL)resetState {
++ (RACSignal *)launchPrivileged:(BOOL)privileged {
 	return [[RACSignal startEagerlyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh] block:^(id<RACSubscriber> subscriber) {
 		NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 		NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
@@ -131,11 +131,6 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 		// Pass in the service name so ShipIt knows how to broadcast itself.
 		[arguments addObject:jobLabel];
-
-		if (resetState) {
-			[arguments addObject:@"-" SQRLResetStateArgumentKey];
-			[arguments addObject:@"YES"];
-		}
 
 		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 

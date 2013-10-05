@@ -279,10 +279,6 @@ int main(int argc, const char * argv[]) {
 
 		const char *serviceName = argv[1];
 
-		if ([NSUserDefaults.standardUserDefaults boolForKey:SQRLResetStateArgumentKey]) {
-			NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateNothingToDo;
-		}
-
 		if (NSUserDefaults.standardUserDefaults.sqrl_state != SQRLShipItStateNothingToDo) {
 			resumeInstallation();
 		} else {

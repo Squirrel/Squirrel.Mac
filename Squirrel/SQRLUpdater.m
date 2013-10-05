@@ -396,7 +396,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 			// If we can't determine whether it can be written, assume nonprivileged and
 			// wait for another, more canonical error.
-			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue) resetState:NO];
+			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
 		}]
 		doNext:^(SQRLXPCConnection *connection) {
 			[connection resume];

@@ -281,7 +281,7 @@ static void SQRLSignalHandler(int sig) {
 
 - (xpc_connection_t)connectToShipIt {
 	NSError *error = nil;
-	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO resetState:YES] firstOrDefault:nil success:NULL error:&error];
+	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
 	
 	xpc_connection_set_event_handler(connection.object, ^(xpc_object_t event) {

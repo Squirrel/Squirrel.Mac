@@ -16,6 +16,3 @@
 #define SQRLStateDefaultsKey @"SQRLStateDefaultsKey"
 #define SQRLWaitForBundleIdentifierDefaultsKey @"SQRLWaitForBundleIdentifierDefaultsKey"
 #define SQRLShouldRelaunchDefaultsKey @"SQRLShouldRelaunchDefaultsKey"
-
-// Keys for the argument domain.
-#define SQRLResetStateArgumentKey @"SQRLResetState"
