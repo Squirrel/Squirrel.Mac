@@ -11,6 +11,7 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSUserDefaults+SQRLShipItExtensions.h"
+#import "NSUserDefaults+SQRLShipItExtensionsPrivate.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
 #import "SQRLTerminationListener.h"
@@ -289,6 +290,10 @@ int main(int argc, const char * argv[]) {
 		}
 
 		const char *serviceName = argv[1];
+
+		if ([NSUserDefaults.standardUserDefaults boolForKey:SQRLResetStateArgumentKey]) {
+			NSUserDefaults.standardUserDefaults.sqrl_state = SQRLShipItStateNothingToDo;
+		}
 
 		if (NSUserDefaults.standardUserDefaults.sqrl_state != SQRLShipItStateNothingToDo) {
 			resumeInstallation();

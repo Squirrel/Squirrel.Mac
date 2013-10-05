@@ -6,7 +6,8 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-// Preprocessor constants so that they're easily accessible across targets.
+// These are preprocessor constants so that they're easily accessible across
+// targets.
 #define SQRLTargetBundleDefaultsKey @"SQRLTargetBundleDefaultsKey"
 #define SQRLUpdateBundleDefaultsKey @"SQRLUpdateBundleDefaultsKey"
 #define SQRLBackupBundleDefaultsKey @"SQRLBackupBundleDefaultsKey"
@@ -15,3 +16,6 @@
 #define SQRLStateDefaultsKey @"SQRLStateDefaultsKey"
 #define SQRLWaitForBundleIdentifierDefaultsKey @"SQRLWaitForBundleIdentifierDefaultsKey"
 #define SQRLShouldRelaunchDefaultsKey @"SQRLShouldRelaunchDefaultsKey"
+
+// Keys for the argument domain.
+#define SQRLResetStateArgumentKey @"SQRLResetState"

@@ -133,8 +133,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		[arguments addObject:jobLabel];
 
 		if (resetState) {
-			[arguments addObject:[NSString stringWithFormat:@"-%@", SQRLStateDefaultsKey]];
-			[arguments addObject:@"0"];
+			[arguments addObject:@"-" SQRLResetStateArgumentKey];
+			[arguments addObject:@"YES"];
 		}
 
 		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
