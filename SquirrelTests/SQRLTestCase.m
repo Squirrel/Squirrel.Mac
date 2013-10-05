@@ -280,6 +280,20 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (xpc_connection_t)connectToShipIt {
+	CFStringRef applicationID = CFBridgingRetain(SQRLShipItLauncher.shipItJobLabel);
+	@onExit {
+		CFRelease(applicationID);
+	};
+
+	CFArrayRef keys = CFPreferencesCopyKeyList(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	@onExit {
+		if (keys != NULL) CFRelease(keys);
+	};
+
+	// Clear all saved preferences for our ShipIt job.
+	CFPreferencesSetMultiple((__bridge CFDictionaryRef)@{}, keys, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	STAssertTrue(CFPreferencesSynchronize(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost), @"Could not remove all preferences for %@", applicationID);
+
 	NSError *error = nil;
 	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
