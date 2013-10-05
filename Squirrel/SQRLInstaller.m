@@ -229,7 +229,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 	return [[[[self
 		signalForState:state]
-		logAll]
+		doCompleted:^{
+			NSLog(@"Completed state %i", (int)state);
+		}]
 		concat:[RACSignal defer:^{
 			return [self signalForCurrentState];
 		}]]
