@@ -285,6 +285,8 @@ static void SQRLSignalHandler(int sig) {
 		CFRelease(applicationID);
 	};
 
+	NSLog(@"Resetting preferences for %@", applicationID);
+
 	CFArrayRef keys = CFPreferencesCopyKeyList(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 	@onExit {
 		if (keys != NULL) CFRelease(keys);

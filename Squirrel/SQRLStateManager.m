@@ -109,6 +109,7 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 	if (self == nil) return nil;
 
 	_applicationIdentifier = [identifier copy];
+	NSLog(@"%@ initialized", self);
 
 	return self;
 }
