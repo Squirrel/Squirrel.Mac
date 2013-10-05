@@ -217,6 +217,13 @@ static void SQRLSignalHandler(int sig) {
 			[app terminate];
 			[app forceTerminate];
 		}
+
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		CFErrorRef error = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, CFSTR("com.github.Squirrel.TestApplication.ShipIt"), NULL, true, &error)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", error);
+			if (error != NULL) CFRelease(error);
+		}
 	}];
 
 	return app;
