@@ -223,7 +223,7 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
-	return [[[[[[[[[[client
+	return [[[[[[[[client
 		autoconnect]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 		doNext:^(SQRLXPCObject *event) {
@@ -240,12 +240,6 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return handleEvent(event, client);
 		}]
 		switchToLatest]
-		initially:^{
-			xpc_transaction_begin();
-		}]
-		finally:^{
-			xpc_transaction_end();
-		}]
 		setNameWithFormat:@"handleClient %@", client];
 }
 
