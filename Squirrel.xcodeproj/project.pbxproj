@@ -367,7 +367,6 @@
 		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
 		D04752A117FFC9E5003B162E /* SQRLStateManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLStateManager.h; sourceTree = "<group>"; };
 		D04752A217FFC9E5003B162E /* SQRLStateManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLStateManager.m; sourceTree = "<group>"; };
-		D04752AF17FFCA03003B162E /* SQRLStateManager+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLStateManager+Private.h"; sourceTree = "<group>"; };
 		D049803217F9181D001EE042 /* SQRLXPCObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLXPCObject.h; sourceTree = "<group>"; };
 		D049803317F9181D001EE042 /* SQRLXPCObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLXPCObject.m; sourceTree = "<group>"; };
 		D06B58B218032B1500656D97 /* RACSignal+SQRLTransactionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLTransactionExtensions.h"; sourceTree = "<group>"; };
@@ -552,7 +551,6 @@
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
 				D04752A117FFC9E5003B162E /* SQRLStateManager.h */,
-				D04752AF17FFCA03003B162E /* SQRLStateManager+Private.h */,
 				D04752A217FFC9E5003B162E /* SQRLStateManager.m */,
 				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
 				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,

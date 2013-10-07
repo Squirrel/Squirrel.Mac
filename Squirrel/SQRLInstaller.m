@@ -53,11 +53,33 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	_stateManager = stateManager;
 
 	@weakify(self);
-	_installUpdateCommand = [[RACCommand alloc] initWithSignalBlock:^(id _) {
+
+	RACSignal *aborting = [[[[RACObserve(self, abortInstallationCommand)
+		ignore:nil]
+		map:^(RACCommand *command) {
+			return command.executing;
+		}]
+		switchToLatest]
+		setNameWithFormat:@"aborting"];
+
+	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(id _) {
 		@strongify(self);
 		return [[self
 			signalForCurrentState]
 			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), self.stateManager.targetBundleURL.path];
+	}];
+
+	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(id _) {
+		@strongify(self);
+		return [[RACSignal
+			zip:@[
+				[self targetBundleURL],
+				[[self backupBundleURL] catchTo:[RACSignal return:nil]],
+				[self verifier]
+			] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+				return [self verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL];
+			}]
+			flatten];
 	}];
 	
 	return self;

@@ -51,6 +51,15 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 // installation has completed or failed.
 @property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
 
+// Aborts an installation, and attempts to restore the old version of the
+// application if necessary.
+//
+// This must not be executed while `installUpdateCommand` is executing.
+//
+// Each execution will complete or error on an unspecified scheduler once
+// aborting/recovery has finished.
+@property (nonatomic, strong, readonly) RACCommand *abortInstallationCommand;
+
 // Initializes an installer using the given state manager to read and write the
 // state of the installation.
 - (id)initWithStateManager:(SQRLStateManager *)stateManager;

@@ -9,14 +9,15 @@
 #import "SQRLStateManager.h"
 #import <ReactiveCocoa/EXTScope.h>
 
-NSString * const SQRLTargetBundleDefaultsKey = @"TargetBundleURL";
-NSString * const SQRLUpdateBundleDefaultsKey = @"UpdateBundleURL";
-NSString * const SQRLBackupBundleDefaultsKey = @"BackupBundleURL";
-NSString * const SQRLApplicationSupportDefaultsKey = @"ApplicationSupportURL";
-NSString * const SQRLRequirementDataDefaultsKey = @"CodeSigningRequirementData";
-NSString * const SQRLStateDefaultsKey = @"State";
-NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"WaitForBundleIdentifier";
-NSString * const SQRLShouldRelaunchDefaultsKey = @"ShouldRelaunch";
+static NSString * const SQRLTargetBundleDefaultsKey = @"TargetBundleURL";
+static NSString * const SQRLUpdateBundleDefaultsKey = @"UpdateBundleURL";
+static NSString * const SQRLBackupBundleDefaultsKey = @"BackupBundleURL";
+static NSString * const SQRLApplicationSupportDefaultsKey = @"ApplicationSupportURL";
+static NSString * const SQRLRequirementDataDefaultsKey = @"CodeSigningRequirementData";
+static NSString * const SQRLStateDefaultsKey = @"State";
+static NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"WaitForBundleIdentifier";
+static NSString * const SQRLShouldRelaunchDefaultsKey = @"ShouldRelaunch";
+static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAttempt";
 
 @interface SQRLStateManager ()
 
@@ -80,6 +81,7 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"ShouldRelaunch";
 
 - (void)setState:(SQRLShipItState)state {
 	self[SQRLStateDefaultsKey] = @(state);
+	self[SQRLInstallationStateAttemptKey] = @1;
 
 	if (![self synchronize]) {
 		NSLog(@"Failed to synchronize state for manager %@", self);
@@ -102,6 +104,19 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"ShouldRelaunch";
 
 - (void)setRelaunchAfterInstallation:(BOOL)shouldRelaunch {
 	self[SQRLShouldRelaunchDefaultsKey] = @(shouldRelaunch);
+}
+
+- (NSUInteger)installationStateAttempt {
+	NSNumber *number = [self objectForKey:SQRLInstallationStateAttemptKey ofClass:NSNumber.class];
+	return number.unsignedIntegerValue;
+}
+
+- (void)setInstallationStateAttempt:(NSUInteger)count {
+	self[SQRLInstallationStateAttemptKey] = @(count);
+
+	if (![self synchronize]) {
+		NSLog(@"Failed to synchronize state for manager %@", self);
+	}
 }
 
 #pragma mark Lifecycle

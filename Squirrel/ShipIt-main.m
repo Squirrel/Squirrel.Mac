@@ -18,6 +18,13 @@
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
 
+// The maximum number of times ShipIt should run the same installation state, in
+// an attempt to update.
+//
+// If ShipIt is launched in the same state more than this number of times,
+// updating will abort.
+static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
+
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 
@@ -40,18 +47,32 @@ static SQRLInstaller *sharedInstaller = nil;
 
 // Resumes an installation that was started on a previous run.
 static void resumeInstallation(void) {
-	[[[sharedInstaller.installUpdateCommand
-		execute:nil]
-		initially:^{
-			NSLog(@"Resuming installation from state %i", (int)stateManager.state);
-		}]
-		subscribeError:^(NSError *error) {
-			NSLog(@"Installation error: %@", error);
-			exit(EXIT_FAILURE);
-		} completed:^{
-			NSLog(@"Installation completed successfully");
-			exit(EXIT_SUCCESS);
-		}];
+	if (++stateManager.installationStateAttempt > SQRLShipItMaximumInstallationAttempts) {
+		NSLog(@"Too many attempts to install from state %i, aborting update", (int)stateManager.state);
+
+		[[[sharedInstaller.abortInstallationCommand
+			execute:nil]
+			catch:^(NSError *error) {
+				NSLog(@"Error aborting installation: %@", error);
+				return [RACSignal empty];
+			}]
+			subscribeCompleted:^{
+				exit(EXIT_SUCCESS);
+			}];
+	} else {
+		[[[sharedInstaller.installUpdateCommand
+			execute:nil]
+			initially:^{
+				NSLog(@"Resuming installation from state %i", (int)stateManager.state);
+			}]
+			subscribeError:^(NSError *error) {
+				NSLog(@"Installation error: %@", error);
+				exit(EXIT_FAILURE);
+			} completed:^{
+				NSLog(@"Installation completed successfully");
+				exit(EXIT_SUCCESS);
+			}];
+	}
 }
 
 // Starts installation based on the information in the given XPC event.

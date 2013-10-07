@@ -57,6 +57,12 @@ typedef enum : NSInteger {
 // Returns whether synchronization was successful.
 - (BOOL)synchronize;
 
+// The current state of ShipIt.
+//
+// Setting this property will reset `installationStateAttempt` and synchronize
+// all settings to disk.
+@property (atomic, assign) SQRLShipItState state;
+
 // The URL to the app bundle that should be replaced with an update.
 @property (atomic, copy) NSURL *targetBundleURL;
 
@@ -70,11 +76,12 @@ typedef enum : NSInteger {
 // satisfy in order to be valid.
 @property (atomic, copy) NSData *requirementData;
 
-// The number of failures that have occurred during the current installation
-// attempt.
+// The number of installation attempts that have occurred for the current
+// `state`.
 //
-// TODO
-//@property (atomic, assign) NSUInteger installationFailures;
+// This will be set to 1 whenever `state` is set. Setting this property will
+// synchronize all settings to disk.
+@property (atomic, assign) NSUInteger installationStateAttempt;
 
 // The bundle identifier of the application being updated.
 //
@@ -85,11 +92,6 @@ typedef enum : NSInteger {
 // Whether to relaunch the application after an update is successfully
 // installed.
 @property (atomic, assign) BOOL relaunchAfterInstallation;
-
-// The current state of ShipIt.
-//
-// Setting this property will synchronize all settings to disk.
-@property (atomic, assign) SQRLShipItState state;
 
 // The URL where the target bundle has been backed up to before installing the
 // update.
