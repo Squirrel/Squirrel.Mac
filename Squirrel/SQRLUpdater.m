@@ -329,7 +329,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
-	return [[[[[self
+	return [[[[self
 		codeSigningRequirementData]
 		flattenMap:^(NSData *requirementData) {
 			return [[self
@@ -351,14 +351,13 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				}];
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
-		replay]
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
 }
 
 - (RACSignal *)connectToShipIt {
 	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
-	return [[[[RACSignal
+	return [[[RACSignal
 		defer:^{
 			NSNumber *targetWritable = nil;
 			NSError *targetWritableError = nil;
@@ -371,7 +370,6 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		doNext:^(SQRLXPCConnection *connection) {
 			[connection resume];
 		}]
-		replayLazily]
 		setNameWithFormat:@"-connectToShipIt"];
 }
 
@@ -379,7 +377,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 	NSParameterAssert(message != nil);
 	NSParameterAssert(connection != nil);
 
-	return [[[[connection
+	return [[[connection
 		sendMessageExpectingReply:message]
 		flattenMap:^(SQRLXPCObject *reply) {
 			if (xpc_dictionary_get_bool(reply.object, SQRLShipItSuccessKey)) {
@@ -393,7 +391,6 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
 			}
 		}]
-		replay]
 		setNameWithFormat:@"-sendMessage: %@ overConnection: %@", message, connection];
 }
 
