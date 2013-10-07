@@ -25,8 +25,8 @@
 // at initialization.
 //
 // Returns a signal which send an `NSRunningApplication` for each instance of the
-// watched application that terminates, then completes on a background
-// scheduler.
+// application that is being watched (before the instance terminates), then
+// completes on a background scheduler.
 - (RACSignal *)waitForTermination;
 
 @end

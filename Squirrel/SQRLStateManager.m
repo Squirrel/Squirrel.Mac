@@ -102,7 +102,7 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 }
 
 - (void)setWaitForBundleIdentifier:(NSString *)identifier {
-	NSParameterAssert([identifier isKindOfClass:NSString.class]);
+	NSParameterAssert(identifier == nil || [identifier isKindOfClass:NSString.class]);
 	self[SQRLWaitForBundleIdentifierDefaultsKey] = identifier;
 }
 
@@ -160,7 +160,11 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 	NSParameterAssert(key != nil);
 
 	@synchronized (self) {
-		_preferences[key] = object;
+		if (object == nil) {
+			[_preferences removeObjectForKey:key];
+		} else {
+			_preferences[key] = object;
+		}
 	}
 }
 

@@ -81,6 +81,23 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 
 #pragma mark Communication
 
+- (RACSignal *)sendBarrierMessage:(SQRLXPCObject *)message {
+	NSParameterAssert(message != nil);
+
+	return [[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			RACDisposable *eventsDisposable = [[self.events ignoreValues] subscribe:subscriber];
+
+			xpc_connection_send_message(self.object, message.object);
+			xpc_connection_send_barrier(self.object, ^{
+				[subscriber sendCompleted];
+			});
+
+			return eventsDisposable;
+		}]
+		setNameWithFormat:@"%@ -sendBarrierMessage: %@", self, message];
+}
+
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message {
 	NSParameterAssert(message != nil);
 

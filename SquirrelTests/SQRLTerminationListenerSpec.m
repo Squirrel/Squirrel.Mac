@@ -29,11 +29,15 @@ it(@"should complete immediately when the app is not running", ^{
 it(@"should wait until one instance terminates", ^{
 	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
 
+	__block NSRunningApplication *observedApp = nil;
 	__block BOOL completed = NO;
-	[[listener waitForTermination] subscribeCompleted:^{
+	[[listener waitForTermination] subscribeNext:^(id x) {
+		observedApp = x;
+	} completed:^{
 		completed = YES;
 	}];
 
+	expect(observedApp).will.equal(app);
 	expect(completed).to.beFalsy();
 
 	expect([app terminate]).to.beTruthy();
