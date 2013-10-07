@@ -244,7 +244,7 @@ it(@"should install an update in process", ^{
 	expect(installError).to.beNil();
 });
 
-fit(@"should not install an update after too many attempts", ^{
+it(@"should not install an update after too many attempts", ^{
 	NSURL *targetURL = self.testApplicationURL;
 	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
 	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
