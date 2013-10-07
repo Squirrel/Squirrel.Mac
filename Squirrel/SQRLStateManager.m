@@ -7,6 +7,7 @@
 //
 
 #import "SQRLStateManager.h"
+#import "SQRLStateManager+Private.h"
 #import <ReactiveCocoa/EXTScope.h>
 
 static NSString * const SQRLTargetBundleDefaultsKey = @"TargetBundleURL";
@@ -196,7 +197,13 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 		return nil;
 	}
 
-	return [[folderURL URLByAppendingPathComponent:identifier] URLByAppendingPathComponent:@"state.plist"];
+	folderURL = [folderURL URLByAppendingPathComponent:identifier];
+	if (![NSFileManager.defaultManager createDirectoryAtURL:folderURL withIntermediateDirectories:YES attributes:nil error:&error]) {
+		NSLog(@"Could not create Application Support folder at %@: %@", folderURL, error);
+		return nil;
+	}
+
+	return [folderURL URLByAppendingPathComponent:@"state.plist"];
 }
 
 + (BOOL)clearStateWithIdentifier:(NSString *)identifier {
