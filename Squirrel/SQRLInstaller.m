@@ -9,10 +9,10 @@
 #import "SQRLInstaller.h"
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
+#import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLStateManager.h"
 #import "SQRLTerminationListener.h"
-#import <IOKit/pwr_mgt/IOPMLib.h>
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -38,39 +38,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 // The state manager to read and write from.
 @property (nonatomic, strong, readonly) SQRLStateManager *stateManager;
 
-// Tracks how many concurrent transactions are in progress.
-//
-// This property must only be used while synchronized on the receiver.
-@property (nonatomic, assign) NSUInteger transactionCount;
-
-// Prevents the machine from shutting down or sleeping while a transaction is in
-// progress.
-//
-// This property must only be used while synchronized on the receiver.
-@property (nonatomic, assign) IOPMAssertionID powerAssertion;
-
-// Updates the behavior for handling termination signals.
-//
-// func - The new handler for termination signals.
-//
-// This function must only be called while synchronized on the receiver.
-- (void)replaceSignalHandlers:(sig_t)func;
-
-// Invoked when the installer needs to begin some uninterruptible work.
-//
-// A best-effort attempt will be made to protect the process from termination
-// during this time.
-//
-// -endTransaction must be called after the work is completed. These calls can
-// be nested.
-- (void)beginTransaction;
-
-// Ends a transaction previously opened with -beginTransaction.
-//
-// These calls may be nested, but there must be one -endTransaction call for
-// each -beginTransaction call.
-- (void)endTransaction;
-
 @end
 
 @implementation SQRLInstaller
@@ -88,59 +55,14 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	@weakify(self);
 	_installUpdateCommand = [[RACCommand alloc] initWithSignalBlock:^(id _) {
 		@strongify(self);
-		return [[[self
+		
+		NSString *transactionDescription = [NSString stringWithFormat:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), self.stateManager.targetBundleURL.path];
+		return [[self
 			signalForCurrentState]
-			initially:^{
-				[self beginTransaction];
-			}]
-			finally:^{
-				[self endTransaction];
-			}];
+			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:transactionDescription];
 	}];
 	
 	return self;
-}
-
-#pragma mark Transactions
-
-- (void)beginTransaction {
-	@synchronized (self) {
-		// If there are any transactions already, skip initial setup.
-		if (self.transactionCount++ > 0) return;
-
-		[self replaceSignalHandlers:SIG_IGN];
-
-		NSString *details = [NSString stringWithFormat:@"%@ is being updated, and interrupting the process could corrupt the application", self.stateManager.targetBundleURL.path];
-
-		IOPMAssertionID assertion;
-		IOReturn result = IOPMAssertionCreateWithDescription(kIOPMAssertionTypePreventSystemSleep, CFSTR("Updating"), (__bridge CFStringRef)details, NULL, NULL, SQRLInstallerPowerAssertionTimeout, kIOPMAssertionTimeoutActionLog, &assertion);
-		if (result == kIOReturnSuccess) {
-			self.powerAssertion = assertion;
-		} else {
-			NSLog(@"Could not install power assertion: %li", (long)result);
-		}
-	}
-}
-
-- (void)endTransaction {
-	@synchronized (self) {
-		// If there are still transactions left, skip teardown.
-		if (--self.transactionCount > 0) return;
-
-		[self replaceSignalHandlers:SIG_DFL];
-
-		IOReturn result = IOPMAssertionRelease(self.powerAssertion);
-		if (result != kIOReturnSuccess) {
-			NSLog(@"Could not release power assertion: %li", (long)result);
-		}
-	}
-}
-
-- (void)replaceSignalHandlers:(sig_t)func {
-	signal(SIGHUP, func);
-	signal(SIGINT, func);
-	signal(SIGQUIT, func);
-	signal(SIGTERM, func);
 }
 
 #pragma mark Installer State

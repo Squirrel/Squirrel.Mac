@@ -46,6 +46,8 @@
 		D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
 		D061E40317FD581C00CC134A /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
+		D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */; };
+		D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */; };
 		D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1117B451500012B22D /* InfoPlist.strings */; };
 		D08D4E1517B451500012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1417B451500012B22D /* main.m */; };
@@ -368,6 +370,8 @@
 		D04752AF17FFCA03003B162E /* SQRLStateManager+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLStateManager+Private.h"; sourceTree = "<group>"; };
 		D049803217F9181D001EE042 /* SQRLXPCObject.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLXPCObject.h; sourceTree = "<group>"; };
 		D049803317F9181D001EE042 /* SQRLXPCObject.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLXPCObject.m; sourceTree = "<group>"; };
+		D06B58B218032B1500656D97 /* RACSignal+SQRLTransactionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLTransactionExtensions.h"; sourceTree = "<group>"; };
+		D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "RACSignal+SQRLTransactionExtensions.m"; sourceTree = "<group>"; };
 		D08D4E0C17B451500012B22D /* TestApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D08D4E1017B451500012B22D /* TestApplication-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestApplication-Info.plist"; sourceTree = "<group>"; };
 		D08D4E1217B451500012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -565,6 +569,15 @@
 				D0366C0217B18FEE0086ED44 /* Foundation.framework */,
 			);
 			name = "Other Frameworks";
+			sourceTree = "<group>";
+		};
+		D06B58BC18032BE800656D97 /* Transactions */ = {
+			isa = PBXGroup;
+			children = (
+				D06B58B218032B1500656D97 /* RACSignal+SQRLTransactionExtensions.h */,
+				D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */,
+			);
+			name = Transactions;
 			sourceTree = "<group>";
 		};
 		D08D4E0E17B451500012B22D /* TestApplication */ = {
@@ -828,6 +841,7 @@
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */,
 				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */,
+				D06B58BC18032BE800656D97 /* Transactions */,
 				D0C2AA8517FC103D0075D1D1 /* XPC */,
 			);
 			name = Shared;
@@ -1220,6 +1234,7 @@
 				D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignatureVerifier.m in Sources */,
+				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 				D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */,
@@ -1254,6 +1269,7 @@
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
+				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
