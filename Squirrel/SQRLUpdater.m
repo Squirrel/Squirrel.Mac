@@ -329,27 +329,32 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
-	return [[[[self
+	return [[[[[[[self
 		codeSigningRequirementData]
-		flattenMap:^(NSData *requirementData) {
+		map:^(NSData *requirementData) {
+			xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
+
+			xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
+			xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
+			xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, update.bundle.bundleURL.absoluteString.UTF8String);
+			xpc_dictionary_set_string(message, SQRLWaitForBundleIdentifierKey, NSRunningApplication.currentApplication.bundleIdentifier.UTF8String);
+			xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
+			xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
+
+			SQRLXPCObject *wrappedMessage = [[SQRLXPCObject alloc] initWithXPCObject:message];
+			xpc_release(message);
+			
+			return wrappedMessage;
+		}]
+		zipWith:[self connectToShipIt]]
+		reduceEach:^(SQRLXPCObject *message, SQRLXPCConnection *connection) {
 			return [[self
-				connectToShipIt]
-				flattenMap:^(SQRLXPCConnection *connection) {
-					xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
-
-					SQRLXPCObject *wrappedMessage = [[SQRLXPCObject alloc] initWithXPCObject:message];
-					xpc_release(message);
-
-					xpc_dictionary_set_string(wrappedMessage.object, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-					xpc_dictionary_set_string(wrappedMessage.object, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
-					xpc_dictionary_set_string(wrappedMessage.object, SQRLUpdateBundleURLKey, update.bundle.bundleURL.absoluteString.UTF8String);
-					xpc_dictionary_set_string(wrappedMessage.object, SQRLWaitForBundleIdentifierKey, NSRunningApplication.currentApplication.bundleIdentifier.UTF8String);
-					xpc_dictionary_set_bool(wrappedMessage.object, SQRLShouldRelaunchKey, self.shouldRelaunch);
-					xpc_dictionary_set_data(wrappedMessage.object, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
-
-					return [self sendMessage:wrappedMessage overConnection:connection];
+				sendMessage:message overConnection:connection]
+				finally:^{
+					[connection cancel];
 				}];
 		}]
+		flatten]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
 }
