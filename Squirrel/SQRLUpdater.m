@@ -15,6 +15,7 @@
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLStateManager.h"
 #import "SQRLUpdate+Private.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
@@ -214,16 +215,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
 	return [[RACSignal startLazilyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground] block:^(id<RACSubscriber> subscriber) {
-		// TODO: Use SQRLInstaller's temporary directory logic?
-		NSURL *temporaryDirectoryURL = [[NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES] URLByAppendingPathComponent:NSRunningApplication.currentApplication.bundleIdentifier];
+		NSURL *appSupportURL = [SQRLStateManager applicationSupportURLWithIdentifier:SQRLShipItLauncher.shipItJobLabel];
 
-		NSError *error = nil;
-		if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error]) {
-			[subscriber sendError:error];
-			return;
-		}
-		
-		NSURL *updateDirectoryTemplate = [temporaryDirectoryURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+		NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
 		char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
 		@onExit {
 			free(updateDirectoryCString);
