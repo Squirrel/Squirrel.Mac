@@ -10,6 +10,7 @@
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSProcessInfo+SQRLVersionExtensions.h"
+#import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLDownloadedUpdate.h"
@@ -353,7 +354,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
-	return [[[[[[self
+	return [[[[[self
 		codeSigningRequirementData]
 		flattenMap:^(NSData *requirementData) {
 			return [[self
@@ -375,12 +376,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 					return [self sendMessage:wrappedMessage overConnection:connection];
 				}];
 		}]
-		initially:^{
-			[NSProcessInfo.processInfo disableSuddenTermination];
-		}]
-		finally:^{
-			[NSProcessInfo.processInfo enableSuddenTermination];
-		}]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		replay]
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
 }

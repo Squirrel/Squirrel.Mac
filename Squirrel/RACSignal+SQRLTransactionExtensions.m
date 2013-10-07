@@ -48,6 +48,8 @@ static NSLock *SQRLTransactionLock(void) {
 static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *description) {
 	NSCParameterAssert(name != nil);
 
+	[NSProcessInfo.processInfo disableSuddenTermination];
+
 	IOPMAssertionID powerAssertion;
 	IOReturn result = IOPMAssertionCreateWithDescription(kIOPMAssertionTypePreventSystemSleep, (__bridge CFStringRef)name, (__bridge CFStringRef)description, NULL, NULL, SQRLTransactionPowerAssertionTimeout, kIOPMAssertionTimeoutActionLog, &powerAssertion);
 	if (result != kIOReturnSuccess) {
@@ -64,11 +66,6 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 	[SQRLTransactionLock() unlock];
 	
 	return [RACDisposable disposableWithBlock:^{
-		IOReturn result = IOPMAssertionRelease(powerAssertion);
-		if (result != kIOReturnSuccess) {
-			NSLog(@"Could not release power assertion: %li", (long)result);
-		}
-
 		[SQRLTransactionLock() lock];
 		{
 			// If this is the last transaction, restore default signal behavior.
@@ -79,12 +76,27 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 			}
 		}
 		[SQRLTransactionLock() unlock];
+
+		IOReturn result = IOPMAssertionRelease(powerAssertion);
+		if (result != kIOReturnSuccess) {
+			NSLog(@"Could not release power assertion: %li", (long)result);
+		}
+
+		[NSProcessInfo.processInfo enableSuddenTermination];
 	}];
 }
 
 @implementation RACSignal (SQRLTransactionExtensions)
 
-- (RACSignal *)sqrl_addTransactionWithName:(NSString *)name description:(NSString *)description {
+- (RACSignal *)sqrl_addTransactionWithName:(NSString *)name description:(NSString *)descriptionFormat, ... {
+	NSString *description = nil;
+	if (descriptionFormat != nil) {
+		va_list args;
+		va_start(args, descriptionFormat);
+		description = [[NSString alloc] initWithFormat:descriptionFormat arguments:args];
+		va_end(args);
+	}
+
 	return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
 		RACDisposable *transactionDisposable = SQRLCreateTransaction(name, description);
 		RACDisposable *subscriptionDisposable = [self subscribe:subscriber];
@@ -96,7 +108,15 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 	}] setNameWithFormat:@"[%@] -sqrl_addTransactionWithName: %@ description: %@", self.name, name, description];
 }
 
-- (RACSignal *)sqrl_addSubscriptionTransactionWithName:(NSString *)name description:(NSString *)description {
+- (RACSignal *)sqrl_addSubscriptionTransactionWithName:(NSString *)name description:(NSString *)descriptionFormat, ... {
+	NSString *description = nil;
+	if (descriptionFormat != nil) {
+		va_list args;
+		va_start(args, descriptionFormat);
+		description = [[NSString alloc] initWithFormat:descriptionFormat arguments:args];
+		va_end(args);
+	}
+
 	return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
 		RACDisposable *transactionDisposable = SQRLCreateTransaction(name, description);
 		RACDisposable *subscriptionDisposable = [self subscribe:subscriber];

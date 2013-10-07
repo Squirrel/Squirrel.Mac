@@ -55,11 +55,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	@weakify(self);
 	_installUpdateCommand = [[RACCommand alloc] initWithSignalBlock:^(id _) {
 		@strongify(self);
-		
-		NSString *transactionDescription = [NSString stringWithFormat:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), self.stateManager.targetBundleURL.path];
 		return [[self
 			signalForCurrentState]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:transactionDescription];
+			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), self.stateManager.targetBundleURL.path];
 	}];
 	
 	return self;
