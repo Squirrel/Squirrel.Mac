@@ -104,6 +104,32 @@ it(@"should install an update to another volume", ^{
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
+it(@"should not install an update if the connection closes too early", ^{
+	__block BOOL canceled = NO;
+	__block BOOL receivedReply = NO;
+
+	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t reply) {
+		if (xpc_get_type(reply) != XPC_TYPE_ERROR) return;
+		receivedReply = YES;
+	});
+	
+	xpc_connection_send_barrier(shipitConnection, ^{
+		xpc_connection_cancel(shipitConnection);
+		canceled = YES;
+	});
+
+	expect(canceled).will.beTruthy();
+	
+	// If we received a reply from ShipIt, installation has already begun. We're too late.
+	expect(receivedReply).to.beFalsy();
+
+	[NSThread sleepForTimeInterval:0.2];
+
+	// No update should've been installed, since our side of the connection was
+	// terminated before we could receive the reply from ShipIt.
+	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+});
+
 describe(@"signal handling", ^{
 	__block BOOL terminated;
 	__block void (^sendMessage)(void);
