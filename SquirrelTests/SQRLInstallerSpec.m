@@ -109,7 +109,7 @@ it(@"should not install an update if the connection closes too early", ^{
 	__block BOOL receivedReply = NO;
 
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t reply) {
-		if (xpc_get_type(reply) != XPC_TYPE_ERROR) return;
+		if (xpc_get_type(reply) == XPC_TYPE_ERROR) return;
 		receivedReply = YES;
 	});
 	
