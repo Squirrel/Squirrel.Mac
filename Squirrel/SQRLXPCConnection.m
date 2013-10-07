@@ -141,4 +141,12 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 	return [NSError errorWithDomain:SQRLXPCErrorDomain code:code userInfo:userInfo];
 }
 
+#pragma mark NSObject
+
+- (NSString *)description {
+	// xpc_copy_description() seems to crash on 10.7 for some connections, so
+	// just print out the pointer.
+	return [NSString stringWithFormat:@"<%@: %p>{ object = %p }", self.class, self, self.object];
+}
+
 @end
