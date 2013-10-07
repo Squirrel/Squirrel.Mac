@@ -220,18 +220,14 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return xpc_get_type(event.object) == XPC_TYPE_DICTIONARY;
 		}]
 		map:^(SQRLXPCObject *event) {
-			return [[handleEvent(event, client)
-				initially:^{
-					NSLog(@"Got event on client connection: %@", event);
-				}]
-				sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
+			return [handleEvent(event, client) sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
 		}]
 		switchToLatest]
 		setNameWithFormat:@"handleClient %@", client];
 }
 
 static void handleService(SQRLXPCConnection *service) {
-	[[[[[[[[service
+	[[[[[[[service
 		autoconnect]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]]
 		catch:^(NSError *error) {
@@ -240,9 +236,6 @@ static void handleService(SQRLXPCConnection *service) {
 		}]
 		map:^(SQRLXPCObject *event) {
 			return [[SQRLXPCConnection alloc] initWithXPCObject:event.object];
-		}]
-		doNext:^(SQRLXPCConnection *client) {
-			NSLog(@"Got client connection: %@", client);
 		}]
 		map:^(SQRLXPCConnection *client) {
 			return handleClient(client);
