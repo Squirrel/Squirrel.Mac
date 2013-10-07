@@ -23,6 +23,9 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 // The identifier for the preferences domain to use.
 @property (nonatomic, copy, readonly) NSString *applicationIdentifier;
 
+// Use only while synchronized on `self`.
+@property (nonatomic, strong, readonly) NSMutableDictionary *preferences;
+
 @end
 
 @implementation SQRLStateManager
@@ -112,6 +115,9 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 	_applicationIdentifier = [identifier copy];
 	NSLog(@"%@ initialized", self);
 
+	NSDictionary *existingPrefs = [NSDictionary dictionaryWithContentsOfURL:[self.class stateURLWithIdentifier:self.applicationIdentifier]];
+	_preferences = [existingPrefs mutableCopy] ?: [NSMutableDictionary dictionary];
+
 	return self;
 }
 
@@ -134,13 +140,17 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 - (id)objectForKeyedSubscript:(NSString *)key {
 	NSParameterAssert(key != nil);
 
-	return CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+	@synchronized (self) {
+		return _preferences[key];
+	}
 }
 
 - (void)setObject:(id)object forKeyedSubscript:(NSString *)key {
 	NSParameterAssert(key != nil);
 
-	CFPreferencesSetValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)object, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	@synchronized (self) {
+		_preferences[key] = object;
+	}
 }
 
 - (NSURL *)fileURLForKey:(NSString *)key {
@@ -161,22 +171,35 @@ NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey
 
 #pragma mark Synchronization
 
-+ (BOOL)clearStateWithIdentifier:(NSString *)identifier {
++ (NSURL *)stateURLWithIdentifier:(NSString *)identifier {
 	NSParameterAssert(identifier != nil);
 
-	NSLog(@"Resetting preferences for %@", identifier);
+	NSError *error = nil;
+	NSURL *folderURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
+	if (folderURL == nil) {
+		NSLog(@"Could not find Application Support URL: %@", error);
+		return nil;
+	}
 
-	CFArrayRef keys = CFPreferencesCopyKeyList((__bridge CFStringRef)identifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	@onExit {
-		if (keys != NULL) CFRelease(keys);
-	};
+	return [[folderURL URLByAppendingPathComponent:identifier] URLByAppendingPathComponent:@"state.plist"];
+}
 
-	CFPreferencesSetMultiple(NULL, keys, (__bridge CFStringRef)identifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	return CFPreferencesSynchronize((__bridge CFStringRef)identifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) == true;
++ (BOOL)clearStateWithIdentifier:(NSString *)identifier {
+	NSURL *fileURL = [self stateURLWithIdentifier:identifier];
+	NSError *error = nil;
+	if (![NSFileManager.defaultManager removeItemAtURL:fileURL error:&error]) {
+		NSLog(@"Could not remove %@: %@", fileURL, error);
+	}
+
+	return YES;
 }
 
 - (BOOL)synchronize {
-	return CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost) == true;
+	NSURL *fileURL = [self.class stateURLWithIdentifier:self.applicationIdentifier];
+
+	@synchronized (self) {
+		return [_preferences writeToURL:fileURL atomically:YES];
+	}
 }
 
 #pragma mark NSObject
