@@ -42,9 +42,19 @@ typedef enum : NSInteger {
 
 // Removes all saved state for the given identifier.
 //
-// identifier - A string to uniquely the application or job to reset. This must
-//              not be nil.
+// identifier - A string that uniquely identifies the application or job to reset.
+//              This must not be nil.
 + (BOOL)clearStateWithIdentifier:(NSString *)identifier;
+
+// Finds the URL to the Application Support folder that would be used with the
+// given identifier.
+//
+// identifier - A string that uniquely identifies the Application Support folder.
+//              This must not be nil.
+//
+// Returns the URL for the Application Support folder, creating it if
+// necessary, or nil if an error occurs.
++ (NSURL *)applicationSupportURLWithIdentifier:(NSString *)identifier;
 
 // Initializes a state manager with the given unique identifier.
 //
@@ -57,6 +67,9 @@ typedef enum : NSInteger {
 // Returns whether synchronization was successful.
 - (BOOL)synchronize;
 
+// The URL to an Application Support folder owned by ShipIt.
+@property (nonatomic, copy, readonly) NSURL *applicationSupportURL;
+
 // The current state of ShipIt.
 //
 // Setting this property will reset `installationStateAttempt` and synchronize
@@ -68,9 +81,6 @@ typedef enum : NSInteger {
 
 // The URL to the downloaded update's app bundle.
 @property (atomic, copy) NSURL *updateBundleURL;
-
-// The URL to an Application Support folder owned by ShipIt.
-@property (atomic, copy) NSURL *applicationSupportURL;
 
 // A serialized `SecRequirementRef` describing what the update bundle must
 // satisfy in order to be valid.

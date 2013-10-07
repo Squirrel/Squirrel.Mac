@@ -9,6 +9,7 @@
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
 #import "SQRLArguments.h"
+#import "SQRLStateManager.h"
 #import "SQRLXPCConnection.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Security/Security.h>
@@ -25,23 +26,6 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
 	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
-}
-
-+ (NSURL *)shipItApplicationSupportURL {
-	NSError *error = nil;
-	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
-
-	BOOL created = NO;
-	NSURL *shipItAppSupportURL = [appSupportURL URLByAppendingPathComponent:self.shipItJobLabel];
-	if (shipItAppSupportURL != nil) {
-		created = [NSFileManager.defaultManager createDirectoryAtURL:shipItAppSupportURL withIntermediateDirectories:YES attributes:nil error:&error];
-	}
-
-	if (!created) {
-		NSLog(@"Could not create Application Support folder at %@: %@", shipItAppSupportURL, error);
-	}
-
-	return shipItAppSupportURL;
 }
 
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
@@ -133,7 +117,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 
-		NSURL *appSupportURL = self.shipItApplicationSupportURL;
+		NSURL *appSupportURL = [SQRLStateManager applicationSupportURLWithIdentifier:self.shipItJobLabel];
 		jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
 		jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
 

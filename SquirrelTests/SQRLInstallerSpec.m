@@ -27,7 +27,6 @@ describe(@"after connecting to ShipIt", ^{
 
 		xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
 		xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-		xpc_dictionary_set_string(message, SQRLApplicationSupportURLKey, self.temporaryDirectoryURL.absoluteString.UTF8String);
 		xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
 
 		NSData *requirementData = self.testApplicationCodeSigningRequirementData;
@@ -231,7 +230,6 @@ it(@"should install an update in process", ^{
 
 	stateManager.targetBundleURL = self.testApplicationURL;
 	stateManager.updateBundleURL = [self createTestApplicationUpdate];
-	stateManager.applicationSupportURL = self.temporaryDirectoryURL;
 	stateManager.requirementData = self.testApplicationCodeSigningRequirementData;
 	stateManager.state = SQRLShipItStateClearingQuarantine;
 
@@ -253,7 +251,6 @@ it(@"should not install an update after too many attempts", ^{
 	stateManager.targetBundleURL = targetURL;
 	stateManager.updateBundleURL = [self createTestApplicationUpdate];
 	stateManager.backupBundleURL = backupURL;
-	stateManager.applicationSupportURL = self.temporaryDirectoryURL;
 	stateManager.requirementData = self.testApplicationCodeSigningRequirementData;
 	stateManager.state = SQRLShipItStateInstalling;
 	stateManager.installationStateAttempt = 4;

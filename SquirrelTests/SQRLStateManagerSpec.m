@@ -44,7 +44,6 @@ it(@"should save and load settings", ^{
 	firstManager.targetBundleURL = targetURL;
 	firstManager.updateBundleURL = updateURL;
 	firstManager.backupBundleURL = backupURL;
-	firstManager.applicationSupportURL = appSupportURL;
 	firstManager.requirementData = [NSData data];
 	firstManager.waitForBundleIdentifier = applicationIdentifier;
 	firstManager.relaunchAfterInstallation = YES;
@@ -55,7 +54,6 @@ it(@"should save and load settings", ^{
 		@keypath(firstManager.targetBundleURL),
 		@keypath(firstManager.updateBundleURL),
 		@keypath(firstManager.backupBundleURL),
-		@keypath(firstManager.applicationSupportURL),
 		@keypath(firstManager.requirementData),
 		@keypath(firstManager.waitForBundleIdentifier),
 		@keypath(firstManager.relaunchAfterInstallation),

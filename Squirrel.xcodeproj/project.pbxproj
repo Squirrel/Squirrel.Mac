@@ -40,8 +40,6 @@
 		D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D04752A317FFC9E5003B162E /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
-		D04752B017FFCA3E003B162E /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
-		D04752B117FFE1EE003B162E /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
 		D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */ = {isa = PBXBuildFile; fileRef = D049803317F9181D001EE042 /* SQRLXPCObject.m */; };
 		D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
@@ -50,6 +48,7 @@
 		D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */; };
 		D06B58CE1803567A00656D97 /* SQRLStateManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58CD1803567A00656D97 /* SQRLStateManagerSpec.m */; };
 		D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */; };
+		D06B58D218035F8800656D97 /* SQRLStateManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D04752A217FFC9E5003B162E /* SQRLStateManager.m */; };
 		D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1117B451500012B22D /* InfoPlist.strings */; };
 		D08D4E1517B451500012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1417B451500012B22D /* main.m */; };
@@ -555,9 +554,6 @@
 				D014AC0417B97885007D79D0 /* ShipIt-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
-				D04752A117FFC9E5003B162E /* SQRLStateManager.h */,
-				D06B58CF180356D800656D97 /* SQRLStateManager+Private.h */,
-				D04752A217FFC9E5003B162E /* SQRLStateManager.m */,
 				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
 				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
 			);
@@ -847,6 +843,9 @@
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				F6F2ED8117A33C4900F4D220 /* SQRLCodeSignatureVerifier.h */,
 				F6F2ED8217A33C4900F4D220 /* SQRLCodeSignatureVerifier.m */,
+				D04752A117FFC9E5003B162E /* SQRLStateManager.h */,
+				D06B58CF180356D800656D97 /* SQRLStateManager+Private.h */,
+				D04752A217FFC9E5003B162E /* SQRLStateManager.m */,
 				D06B58BC18032BE800656D97 /* Transactions */,
 				D0C2AA8517FC103D0075D1D1 /* XPC */,
 			);
@@ -1253,7 +1252,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D04752B117FFE1EE003B162E /* SQRLStateManager.m in Sources */,
 				D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */,
 				D08D4E1517B451500012B22D /* main.m in Sources */,
 			);
@@ -1274,6 +1272,7 @@
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
+				D06B58D218035F8800656D97 /* SQRLStateManager.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 			);
@@ -1284,7 +1283,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
-				D04752B017FFCA3E003B162E /* SQRLStateManager.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
 				D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,

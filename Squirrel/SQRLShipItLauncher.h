@@ -22,10 +22,6 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 // Returns the label for the ShipIt launchd job.
 + (NSString *)shipItJobLabel;
 
-// Creates an Application Support directory suitable for use by ShipIt (if
-// necessary) and returns its URL.
-+ (NSURL *)shipItApplicationSupportURL;
-
 // Attempts to launch the ShipIt service.
 //
 // privileged - Determines which launchd domain to launch the job in.

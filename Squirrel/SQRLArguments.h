@@ -51,12 +51,6 @@ extern const char * const SQRLTargetBundleURLKey;
 // This argument is required.
 extern const char * const SQRLUpdateBundleURLKey;
 
-// Associated with a string representation of the URL to a persistent
-// Application Support folder that ShipIt can read/write to.
-//
-// This argument is required.
-extern const char * const SQRLApplicationSupportURLKey;
-
 // Associated with a boolean which indicates whether the application should be
 // launched after being updated.
 //

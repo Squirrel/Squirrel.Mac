@@ -13,7 +13,6 @@
 static NSString * const SQRLTargetBundleDefaultsKey = @"TargetBundleURL";
 static NSString * const SQRLUpdateBundleDefaultsKey = @"UpdateBundleURL";
 static NSString * const SQRLBackupBundleDefaultsKey = @"BackupBundleURL";
-static NSString * const SQRLApplicationSupportDefaultsKey = @"ApplicationSupportURL";
 static NSString * const SQRLRequirementDataDefaultsKey = @"CodeSigningRequirementData";
 static NSString * const SQRLStateDefaultsKey = @"State";
 static NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"WaitForBundleIdentifier";
@@ -33,6 +32,37 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 @implementation SQRLStateManager
 
 #pragma mark Properties
+
+- (NSURL *)applicationSupportURL {
+	return [self.class applicationSupportURLWithIdentifier:self.applicationIdentifier];
+}
+
+- (SQRLShipItState)state {
+	NSNumber *number = [self objectForKey:SQRLStateDefaultsKey ofClass:NSNumber.class];
+	return number.integerValue;
+}
+
+- (void)setState:(SQRLShipItState)state {
+	self[SQRLStateDefaultsKey] = @(state);
+	self[SQRLInstallationStateAttemptKey] = @1;
+
+	if (![self synchronize]) {
+		NSLog(@"Failed to synchronize state for manager %@", self);
+	}
+}
+
+- (NSUInteger)installationStateAttempt {
+	NSNumber *number = [self objectForKey:SQRLInstallationStateAttemptKey ofClass:NSNumber.class];
+	return number.unsignedIntegerValue;
+}
+
+- (void)setInstallationStateAttempt:(NSUInteger)count {
+	self[SQRLInstallationStateAttemptKey] = @(count);
+
+	if (![self synchronize]) {
+		NSLog(@"Failed to synchronize state for manager %@", self);
+	}
+}
 
 - (NSURL *)targetBundleURL {
 	return [self fileURLForKey:SQRLTargetBundleDefaultsKey];
@@ -58,14 +88,6 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 	[self setFileURL:fileURL forKey:SQRLBackupBundleDefaultsKey];
 }
 
-- (NSURL *)applicationSupportURL {
-	return [self fileURLForKey:SQRLApplicationSupportDefaultsKey];
-}
-
-- (void)setApplicationSupportURL:(NSURL *)fileURL {
-	[self setFileURL:fileURL forKey:SQRLApplicationSupportDefaultsKey];
-}
-
 - (NSData *)requirementData {
 	return [self objectForKey:SQRLRequirementDataDefaultsKey ofClass:NSData.class];
 }
@@ -73,20 +95,6 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 - (void)setRequirementData:(NSData *)data {
 	NSParameterAssert(data == nil || [data isKindOfClass:NSData.class]);
 	self[SQRLRequirementDataDefaultsKey] = data;
-}
-
-- (SQRLShipItState)state {
-	NSNumber *number = [self objectForKey:SQRLStateDefaultsKey ofClass:NSNumber.class];
-	return number.integerValue;
-}
-
-- (void)setState:(SQRLShipItState)state {
-	self[SQRLStateDefaultsKey] = @(state);
-	self[SQRLInstallationStateAttemptKey] = @1;
-
-	if (![self synchronize]) {
-		NSLog(@"Failed to synchronize state for manager %@", self);
-	}
 }
 
 - (NSString *)waitForBundleIdentifier {
@@ -105,19 +113,6 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 
 - (void)setRelaunchAfterInstallation:(BOOL)shouldRelaunch {
 	self[SQRLShouldRelaunchDefaultsKey] = @(shouldRelaunch);
-}
-
-- (NSUInteger)installationStateAttempt {
-	NSNumber *number = [self objectForKey:SQRLInstallationStateAttemptKey ofClass:NSNumber.class];
-	return number.unsignedIntegerValue;
-}
-
-- (void)setInstallationStateAttempt:(NSUInteger)count {
-	self[SQRLInstallationStateAttemptKey] = @(count);
-
-	if (![self synchronize]) {
-		NSLog(@"Failed to synchronize state for manager %@", self);
-	}
 }
 
 #pragma mark Lifecycle
@@ -187,7 +182,7 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 
 #pragma mark Synchronization
 
-+ (NSURL *)stateURLWithIdentifier:(NSString *)identifier {
++ (NSURL *)applicationSupportURLWithIdentifier:(NSString *)identifier {
 	NSParameterAssert(identifier != nil);
 
 	NSError *error = nil;
@@ -203,7 +198,11 @@ static NSString * const SQRLInstallationStateAttemptKey = @"InstallationStateAtt
 		return nil;
 	}
 
-	return [folderURL URLByAppendingPathComponent:@"state.plist"];
+	return folderURL;
+}
+
++ (NSURL *)stateURLWithIdentifier:(NSString *)identifier {
+	return [[self applicationSupportURLWithIdentifier:identifier] URLByAppendingPathComponent:@"state.plist"];
 }
 
 + (BOOL)clearStateWithIdentifier:(NSString *)identifier {

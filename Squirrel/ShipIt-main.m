@@ -90,16 +90,14 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 
 		NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLTargetBundleURLKey))] filePathURL];
 		NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLUpdateBundleURLKey))] filePathURL];
-		NSURL *applicationSupportURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLApplicationSupportURLKey))] filePathURL];
 
-		if (targetBundleURL == nil || updateBundleURL == nil || applicationSupportURL == nil || requirementDataPtr == NULL) {
+		if (targetBundleURL == nil || updateBundleURL == nil || requirementDataPtr == NULL) {
 			[subscriber sendError:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorRequiredKeyMissing userInfo:@{ NSLocalizedDescriptionKey: @"Required key not provided" }]];
 			return nil;
 		}
 
 		stateManager.targetBundleURL = targetBundleURL;
 		stateManager.updateBundleURL = updateBundleURL;
-		stateManager.applicationSupportURL = applicationSupportURL;
 		stateManager.requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
 		stateManager.relaunchAfterInstallation = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
 		stateManager.state = SQRLShipItStateClearingQuarantine;

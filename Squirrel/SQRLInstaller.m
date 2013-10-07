@@ -122,12 +122,6 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	}];
 }
 
-- (RACSignal *)applicationSupportURL {
-	return [self retrieveDefaultsValueWithDescription:@"Application Support URL" block:^{
-		return self.stateManager.applicationSupportURL;
-	}];
-}
-
 - (RACSignal *)relaunchAfterInstallation {
 	return [[RACSignal
 		defer:^{
@@ -193,10 +187,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			return [[[[[[RACSignal
 				zip:@[
 					[self targetBundleURL],
-					[self applicationSupportURL],
 					[[self backupBundleURL] catchTo:[RACSignal return:nil]],
 					[self verifier],
-				] reduce:^(NSURL *bundleURL, NSURL *appSupportURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+				] reduce:^(NSURL *bundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
 					RACSignal *skipBackup = [RACSignal return:@NO];
 					if (backupBundleURL != nil) {
 						skipBackup = [self checkWhetherItemPreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingVerifier:verifier];
@@ -206,7 +199,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 						if (skip.boolValue) {
 							return [RACSignal empty];
 						} else {
-							return [self moveBundleAtURL:bundleURL intoBackupDirectoryAtURL:appSupportURL];
+							return [self backUpBundleAtURL:bundleURL];
 						}
 					}];
 				}]
@@ -323,19 +316,23 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 #pragma mark Backing Up
 
-- (RACSignal *)moveBundleAtURL:(NSURL *)targetBundleURL intoBackupDirectoryAtURL:(NSURL *)parentDirectoryURL {
+- (RACSignal *)backUpBundleAtURL:(NSURL *)targetBundleURL {
 	NSParameterAssert(targetBundleURL != nil);
-	NSParameterAssert(parentDirectoryURL != nil);
 
 	return [[[[[RACSignal
 		defer:^{
 			NSError *error = nil;
-			NSURL *temporaryDirectoryURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:parentDirectoryURL create:YES error:&error];
+			NSURL *applicationSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:self.stateManager.applicationSupportURL create:YES error:&error];
+			if (applicationSupportURL == nil) {
+				return [RACSignal error:error];
+			}
+
+			NSURL *temporaryDirectoryURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:applicationSupportURL create:YES error:&error];
 			if (temporaryDirectoryURL == nil) {
 				return [RACSignal error:error];
-			} else {
-				return [RACSignal return:temporaryDirectoryURL];
 			}
+
+			return [RACSignal return:temporaryDirectoryURL];
 		}]
 		catch:^(NSError *error) {
 			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)];
@@ -356,7 +353,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				// fault tolerance.
 				startWith:backupBundleURL];
 		}]
-		setNameWithFormat:@"-moveBundleAtURL: %@ intoBackupDirectoryAtURL: %@", targetBundleURL, parentDirectoryURL];
+		setNameWithFormat:@"-backUpBundleAtURL: %@", targetBundleURL];
 }
 
 - (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL {
