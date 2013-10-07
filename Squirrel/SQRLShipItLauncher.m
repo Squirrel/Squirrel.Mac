@@ -9,6 +9,7 @@
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
 #import "SQRLArguments.h"
+#import "SQRLStateManager.h"
 #import "SQRLXPCConnection.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Security/Security.h>
@@ -21,14 +22,16 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 @implementation SQRLShipItLauncher
 
++ (NSString *)shipItJobLabel {
+	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
+	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
+	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+}
+
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
 	return [[RACSignal startEagerlyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh] block:^(id<RACSubscriber> subscriber) {
 		NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 		NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
-
-		NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
-		NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
-		NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 
 		CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
@@ -79,6 +82,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
 		};
 
+		NSString *jobLabel = self.shipItJobLabel;
+
 		CFErrorRef cfError;
 		if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, authorization, true, &cfError)) {
 			#if DEBUG
@@ -94,36 +99,30 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
 		jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
 		jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
-		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @NO;
 		jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
+		jobDict[@(LAUNCH_JOBKEY_THROTTLEINTERVAL)] = @2;
+		jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
+			@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
+		};
+
 		jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
 			jobLabel: @YES
 		};
 
-		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = @[
-			[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path,
+		NSMutableArray *arguments = [[NSMutableArray alloc] init];
+		[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
 
-			// Pass in the service name as the only argument, so ShipIt knows how to
-			// broadcast itself.
-			jobLabel
-		];
+		// Pass in the service name so ShipIt knows how to broadcast itself.
+		[arguments addObject:jobLabel];
 
-		NSError *error = nil;
-		NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
-		NSURL *squirrelAppSupportURL = [appSupportURL URLByAppendingPathComponent:jobLabel];
-		BOOL created = (squirrelAppSupportURL == nil ? NO : [NSFileManager.defaultManager createDirectoryAtURL:squirrelAppSupportURL withIntermediateDirectories:YES attributes:nil error:&error]);
+		jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 
-		if (!created) {
-			NSLog(@"Could not create Application Support folder: %@", error);
-		} else {
-			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [squirrelAppSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
-			jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [squirrelAppSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
-		}
+		NSURL *appSupportURL = [SQRLStateManager applicationSupportURLWithIdentifier:self.shipItJobLabel];
+		jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
+		jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
 
 		#if DEBUG
 		jobDict[@(LAUNCH_JOBKEY_DEBUG)] = @YES;
-
-		NSLog(@"ShipIt job dictionary: %@", jobDict);
 		#endif
 
 		if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDict, authorization, &cfError)) {

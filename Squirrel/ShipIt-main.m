@@ -10,10 +10,20 @@
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
+#import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
+#import "SQRLStateManager.h"
+#import "SQRLTerminationListener.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
+
+// The maximum number of times ShipIt should run the same installation state, in
+// an attempt to update.
+//
+// If ShipIt is launched in the same state more than this number of times,
+// updating will abort.
+static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
@@ -21,165 +31,187 @@ static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 // A key required for a command was not provided.
 static const NSInteger SQRLShipItErrorRequiredKeyMissing = 1;
 
-// How long to wait after connection termination before installing an update.
+// The application terminated while we were still setting up. If installation
+// continued, it could be subject to race conditions.
+static const NSInteger SQRLShipItErrorApplicationTerminatedTooEarly = 2;
+
+// The state manager for this job.
 //
-// Although a terminated connection usually indicates that the parent
-// application has quit and is ready to be updated, it may still take a very
-// short period of time for it to finish shutting down. We use this delay to
-// ensure that the parent application has definitely terminated before we begin
-// the installation process.
+// Set immediately upon startup.
+static SQRLStateManager *stateManager = nil;
+
+// The shared installer for this job.
 //
-// Unfortunately, other mechanisms for watching application termination do not
-// generally work when one side is a GUI application, and the watcher is
-// a command line tool.
-static const NSTimeInterval SQRLUpdaterInstallationDelay = 0.1;
+// Set immediately upon startup.
+static SQRLInstaller *sharedInstaller = nil;
 
-// Prepares installation based on the information in the given XPC event.
-//
-// Returns a signal which will error if information required for installation
-// is missing, or else send a cold inner signal that will actually perform the
-// installation when subscribed to.
-static RACSignal *signalOfDeferredInstallationSignal(SQRLXPCObject *event) {
-	size_t requirementDataLen = 0;
-	const void *requirementDataPtr = xpc_dictionary_get_data(event.object, SQRLCodeSigningRequirementKey, &requirementDataLen);
+// Resumes an installation that was started on a previous run.
+static void resumeInstallation(void) {
+	if (++stateManager.installationStateAttempt > SQRLShipItMaximumInstallationAttempts) {
+		NSLog(@"Too many attempts to install from state %i, aborting update", (int)stateManager.state);
 
-	NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLTargetBundleURLKey))] filePathURL];
-	NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLUpdateBundleURLKey))] filePathURL];
-
-	if (targetBundleURL == nil || updateBundleURL == nil || requirementDataPtr == NULL) {
-		return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorRequiredKeyMissing userInfo:@{ NSLocalizedDescriptionKey: @"Required key not provided" }]];
-	}
-
-	NSData *requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
-	BOOL shouldRelaunch = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
-
-	RACSignal *installationSignal = [[[[[[[[RACSignal
-		defer:^{
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL requirementData:requirementData];
-			return [installer installUpdate];
-		}]
-		then:^{
-			if (!shouldRelaunch) return [RACSignal empty];
-
-			NSError *error = nil;
-			if ([NSWorkspace.sharedWorkspace launchApplicationAtURL:targetBundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-				NSLog(@"Application relaunched");
+		[[[sharedInstaller.abortInstallationCommand
+			execute:nil]
+			catch:^(NSError *error) {
+				NSLog(@"Error aborting installation: %@", error);
 				return [RACSignal empty];
-			} else {
-				return [RACSignal error:error];
-			}
-		}]
-		initially:^{
-			xpc_transaction_begin();
-			NSLog(@"Beginning installation");
-		}]
-		finally:^{
-			xpc_transaction_end();
-		}]
-		doCompleted:^{
-			NSLog(@"Installation completed successfully");
-		}]
-		doError:^(NSError *error) {
-			NSLog(@"Installation error: %@", error);
-		}]
-		replayLazily]
-		setNameWithFormat:@"installationSignal"];
-	
-	return [RACSignal return:installationSignal];
+			}]
+			subscribeCompleted:^{
+				exit(EXIT_SUCCESS);
+			}];
+	} else {
+		[[[sharedInstaller.installUpdateCommand
+			execute:nil]
+			initially:^{
+				NSLog(@"Resuming installation from state %i", (int)stateManager.state);
+			}]
+			subscribeError:^(NSError *error) {
+				NSLog(@"Installation error: %@", error);
+				exit(EXIT_FAILURE);
+			} completed:^{
+				NSLog(@"Installation completed successfully");
+				exit(EXIT_SUCCESS);
+			}];
+	}
 }
 
-static SQRLXPCObject *replyFromDictionary(SQRLXPCObject *dictionary) {
-	xpc_object_t reply = xpc_dictionary_create_reply(dictionary.object);
-	if (reply == NULL) return nil;
+// Starts installation based on the information in the given XPC event.
+static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
+	SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
 
-	SQRLXPCObject *wrappedReply = [[SQRLXPCObject alloc] initWithXPCObject:reply];
-	xpc_release(reply);
+	SQRLXPCConnection *remoteConnection = nil;
+	if (reply != nil) remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(reply.object)];
 
-	return wrappedReply;
+	RACSignal *errorSignal = [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:@{ NSLocalizedDescriptionKey: @"Application terminated before setup finished" }]];
+
+	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		size_t requirementDataLen = 0;
+		const void *requirementDataPtr = xpc_dictionary_get_data(event.object, SQRLCodeSigningRequirementKey, &requirementDataLen);
+
+		NSURL *targetBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLTargetBundleURLKey))] filePathURL];
+		NSURL *updateBundleURL = [[NSURL URLWithString:@(xpc_dictionary_get_string(event.object, SQRLUpdateBundleURLKey))] filePathURL];
+
+		if (targetBundleURL == nil || updateBundleURL == nil || requirementDataPtr == NULL) {
+			[subscriber sendError:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorRequiredKeyMissing userInfo:@{ NSLocalizedDescriptionKey: @"Required key not provided" }]];
+			return nil;
+		}
+
+		stateManager.targetBundleURL = targetBundleURL;
+		stateManager.updateBundleURL = updateBundleURL;
+		stateManager.requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
+		stateManager.relaunchAfterInstallation = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
+		stateManager.state = SQRLShipItStateClearingQuarantine;
+
+		RACSignal *termination = [RACSignal empty];
+		const char *waitForIdentifier = xpc_dictionary_get_string(event.object, SQRLWaitForBundleIdentifierKey);
+		if (waitForIdentifier != NULL) {
+			SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:targetBundleURL bundleIdentifier:@(waitForIdentifier)];
+			termination = [listener waitForTermination];
+
+			if (remoteConnection != nil) {
+				termination = [[[termination
+					skipUntilBlock:^ BOOL (NSRunningApplication *app) {
+						return app.processIdentifier == xpc_connection_get_pid(remoteConnection.object);
+					}]
+					concat:errorSignal]
+					// This avoids the error if we find an app that matches our
+					// condition above.
+					take:1];
+			}
+		}
+
+		RACMulticastConnection *terminationConnection = [[termination
+			ignoreValues]
+			multicast:[RACReplaySubject subject]];
+
+		// Use only while synchronized on `terminationConnection`.
+		__block BOOL receivedTerminationError = NO;
+		__block NSError *terminationError = nil;
+
+		[terminationConnection.signal subscribeError:^(NSError *error) {
+			@synchronized (terminationConnection) {
+				receivedTerminationError = YES;
+				terminationError = error;
+			}
+
+			[subscriber sendError:error];
+		}];
+
+		// After connecting here, we'll know whether we're successfully waiting
+		// for termination.
+		RACDisposable *terminationDisposable = [terminationConnection connect];
+
+		RACSignal *notification = [RACSignal empty];
+		if (remoteConnection != nil) {
+			// Notify the remote connection about whether setup succeeded or failed.
+			@synchronized (terminationConnection) {
+				if (receivedTerminationError) {
+					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
+					xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, terminationError.localizedDescription.UTF8String ?: "Error setting up termination listening");
+				} else {
+					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
+				}
+			}
+
+			notification = [[[remoteConnection
+				sendMessageExpectingReply:reply]
+				ignoreValues]
+				catch:^(NSError *error) {
+					if ([error.domain isEqual:SQRLXPCErrorDomain] && error.code == SQRLXPCErrorConnectionInvalid) {
+						// The remote process terminated before we could send
+						// our reply.
+						return errorSignal;
+					}
+
+					return [RACSignal empty];
+				}];
+		}
+
+		RACDisposable *installationDisposable = [[[RACSignal
+			merge:@[
+				terminationConnection.signal,
+				notification
+			]]
+			then:^{
+				return [[[[sharedInstaller.installUpdateCommand
+					execute:nil]
+					initially:^{
+						NSLog(@"Beginning installation");
+					}]
+					doCompleted:^{
+						NSLog(@"Installation completed successfully");
+					}]
+					doError:^(NSError *error) {
+						NSLog(@"Installation error: %@", error);
+					}];
+			}]
+			subscribe:subscriber];
+
+		return [RACDisposable disposableWithBlock:^{
+			[terminationDisposable dispose];
+			[installationDisposable dispose];
+		}];
+	}] setNameWithFormat:@"installWithArgumentsFromEvent(%@)", event];
 }
 
 static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
 	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
-	SQRLXPCConnection *remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(event.object)];
-
-	return [[[signalOfDeferredInstallationSignal(event)
-		catch:^(NSError *error) {
-			SQRLXPCObject *reply = replyFromDictionary(event);
-			if (reply == nil) {
-				NSLog(@"Received dictionary without a remote connection: %@", event);
-			} else {
-				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
-				xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
-				xpc_connection_send_message(remoteConnection.object, reply.object);
-			}
-
-			return [RACSignal error:error];
+	return [[[installWithArgumentsFromEvent(event)
+		doError:^(NSError *error) {
+			exit(EXIT_FAILURE);
 		}]
-		flattenMap:^(RACSignal *install) {
-			SQRLXPCObject *reply = replyFromDictionary(event);
-			if (reply == nil) {
-				NSLog(@"Received dictionary without a remote connection: %@", event);
-			}
-
-			if (remoteConnection != nil && xpc_dictionary_get_bool(event.object, SQRLWaitForConnectionKey)) {
-				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
-
-				return [[[remoteConnection
-					sendMessageExpectingReply:reply]
-					ignoreValues]
-					catch:^(NSError *error) {
-						if (![error.domain isEqual:SQRLXPCErrorDomain]) return [RACSignal error:error];
-						if (error.code != SQRLXPCErrorConnectionInterrupted && error.code != SQRLXPCErrorConnectionInvalid) return [RACSignal error:error];
-
-						// At this point, the client application has
-						// terminated, so actually begin installing.
-						[client cancel];
-						NSLog(@"Waiting for %g seconds before installing", SQRLUpdaterInstallationDelay);
-
-						return [[[RACSignal
-							interval:SQRLUpdaterInstallationDelay onScheduler:[RACScheduler scheduler]]
-							take:1]
-							flattenMap:^(id _) {
-								return install;
-							}];
-					}];
-			} else if (reply != nil) {
-				return [[install
-					doError:^(NSError *error) {
-						xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
-						xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
-						xpc_connection_send_message(remoteConnection.object, reply.object);
-
-						xpc_connection_send_barrier(remoteConnection.object, ^{
-							exit(EXIT_FAILURE);
-						});
-					}]
-					doCompleted:^{
-						xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
-						xpc_connection_send_message(remoteConnection.object, reply.object);
-
-						xpc_connection_send_barrier(remoteConnection.object, ^{
-							exit(EXIT_SUCCESS);
-						});
-					}];
-			} else {
-				return [install finally:^{
-					[client cancel];
-				}];
-			}
+		doCompleted:^{
+			exit(EXIT_SUCCESS);
 		}]
 		setNameWithFormat:@"handleEvent %@ from %@", event, client];
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
-	return [[[[[[[[[[[client
+	return [[[[[[[client
 		autoconnect]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
-		doNext:^(SQRLXPCObject *event) {
-			NSLog(@"Got event on client connection: %@", event);
-		}]
 		catch:^(NSError *error) {
 			NSLog(@"XPC error from client: %@", error);
 			return [RACSignal empty];
@@ -188,26 +220,14 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return xpc_get_type(event.object) == XPC_TYPE_DICTIONARY;
 		}]
 		map:^(SQRLXPCObject *event) {
-			return handleEvent(event, client);
+			return [handleEvent(event, client) sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
 		}]
 		switchToLatest]
-		initially:^{
-			xpc_transaction_begin();
-		}]
-		finally:^{
-			xpc_transaction_end();
-		}]
-		doCompleted:^{
-			// When a client connection and all of its tasks complete without
-			// issue (but _not_ when they're disposed from handleService), exit
-			// ShipIt cleanly.
-			exit(EXIT_SUCCESS);
-		}]
 		setNameWithFormat:@"handleClient %@", client];
 }
 
 static void handleService(SQRLXPCConnection *service) {
-	[[[[[[[[service
+	[[[[[[[service
 		autoconnect]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]]
 		catch:^(NSError *error) {
@@ -217,16 +237,11 @@ static void handleService(SQRLXPCConnection *service) {
 		map:^(SQRLXPCObject *event) {
 			return [[SQRLXPCConnection alloc] initWithXPCObject:event.object];
 		}]
-		doNext:^(SQRLXPCConnection *client) {
-			NSLog(@"Got client connection: %@", client);
-		}]
 		map:^(SQRLXPCConnection *client) {
 			return handleClient(client);
 		}]
 		switchToLatest]
-		subscribeError:^(NSError *error) {
-			NSLog(@"%@", error);
-		} completed:^{
+		subscribeCompleted:^{
 			exit(EXIT_SUCCESS);
 		}];
 }
@@ -243,19 +258,28 @@ int main(int argc, const char * argv[]) {
 		}
 
 		const char *serviceName = argv[1];
-		NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
 
-		xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
-		if (service == NULL) {
-			NSLog(@"Could not start Mach service \"%s\"", serviceName);
-			exit(EXIT_FAILURE);
+		stateManager = [[SQRLStateManager alloc] initWithIdentifier:@(serviceName)];
+		sharedInstaller = [[SQRLInstaller alloc] initWithStateManager:stateManager];
+
+		if (stateManager.state != SQRLShipItStateNothingToDo) {
+			resumeInstallation();
+		} else {
+			xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+			if (service == NULL) {
+				NSLog(@"Could not start Mach service \"%s\"", serviceName);
+				exit(EXIT_FAILURE);
+			}
+
+			NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
+
+			@onExit {
+				xpc_release(service);
+			};
+
+			handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
 		}
 
-		@onExit {
-			xpc_release(service);
-		};
-
-		handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
 		dispatch_main();
 	}
 

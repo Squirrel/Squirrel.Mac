@@ -7,6 +7,8 @@
 //
 
 #import "TestAppDelegate.h"
+#import "SQRLShipItLauncher.h"
+#import "SQRLStateManager.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -21,13 +23,20 @@
 #pragma mark Lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
-	NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
+	NSString *bundlePath = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath;
+	NSString *logPath = [bundlePath.stringByDeletingLastPathComponent stringByAppendingPathComponent:@"TestApplication.log"];
 	freopen(logPath.fileSystemRepresentation, "a+", stderr);
+
+	NSLog(@"TestApplication launched at %@", bundlePath);
 
 	atexit_b(^{
 		NSLog(@"TestApplication quitting");
 	});
+
+	NSString *jobID = SQRLShipItLauncher.shipItJobLabel;
+	if (![SQRLStateManager clearStateWithIdentifier:jobID]) {
+		NSLog(@"Could not remove all preferences for %@", jobID);
+	}
 
 	NSString *updateURLString = NSProcessInfo.processInfo.environment[@"SQRLUpdateFromURL"];
 	if (updateURLString == nil) {
@@ -40,7 +49,7 @@
 
 	__block NSUInteger updateCheckCount = 1;
 
-	[[[[[[[[[RACSignal
+	[[[[[[[[[[RACSignal
 		defer:^{
 			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
 			updateCheckCount++;
@@ -63,6 +72,12 @@
 		catch:^(NSError *error) {
 			NSLog(@"Error in updater: %@", error);
 			return [RACSignal empty];
+		}]
+		then:^{
+			NSString *delayString = NSProcessInfo.processInfo.environment[@"SQRLUpdateDelay"];
+			if (delayString == nil) return [RACSignal empty];
+
+			return [[RACSignal interval:delayString.doubleValue onScheduler:RACScheduler.mainThreadScheduler] take:1];
 		}]
 		subscribeCompleted:^{
 			[NSApp terminate:self];

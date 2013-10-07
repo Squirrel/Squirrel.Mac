@@ -17,7 +17,7 @@ beforeEach(^{
 	bundle = self.testApplicationBundle;
 
 	corruptURL = ^(NSURL *URL) {
-		expect([@"foobar" writeToURL:bundle.executableURL atomically:YES encoding:NSUTF8StringEncoding error:NULL]).to.beTruthy();
+		expect([@"this bundle is corrupted, yo" writeToURL:bundle.executableURL atomically:YES encoding:NSUTF8StringEncoding error:NULL]).to.beTruthy();
 	};
 });
 

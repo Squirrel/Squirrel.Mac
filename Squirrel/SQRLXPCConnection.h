@@ -38,7 +38,10 @@ extern const NSInteger SQRLXPCErrorTerminationImminent;
 //
 // This will take over the connection's event handler.
 //
-// connection - The connection to wrap. This may be nil.
+// connection - The connection to wrap. This may be `NULL`, in which case the
+//              `SQRLXPCConnection` fails to initialize.
+//
+// Returns a wrapper, or nil if `connection` was `NULL`.
 - (id)initWithXPCObject:(xpc_connection_t)connection;
 
 // Cancels the connection.
@@ -49,13 +52,18 @@ extern const NSInteger SQRLXPCErrorTerminationImminent;
 // Resumes the connection from a suspended state.
 - (void)resume;
 
-// Sends the given message across the connection and listens for a reply.
+// Lazily sends the given message across the connection and listens for a reply.
 //
 // message - The message to send across the connection. This must not be nil.
 //
 // Returns a signal which will send any reply as a `SQRLXPCObject` then
 // complete on a background thread.
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message;
+
+// Lazily waits for the connection's message queue to be empty.
+//
+// Returns a signal which will send completed once the barrier is in effect.
+- (RACSignal *)waitForBarrier;
 
 // Lazily resumes the receiver and passes through its `events`.
 //
