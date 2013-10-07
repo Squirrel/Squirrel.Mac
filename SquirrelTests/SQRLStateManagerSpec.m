@@ -23,6 +23,8 @@ beforeEach(^{
 	stateURL = [SQRLStateManager stateURLWithIdentifier:applicationIdentifier];
 	expect(stateURL).notTo.beNil();
 
+	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+
 	targetURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"target"];
 	updateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update"];
 	backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"backup"];
@@ -73,7 +75,7 @@ it(@"should save and load settings", ^{
 	expect([firstManager synchronize]).to.beTruthy();
 
 	@autoreleasepool {
-		SQRLStateManager *secondManager = [[SQRLStateManager alloc] initWithIdentifier:applicationIdentifier];
+		SQRLStateManager *secondManager __attribute__((objc_precise_lifetime)) = [[SQRLStateManager alloc] initWithIdentifier:applicationIdentifier];
 		expect(secondManager).notTo.beNil();
 		expect([secondManager dictionaryWithValuesForKeys:keys]).to.equal([firstManager dictionaryWithValuesForKeys:keys]);
 	}
