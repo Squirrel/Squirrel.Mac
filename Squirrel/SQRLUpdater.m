@@ -297,25 +297,6 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		setNameWithFormat:@"-applicationBundleMatchingCurrentApplicationInDirectory: %@", directory];
 }
 
-- (NSURL *)applicationSupportURL {
-	NSString *path = nil;
-	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-	path = (paths.count > 0 ? paths[0] : NSTemporaryDirectory());
-	
-	NSString *appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
-	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
-	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-
-	NSError *error = nil;
-	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
-	if (!success) {
-		NSLog(@"Error creating Application Support folder: %@", error.sqrl_verboseDescription);
-	}
-	
-	return appSupportURL;
-}
-
 #pragma mark Installing Updates
 
 - (RACSignal *)codeSigningRequirementData {
