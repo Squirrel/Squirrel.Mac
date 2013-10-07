@@ -33,35 +33,35 @@ beforeEach(^{
 });
 
 it(@"should install an update", ^{
-	__block BOOL installed = NO;
+	__block BOOL ready = NO;
 
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect([self errorFromObject:event]).to.beNil();
 
-		installed = YES;
+		ready = YES;
 	});
 
-	expect(installed).will.beTruthy();
+	expect(ready).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
 it(@"should install an update and relaunch", ^{
-	__block BOOL installed = NO;
-
 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
 	expect(apps.count).to.equal(0);
+
+	__block BOOL ready = NO;
 
 	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, true);
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect([self errorFromObject:event]).to.beNil();
 
-		installed = YES;
+		ready = YES;
 	});
 
-	expect(installed).will.beTruthy();
+	expect(ready).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
 });
@@ -70,17 +70,17 @@ it(@"should install an update from another volume", ^{
 	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication 2.1" fromDirectory:updateURL.URLByDeletingLastPathComponent];
 	updateURL = [diskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
 
-	__block BOOL installed = NO;
+	__block BOOL ready = NO;
 
 	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect([self errorFromObject:event]).to.beNil();
 
-		installed = YES;
+		ready = YES;
 	});
 
-	expect(installed).will.beTruthy();
+	expect(ready).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
@@ -88,17 +88,17 @@ it(@"should install an update to another volume", ^{
 	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
 	NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
 
-	__block BOOL installed = NO;
+	__block BOOL ready = NO;
 
 	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
 		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
 		expect([self errorFromObject:event]).to.beNil();
 
-		installed = YES;
+		ready = YES;
 	});
 
-	expect(installed).will.beTruthy();
+	expect(ready).will.beTruthy();
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
@@ -123,20 +123,20 @@ describe(@"signal handling", ^{
 		});
 
 		sendMessage = ^{
-			xpc_connection_send_message(shipitConnection, message);
+			__block BOOL ready = NO;
 
-			__block BOOL launched = NO;
-			xpc_connection_send_barrier(shipitConnection, ^{
-				// Ensure that ShipIt has launched before we send any signal to
-				// it.
-				launched = YES;
+			xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
+				expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+				expect([self errorFromObject:event]).to.beNil();
+
+				ready = YES;
 			});
 
-			expect(launched).will.beTruthy();
+			expect(ready).will.beTruthy();
 
 			// Apply a random delay before sending the termination signal, to
 			// fuzz out race conditions.
-			NSTimeInterval delay = (30 + arc4random_uniform(50)) / 1000.0;
+			NSTimeInterval delay = arc4random_uniform(50) / 1000.0;
 			[NSThread sleepForTimeInterval:delay];
 		};
 	});

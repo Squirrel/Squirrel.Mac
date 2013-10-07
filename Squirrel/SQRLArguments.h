@@ -21,13 +21,9 @@ extern const char * const SQRLShipItCommandKey;
 // Specified for SQRLShipItCommandKey to indicate that an update should be
 // installed.
 //
-// If `SQRLWaitForBundleIdentifierKey` is provided, ShipIt will respond
-// immediately indicating whether the initial setup was successful, then begin
-// installation after the application has terminated.
-//
-// If `SQRLWaitForBundleIdentifierKey` is not provided, ShipIt will begin
-// installation immediately, and then reply with whether installation was
-// successful.
+// ShipIt will respond immediately indicating whether the initial setup was
+// successful, then begin installation after the target application (if any) has
+// terminated.
 extern const char * const SQRLShipItInstallCommand;
 
 // Associated with a string containing the bundle identifier of the parent

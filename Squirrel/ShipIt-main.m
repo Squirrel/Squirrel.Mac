@@ -55,10 +55,12 @@ static void resumeInstallation(void) {
 }
 
 // Starts installation based on the information in the given XPC event.
-//
-// If `remoteConnection` is not nil, it will be notified when we're successfully
-// waiting for termination.
-static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObject *reply, SQRLXPCConnection *remoteConnection) {
+static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
+	SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
+
+	SQRLXPCConnection *remoteConnection = nil;
+	if (reply != nil) remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(reply.object)];
+
 	RACSignal *errorSignal = [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:@{ NSLocalizedDescriptionKey: @"Application terminated before setup finished" }]];
 
 	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
@@ -121,7 +123,7 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 		RACDisposable *terminationDisposable = [terminationConnection connect];
 
 		RACSignal *notification = [RACSignal empty];
-		if (waitForIdentifier != NULL && remoteConnection != nil) {
+		if (remoteConnection != nil) {
 			// Notify the remote connection about whether setup succeeded or failed.
 			@synchronized (terminationConnection) {
 				if (receivedTerminationError) {
@@ -174,47 +176,15 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 }
 
 static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
-	SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
-
-	SQRLXPCConnection *remoteConnection = nil;
-	if (reply != nil) remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(reply.object)];
-
 	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
 	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
-	return [[[[[[installWithArgumentsFromEvent(event, reply, remoteConnection)
-		doCompleted:^{
-			if (reply != nil) {
-				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
-			}
-		}]
+	return [[[installWithArgumentsFromEvent(event)
 		doError:^(NSError *error) {
-			if (reply != nil) {
-				xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
-				xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, error.localizedDescription.UTF8String);
-			}
+			exit(EXIT_FAILURE);
 		}]
-		then:^{
-			return [RACSignal return:@(EXIT_SUCCESS)];
-		}]
-		catch:^(NSError *error) {
-			return [RACSignal return:@(EXIT_FAILURE)];
-		}]
-		flattenMap:^(NSNumber *exitCode) {
-			RACSignal *sendReply = [RACSignal empty];
-			
-			if (remoteConnection != nil) {
-				// If there's [still] a remote client, tell it whether
-				// installation completed or failed.
-				sendReply = [RACSignal defer:^{
-					xpc_connection_send_message(remoteConnection.object, reply.object);
-					return [remoteConnection waitForBarrier];
-				}];
-			}
-
-			return [sendReply finally:^{
-				exit(exitCode.intValue);
-			}];
+		doCompleted:^{
+			exit(EXIT_SUCCESS);
 		}]
 		setNameWithFormat:@"handleEvent %@ from %@", event, client];
 }
