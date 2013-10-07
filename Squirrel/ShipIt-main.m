@@ -10,6 +10,7 @@
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
+#import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLInstaller.h"
 #import "SQRLStateManager.h"
@@ -39,14 +40,10 @@ static SQRLInstaller *sharedInstaller = nil;
 
 // Resumes an installation that was started on a previous run.
 static void resumeInstallation(void) {
-	[[[[sharedInstaller.installUpdateCommand
+	[[[sharedInstaller.installUpdateCommand
 		execute:nil]
 		initially:^{
-			xpc_transaction_begin();
 			NSLog(@"Resuming installation from state %i", (int)stateManager.state);
-		}]
-		finally:^{
-			xpc_transaction_end();
 		}]
 		subscribeError:^(NSError *error) {
 			NSLog(@"Installation error: %@", error);
@@ -155,10 +152,9 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 				notification
 			]]
 			then:^{
-				return [[[[[sharedInstaller.installUpdateCommand
+				return [[[[sharedInstaller.installUpdateCommand
 					execute:nil]
 					initially:^{
-						xpc_transaction_begin();
 						NSLog(@"Beginning installation");
 					}]
 					doCompleted:^{
@@ -166,9 +162,6 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event, SQRLXPCObj
 					}]
 					doError:^(NSError *error) {
 						NSLog(@"Installation error: %@", error);
-					}]
-					finally:^{
-						xpc_transaction_end();
 					}];
 			}]
 			subscribe:subscriber];
@@ -227,12 +220,9 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
-	return [[[[[[[[client
+	return [[[[[[[client
 		autoconnect]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
-		doNext:^(SQRLXPCObject *event) {
-			NSLog(@"Got event on client connection: %@", event);
-		}]
 		catch:^(NSError *error) {
 			NSLog(@"XPC error from client: %@", error);
 			return [RACSignal empty];
@@ -241,7 +231,11 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return xpc_get_type(event.object) == XPC_TYPE_DICTIONARY;
 		}]
 		map:^(SQRLXPCObject *event) {
-			return handleEvent(event, client);
+			return [[handleEvent(event, client)
+				initially:^{
+					NSLog(@"Got event on client connection: %@", event);
+				}]
+				sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
 		}]
 		switchToLatest]
 		setNameWithFormat:@"handleClient %@", client];
