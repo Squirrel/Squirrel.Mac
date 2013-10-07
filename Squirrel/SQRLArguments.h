@@ -21,26 +21,18 @@ extern const char * const SQRLShipItCommandKey;
 // Specified for SQRLShipItCommandKey to indicate that an update should be
 // installed.
 //
-// The event can contain the following keys to configure the installation:
-//
-//	- SQRLTargetBundleURLKey
-//	- SQRLUpdateBundleURLKey
-//	- SQRLShouldRelaunchKey
-//	- SQRLWaitForConnectionKey
-//
-// If SQRLWaitForConnectionKey is set to `true`, ShipIt will respond
-// immediately indicating whether the initial setup was successful, then begin
-// installation shortly after the connection has been terminated by the client.
-//
-// If SQRLWaitForConnectionKey is set to `false`, ShipIt will begin installation
-// immediately, and then reply with whether installation was successful.
+// ShipIt will respond immediately indicating whether the initial setup was
+// successful, then begin installation after the target application (if any) has
+// terminated.
 extern const char * const SQRLShipItInstallCommand;
 
-// Associated with a boolean, indicating whether ShipIt should wait for the
-// connection to terminate before beginning installation.
+// Associated with a string containing the bundle identifier of the parent
+// application, if ShipIt should wait for it to terminate before beginning
+// installation.
 //
-// This argument is required.
-extern const char * const SQRLWaitForConnectionKey;
+// This argument is optional. If not provided, installation will begin
+// immediately.
+extern const char * const SQRLWaitForBundleIdentifierKey;
 
 // Associated with a string representation of the URL to _replace_ on disk.
 //

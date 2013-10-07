@@ -32,20 +32,18 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 
 	_events = [[RACSubject subject] setNameWithFormat:@"%@ -events", self];
 
-	if (connection != NULL) {
-		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-			// Intentionally introduce a retain cycle with `self`.
-			[self sendEvent:event toSubscriber:_events];
+	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+		// Intentionally introduce a retain cycle with `self`.
+		[self sendEvent:event toSubscriber:_events];
 
-			if (xpc_get_type(event) == XPC_TYPE_ERROR) {
-				[self cancel];
+		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
+			[self cancel];
 
-				// When the connection finishes, break the retain cycle.
-				xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-				});
-			}
-		});
-	}
+			// When the connection finishes, break the retain cycle.
+			xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
+			});
+		}
+	});
 
 	return self;
 }
@@ -56,12 +54,11 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 
 - (void)cancel {
 	[_events sendCompleted];
-
-	if (self.object != NULL) xpc_connection_cancel(self.object);
+	xpc_connection_cancel(self.object);
 }
 
 - (void)resume {
-	if (self.object != NULL) xpc_connection_resume(self.object);
+	xpc_connection_resume(self.object);
 }
 
 - (RACSignal *)autoconnect {
@@ -85,9 +82,9 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 #pragma mark Communication
 
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message {
-	if (self.object == NULL) return [RACSignal empty];
+	NSParameterAssert(message != nil);
 
-	return [[[RACSignal
+	return [[RACSignal
 		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 			xpc_connection_send_message_with_reply(self.object, message.object, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(xpc_object_t event) {
 				[self sendEvent:event toSubscriber:subscriber];
@@ -96,8 +93,19 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 
 			return nil;
 		}]
-		replay]
 		setNameWithFormat:@"%@ -sendMessageExpectingReply: %@", self, message];
+}
+
+- (RACSignal *)waitForBarrier {
+	return [[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+			xpc_connection_send_barrier(self.object, ^{
+				[subscriber sendCompleted];
+			});
+
+			return nil;
+		}]
+		setNameWithFormat:@"%@ -waitForBarrier", self];
 }
 
 - (void)sendEvent:(xpc_object_t)event toSubscriber:(id<RACSubscriber>)subscriber {
@@ -131,6 +139,14 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 	if (description != NULL) userInfo = @{ NSLocalizedDescriptionKey: @(description) };
 
 	return [NSError errorWithDomain:SQRLXPCErrorDomain code:code userInfo:userInfo];
+}
+
+#pragma mark NSObject
+
+- (NSString *)description {
+	// xpc_copy_description() seems to crash on 10.7 for some connections, so
+	// just print out the pointer.
+	return [NSString stringWithFormat:@"<%@: %p>{ object = %p }", self.class, self, self.object];
 }
 
 @end

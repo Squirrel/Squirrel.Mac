@@ -10,10 +10,12 @@
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSProcessInfo+SQRLVersionExtensions.h"
+#import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLStateManager.h"
 #import "SQRLUpdate+Private.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
@@ -213,16 +215,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
 	return [[RACSignal startLazilyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground] block:^(id<RACSubscriber> subscriber) {
-		// TODO: Use SQRLInstaller's temporary directory logic?
-		NSURL *temporaryDirectoryURL = [[NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES] URLByAppendingPathComponent:NSRunningApplication.currentApplication.bundleIdentifier];
+		NSURL *appSupportURL = [SQRLStateManager applicationSupportURLWithIdentifier:SQRLShipItLauncher.shipItJobLabel];
 
-		NSError *error = nil;
-		if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error]) {
-			[subscriber sendError:error];
-			return;
-		}
-		
-		NSURL *updateDirectoryTemplate = [temporaryDirectoryURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+		NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
 		char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
 		@onExit {
 			free(updateDirectoryCString);
@@ -296,25 +291,6 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		setNameWithFormat:@"-applicationBundleMatchingCurrentApplicationInDirectory: %@", directory];
 }
 
-- (NSURL *)applicationSupportURL {
-	NSString *path = nil;
-	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-	path = (paths.count > 0 ? paths[0] : NSTemporaryDirectory());
-	
-	NSString *appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
-	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
-	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-
-	NSError *error = nil;
-	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
-	if (!success) {
-		NSLog(@"Error creating Application Support folder: %@", error.sqrl_verboseDescription);
-	}
-	
-	return appSupportURL;
-}
-
 #pragma mark Installing Updates
 
 - (RACSignal *)codeSigningRequirementData {
@@ -353,7 +329,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
-	return [[[[[[self
+	return [[[[[self
 		codeSigningRequirementData]
 		flattenMap:^(NSData *requirementData) {
 			return [[self
@@ -367,19 +343,14 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 					xpc_dictionary_set_string(wrappedMessage.object, SQRLShipItCommandKey, SQRLShipItInstallCommand);
 					xpc_dictionary_set_string(wrappedMessage.object, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 					xpc_dictionary_set_string(wrappedMessage.object, SQRLUpdateBundleURLKey, update.bundle.bundleURL.absoluteString.UTF8String);
+					xpc_dictionary_set_string(wrappedMessage.object, SQRLWaitForBundleIdentifierKey, NSRunningApplication.currentApplication.bundleIdentifier.UTF8String);
 					xpc_dictionary_set_bool(wrappedMessage.object, SQRLShouldRelaunchKey, self.shouldRelaunch);
-					xpc_dictionary_set_bool(wrappedMessage.object, SQRLWaitForConnectionKey, true);
 					xpc_dictionary_set_data(wrappedMessage.object, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 
 					return [self sendMessage:wrappedMessage overConnection:connection];
 				}];
 		}]
-		initially:^{
-			[NSProcessInfo.processInfo disableSuddenTermination];
-		}]
-		finally:^{
-			[NSProcessInfo.processInfo enableSuddenTermination];
-		}]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		replay]
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
 }

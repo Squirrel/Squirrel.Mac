@@ -9,6 +9,8 @@
 #import "SQRLTestCase.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLStateManager.h"
+#import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
@@ -63,17 +65,31 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
 
-	NSURL *stdoutTestApp = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication.ShipIt/ShipIt_stdout.log"];
-	NSURL *stderrTestApp = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication.ShipIt/ShipIt_stderr.log"];
-	NSURL *stdoutOCUnit = [appSupportURL URLByAppendingPathComponent:@"otest.ShipIt/ShipIt_stdout.log"];
-	NSURL *stderrOCUnit = [appSupportURL URLByAppendingPathComponent:@"otest.ShipIt/ShipIt_stderr.log"];
+	NSArray *folders = @[
+		@"com.github.Squirrel.TestApplication.ShipIt",
+		@"otest.ShipIt",
+		@"otest-x86_64.ShipIt",
+	];
 
-	[[NSData data] writeToURL:stdoutTestApp atomically:YES];
-	[[NSData data] writeToURL:stderrTestApp atomically:YES];
-	[[NSData data] writeToURL:stdoutOCUnit atomically:YES];
-	[[NSData data] writeToURL:stderrOCUnit atomically:YES];
+	RACSequence *URLs = [folders.rac_sequence flattenMap:^(NSString *folder) {
+		NSURL *baseURL = [appSupportURL URLByAppendingPathComponent:folder];
+		return @[
+			[baseURL URLByAppendingPathComponent:@"ShipIt_stdout.log"],
+			[baseURL URLByAppendingPathComponent:@"ShipIt_stderr.log"]
+		].rac_sequence;
+	}];
 
-	NSArray *args = @[ @"-f", stdoutTestApp.path, stderrTestApp.path, stdoutOCUnit.path, stderrOCUnit.path ];
+	for (NSURL *URL in URLs) {
+		[[NSData data] writeToURL:URL atomically:YES];
+	}
+
+	NSArray *args = [[[URLs
+		map:^(NSURL *URL) {
+			return URL.path;
+		}]
+		startWith:@"-f"]
+		array];
+
 	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:args];
 	NSAssert([readShipIt isRunning], @"Could not start task %@ with arguments: %@", readShipIt, args);
 
@@ -201,6 +217,13 @@ static void SQRLSignalHandler(int sig) {
 			[app terminate];
 			[app forceTerminate];
 		}
+
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		CFErrorRef error = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, CFSTR("com.github.Squirrel.TestApplication.ShipIt"), NULL, true, &error)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", error);
+			if (error != NULL) CFRelease(error);
+		}
 	}];
 
 	return app;
@@ -265,6 +288,9 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (xpc_connection_t)connectToShipIt {
+	NSString *applicationID = SQRLShipItLauncher.shipItJobLabel;
+	STAssertTrue([SQRLStateManager clearStateWithIdentifier:applicationID], @"Could not remove all preferences for %@", applicationID);
+
 	NSError *error = nil;
 	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
@@ -281,6 +307,13 @@ static void SQRLSignalHandler(int sig) {
 
 	[self addCleanupBlock:^{
 		xpc_connection_cancel(connection.object);
+
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		CFErrorRef error = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &error)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", error);
+			if (error != NULL) CFRelease(error);
+		}
 	}];
 
 	xpc_connection_resume(connection.object);
