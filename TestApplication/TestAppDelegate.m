@@ -8,7 +8,7 @@
 
 #import "TestAppDelegate.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager.h"
+#import "SQRLStateManager+Private.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 

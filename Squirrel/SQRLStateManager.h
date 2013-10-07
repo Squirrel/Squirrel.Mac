@@ -40,12 +40,6 @@ typedef enum : NSInteger {
 // ShipIt can be safely terminated and relaunched, then continue updating.
 @interface SQRLStateManager : NSObject
 
-// Removes all saved state for the given identifier.
-//
-// identifier - A string that uniquely identifies the application or job to reset.
-//              This must not be nil.
-+ (BOOL)clearStateWithIdentifier:(NSString *)identifier;
-
 // Finds the URL to the Application Support folder that would be used with the
 // given identifier.
 //

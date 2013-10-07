@@ -9,7 +9,7 @@
 #import "SQRLTestCase.h"
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager.h"
+#import "SQRLStateManager+Private.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
