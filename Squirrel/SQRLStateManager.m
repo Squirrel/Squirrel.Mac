@@ -9,14 +9,14 @@
 #import "SQRLStateManager.h"
 #import <ReactiveCocoa/EXTScope.h>
 
-NSString * const SQRLTargetBundleDefaultsKey = @"SQRLTargetBundleDefaultsKey";
-NSString * const SQRLUpdateBundleDefaultsKey = @"SQRLUpdateBundleDefaultsKey";
-NSString * const SQRLBackupBundleDefaultsKey = @"SQRLBackupBundleDefaultsKey";
-NSString * const SQRLApplicationSupportDefaultsKey = @"SQRLApplicationSupportDefaultsKey";
-NSString * const SQRLRequirementDataDefaultsKey = @"SQRLRequirementDataDefaultsKey";
-NSString * const SQRLStateDefaultsKey = @"SQRLStateDefaultsKey";
-NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"SQRLWaitForBundleIdentifierDefaultsKey";
-NSString * const SQRLShouldRelaunchDefaultsKey = @"SQRLShouldRelaunchDefaultsKey";
+NSString * const SQRLTargetBundleDefaultsKey = @"TargetBundleURL";
+NSString * const SQRLUpdateBundleDefaultsKey = @"UpdateBundleURL";
+NSString * const SQRLBackupBundleDefaultsKey = @"BackupBundleURL";
+NSString * const SQRLApplicationSupportDefaultsKey = @"ApplicationSupportURL";
+NSString * const SQRLRequirementDataDefaultsKey = @"CodeSigningRequirementData";
+NSString * const SQRLStateDefaultsKey = @"State";
+NSString * const SQRLWaitForBundleIdentifierDefaultsKey = @"WaitForBundleIdentifier";
+NSString * const SQRLShouldRelaunchDefaultsKey = @"ShouldRelaunch";
 
 @interface SQRLStateManager ()
 
