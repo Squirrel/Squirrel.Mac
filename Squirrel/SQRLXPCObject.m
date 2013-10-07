@@ -34,7 +34,7 @@
 #pragma mark NSObject
 
 - (NSString *)description {
-	char *xpcDescription = xpc_copy_description(self.object);
+	char *xpcDescription = (self.object != NULL ? xpc_copy_description(self.object) : NULL);
 
 	@onExit {
 		free(xpcDescription);
