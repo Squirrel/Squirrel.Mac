@@ -136,7 +136,7 @@ describe(@"signal handling", ^{
 
 			// Apply a random delay before sending the termination signal, to
 			// fuzz out race conditions.
-			NSTimeInterval delay = (20 + arc4random_uniform(50)) / 1000.0;
+			NSTimeInterval delay = (30 + arc4random_uniform(50)) / 1000.0;
 			[NSThread sleepForTimeInterval:delay];
 		};
 	});
