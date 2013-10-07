@@ -63,7 +63,7 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-xit(@"should use the application's bundled version of Squirrel and update in-place after a long time", ^{
+it(@"should use the application's bundled version of Squirrel and update in-place after a long time", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
 
 	NSTimeInterval delay = 60;
