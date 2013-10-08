@@ -7,7 +7,7 @@
 //
 
 #import "SQRLTestCase.h"
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLStateManager+Private.h"
 #import "SQRLXPCConnection.h"
@@ -272,9 +272,9 @@ static void SQRLSignalHandler(int sig) {
 	return block(requirement);
 }
 
-- (SQRLCodeSignatureVerifier *)testApplicationVerifier {
+- (SQRLCodeSignature *)testApplicationSignature {
 	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		return [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
+		return [[SQRLCodeSignature alloc] initWithRequirement:requirement];
 	}];
 }
 

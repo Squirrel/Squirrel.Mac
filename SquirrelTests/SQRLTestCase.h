@@ -16,7 +16,7 @@ extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
 // The Info.plist key associated with a bundle's short version string.
 extern NSString * const SQRLBundleShortVersionStringKey;
 
-@class SQRLCodeSignatureVerifier;
+@class SQRLCodeSignature;
 @class SQRLXPCConnection;
 
 @interface SQRLTestCase : SPTSenTestCase
@@ -64,9 +64,8 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // deleted at the end of the example.
 - (NSURL *)createTestApplicationUpdate;
 
-// Returns a code signature verifier that uses requirements from
-// TestApplication.app.
-- (SQRLCodeSignatureVerifier *)testApplicationVerifier;
+// Returns a code signature with requirements from TestApplication.app.
+- (SQRLCodeSignature *)testApplicationSignature;
 
 // Returns a serialized SecRequirementRef representing the requirements from
 // TestApplication.app.

@@ -10,7 +10,7 @@
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
 #import "SQRLStateManager.h"
 #import "SQRLTerminationListener.h"
 #import <libkern/OSAtomic.h>
@@ -75,9 +75,9 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			zip:@[
 				[self targetBundleURL],
 				[[self backupBundleURL] catchTo:[RACSignal return:nil]],
-				[self verifier]
-			] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
-				return [self verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL];
+				[self codeSignature]
+			] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
+				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL];
 			}]
 			flatten];
 	}];
@@ -130,7 +130,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		setNameWithFormat:@"-relaunchAfterInstallation"];
 }
 
-- (RACSignal *)verifier {
+- (RACSignal *)codeSignature {
 	return [[[self
 		retrieveDefaultsValueWithDescription:@"code signing requirement" block:^{
 			return self.stateManager.requirementData;
@@ -143,12 +143,12 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			};
 
 			if (status == noErr) {
-				return [RACSignal return:[[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement]];
+				return [RACSignal return:[[SQRLCodeSignature alloc] initWithRequirement:requirement]];
 			} else {
 				return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:nil]];
 			}
 		}]
-		setNameWithFormat:@"-verifier"];
+		setNameWithFormat:@"-codeSignature"];
 }
 
 - (RACSignal *)signalForCurrentState {
@@ -188,11 +188,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				zip:@[
 					[self targetBundleURL],
 					[[self backupBundleURL] catchTo:[RACSignal return:nil]],
-					[self verifier],
-				] reduce:^(NSURL *bundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					[self codeSignature],
+				] reduce:^(NSURL *bundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 					RACSignal *skipBackup = [RACSignal return:@NO];
 					if (backupBundleURL != nil) {
-						skipBackup = [self checkWhetherItemPreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingVerifier:verifier];
+						skipBackup = [self checkWhetherItemPreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingSignature:codeSignature];
 					}
 
 					return [skipBackup flattenMap:^(NSNumber *skip) {
@@ -222,10 +222,10 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					[self targetBundleURL],
 					[self updateBundleURL],
 					[self backupBundleURL],
-					[self verifier]
-				] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					[self codeSignature]
+				] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 					return [[[[self
-						checkWhetherItemPreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingVerifier:verifier]
+						checkWhetherItemPreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
 						flattenMap:^(NSNumber *skip) {
 							if (skip.boolValue) {
 								return [RACSignal empty];
@@ -241,7 +241,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 							// Verify that the target bundle didn't get corrupted during
 							// failure. Try recovering it if it did.
 							return [[self
-								verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL]
+								verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
 								then:^{
 									// Recovery succeeded, but we still want to pass
 									// through the original error.
@@ -261,10 +261,10 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 				zip:@[
 					[self targetBundleURL],
 					[self backupBundleURL],
-					[self verifier]
-				] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					[self codeSignature]
+				] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 					return [[self
-						verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL]
+						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
 						then:^{
 							return [[self
 								deleteBackupAtURL:backupBundleURL]
@@ -383,12 +383,12 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		setNameWithFormat:@"-deleteBackupAtURL: %@", backupURL];
 }
 
-- (RACSignal *)verifyCodeSignatureOfBundleAtURL:(NSURL *)bundleURL usingVerifier:(SQRLCodeSignatureVerifier *)verifier recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
+- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
 	NSParameterAssert(bundleURL != nil);
-	NSParameterAssert(verifier != nil);
+	NSParameterAssert(signature != nil);
 
-	return [[[[verifier
-		verifyCodeSignatureOfBundle:bundleURL]
+	return [[[[signature
+		verifyBundleAtURL:bundleURL]
 		doError:^(NSError *error) {
 			NSLog(@"Bundle %@ is missing or corrupted: %@", bundleURL, error);
 		}]
@@ -407,18 +407,18 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, bundleURL, recoveryError.sqrl_verboseDescription);
 				}];
 		}]
-		setNameWithFormat:@"-verifyCodeSignatureOfBundleAtURL: %@ usingVerifier: %@ recoveringUsingBackupAtURL: %@", bundleURL, verifier, backupBundleURL];
+		setNameWithFormat:@"-verifyBundleAtURL: %@ usingSignature: %@ recoveringUsingBackupAtURL: %@", bundleURL, signature, backupBundleURL];
 }
 
 #pragma mark Installation
 
-- (RACSignal *)checkWhetherItemPreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingVerifier:(SQRLCodeSignatureVerifier *)verifier {
+- (RACSignal *)checkWhetherItemPreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingSignature:(SQRLCodeSignature *)signature {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
-	NSParameterAssert(verifier != nil);
+	NSParameterAssert(signature != nil);
 
 	return [[[[self
-		verifyCodeSignatureOfBundleAtURL:targetURL usingVerifier:verifier recoveringUsingBackupAtURL:nil]
+		verifyBundleAtURL:targetURL usingSignature:signature recoveringUsingBackupAtURL:nil]
 		then:^{
 			return [RACSignal return:@YES];
 		}]

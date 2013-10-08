@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
 #import "SQRLZipArchiver.h"
 
 SpecBegin(SQRLZipArchiver)
@@ -22,7 +22,7 @@ it(@"should extract a zip archive created by the Finder", ^{
 	NSURL *extractedAppURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication 2.1.app"];
 	expect([NSFileManager.defaultManager fileExistsAtPath:extractedAppURL.path]).to.beTruthy();
 
-	success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:extractedAppURL] waitUntilCompleted:&error];
+	success = [[self.testApplicationSignature verifyBundleAtURL:extractedAppURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 });
@@ -57,7 +57,7 @@ it(@"should create a zip archive readable by itself", ^{
 	NSURL *extractedAppURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
 	expect([NSFileManager.defaultManager fileExistsAtPath:extractedAppURL.path]).to.beTruthy();
 
-	success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:extractedAppURL] waitUntilCompleted:&error];
+	success = [[self.testApplicationSignature verifyBundleAtURL:extractedAppURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 });

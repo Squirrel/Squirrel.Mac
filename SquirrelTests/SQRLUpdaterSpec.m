@@ -83,7 +83,7 @@ it(@"should not install a corrupt update", ^{
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
-fit(@"should update to the most recently enqueued job", ^{
+it(@"should update to the most recently enqueued job", ^{
 	SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(self.testApplicationURL),
 		@"releaseName": @"Final"

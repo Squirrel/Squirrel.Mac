@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
 #import "SQRLInstaller.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLStateManager.h"
@@ -141,7 +141,7 @@ describe(@"after connecting to ShipIt", ^{
 			expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
 			NSError *error = nil;
-			BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
+			BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
 			expect(success).to.beTruthy();
 			expect(error).to.beNil();
 		});
@@ -233,7 +233,7 @@ it(@"should not install an update after too many attempts", ^{
 
 	// No update should've been installed, and the application should've been
 	// restored from the backup.
-	BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
+	BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 

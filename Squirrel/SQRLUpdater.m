@@ -12,7 +12,7 @@
 #import "NSProcessInfo+SQRLVersionExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLStateManager.h"
@@ -35,8 +35,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 @interface SQRLUpdater ()
 
-// The verifier used to check code against the running application's signature.
-@property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
+// The code signature for the running application, used to check updates before
+// sending them to ShipIt.
+@property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
 
 // A lazily-opened connection to ShipIt.
 @property (nonatomic, strong, readonly) RACSignal *shipItXPCConnection;
@@ -68,8 +69,8 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 	_updateRequest = [updateRequest copy];
 
-	_verifier = [[SQRLCodeSignatureVerifier alloc] init];
-	if (_verifier == nil) return nil;
+	_signature = [SQRLCodeSignature currentApplicationSignature];
+	if (_signature == nil) return nil;
 
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 
@@ -315,7 +316,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 - (RACSignal *)codeSigningRequirementData {
 	return [[RACSignal defer:^{
-		NSData *requirementData = self.verifier.requirementData;
+		NSData *requirementData = self.signature.requirementData;
 		if (requirementData != nil) {
 			return [RACSignal return:requirementData];
 		} else {
@@ -332,8 +333,8 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 	NSParameterAssert(update != nil);
 	NSParameterAssert(updateBundle != nil);
 
-	return [[[[self.verifier
-		verifyCodeSignatureOfBundle:updateBundle.bundleURL]
+	return [[[[self.signature
+		verifyBundleAtURL:updateBundle.bundleURL]
 		then:^{
 			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
 			return [RACSignal return:downloadedUpdate];
