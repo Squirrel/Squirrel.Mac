@@ -156,13 +156,15 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		}
 
 		SQRLUpdate *update = nil;
-		if ([JSON isKindOfClass:NSDictionary.class]) update = [[SQRLUpdate alloc] initWithJSON:JSON];
+		error = nil;
+		if ([JSON isKindOfClass:NSDictionary.class]) update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:JSON error:&error];
 
 		if (update == nil) {
 			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 			userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
 			userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid JSON response. Try again later.", nil);
 			userInfo[SQRLUpdaterJSONObjectErrorKey] = JSON;
+			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
 			[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidJSON userInfo:userInfo]];
 			return;

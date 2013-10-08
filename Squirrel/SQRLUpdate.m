@@ -18,106 +18,92 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 #pragma mark Lifecycle
 
-- (instancetype)initWithJSON:(NSDictionary *)JSON {
-	NSParameterAssert(JSON != nil);
-
-	self = [self init];
+- (id)initWithDictionary:(NSDictionary *)dictionary error:(NSError **)error {
+	self = [super initWithDictionary:dictionary error:error];
 	if (self == nil) return nil;
 
-	_JSON = [JSON copy];
-
-	NSString *urlString = JSON[SQRLUpdateJSONURLKey];
-	if (urlString == nil || ![urlString isKindOfClass:NSString.class]) {
-		NSLog(@"Ignoring update URL of an unsupported type: %@", urlString);
+	if (self.updateURL == nil) {
+		NSLog(@"Missing updateURL for %@", self);
 		return nil;
-	} else {
-		_updateURL = [NSURL URLWithString:urlString];
-
-		if (_updateURL.scheme == nil || _updateURL.host == nil || _updateURL.path == nil) {
-			NSLog(@"Ignoring update URL of an unsupported syntax: %@", urlString);
-			return nil;
-		}
-	}
-
-	NSString *name = JSON[SQRLUpdateJSONNameKey];
-	if (![name isKindOfClass:NSString.class]) {
-		NSLog(@"Ignoring release name of an unsupported type: %@", name);
-	} else {
-		_releaseName = [name copy];
-	}
-
-	NSString *releaseDateString = JSON[SQRLUpdateJSONPublicationDateKey];
-	if (![releaseDateString isKindOfClass:NSString.class]) {
-		NSLog(@"Ignoring release date with an unsupported type: %@", releaseDateString);
-	} else {
-		_releaseDate = [[SQRLUpdate dateFromString:releaseDateString] copy];
-
-		if (_releaseDate == nil) {
-			NSLog(@"Could not parse publication date for update. %@", releaseDateString);
-		}
-	}
-
-	NSString *releaseNotes = JSON[SQRLUpdateJSONReleaseNotesKey];
-	if (![releaseNotes isKindOfClass:NSString.class]) {
-		NSLog(@"Ignoring release notes of an unsupported type: %@", releaseNotes);
-	} else {
-		_releaseNotes = [releaseNotes copy];
 	}
 
 	return self;
 }
 
-#pragma mark Parsing
+#pragma mark MTLJSONSerializing
 
-+ (NSDate *)dateFromString:(NSString *)string {
-	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-	formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
++ (NSDictionary *)JSONKeyPathsByPropertyKey {
+	return @{
+		@"releaseNotes": @"notes",
+		@"releaseName": @"name",
+		@"releaseDate": @"pub_date",
 
-	NSArray *dateFormats = @[
-		@"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZZ", // ISO 8601 Time Zone with ':'
-		@"EEE MMM dd HH:mm:ss Z yyyy", // Central backwards compatibility
-	];
+		// Declared in SQRLUpdate+Private.h
+		@"updateURL": @"url",
+	};
+}
 
-	for (NSString *currentDateFormat in dateFormats) {
-		formatter.dateFormat = currentDateFormat;
-		NSDate *date = [formatter dateFromString:string];
-		if (date != nil) return date;
++ (NSValueTransformer *)updateURLJSONTransformer {
+	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
+}
+
++ (NSValueTransformer *)releaseDateJSONTransformer {
+	// ISO 8601 Time Zone with ':'
+	NSString * const ISO8601DateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZZ";
+
+	return [MTLValueTransformer reversibleTransformerWithForwardBlock:^ NSDate * (NSString *dateString) {
+		if (![dateString isKindOfClass:NSString.class]) return nil;
+
+		NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+		formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+
+		NSArray *dateFormats = @[
+			ISO8601DateFormat,
+			@"EEE MMM dd HH:mm:ss Z yyyy", // Central backwards compatibility
+		];
+
+		for (NSString *currentDateFormat in dateFormats) {
+			formatter.dateFormat = currentDateFormat;
+			NSDate *date = [formatter dateFromString:dateString];
+			if (date != nil) return date;
+		}
+
+		// If neither match, try removing the ':' in the time zone
+		static NSRegularExpression *timeZoneSuffix = nil;
+		static dispatch_once_t timeZoneSuffixPredicate = 0;
+		dispatch_once(&timeZoneSuffixPredicate, ^ {
+			timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:0 error:NULL];
+		});
+
+		dateString = [timeZoneSuffix stringByReplacingMatchesInString:dateString options:0 range:NSMakeRange(0, dateString.length) withTemplate:@"$1$2$3"];
+
+		formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
+		return [formatter dateFromString:dateString];
+	} reverseBlock:^ NSString * (NSDate *date) {
+		if (![date isKindOfClass:NSDate.class]) return nil;
+
+		NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+		formatter.locale = [[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"];
+		formatter.dateFormat = ISO8601DateFormat;
+		return [formatter stringFromDate:date];
+	}];
+}
+
+#pragma mark NSKeyValueCoding
+
+- (BOOL)validateUpdateURL:(NSURL **)updateURLPtr error:(NSError **)error {
+	NSURL *updateURL = *updateURLPtr;
+	if (updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
+		return NO;
+	} else {
+		return YES;
 	}
-
-	// If neither match, try removing the ':' in the time zone
-	static NSRegularExpression *timeZoneSuffix = nil;
-	static dispatch_once_t timeZoneSuffixPredicate = 0;
-	dispatch_once(&timeZoneSuffixPredicate, ^ {
-		timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:0 error:NULL];
-	});
-
-	string = [timeZoneSuffix stringByReplacingMatchesInString:string options:0 range:NSMakeRange(0, string.length) withTemplate:@"$1$2$3"];
-
-	formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
-	return [formatter dateFromString:string];
 }
 
 #pragma mark NSCopying
 
 - (id)copyWithZone:(NSZone *)zone {
 	return self;
-}
-
-#pragma mark NSObject
-
-- (NSString *)description {
-	return [NSString stringWithFormat:@"<%@: %p> %@", self.class, self, self.JSON];
-}
-
-- (NSUInteger)hash {
-	return self.JSON.hash;
-}
-
-- (BOOL)isEqual:(SQRLUpdate *)update {
-	if (self == update) return YES;
-	if (![update isKindOfClass:SQRLUpdate.class]) return NO;
-
-	return [self.JSON isEqual:update.JSON];
 }
 
 @end
