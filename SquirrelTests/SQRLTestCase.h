@@ -17,6 +17,7 @@ extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
 extern NSString * const SQRLBundleShortVersionStringKey;
 
 @class SQRLCodeSignatureVerifier;
+@class SQRLXPCConnection;
 
 @interface SQRLTestCase : SPTSenTestCase
 
@@ -75,10 +76,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 //
 // Returns the new connection, which will be automatically closed at the end of
 // the example.
-- (xpc_connection_t)connectToShipIt;
-
-// Fetches any error string from the given XPC object.
-- (NSString *)errorFromObject:(xpc_object_t)object;
+- (SQRLXPCConnection *)connectToShipIt;
 
 // Creates a disk image, then mounts it.
 //

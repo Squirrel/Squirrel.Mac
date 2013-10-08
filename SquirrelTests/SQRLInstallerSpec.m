@@ -10,44 +10,38 @@
 #import "SQRLInstaller.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLStateManager.h"
+#import "SQRLXPCConnection.h"
 
 SpecBegin(SQRLInstaller)
 
 describe(@"after connecting to ShipIt", ^{
 	__block NSURL *updateURL;
-	__block xpc_connection_t shipitConnection;
-	__block xpc_object_t message;
+	__block SQRLXPCConnection *shipitConnection;
+	__block SQRLXPCObject *message;
 
 	beforeEach(^{
 		updateURL = [self createTestApplicationUpdate];
 		shipitConnection = [self connectToShipIt];
 
-		message = xpc_dictionary_create(NULL, NULL, 0);
-		xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
+		xpc_object_t dict = xpc_dictionary_create(NULL, NULL, 0);
+		message = [[SQRLXPCObject alloc] initWithXPCObject:dict];
+		xpc_release(dict);
 
-		xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
-		xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-		xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
+		xpc_dictionary_set_string(message.object, SQRLShipItCommandKey, SQRLShipItInstallCommand);
+
+		xpc_dictionary_set_string(message.object, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
+		xpc_dictionary_set_string(message.object, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
+		xpc_dictionary_set_bool(message.object, SQRLShouldRelaunchKey, false);
 
 		NSData *requirementData = self.testApplicationCodeSigningRequirementData;
-		xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
-	});
-
-	afterEach(^{
-		xpc_release(message);
+		xpc_dictionary_set_data(message.object, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 	});
 
 	it(@"should install an update", ^{
-		__block BOOL ready = NO;
+		NSError *error = nil;
+		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		expect(ready).to.beTruthy();
 
-		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
-			expect([self errorFromObject:event]).to.beNil();
-
-			ready = YES;
-		});
-
-		expect(ready).will.beTruthy();
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	});
 
@@ -56,17 +50,12 @@ describe(@"after connecting to ShipIt", ^{
 		NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
 		expect(apps.count).to.equal(0);
 
-		__block BOOL ready = NO;
+		xpc_dictionary_set_bool(message.object, SQRLShouldRelaunchKey, true);
 
-		xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, true);
-		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
-			expect([self errorFromObject:event]).to.beNil();
+		NSError *error = nil;
+		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		expect(ready).to.beTruthy();
 
-			ready = YES;
-		});
-
-		expect(ready).will.beTruthy();
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 		expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
 	});
@@ -75,17 +64,12 @@ describe(@"after connecting to ShipIt", ^{
 		NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication 2.1" fromDirectory:updateURL.URLByDeletingLastPathComponent];
 		updateURL = [diskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
 
-		__block BOOL ready = NO;
+		xpc_dictionary_set_string(message.object, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 
-		xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
-			expect([self errorFromObject:event]).to.beNil();
+		NSError *error = nil;
+		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		expect(ready).to.beTruthy();
 
-			ready = YES;
-		});
-
-		expect(ready).will.beTruthy();
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	});
 
@@ -93,37 +77,27 @@ describe(@"after connecting to ShipIt", ^{
 		NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
 		NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
 
-		__block BOOL ready = NO;
+		xpc_dictionary_set_string(message.object, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 
-		xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
-		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
-			expect([self errorFromObject:event]).to.beNil();
-
-			ready = YES;
-		});
-
-		expect(ready).will.beTruthy();
+		NSError *error = nil;
+		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		expect(ready).to.beTruthy();
 
 		NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 		expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	});
 
 	it(@"should not install an update if the connection closes too early", ^{
-		__block BOOL canceled = NO;
 		__block BOOL receivedReply = NO;
-
-		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t reply) {
-			if (xpc_get_type(reply) == XPC_TYPE_ERROR) return;
+		[shipitConnection.events subscribeNext:^(id _) {
 			receivedReply = YES;
-		});
-		
-		xpc_connection_send_barrier(shipitConnection, ^{
-			xpc_connection_cancel(shipitConnection);
-			canceled = YES;
-		});
+		}];
 
-		expect(canceled).will.beTruthy();
+		NSError *error = nil;
+		BOOL ready = [[shipitConnection sendBarrierMessage:message] waitUntilCompleted:&error];
+		expect(ready).to.beTruthy();
+
+		[shipitConnection cancel];
 		
 		// If we received a reply from ShipIt, installation has already begun. We're too late.
 		expect(receivedReply).to.beFalsy();
@@ -147,23 +121,16 @@ describe(@"after connecting to ShipIt", ^{
 			targetURL = self.testApplicationURL;
 
 			terminated = NO;
-			xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
-				if (event == XPC_ERROR_CONNECTION_INVALID || event == XPC_ERROR_CONNECTION_INTERRUPTED) {
-					terminated = YES;
-				}
-			});
+			[shipitConnection.events subscribeError:^(NSError *error) {
+				terminated = YES;
+			} completed:^{
+				terminated = YES;
+			}];
 
 			sendMessage = ^{
-				__block BOOL ready = NO;
-
-				xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-					expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
-					expect([self errorFromObject:event]).to.beNil();
-
-					ready = YES;
-				});
-
-				expect(ready).will.beTruthy();
+				NSError *error = nil;
+				BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+				expect(ready).to.beTruthy();
 
 				// Apply a random delay before sending the termination signal, to
 				// fuzz out race conditions.
@@ -256,28 +223,27 @@ it(@"should not install an update after too many attempts", ^{
 	stateManager.installationStateAttempt = 4;
 	expect([stateManager synchronize]).to.beTruthy();
 
-	__block NSError *error = nil;
-	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
+	NSError *error = nil;
+	SQRLXPCConnection *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	expect(connection).notTo.beNil();
 
-	xpc_connection_set_event_handler(connection.object, ^(xpc_object_t event) {});
-
 	// Send ShipIt a blank command just to start it up.
-	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
-	xpc_dictionary_set_string(message, SQRLShipItCommandKey, "");
+	xpc_object_t dict = xpc_dictionary_create(NULL, NULL, 0);
+	SQRLXPCObject *message = [[SQRLXPCObject alloc] initWithXPCObject:dict];
+	xpc_release(dict);
 
-	xpc_connection_send_message(connection.object, message);
-	xpc_release(message);
+	xpc_dictionary_set_string(message.object, SQRLShipItCommandKey, "");
 
-	xpc_connection_send_barrier(connection.object, ^{
-		xpc_connection_cancel(connection.object);
-	});
+	BOOL ready = [[connection sendBarrierMessage:message] waitUntilCompleted:&error];
+	expect(ready).to.beTruthy();
 
+	[connection cancel];
 	[NSThread sleepForTimeInterval:0.2];
 
 	// No update should've been installed, and the application should've been
 	// restored from the backup.
-	expect([[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error]).to.beTruthy();
+	BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL] waitUntilCompleted:&error];
+	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);

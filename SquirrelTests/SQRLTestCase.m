@@ -10,6 +10,7 @@
 #import "SQRLCodeSignatureVerifier.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLStateManager+Private.h"
+#import "SQRLXPCConnection.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -287,26 +288,16 @@ static void SQRLSignalHandler(int sig) {
 	}];
 }
 
-- (xpc_connection_t)connectToShipIt {
+- (SQRLXPCConnection *)connectToShipIt {
 	NSString *applicationID = SQRLShipItLauncher.shipItJobLabel;
 	STAssertTrue([SQRLStateManager clearStateWithIdentifier:applicationID], @"Could not remove all preferences for %@", applicationID);
 
 	NSError *error = nil;
-	SQRLXPCObject *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
+	SQRLXPCConnection *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
-	
-	xpc_connection_set_event_handler(connection.object, ^(xpc_object_t event) {
-		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
-			if (event == XPC_ERROR_CONNECTION_INVALID) {
-				STFail(@"ShipIt connection invalid: %@", [self errorFromObject:event]);
-			} else if (event == XPC_ERROR_CONNECTION_INTERRUPTED) {
-				STFail(@"ShipIt connection interrupted: %@", [self errorFromObject:event]);
-			}
-		}
-	});
 
 	[self addCleanupBlock:^{
-		xpc_connection_cancel(connection.object);
+		[connection cancel];
 
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
 		CFErrorRef error = NULL;
@@ -316,8 +307,8 @@ static void SQRLSignalHandler(int sig) {
 		}
 	}];
 
-	xpc_connection_resume(connection.object);
-	return connection.object;
+	[connection resume];
+	return connection;
 }
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {
@@ -343,21 +334,6 @@ static void SQRLSignalHandler(int sig) {
 	}];
 
 	return [NSURL fileURLWithPath:path isDirectory:YES];
-}
-
-#pragma mark Diagnostics
-
-- (NSString *)errorFromObject:(xpc_object_t)object {
-	const char *desc = NULL;
-
-	if (xpc_get_type(object) == XPC_TYPE_ERROR) {
-		desc = xpc_dictionary_get_string(object, XPC_ERROR_KEY_DESCRIPTION);
-	} else if (xpc_get_type(object) == XPC_TYPE_DICTIONARY) {
-		desc = xpc_dictionary_get_string(object, SQRLReplyErrorKey);
-	}
-
-	if (desc == NULL) return nil;
-	return @(desc);
 }
 
 @end
