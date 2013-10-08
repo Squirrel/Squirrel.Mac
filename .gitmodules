@@ -1,3 +1,6 @@
 [submodule "External/ReactiveCocoa"]
 	path = External/ReactiveCocoa
 	url = https://github.com/ReactiveCocoa/ReactiveCocoa.git
+[submodule "External/Mantle"]
+	path = External/Mantle
+	url = https://github.com/github/Mantle.git
