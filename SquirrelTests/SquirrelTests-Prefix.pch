@@ -10,6 +10,7 @@
 	#import <Cocoa/Cocoa.h>
 	#import <SenTestingKit/SenTestingKit.h>
 
+	#import <Mantle/Mantle.h>
 	#import <ReactiveCocoa/ReactiveCocoa.h>
 	#import <ReactiveCocoa/EXTScope.h>
 	#import <Squirrel/Squirrel.h>
