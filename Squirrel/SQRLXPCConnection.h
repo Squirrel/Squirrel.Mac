@@ -64,7 +64,7 @@ extern NSString * const SQRLXPCMessageErrorKey;
 //
 // message - The message to send across the connection. This must not be nil.
 //
-// Returns a signal which will send completed on an unspecified thread once the
+// Returns a signal which will send completed on a background thread once the
 // message has been successfully sent, or error if there is a failure to send
 // it.
 - (RACSignal *)sendBarrierMessage:(SQRLXPCObject *)message;
@@ -79,14 +79,15 @@ extern NSString * const SQRLXPCMessageErrorKey;
 
 // Lazily waits for the connection's message queue to be empty.
 //
-// Returns a signal which will send completed once the barrier is in effect.
+// Returns a signal which will send completed on a background thread once the
+// barrier is in effect.
 - (RACSignal *)waitForBarrier;
 
 // Lazily resumes the receiver and passes through its `events`.
 //
 // Returns a signal which resumes the connection upon first subscription, then
-// sends its events. Whenever all subscriptions to the returned signal are
-// disposed, the connection will be canceled.
+// sends its events on a background thread. Whenever all subscriptions to the
+// returned signal are disposed, the connection will be canceled.
 - (RACSignal *)autoconnect;
 
 @end

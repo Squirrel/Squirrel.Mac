@@ -24,6 +24,15 @@ const NSInteger SQRLXPCErrorReply = 4;
 	RACSubject *_events;
 }
 
+// The queue used to serialize XPC events.
+@property (nonatomic, readonly) dispatch_queue_t connectionQueue;
+
+// The private scheduler used to serialize XPC event handling and signal
+// delivery.
+//
+// This scheduler targets `connectionQueue`.
+@property (nonatomic, strong, readonly) RACScheduler *connectionScheduler;
+
 @end
 
 @implementation SQRLXPCConnection
@@ -36,6 +45,10 @@ const NSInteger SQRLXPCErrorReply = 4;
 
 	_events = [[RACSubject subject] setNameWithFormat:@"%@ -events", self];
 
+	_connectionQueue = dispatch_queue_create("com.github.Squirrel.SQRLXPCConnection.queue", DISPATCH_QUEUE_SERIAL);
+	_connectionScheduler = [[RACTargetQueueScheduler alloc] initWithName:@"com.github.Squirrel.SQRLXPCConnection.RACScheduler" targetQueue:self.connectionQueue];
+	
+	xpc_connection_set_target_queue(connection, self.connectionQueue);
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
 		// Intentionally introduce a retain cycle with `self`.
 		[self sendEvent:event toSubscriber:_events];
@@ -53,11 +66,21 @@ const NSInteger SQRLXPCErrorReply = 4;
 }
 
 - (void)dealloc {
-	[_events sendCompleted];
+	[self.connectionScheduler schedule:^{
+		[_events sendCompleted];
+	}];
+
+	if (_connectionQueue != NULL) {
+		xpc_release(_connectionQueue);
+		_connectionQueue = NULL;
+	}
 }
 
 - (void)cancel {
-	[_events sendCompleted];
+	[self.connectionScheduler schedule:^{
+		[_events sendCompleted];
+	}];
+
 	xpc_connection_cancel(self.object);
 }
 
@@ -107,7 +130,7 @@ const NSInteger SQRLXPCErrorReply = 4;
 
 	return [[RACSignal
 		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-			xpc_connection_send_message_with_reply(self.object, message.object, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^(xpc_object_t event) {
+			xpc_connection_send_message_with_reply(self.object, message.object, self.connectionQueue, ^(xpc_object_t event) {
 				[self sendEvent:event toSubscriber:subscriber];
 				[subscriber sendCompleted];
 			});
