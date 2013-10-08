@@ -29,9 +29,7 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 //              launched in the current user’s domain.
 //
 // Returns a signal which will send an active `SQRLXPCConnection` then complete, or
-// error, on a background scheduler. The underlying `xpc_connection_t` will be
-// automatically retained while the connection remains open. If you need to
-// retain it for longer, hang on to the `SQRLXPCConnection`.
+// error, on a background scheduler.
 + (RACSignal *)launchPrivileged:(BOOL)privileged;
 
 @end

@@ -139,25 +139,10 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			[subscriber sendError:[NSError errorWithDomain:SQRLShipItLauncherErrorDomain code:SQRLShipItLauncherErrorCouldNotStartService userInfo:userInfo]];
 			return;
 		}
-		
-		xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-			if (xpc_get_type(event) != XPC_TYPE_ERROR) return;
-
-			@onExit {
-				xpc_release(connection);
-			};
-
-			if (event != XPC_ERROR_CONNECTION_INVALID) {
-				char *errorStr = xpc_copy_description(event);
-				@onExit {
-					free(errorStr);
-				};
-
-				NSLog(@"Received XPC error: %s", errorStr);
-			}
-		});
 
 		SQRLXPCConnection *boxedConnection = [[SQRLXPCConnection alloc] initWithXPCObject:connection];
+		xpc_release(connection);
+
 		[boxedConnection resume];
 
 		[subscriber sendNext:boxedConnection];
