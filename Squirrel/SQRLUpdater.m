@@ -38,6 +38,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 // The verifier used to check code against the running application's signature.
 @property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
 
+// A lazily-opened connection to ShipIt.
+@property (nonatomic, strong, readonly) RACSignal *shipItXPCConnection;
+
 @end
 
 @implementation SQRLUpdater
@@ -95,6 +98,24 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 			}]
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
+
+	_shipItXPCConnection = [[[[RACSignal
+		defer:^{
+			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+
+			NSNumber *targetWritable = nil;
+			NSError *targetWritableError = nil;
+			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
+
+			// If we can't determine whether it can be written, assume nonprivileged and
+			// wait for another, more canonical error.
+			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
+		}]
+		doNext:^(SQRLXPCConnection *connection) {
+			[connection resume];
+		}]
+		replayLazily]
+		setNameWithFormat:@"shipItXPCConnection"];
 	
 	return self;
 }
@@ -346,7 +367,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 			
 			return wrappedMessage;
 		}]
-		zipWith:[self connectToShipIt]]
+		zipWith:self.shipItXPCConnection]
 		reduceEach:^(SQRLXPCObject *message, SQRLXPCConnection *connection) {
 			return [[self
 				sendMessage:message overConnection:connection]
@@ -357,25 +378,6 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		flatten]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
-}
-
-- (RACSignal *)connectToShipIt {
-	NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
-
-	return [[[RACSignal
-		defer:^{
-			NSNumber *targetWritable = nil;
-			NSError *targetWritableError = nil;
-			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
-
-			// If we can't determine whether it can be written, assume nonprivileged and
-			// wait for another, more canonical error.
-			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
-		}]
-		doNext:^(SQRLXPCConnection *connection) {
-			[connection resume];
-		}]
-		setNameWithFormat:@"-connectToShipIt"];
 }
 
 - (RACSignal *)sendMessage:(SQRLXPCObject *)message overConnection:(SQRLXPCConnection *)connection {
