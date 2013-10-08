@@ -369,11 +369,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		}]
 		zipWith:self.shipItXPCConnection]
 		reduceEach:^(SQRLXPCObject *message, SQRLXPCConnection *connection) {
-			return [[self
-				sendMessage:message overConnection:connection]
-				finally:^{
-					[connection cancel];
-				}];
+			return [self sendMessage:message overConnection:connection];
 		}]
 		flatten]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
