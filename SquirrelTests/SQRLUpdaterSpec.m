@@ -77,7 +77,7 @@ it(@"should not install a corrupt update", ^{
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
-it(@"should update to the most recently enqueued job", ^{
+fit(@"should update to the most recently enqueued job", ^{
 	updateInfo[SQRLUpdateJSONURLKey] = zipUpdate(self.testApplicationURL).absoluteString;
 	writeUpdateInfo(updateInfo);
 
