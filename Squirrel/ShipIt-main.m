@@ -130,24 +130,29 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 		RACSignal *notification = [RACSignal empty];
 		if (remoteConnection != nil) {
 			RACSignal *errorSignal = [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:@{ NSLocalizedDescriptionKey: @"Application PID could not be found" }]];
+
+			RACSignal *termination = [RACSignal empty];
+			if (waitForIdentifier != NULL) {
+				termination = [[[terminationConnection.signal
+					filter:^ BOOL (NSRunningApplication *app) {
+						return app.processIdentifier == xpc_connection_get_pid(remoteConnection.object);
+					}]
+					concat:errorSignal]
+					// This avoids the error if we find an app that matches our
+					// condition above.
+					take:1];
+			}
 			
-			notification = [[[[[[[terminationConnection.signal
-				filter:^ BOOL (NSRunningApplication *app) {
-					return app.processIdentifier == xpc_connection_get_pid(remoteConnection.object);
-				}]
-				concat:errorSignal]
-				// This avoids the error if we find an app that matches our
-				// condition above.
-				doNext:^(id _) {
+			notification = [[[[termination
+				doCompleted:^{
 					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
 				}]
 				catch:^(NSError *terminationError) {
 					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
 					xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, terminationError.localizedDescription.UTF8String ?: "Error setting up termination listening");
-					return [RACSignal return:nil];
+					return [RACSignal empty];
 				}]
-				take:1]
-				flattenMap:^(id _) {
+				then:^{
 					// Notify the remote connection about whether setup succeeded or failed.
 					return [[remoteConnection sendBarrierMessage:reply] logAll];
 				}]
