@@ -7,9 +7,32 @@
 //
 
 #import "SQRLShipItState.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 @implementation SQRLShipItState
 
-- (id)decodeValueForKey:(NSString *)key withCoder:(NSCoder *)coder modelVersion:(NSUInteger)modelVersion;
+#pragma mark Lifecycle
+
+- (id)initWithDictionary:(NSDictionary *)dictionary error:(NSError **)error {
+	self = [super initWithDictionary:dictionary error:error];
+	if (self == nil) return nil;
+
+	if (self.targetBundleURL == nil || self.updateBundleURL == nil || self.codeSignature == nil) {
+		// TODO: Real error reporting.
+		NSLog(@"%@ is missing required properties", self);
+		return nil;
+	}
+
+	return self;
+}
+
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier codeSignature:(SQRLCodeSignature *)codeSignature {
+	return [self initWithDictionary:@{
+		@keypath(self.targetBundleURL): targetBundleURL,
+		@keypath(self.updateBundleURL): updateBundleURL,
+		@keypath(self.bundleIdentifier): bundleIdentifier ?: NSNull.null,
+		@keypath(self.codeSignature): codeSignature,
+	} error:NULL];
+}
 
 @end

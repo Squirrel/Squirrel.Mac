@@ -71,6 +71,8 @@
 		D0A56BB71804B20C00A84EDC /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
 		D0A56BBA1804B21700A84EDC /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BAC1804B1FD00A84EDC /* libMantle-Mac.a */; };
 		D0A56BCF1804B8FC00A84EDC /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
+		D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */; };
+		D0A56BEC1804BA3C00A84EDC /* SQRLShipItState.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */; };
 		D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
@@ -444,6 +446,8 @@
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
 		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
 		D0A56B961804B1FD00A84EDC /* Mantle.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Mantle.xcodeproj; path = External/Mantle/Mantle.xcodeproj; sourceTree = "<group>"; };
+		D0A56BE81804BA3C00A84EDC /* SQRLShipItState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItState.h; sourceTree = "<group>"; };
+		D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItState.m; sourceTree = "<group>"; };
 		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -707,6 +711,15 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		D0A56BE71804BA2400A84EDC /* State */ = {
+			isa = PBXGroup;
+			children = (
+				D0A56BE81804BA3C00A84EDC /* SQRLShipItState.h */,
+				D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */,
+			);
+			name = State;
+			sourceTree = "<group>";
+		};
 		D0A56BF61804BABB00A84EDC /* Code Signing */ = {
 			isa = PBXGroup;
 			children = (
@@ -923,6 +936,7 @@
 				D06B58CF180356D800656D97 /* SQRLStateManager+Private.h */,
 				D04752A217FFC9E5003B162E /* SQRLStateManager.m */,
 				D0A56BF61804BABB00A84EDC /* Code Signing */,
+				D0A56BE71804BA2400A84EDC /* State */,
 				D06B58BC18032BE800656D97 /* Transactions */,
 				D0C2AA8517FC103D0075D1D1 /* XPC */,
 			);
@@ -1354,6 +1368,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0A56BEC1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D04752A317FFC9E5003B162E /* SQRLStateManager.m in Sources */,
 				D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */,
@@ -1393,6 +1408,7 @@
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D06B58D218035F8800656D97 /* SQRLStateManager.m in Sources */,
+				D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 			);
