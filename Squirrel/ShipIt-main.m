@@ -145,11 +145,11 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 			
 			notification = [[[[termination
 				doCompleted:^{
-					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, true);
+					xpc_dictionary_set_bool(reply.object, SQRLReplySuccessKey, true);
 				}]
 				catch:^(NSError *terminationError) {
-					xpc_dictionary_set_bool(reply.object, SQRLShipItSuccessKey, false);
-					xpc_dictionary_set_string(reply.object, SQRLShipItErrorKey, terminationError.localizedDescription.UTF8String ?: "Error setting up termination listening");
+					xpc_dictionary_set_bool(reply.object, SQRLReplySuccessKey, false);
+					xpc_dictionary_set_string(reply.object, SQRLReplyErrorKey, terminationError.localizedDescription.UTF8String ?: "Error setting up termination listening");
 					return [RACSignal empty];
 				}]
 				then:^{

@@ -7,14 +7,18 @@
 //
 
 #import "SQRLXPCConnection.h"
+#import "SQRLArguments.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
 NSString * const SQRLXPCErrorDomain = @"SQRLXPCErrorDomain";
+NSString * const SQRLXPCMessageErrorKey = @"SQRLXPCMessageErrorKey";
+
 const NSInteger SQRLXPCErrorUnknown = 0;
 const NSInteger SQRLXPCErrorConnectionInterrupted = 1;
 const NSInteger SQRLXPCErrorConnectionInvalid = 2;
 const NSInteger SQRLXPCErrorTerminationImminent = 3;
+const NSInteger SQRLXPCErrorReply = 4;
 
 @interface SQRLXPCConnection () {
 	RACSubject *_events;
@@ -128,10 +132,25 @@ const NSInteger SQRLXPCErrorTerminationImminent = 3;
 - (void)sendEvent:(xpc_object_t)event toSubscriber:(id<RACSubscriber>)subscriber {
 	if (xpc_get_type(event) == XPC_TYPE_ERROR) {
 		[subscriber sendError:[self errorFromXPCError:event]];
-	} else {
-		SQRLXPCObject *wrappedEvent = [[SQRLXPCObject alloc] initWithXPCObject:event];
-		[subscriber sendNext:wrappedEvent];
+		return;
 	}
+	
+	SQRLXPCObject *wrappedEvent = [[SQRLXPCObject alloc] initWithXPCObject:event];
+	if (xpc_get_type(event) == XPC_TYPE_DICTIONARY) {
+		xpc_object_t success = xpc_dictionary_get_value(event, SQRLReplySuccessKey);
+		if (success != NULL && !xpc_bool_get_value(success)) {
+			const char *errorStr = xpc_dictionary_get_string(event, SQRLReplyErrorKey);
+
+			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+			userInfo[SQRLXPCMessageErrorKey] = wrappedEvent;
+			if (errorStr != NULL) userInfo[NSLocalizedDescriptionKey] = @(errorStr);
+
+			[subscriber sendError:[NSError errorWithDomain:SQRLXPCErrorDomain code:SQRLXPCErrorReply userInfo:userInfo]];
+			return;
+		}
+	}
+
+	[subscriber sendNext:wrappedEvent];
 }
 
 #pragma mark Error Handling

@@ -369,32 +369,11 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		}]
 		zipWith:self.shipItXPCConnection]
 		reduceEach:^(SQRLXPCObject *message, SQRLXPCConnection *connection) {
-			return [self sendMessage:message overConnection:connection];
+			return [connection sendMessageExpectingReply:message];
 		}]
 		flatten]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"-prepareUpdateForInstallation"];
-}
-
-- (RACSignal *)sendMessage:(SQRLXPCObject *)message overConnection:(SQRLXPCConnection *)connection {
-	NSParameterAssert(message != nil);
-	NSParameterAssert(connection != nil);
-
-	return [[[connection
-		sendMessageExpectingReply:message]
-		flattenMap:^(SQRLXPCObject *reply) {
-			if (xpc_dictionary_get_bool(reply.object, SQRLShipItSuccessKey)) {
-				return [RACSignal return:reply];
-			} else {
-				const char *errorStr = xpc_dictionary_get_string(reply.object, SQRLShipItErrorKey);
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: (errorStr != NULL ? @(errorStr) : NSLocalizedString(@"An unknown error occurred within ShipIt", nil)),
-				};
-
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
-			}
-		}]
-		setNameWithFormat:@"-sendMessage: %@ overConnection: %@", message, connection];
 }
 
 @end

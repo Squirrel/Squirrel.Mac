@@ -8,8 +8,8 @@
 
 #import "SQRLArguments.h"
 
-const char * const SQRLShipItSuccessKey = "SQRLShipItSuccessKey";
-const char * const SQRLShipItErrorKey = "SQRLShipItErrorKey";
+const char * const SQRLReplySuccessKey = "SQRLReplySuccessKey";
+const char * const SQRLReplyErrorKey = "SQRLReplyErrorKey";
 const char * const SQRLShipItCommandKey = "SQRLCommandKey";
 
 const char * const SQRLShipItInstallCommand = "SQRLShipItInstallCommand";

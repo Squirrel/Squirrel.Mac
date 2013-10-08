@@ -353,7 +353,7 @@ static void SQRLSignalHandler(int sig) {
 	if (xpc_get_type(object) == XPC_TYPE_ERROR) {
 		desc = xpc_dictionary_get_string(object, XPC_ERROR_KEY_DESCRIPTION);
 	} else if (xpc_get_type(object) == XPC_TYPE_DICTIONARY) {
-		desc = xpc_dictionary_get_string(object, SQRLShipItErrorKey);
+		desc = xpc_dictionary_get_string(object, SQRLReplyErrorKey);
 	}
 
 	if (desc == NULL) return nil;

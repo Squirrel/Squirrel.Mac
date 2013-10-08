@@ -8,11 +8,11 @@
 
 // A key in an XPC reply, associated with a boolean indicating whether the
 // requested command was successful.
-extern const char * const SQRLShipItSuccessKey;
+extern const char * const SQRLReplySuccessKey;
 
 // A key in an XPC reply, associated with a string describing any error that
 // occurred.
-extern const char * const SQRLShipItErrorKey;
+extern const char * const SQRLReplyErrorKey;
 
 // An XPC event key, associated with a string describing what the ShipIt service
 // should do.
@@ -22,8 +22,8 @@ extern const char * const SQRLShipItCommandKey;
 // installed.
 //
 // ShipIt will respond immediately indicating whether the initial setup was
-// successful, then begin installation after the target application (if any) has
-// terminated.
+// successful, wait for the client to also respond with `SQRLReplySuccessKey`,
+// then begin installation after the target application (if any) has terminated.
 extern const char * const SQRLShipItInstallCommand;
 
 // Associated with a string containing the bundle identifier of the parent

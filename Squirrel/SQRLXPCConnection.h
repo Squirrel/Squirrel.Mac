@@ -23,6 +23,13 @@ extern const NSInteger SQRLXPCErrorConnectionInvalid;
 // The program will be exiting soon.
 extern const NSInteger SQRLXPCErrorTerminationImminent;
 
+// The remote service sent a reply that indicates an error.
+extern const NSInteger SQRLXPCErrorReply;
+
+// For `SQRLXPCErrorReply`, this key is associated with the `SQRLXPCObject` that
+// generated the error.
+extern NSString * const SQRLXPCMessageErrorKey;
+
 @class RACSignal;
 
 // A boxed and RACified `xpc_connection_t`.

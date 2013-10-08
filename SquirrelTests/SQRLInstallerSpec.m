@@ -41,7 +41,7 @@ describe(@"after connecting to ShipIt", ^{
 		__block BOOL ready = NO;
 
 		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
 			expect([self errorFromObject:event]).to.beNil();
 
 			ready = YES;
@@ -60,7 +60,7 @@ describe(@"after connecting to ShipIt", ^{
 
 		xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, true);
 		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
 			expect([self errorFromObject:event]).to.beNil();
 
 			ready = YES;
@@ -79,7 +79,7 @@ describe(@"after connecting to ShipIt", ^{
 
 		xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
 			expect([self errorFromObject:event]).to.beNil();
 
 			ready = YES;
@@ -97,7 +97,7 @@ describe(@"after connecting to ShipIt", ^{
 
 		xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 		xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-			expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+			expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
 			expect([self errorFromObject:event]).to.beNil();
 
 			ready = YES;
@@ -157,7 +157,7 @@ describe(@"after connecting to ShipIt", ^{
 				__block BOOL ready = NO;
 
 				xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-					expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
+					expect(xpc_dictionary_get_bool(event, SQRLReplySuccessKey)).to.beTruthy();
 					expect([self errorFromObject:event]).to.beNil();
 
 					ready = YES;
