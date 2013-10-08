@@ -87,7 +87,7 @@ describe(@"after connecting to ShipIt", ^{
 		expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	});
 
-	fit(@"should not install an update if the connection closes before a final reply", ^{
+	it(@"should not install an update if the connection closes before a final reply", ^{
 		NSError *error = nil;
 		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
 		expect(ready).to.beTruthy();
