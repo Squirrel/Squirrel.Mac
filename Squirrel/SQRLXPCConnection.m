@@ -56,6 +56,8 @@ const NSInteger SQRLXPCErrorReply = 4;
 		[self sendEvent:event toSubscriber:_events];
 
 		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
+			NSLog(@"Received error: %@", [[SQRLXPCObject alloc] initWithXPCObject:event]);
+
 			[self cancel];
 
 			// When the connection finishes, break the retain cycle.
@@ -79,6 +81,8 @@ const NSInteger SQRLXPCErrorReply = 4;
 }
 
 - (void)cancel {
+	NSLog(@"Canceling %@: %@", self, NSThread.callStackSymbols);
+
 	[self.connectionScheduler schedule:^{
 		[_events sendCompleted];
 	}];
@@ -130,6 +134,8 @@ const NSInteger SQRLXPCErrorReply = 4;
 - (RACSignal *)sendCommandMessage:(SQRLXPCObject *)commandMessage {
 	return [[[self
 		sendMessageExpectingReply:commandMessage] // SYN
+	return [[[[self
+		sendMessageExpectingReply:commandMessage] logAll] // SYN
 		flattenMap:^(SQRLXPCObject *message) { // SYN-ACK
 			xpc_object_t dict = xpc_dictionary_create_reply(message.object);
 			if (dict == NULL) {
@@ -142,6 +148,7 @@ const NSInteger SQRLXPCErrorReply = 4;
 
 			xpc_dictionary_set_bool(reply.object, SQRLReplySuccessKey, true);
 			return [self sendBarrierMessage:reply]; // ACK
+			return [[self sendBarrierMessage:reply] logAll]; // ACK
 		}]
 		setNameWithFormat:@"%@ -sendCommandMessage: %@", self, commandMessage];
 }

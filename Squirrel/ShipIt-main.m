@@ -97,12 +97,12 @@ static void resumeInstallation(void) {
 
 // Starts installation based on the information in the given XPC event.
 static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
-	SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
-
-	SQRLXPCConnection *remoteConnection = nil;
-	if (reply != nil) remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(reply.object)];
-
 	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:xpc_dictionary_create_reply(event.object)];
+
+		SQRLXPCConnection *remoteConnection = nil;
+		if (reply != nil) remoteConnection = [[SQRLXPCConnection alloc] initWithXPCObject:xpc_dictionary_get_remote_connection(reply.object)];
+
 		size_t requirementDataLen = 0;
 		const void *requirementDataPtr = xpc_dictionary_get_data(event.object, SQRLCodeSigningRequirementKey, &requirementDataLen);
 
@@ -161,7 +161,12 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 					if ([error.domain isEqual:SQRLXPCErrorDomain] && (error.code == SQRLXPCErrorConnectionInvalid || error.code == SQRLXPCErrorConnectionInterrupted)) {
 						// The remote process terminated before we could send
 						// our reply.
-						return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:@{ NSLocalizedDescriptionKey: @"Application terminated before setup finished" }]];
+						NSDictionary *userInfo = @{
+							NSLocalizedDescriptionKey: @"Application terminated before setup finished",
+							NSUnderlyingErrorKey: error
+						};
+
+						return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:userInfo]];
 					}
 
 					return [RACSignal empty];
@@ -200,7 +205,7 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
 	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
-	return [[[installWithArgumentsFromEvent(event)
+	return [[[[installWithArgumentsFromEvent(event) logAll]
 		doError:^(NSError *error) {
 			exit(EXIT_FAILURE);
 		}]
@@ -211,10 +216,11 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
-	return [[[[[[[[client
+	return [[[[[[[[[[client
 		autoconnect]
+		setNameWithFormat:@"client"]
 		logAll]
-		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
+		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]]
 		catch:^(NSError *error) {
 			NSLog(@"XPC error from client: %@", error);
 			return [RACSignal empty];
@@ -226,12 +232,14 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return [handleEvent(event, client) sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
 		}]
 		switchToLatest]
+		logAll]
 		setNameWithFormat:@"handleClient %@", client];
 }
 
 static void handleService(SQRLXPCConnection *service) {
-	[[[[[[[[service
+	[[[[[[[[[[service
 		autoconnect]
+		setNameWithFormat:@"service"]
 		logAll]
 		deliverOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]]
 		catch:^(NSError *error) {
@@ -245,6 +253,7 @@ static void handleService(SQRLXPCConnection *service) {
 			return handleClient(client);
 		}]
 		switchToLatest]
+		logAll]
 		subscribeCompleted:^{
 			exit(EXIT_SUCCESS);
 		}];
