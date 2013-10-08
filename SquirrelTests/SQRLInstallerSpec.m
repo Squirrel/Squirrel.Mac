@@ -39,7 +39,7 @@ describe(@"after connecting to ShipIt", ^{
 
 	it(@"should install an update", ^{
 		NSError *error = nil;
-		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		BOOL ready = [[shipitConnection sendCommandMessage:message] waitUntilCompleted:&error];
 		expect(ready).to.beTruthy();
 
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
@@ -53,7 +53,7 @@ describe(@"after connecting to ShipIt", ^{
 		xpc_dictionary_set_bool(message.object, SQRLShouldRelaunchKey, true);
 
 		NSError *error = nil;
-		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		BOOL ready = [[shipitConnection sendCommandMessage:message] waitUntilCompleted:&error];
 		expect(ready).to.beTruthy();
 
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
@@ -67,7 +67,7 @@ describe(@"after connecting to ShipIt", ^{
 		xpc_dictionary_set_string(message.object, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
 
 		NSError *error = nil;
-		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		BOOL ready = [[shipitConnection sendCommandMessage:message] waitUntilCompleted:&error];
 		expect(ready).to.beTruthy();
 
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
@@ -80,28 +80,19 @@ describe(@"after connecting to ShipIt", ^{
 		xpc_dictionary_set_string(message.object, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
 
 		NSError *error = nil;
-		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+		BOOL ready = [[shipitConnection sendCommandMessage:message] waitUntilCompleted:&error];
 		expect(ready).to.beTruthy();
 
 		NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 		expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	});
 
-	it(@"should not install an update if the connection closes too early", ^{
-		__block BOOL receivedReply = NO;
-		[shipitConnection.events subscribeNext:^(id _) {
-			receivedReply = YES;
-		}];
-
+	fit(@"should not install an update if the connection closes before a final reply", ^{
 		NSError *error = nil;
-		BOOL ready = [[shipitConnection sendBarrierMessage:message] waitUntilCompleted:&error];
+		BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
 		expect(ready).to.beTruthy();
 
 		[shipitConnection cancel];
-		
-		// If we received a reply from ShipIt, installation has already begun. We're too late.
-		expect(receivedReply).to.beFalsy();
-
 		[NSThread sleepForTimeInterval:0.2];
 
 		// No update should've been installed, since our side of the connection was
@@ -129,7 +120,7 @@ describe(@"after connecting to ShipIt", ^{
 
 			sendMessage = ^{
 				NSError *error = nil;
-				BOOL ready = [[shipitConnection sendMessageExpectingReply:message] waitUntilCompleted:&error];
+				BOOL ready = [[shipitConnection sendCommandMessage:message] waitUntilCompleted:&error];
 				expect(ready).to.beTruthy();
 
 				// Apply a random delay before sending the termination signal, to

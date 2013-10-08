@@ -62,12 +62,25 @@ extern NSString * const SQRLXPCMessageErrorKey;
 // Lazily sends the given message across the connection, and waits for it to
 // finish sending without any errors.
 //
+// Note that this does not say anything about whether the client successfully
+// _received_ and processed the message.
+//
 // message - The message to send across the connection. This must not be nil.
 //
 // Returns a signal which will send completed on a background thread once the
 // message has been successfully sent, or error if there is a failure to send
 // it.
 - (RACSignal *)sendBarrierMessage:(SQRLXPCObject *)message;
+
+// Lazily sends the given message across the connection, listens for
+// a success/failure reply, and then replies with success once one is received.
+//
+// commandMessage - The message to send across the connection. This must not be
+//                  nil, and should contain `SQRLShipItCommandKey`.
+//
+// Returns a signal which will send completed on a background thread once the
+// command has succeeded, or error if there's a failure.
+- (RACSignal *)sendCommandMessage:(SQRLXPCObject *)commandMessage;
 
 // Lazily sends the given message across the connection and listens for a reply.
 //

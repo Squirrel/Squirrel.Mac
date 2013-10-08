@@ -153,11 +153,12 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 					return [RACSignal empty];
 				}]
 				then:^{
-					// Notify the remote connection about whether setup succeeded or failed.
-					return [[remoteConnection sendBarrierMessage:reply] logAll];
+					// Tell the remote connection whether setup succeeded or
+					// failed, and wait for them to sign off on it too.
+					return [[remoteConnection sendMessageExpectingReply:reply] ignoreValues];
 				}]
 				catch:^(NSError *error) {
-					if ([error.domain isEqual:SQRLXPCErrorDomain] && error.code == SQRLXPCErrorConnectionInvalid) {
+					if ([error.domain isEqual:SQRLXPCErrorDomain] && (error.code == SQRLXPCErrorConnectionInvalid || error.code == SQRLXPCErrorConnectionInterrupted)) {
 						// The remote process terminated before we could send
 						// our reply.
 						return [RACSignal error:[NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorApplicationTerminatedTooEarly userInfo:@{ NSLocalizedDescriptionKey: @"Application terminated before setup finished" }]];

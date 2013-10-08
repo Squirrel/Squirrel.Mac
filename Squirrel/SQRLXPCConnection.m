@@ -125,6 +125,25 @@ const NSInteger SQRLXPCErrorReply = 4;
 		setNameWithFormat:@"%@ -sendBarrierMessage: %@", self, message];
 }
 
+- (RACSignal *)sendCommandMessage:(SQRLXPCObject *)commandMessage {
+	return [[[self
+		sendMessageExpectingReply:commandMessage] // SYN
+		flattenMap:^(SQRLXPCObject *message) { // SYN-ACK
+			xpc_object_t dict = xpc_dictionary_create_reply(message.object);
+			if (dict == NULL) {
+				NSDictionary *userInfo = @{ SQRLXPCMessageErrorKey: message };
+				return [RACSignal error:[NSError errorWithDomain:SQRLXPCErrorDomain code:SQRLXPCErrorReply userInfo:userInfo]];
+			}
+
+			SQRLXPCObject *reply = [[SQRLXPCObject alloc] initWithXPCObject:dict];
+			xpc_release(dict);
+
+			xpc_dictionary_set_bool(reply.object, SQRLReplySuccessKey, true);
+			return [self sendBarrierMessage:reply]; // ACK
+		}]
+		setNameWithFormat:@"%@ -sendCommandMessage: %@", self, commandMessage];
+}
+
 - (RACSignal *)sendMessageExpectingReply:(SQRLXPCObject *)message {
 	NSParameterAssert(message != nil);
 
