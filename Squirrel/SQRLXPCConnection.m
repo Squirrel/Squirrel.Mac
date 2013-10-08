@@ -132,8 +132,6 @@ const NSInteger SQRLXPCErrorReply = 4;
 }
 
 - (RACSignal *)sendCommandMessage:(SQRLXPCObject *)commandMessage {
-	return [[[self
-		sendMessageExpectingReply:commandMessage] // SYN
 	return [[[[self
 		sendMessageExpectingReply:commandMessage] logAll] // SYN
 		flattenMap:^(SQRLXPCObject *message) { // SYN-ACK
