@@ -307,7 +307,6 @@ static void SQRLSignalHandler(int sig) {
 		}
 	}];
 
-	[connection resume];
 	return connection;
 }
 

@@ -158,6 +158,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		});
 
 		SQRLXPCConnection *boxedConnection = [[SQRLXPCConnection alloc] initWithXPCObject:connection];
+		[boxedConnection resume];
+
 		[subscriber sendNext:boxedConnection];
 		[subscriber sendCompleted];
 	}] setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];
