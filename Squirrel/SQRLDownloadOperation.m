@@ -40,8 +40,9 @@
 
 @implementation SQRLDownloadOperation
 
-- (instancetype)initWithRequest:(NSURLRequest *)request {
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLDownloadController *)downloadController {
 	NSParameterAssert(request != nil);
+	NSParameterAssert(downloadController != nil);
 
 	self = [self init];
 	if (self == nil) return nil;
@@ -52,7 +53,7 @@
 	_controlQueue.maxConcurrentOperationCount = 1;
 	_controlQueue.name = @"com.github.Squirrel.SQRLDownloadOperation.controlQueue";
 
-	_downloadController = [SQRLDownloadController defaultDownloadController];
+	_downloadController = downloadController;
 
 	_completionProvider = [^ NSURL * (NSURLResponse **responseProvider, NSError **errorRef) {
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];

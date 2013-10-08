@@ -14,6 +14,7 @@
 #import "SQRLUpdate+Private.h"
 #import "SQRLURLConnectionOperation.h"
 #import "SQRLDownloadOperation.h"
+#import "SQRLDownloadController.h"
 #import "SQRLZipOperation.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLCodeSignatureVerifier.h"
@@ -172,7 +173,7 @@ NSString * const SQRLUpdateOperationErrorDomain = @"SQRLUpdateOperationErrorDoma
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:update.updateURL];
 	[request setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request];
+	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:SQRLDownloadController.defaultDownloadController];
 	[self.workQueue addOperation:downloadOperation];
 	self.state = SQRLUpdaterStateDownloadingUpdate;
 

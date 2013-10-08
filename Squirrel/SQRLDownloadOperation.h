@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+@class SQRLDownloadController;
+
 // Resumably download a remote resource.
 //
 // If the resource has previously been downloaded this operation may return the
@@ -17,10 +19,15 @@
 
 // Initialiser.
 //
-// request - Must be non nil, body of the response is streamed to disk.
-//           If the response includes an ETag the download can be resumed
-//           automatically by subsequent download operations with the same URL.
-- (instancetype)initWithRequest:(NSURLRequest *)request __attribute__((nonnull (1)));
+// request            - Must be non nil, body of the response is streamed to
+//                      disk. If the response includes an ETag the download can
+//                      be resumed automatically by subsequent download
+//                      operations with the same URL.
+// downloadController - Must be non nil, determines where the downloads will be
+//                      stored and resumed from. For a previously started
+//                      download to be resumed, an equivalent download
+//                      controller should be provided.
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLDownloadController *)downloadController __attribute__((nonnull (1, 2)));
 
 // When the operation `isFinished` this can be invoked to get the operation
 // result, retrieve the response and the location that the download has been
