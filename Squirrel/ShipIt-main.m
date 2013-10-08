@@ -201,7 +201,7 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 	}] setNameWithFormat:@"installWithArgumentsFromEvent(%@)", event];
 }
 
-static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
+static RACSignal *handleEvent(SQRLXPCObject *event) {
 	const char *command = xpc_dictionary_get_string(event.object, SQRLShipItCommandKey);
 	if (strcmp(command, SQRLShipItInstallCommand) != 0) return [RACSignal empty];
 
@@ -212,7 +212,7 @@ static RACSignal *handleEvent(SQRLXPCObject *event, SQRLXPCConnection *client) {
 		doCompleted:^{
 			exit(EXIT_SUCCESS);
 		}]
-		setNameWithFormat:@"handleEvent %@ from %@", event, client];
+		setNameWithFormat:@"handleEvent %@", event];
 }
 
 static RACSignal *handleClient(SQRLXPCConnection *client) {
@@ -229,7 +229,7 @@ static RACSignal *handleClient(SQRLXPCConnection *client) {
 			return xpc_get_type(event.object) == XPC_TYPE_DICTIONARY;
 		}]
 		map:^(SQRLXPCObject *event) {
-			return [handleEvent(event, client) sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
+			return [handleEvent(event) sqrl_addSubscriptionTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update is being prepared. Interrupting the process could corrupt the application.", nil)];
 		}]
 		switchToLatest]
 		logAll]
