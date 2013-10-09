@@ -83,8 +83,7 @@ typedef enum : NSInteger {
 // directoryManager - Used to find the state location on disk. This must not be
 //                    nil.
 //
-// Returns a signal which will complete, or error, on a high priority background
-// scheduler.
+// Returns a signal which will synchronously complete or error.
 - (RACSignal *)writeUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager;
 
 // The URL to the app bundle that should be replaced with an update.

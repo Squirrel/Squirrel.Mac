@@ -265,6 +265,11 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 						flattenMap:^(NSURL *backupBundleURL) {
 							// Save the chosen backup URL as soon as we have it, so we
 							// can resume even if the state change hasn't taken effect.
+							//
+							// N.B. It's important that this method remain
+							// synchronous, so it finishes before returning
+							// control to -backUpBundleAtURL:. Really, the flow
+							// here should be refactored so it doesn't matter.
 							state.backupBundleURL = backupBundleURL;
 							return [state writeUsingDirectoryManager:self.directoryManager];
 						}]

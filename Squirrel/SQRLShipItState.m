@@ -91,29 +91,25 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 - (RACSignal *)writeUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager {
 	NSParameterAssert(directoryManager != nil);
 
-	RACSignal *serialization = [[RACSignal
-		defer:^{
-			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
-			if (data == nil) {
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
-					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
-				};
+	RACSignal *serialization = [RACSignal defer:^{
+		NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
+		if (data == nil) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
+				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
+			};
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorArchiving userInfo:userInfo]];
-			}
+			return [RACSignal error:[NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorArchiving userInfo:userInfo]];
+		}
 
-			return [RACSignal return:data];
-		}]
-		subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]];
-	
-	RACSignal *stateURL = [[directoryManager
-		shipItStateURL]
-		subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]];
+		return [RACSignal return:data];
+	}];
 
 	return [[[RACSignal
-		zip:@[ stateURL, serialization ]
-		reduce:^(NSURL *stateURL, NSData *data) {
+		zip:@[
+			[directoryManager shipItStateURL],
+			serialization
+		] reduce:^(NSURL *stateURL, NSData *data) {
 			NSError *error = nil;
 			if (![data writeToURL:stateURL options:NSDataWritingAtomic error:&error]) {
 				return [RACSignal error:error];
