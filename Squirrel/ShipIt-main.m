@@ -66,7 +66,8 @@ int main(int argc, const char * argv[]) {
 				BOOL freshInstall = (state.installerState == SQRLInstallerStateNothingToDo);
 				SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
 
-				if (++state.installationStateAttempt > SQRLShipItMaximumInstallationAttempts) {
+				NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
+				if (attempt > SQRLShipItMaximumInstallationAttempts) {
 					return [[[waitForTerminationIfNecessary(state)
 						then:^{
 							return [installer.abortInstallationCommand execute:state];
@@ -85,21 +86,24 @@ int main(int argc, const char * argv[]) {
 
 					// Save our changes to `installerState` and
 					// `installationStateAttempt`.
-					return [[[[state
-						writeUsingDirectoryManager:directoryManager]
+					return [[waitForTerminationIfNecessary(state)
 						then:^{
-							return waitForTerminationIfNecessary(state);
-						}]
-						then:^{
-							return [[installer.installUpdateCommand
-								execute:state]
+							return [[[[state
+								writeUsingDirectoryManager:directoryManager]
 								initially:^{
 									if (freshInstall) {
 										NSLog(@"Beginning installation");
+										state.installerState = SQRLInstallerStateClearingQuarantine;
 									} else {
 										NSLog(@"Resuming installation from state %i", (int)state.installerState);
 									}
-								}];
+
+									state.installationStateAttempt = attempt;
+								}]
+								then:^{
+									return [installer.installUpdateCommand execute:state];
+								}]
+								sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 						}]
 						doCompleted:^{
 							NSLog(@"Installation completed successfully");
