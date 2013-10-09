@@ -11,7 +11,7 @@
 SpecBegin(SQRLUpdate);
 
 it(@"should return nil when initialised without a url", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] init];
+	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{} error:NULL];
 	expect(update).to.beNil();
 });
 
