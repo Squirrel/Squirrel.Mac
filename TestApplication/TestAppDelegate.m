@@ -7,8 +7,8 @@
 //
 
 #import "TestAppDelegate.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager+Private.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -33,9 +33,23 @@
 		NSLog(@"TestApplication quitting");
 	});
 
-	NSString *jobID = SQRLShipItLauncher.shipItJobLabel;
-	if (![SQRLStateManager clearStateWithIdentifier:jobID]) {
-		NSLog(@"Could not remove all preferences for %@", jobID);
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+
+	NSError *error = nil;
+	BOOL removed = [[[directoryManager
+		shipItStateURL]
+		flattenMap:^(NSURL *stateURL) {
+			NSError *error = nil;
+			if (![NSFileManager.defaultManager removeItemAtURL:stateURL error:&error]) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal empty];
+		}]
+		waitUntilCompleted:&error];
+
+	if (!removed) {
+		NSLog(@"Could not remove all preferences for %@: %@", directoryManager, error);
 	}
 
 	NSString *updateURLString = NSProcessInfo.processInfo.environment[@"SQRLUpdateFromURL"];

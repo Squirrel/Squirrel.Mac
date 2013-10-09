@@ -7,10 +7,9 @@
 //
 
 #import "SQRLTestCase.h"
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager+Private.h"
-#import "SQRLXPCConnection.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -272,9 +271,9 @@ static void SQRLSignalHandler(int sig) {
 	return block(requirement);
 }
 
-- (SQRLCodeSignatureVerifier *)testApplicationVerifier {
+- (SQRLCodeSignature *)testApplicationSignature {
 	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		return [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
+		return [[SQRLCodeSignature alloc] initWithRequirement:requirement];
 	}];
 }
 
@@ -288,26 +287,32 @@ static void SQRLSignalHandler(int sig) {
 	}];
 }
 
-- (SQRLXPCConnection *)connectToShipIt {
-	NSString *applicationID = SQRLShipItLauncher.shipItJobLabel;
-	STAssertTrue([SQRLStateManager clearStateWithIdentifier:applicationID], @"Could not remove all preferences for %@", applicationID);
+- (SQRLDirectoryManager *)shipItDirectoryManager {
+	NSString *identifier = SQRLShipItLauncher.shipItJobLabel;
+	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:identifier];
+	STAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
 
+	return manager;
+}
+
+- (void)launchShipIt {
 	NSError *error = nil;
-	SQRLXPCConnection *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
-	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
+	STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
 
 	[self addCleanupBlock:^{
-		[connection cancel];
-
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		CFErrorRef error = NULL;
-		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &error)) {
-			NSLog(@"Could not remove ShipIt job after tests: %@", error);
-			if (error != NULL) CFRelease(error);
+		CFErrorRef removeError = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &removeError)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", removeError);
+			if (removeError != NULL) CFRelease(removeError);
 		}
-	}];
 
-	return connection;
+		NSError *lookupError = nil;
+		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
+		STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, lookupError);
+		
+		[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+	}];
 }
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {

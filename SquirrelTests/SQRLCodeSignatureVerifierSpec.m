@@ -1,14 +1,14 @@
 //
-//  SQRLCodeSignatureVerifierSpec.m
+//  SQRLCodeSignatureSpec.m
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-08-06.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
 
-SpecBegin(SQRLCodeSignatureVerifier)
+SpecBegin(SQRLCodeSignature)
 
 __block NSBundle *bundle;
 __block void (^corruptURL)(NSURL *URL);
@@ -23,17 +23,17 @@ beforeEach(^{
 
 it(@"should verify a valid bundle", ^{
 	NSError *error = nil;
-	BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+	BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 });
 
 it(@"should fail to verify with different code signing requirements", ^{
-	SQRLCodeSignatureVerifier *verifier = [[SQRLCodeSignatureVerifier alloc] init];
+	SQRLCodeSignature *verifier = [SQRLCodeSignature currentApplicationSignature];
 	expect(verifier).notTo.beNil();
 
 	NSError *error = nil;
-	BOOL success = [[verifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+	BOOL success = [[verifier verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 	expect(success).to.beFalsy();
 	expect(error).notTo.beNil();
 });
@@ -49,24 +49,24 @@ describe(@"code signature changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
 	it(@"should fail to verify a bundle with a corrupt code signature", ^{
 		corruptURL(codeSignatureURL);
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
 
@@ -75,24 +75,24 @@ describe(@"main executable changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:bundle.executableURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorCouldNotCreateStaticCode);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorCouldNotCreateStaticCode);
 	});
 
 	it(@"should fail to verify a bundle with a corrupt executable", ^{
 		corruptURL(bundle.executableURL);
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
 
@@ -108,24 +108,24 @@ describe(@"helper executable changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:helperURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
 	it(@"should fail to verify a bundle with a corrupt helper", ^{
 		corruptURL(helperURL);
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
 
@@ -141,24 +141,24 @@ describe(@"resource changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:resourceURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
 	it(@"should fail to verify a bundle with a corrupt resource", ^{
 		corruptURL(resourceURL);
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
 
@@ -173,24 +173,24 @@ describe(@"framework changes", ^{
 		expect([NSFileManager.defaultManager removeItemAtURL:frameworkURL error:NULL]).to.beTruthy();
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
 	it(@"should fail to verify a bundle with a corrupt framework", ^{
 		corruptURL([frameworkURL URLByAppendingPathComponent:@"Contents/Versions/A/Squirrel"]);
 
 		NSError *error = nil;
-		BOOL success = [[self.testApplicationVerifier verifyCodeSignatureOfBundle:bundle.bundleURL] waitUntilCompleted:&error];
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureVerifierErrorDomain);
-		expect(error.code).to.equal(SQRLCodeSignatureVerifierErrorDidNotPass);
+		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
 
