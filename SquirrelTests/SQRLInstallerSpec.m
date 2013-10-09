@@ -186,13 +186,12 @@ describe(@"after connecting to ShipIt", ^{
 it(@"should install an update in process", ^{
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:[self createTestApplicationUpdate] bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 	state.installerState = SQRLInstallerStateClearingQuarantine;
-	expect([[state writeUsingDirectoryManager:SQRLDirectoryManager.currentApplicationManager] waitUntilCompleted:NULL]).to.beTruthy();
 
 	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
 	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
-	BOOL install = [[installer.installUpdateCommand execute:nil] asynchronouslyWaitUntilCompleted:&installError];
+	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });
