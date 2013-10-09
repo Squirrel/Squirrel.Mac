@@ -42,6 +42,73 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 
+// Parses an update model from downloaded data.
+//
+// data - JSON data representing an update manifest. This must not be nil.
+//
+// Returns a signal which synchronously sends a `SQRLUpdate` then completes, or
+// errors.
+- (RACSignal *)updateFromJSONData:(NSData *)data;
+
+// Downloads an update bundle and prepares it for installation.
+//
+// Upon success, the update will be automatically installed after the
+// application terminates.
+//
+// update - Describes the update to download and prepare. This must not be nil.
+//
+// Returns a signal which sends a `SQRLDownloadedUpdate` then completes, or
+// errors, on a background thread.
+- (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update;
+
+// Downloads the archived bundle associated with the given update.
+//
+// update            - Describes the update to install. This must not be nil.
+// downloadDirectory - A directory in which to create a temporary directory for this
+//                     download. This must not be nil.
+//
+// Returns a signal which sends an unarchived `NSBundle` then completes, or
+// errors, on a background thread.
+- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
+
+// Creates a unique directory in which to save the update bundle, for later use
+// by ShipIt.
+//
+// Returns a signal which sends an `NSURL` then completes, or errors, on an
+// unspecified thread.
+- (RACSignal *)uniqueTemporaryDirectoryForUpdate;
+
+// Recursively searches the given directory for an application bundle that has
+// the same identifier as the running application.
+//
+// directory - The directory in which to search. This must not be nil.
+//
+// Returns a signal which synchronously sends an `NSBundle` then completes, or
+// errors.
+- (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory;
+
+// Validates the code signature of the given update bundle, then prepares it for
+// installation.
+//
+// Upon success, the update will be automatically installed after the
+// application terminates.
+//
+// update - Describes the update to verify and prepare. This must not be nil.
+//
+// Returns a signal which sends a `SQRLDownloadedUpdate` then completes, or
+// errors, on a background thread.
+- (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle;
+
+// Prepares the given update for installation.
+//
+// Upon success, the update will be automatically installed after the
+// application terminates.
+//
+// update - Describes the update and bundle to prepare. This must not be nil.
+//
+// Returns a signal which completes or errors on a background thread.
+- (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update;
+
 @end
 
 @implementation SQRLUpdater
@@ -92,7 +159,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				return [self updateFromJSONData:data];
 			}]
 			flattenMap:^(SQRLUpdate *update) {
-				return [self downloadAndInstallUpdate:update];
+				return [self downloadAndPrepareUpdate:update];
 			}]
 			doError:^(id _) {
 				self.shouldRelaunch = NO;
@@ -142,103 +209,106 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 - (RACSignal *)updateFromJSONData:(NSData *)data {
 	NSParameterAssert(data != nil);
 
-	return [[RACSignal startLazilyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground] block:^(id<RACSubscriber> subscriber) {
-		NSError *error = nil;
-		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
-		if (JSON == nil) {
-			NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
-			userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
-			userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
-			userInfo[SQRLUpdaterServerDataErrorKey] = data;
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+	return [[RACSignal
+		defer:^{
+			NSError *error = nil;
+			NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+			if (JSON == nil) {
+				NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+				userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+				userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
+				userInfo[SQRLUpdaterServerDataErrorKey] = data;
+				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-			[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
-			return;
-		}
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
+			}
 
-		SQRLUpdate *update = nil;
-		error = nil;
-		if ([JSON isKindOfClass:NSDictionary.class]) update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:JSON error:&error];
+			SQRLUpdate *update = nil;
+			error = nil;
+			if ([JSON isKindOfClass:NSDictionary.class]) update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:JSON error:&error];
 
-		if (update == nil) {
-			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-			userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
-			userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid JSON response. Try again later.", nil);
-			userInfo[SQRLUpdaterJSONObjectErrorKey] = JSON;
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+			if (update == nil) {
+				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+				userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+				userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid JSON response. Try again later.", nil);
+				userInfo[SQRLUpdaterJSONObjectErrorKey] = JSON;
+				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-			[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidJSON userInfo:userInfo]];
-			return;
-		}
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidJSON userInfo:userInfo]];
+			}
 
-		[subscriber sendNext:update];
-		[subscriber sendCompleted];
-	}] setNameWithFormat:@"-updateFromJSONData:"];
+			return [RACSignal return:update];
+		}]
+		setNameWithFormat:@"%@ -updateFromJSONData:", self];
 }
 
-- (RACSignal *)downloadAndInstallUpdate:(SQRLUpdate *)update {
+- (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update {
 	NSParameterAssert(update != nil);
 
 	return [[[self
 		uniqueTemporaryDirectoryForUpdate]
-		flattenMap:^(NSURL *downloadFolder) {
+		flattenMap:^(NSURL *downloadDirectory) {
 			return [[[self
-				downloadBundleForUpdate:update intoFolder:downloadFolder]
+				downloadBundleForUpdate:update intoDirectory:downloadDirectory]
 				flattenMap:^(NSBundle *updateBundle) {
-					return [self verifyAndInstallUpdate:update fromBundle:updateBundle];
+					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
 				}]
 				doError:^(id _) {
 					NSError *error = nil;
-					if (![NSFileManager.defaultManager removeItemAtURL:downloadFolder error:&error]) {
-						NSLog(@"Error removing temporary download folder at %@: %@", downloadFolder, error.sqrl_verboseDescription);
+					if (![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&error]) {
+						NSLog(@"Error removing temporary download directory at %@: %@", downloadDirectory, error.sqrl_verboseDescription);
 					}
 				}];
 		}]
-		setNameWithFormat:@"-downloadAndInstallUpdate: %@", update];
+		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
 }
 
-- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoFolder:(NSURL *)downloadFolder {
+- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
 	NSParameterAssert(update != nil);
-	NSParameterAssert(downloadFolder != nil);
-	
-	NSURL *zipDownloadURL = update.updateURL;
-	NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
-	[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
+	NSParameterAssert(downloadDirectory != nil);
 
-	return [[[[[[[NSURLConnection
-		rac_sendAsynchronousRequest:zipDownloadRequest]
-		reduceEach:^(id _, NSData *data) {
-			return data;
-		}]
-		flattenMap:^(NSData *data) {
-			NSURL *zipOutputURL = [downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
+	return [[[[[RACSignal
+		defer:^{
+			NSURL *zipDownloadURL = update.updateURL;
+			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
+			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-			NSError *error = nil; 
-			if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
-				return [RACSignal return:zipOutputURL];
-			} else {
-				return [RACSignal error:error];
-			}
+			return [[[NSURLConnection
+				rac_sendAsynchronousRequest:zipDownloadRequest]
+				reduceEach:^(id _, NSData *data) {
+					return data;
+				}]
+				flattenMap:^(NSData *data) {
+					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
+
+					NSError *error = nil; 
+					if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
+						return [RACSignal return:zipOutputURL];
+					} else {
+						return [RACSignal error:error];
+					}
+				}];
 		}]
 		doNext:^(NSURL *zipOutputURL) {
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
 		flattenMap:^(NSURL *zipOutputURL) {
-			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadFolder];
+			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
 		}]
 		then:^{
-			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadFolder];
+			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
 		}]
-		setNameWithFormat:@"-downloadBundleForUpdate: %@ intoFolder: %@", update, downloadFolder];
+		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
 
 #pragma mark File Management
 
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
-	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-
-	return [[[directoryManager
-		applicationSupportURL]
+	return [[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
 		flattenMap:^(NSURL *appSupportURL) {
 			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
@@ -260,15 +330,14 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 			NSString *updateDirectoryPath = [NSFileManager.defaultManager stringWithFileSystemRepresentation:updateDirectoryCString length:strlen(updateDirectoryCString)];
 			return [RACSignal return:[NSURL fileURLWithPath:updateDirectoryPath isDirectory:YES]];
 		}]
-		setNameWithFormat:@"-uniqueTemporaryDirectoryForUpdate"];
+		setNameWithFormat:@"%@ -uniqueTemporaryDirectoryForUpdate", self];
 }
 
 - (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory {
 	NSParameterAssert(directory != nil);
 
-	NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
 	return [[[RACSignal
-		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		defer:^{
 			NSFileManager *manager = [[NSFileManager alloc] init];
 			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
 				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
@@ -291,31 +360,28 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 					return NO;
 				}
 
-				return [bundle.bundleIdentifier isEqual:bundleIdentifier];
+				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
 			}];
 
 			if (updateBundleURL != nil) {
-				[subscriber sendNext:updateBundleURL];
-				[subscriber sendCompleted];
+				return [RACSignal return:updateBundleURL];
 			} else {
 				NSDictionary *userInfo = @{
 					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), NSRunningApplication.currentApplication.bundleIdentifier, directory],
 				};
 
-				[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]];
 			}
-
-			return nil;
 		}]
 		map:^(NSURL *URL) {
 			return [NSBundle bundleWithURL:URL];
 		}]
-		setNameWithFormat:@"-applicationBundleMatchingCurrentApplicationInDirectory: %@", directory];
+		setNameWithFormat:@"%@ -applicationBundleMatchingCurrentApplicationInDirectory: %@", self, directory];
 }
 
 #pragma mark Installing Updates
 
-- (RACSignal *)verifyAndInstallUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle {
+- (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle {
 	NSParameterAssert(update != nil);
 	NSParameterAssert(updateBundle != nil);
 
@@ -330,7 +396,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				return [RACSignal return:downloadedUpdate];
 			}];
 		}]
-		setNameWithFormat:@"-verifyAndInstallUpdate: %@ fromBundle: %@", update, updateBundle];
+		setNameWithFormat:@"%@ -verifyAndPrepareUpdate: %@ fromBundle: %@", self, update, updateBundle];
 }
 
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
@@ -366,7 +432,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 			return self.shipItLauncher;
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
-		setNameWithFormat:@"-prepareUpdateForInstallation: %@", update];
+		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
 }
 
 @end

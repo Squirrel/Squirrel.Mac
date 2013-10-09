@@ -616,6 +616,17 @@
 			name = "Other Frameworks";
 			sourceTree = "<group>";
 		};
+		D049059918054439004E683E /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				D0964B3A17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h */,
+				D0964B3B17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m */,
+				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
+				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
+			);
+			name = Extensions;
+			sourceTree = "<group>";
+		};
 		D06B58BC18032BE800656D97 /* Transactions */ = {
 			isa = PBXGroup;
 			children = (
@@ -675,13 +686,13 @@
 			name = Archives;
 			sourceTree = "<group>";
 		};
-		D0964B3517F2DF3100D88BF7 /* XPC */ = {
+		D0964B3517F2DF3100D88BF7 /* IPC */ = {
 			isa = PBXGroup;
 			children = (
 				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
 				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
 			);
-			name = XPC;
+			name = IPC;
 			sourceTree = "<group>";
 		};
 		D0A56B971804B1FD00A84EDC /* Products */ = {
@@ -876,7 +887,7 @@
 			children = (
 				D0964B2817F2DEE700D88BF7 /* Updates */,
 				D0964B3417F2DEF500D88BF7 /* Archives */,
-				D0964B3517F2DF3100D88BF7 /* XPC */,
+				D0964B3517F2DF3100D88BF7 /* IPC */,
 			);
 			name = Classes;
 			sourceTree = "<group>";
@@ -901,10 +912,7 @@
 		D0EDBE9F17B0C6930058BC3C /* Shared */ = {
 			isa = PBXGroup;
 			children = (
-				D0964B3A17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h */,
-				D0964B3B17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m */,
-				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
-				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
+				D049059918054439004E683E /* Extensions */,
 				D0A56BF61804BABB00A84EDC /* Code Signing */,
 				D0A56BE71804BA2400A84EDC /* State */,
 				D06B58BC18032BE800656D97 /* Transactions */,
@@ -1138,6 +1146,7 @@
 		D0A56BA61804B1FD00A84EDC /* Mantle Mac Tests.octest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
+			name = "Mantle Mac Tests.octest";
 			path = "Mantle Tests.octest";
 			remoteRef = D0A56BA51804B1FD00A84EDC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
@@ -1152,6 +1161,7 @@
 		D0A56BAA1804B1FD00A84EDC /* Mantle iOS Tests.octest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
+			name = "Mantle iOS Tests.octest";
 			path = "Mantle-iOS Tests.octest";
 			remoteRef = D0A56BA91804B1FD00A84EDC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
