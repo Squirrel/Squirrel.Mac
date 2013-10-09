@@ -17,6 +17,8 @@
 @property (nonatomic, strong, readonly) NSBundle *bundle;
 
 // The update information sent by the server.
+//
+// This may be a `SQRLUpdate` subclass if `SQRLUpdater.updateClass` was changed.
 @property (nonatomic, copy, readonly) SQRLUpdate *update;
 
 // Initializes the receiver with update metadata and the downloaded and

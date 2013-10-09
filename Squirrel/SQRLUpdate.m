@@ -7,7 +7,6 @@
 //
 
 #import "SQRLUpdate.h"
-#import "SQRLUpdate+Private.h"
 
 NSString * const SQRLUpdateJSONURLKey = @"url";
 NSString * const SQRLUpdateJSONReleaseNotesKey = @"notes";

@@ -6,8 +6,6 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLUpdate+Private.h"
-
 SpecBegin(SQRLUpdate);
 
 it(@"should return nil when initialised without a url", ^{

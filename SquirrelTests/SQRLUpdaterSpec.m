@@ -7,7 +7,6 @@
 //
 
 #import "SQRLZipArchiver.h"
-#import "SQRLUpdate+Private.h"
 
 SpecBegin(SQRLUpdater)
 

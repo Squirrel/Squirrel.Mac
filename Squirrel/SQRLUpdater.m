@@ -16,7 +16,7 @@
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLShipItState.h"
-#import "SQRLUpdate+Private.h"
+#import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -135,6 +135,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 	if (self == nil) return nil;
 
 	_updateRequest = [updateRequest copy];
+	_updateClass = SQRLUpdate.class;
 
 	_signature = [SQRLCodeSignature currentApplicationSignature];
 	if (_signature == nil) return nil;
@@ -223,9 +224,12 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
 			}
 
+			Class updateClass = self.updateClass;
+			NSAssert([updateClass isSubclassOfClass:SQRLUpdate.class], @"%@ is not a subclass of SQRLUpdate", updateClass);
+
 			SQRLUpdate *update = nil;
 			error = nil;
-			if ([JSON isKindOfClass:NSDictionary.class]) update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:JSON error:&error];
+			if ([JSON isKindOfClass:NSDictionary.class]) update = [MTLJSONAdapter modelOfClass:updateClass fromJSONDictionary:JSON error:&error];
 
 			if (update == nil) {
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];

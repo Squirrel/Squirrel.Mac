@@ -70,6 +70,13 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // This property must never be set to nil.
 @property (atomic, copy) NSURLRequest *updateRequest;
 
+// The `SQRLUpdate` subclass to instantiate with the server's response.
+//
+// By default, this is `SQRLUpdate` itself, but it can be set to a custom
+// subclass in order to preserve additional JSON data. See the `SQRLUpdate`
+// documentation for more information.
+@property (atomic, strong) Class updateClass;
+
 // Initializes an updater that will send the given request to check for updates.
 //
 // This is the designated initializer for this class.
