@@ -112,7 +112,7 @@ it(@"should update to the most recently enqueued job", ^{
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-xit(@"should use the application's bundled version of Squirrel and update in-place after a long time", ^{
+it(@"should use the application's bundled version of Squirrel and update in-place after a long time", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
 	SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
