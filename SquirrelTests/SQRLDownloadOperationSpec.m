@@ -58,10 +58,10 @@ it(@"should download file:// scheme URLs", ^{
 	expect(downloadContents).to.equal(testContents);
 });
 
-__block NSData *serverResponse = nil;
+__block CFHTTPMessageRef (^responseBlock)(CFHTTPMessageRef) = nil;
 
 // Returns a retained dispatch object, releasing it closes the server
-dispatch_source_t (^startTcpServer)(SQRLTestCase *) = ^ dispatch_source_t (SQRLTestCase *self) {
+dispatch_source_t (^startTcpServer)(SQRLTestCase *, in_port_t *) = ^ dispatch_source_t (SQRLTestCase *self, in_port_t *portRef) {
 	int listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	struct sockaddr_in listenAddress = {
@@ -116,7 +116,8 @@ dispatch_source_t (^startTcpServer)(SQRLTestCase *) = ^ dispatch_source_t (SQRLT
 		NSLog(@"Received Request:");
 		NSLog(@"%@", [[NSString alloc] initWithData:CFBridgingRelease(CFHTTPMessageCopySerializedMessage(request)) encoding:NSASCIIStringEncoding]);
 
-		NSData *responseData = serverResponse;
+		CFHTTPMessageRef response = responseBlock(request);
+		NSData *responseData = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
 
 		NSLog(@"Sending Response:");
 		NSLog(@"%@", [[NSString alloc] initWithData:responseData encoding:NSASCIIStringEncoding]);
@@ -143,6 +144,17 @@ dispatch_source_t (^startTcpServer)(SQRLTestCase *) = ^ dispatch_source_t (SQRLT
 	});
 	dispatch_resume(source);
 
+	struct sockaddr_storage localAddress = {};
+	socklen_t localAddressLength = sizeof(localAddress);
+	int localAddressError = getsockname(listenSocket, (struct sockaddr *)&localAddress, &localAddressLength);
+	expect(localAddressError).to.equal(0);
+
+	// IPv4 and IPv6 address transport layer port fields are at the same offset
+	// and are the same size
+	in_port_t port = ntohs(((struct sockaddr_in *)&localAddress)->sin_port);
+	expect(port).to.beGreaterThan(0);
+	*portRef = port;
+
 	return source;
 };
 
@@ -159,23 +171,12 @@ static NSData * (^stringTimes)(NSString *, NSUInteger) = ^ (NSString *string, NS
 it(@"should resume a download", ^{
 	// Start server
 
-	dispatch_source_t server = startTcpServer(self);
+	in_port_t port = 0;
+	dispatch_source_t server = startTcpServer(self, &port);
 	expect(server).notTo.beNil();
 	@onExit {
 		dispatch_release(server);
 	};
-
-	int listenSocket = (int)dispatch_source_get_handle(server);
-
-	struct sockaddr_storage localAddress = {};
-	socklen_t localAddressLength = sizeof(localAddress);
-	int localAddressError = getsockname(listenSocket, (struct sockaddr *)&localAddress, &localAddressLength);
-	expect(localAddressError).to.equal(0);
-
-	// IPv4 and IPv6 address transport layer port fields are at the same offset
-	// and are the same size
-	in_port_t port = ntohs(((struct sockaddr_in *)&localAddress)->sin_port);
-	expect(port).to.beGreaterThan(0);
 
 
 	// Prepare half response
@@ -196,7 +197,15 @@ it(@"should resume a download", ^{
 	}];
 	CFHTTPMessageSetBody(response, (__bridge CFDataRef)firstHalf);
 
-	serverResponse = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
+	responseBlock = ^ (CFHTTPMessageRef request) {
+		NSString *requestETag = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"If-Range"));
+		expect(requestETag).to.beNil();
+
+		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"Range"));
+		expect(ifRange).to.beNil();
+
+		return response;
+	};
 
 
 	// Issue first request
@@ -236,7 +245,15 @@ it(@"should resume a download", ^{
 	}];
 	CFHTTPMessageSetBody(response, (__bridge CFDataRef)secondHalf);
 
-	serverResponse = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
+	responseBlock = ^ (CFHTTPMessageRef request) {
+		NSString *requestETag = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"If-Range"));
+		expect(requestETag).to.equal(ETag);
+
+		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"Range"));
+		expect(ifRange).to.equal(([NSString stringWithFormat:@"%lu-", firstHalf.length]));
+
+		return response;
+	};
 
 
 	// Issue second request
