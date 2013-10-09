@@ -21,6 +21,4 @@
 // bundle - The application bundle representing the update. This must not be nil.
 - (id)initWithUpdate:(SQRLUpdate *)update bundle:(NSBundle *)bundle;
 
-- (id)initWithJSON:(NSDictionary *)JSON __attribute__((unavailable("Use -initWithUpdate:bundle: instead")));
-
 @end

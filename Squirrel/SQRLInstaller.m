@@ -10,8 +10,9 @@
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
-#import "SQRLCodeSignatureVerifier.h"
-#import "SQRLStateManager.h"
+#import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
+#import "SQRLShipItState.h"
 #import "SQRLTerminationListener.h"
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
@@ -35,8 +36,8 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 @interface SQRLInstaller ()
 
-// The state manager to read and write from.
-@property (nonatomic, strong, readonly) SQRLStateManager *stateManager;
+// Finds the state file to read and write from.
+@property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 
 @end
 
@@ -44,13 +45,13 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 #pragma mark Lifecycle
 
-- (id)initWithStateManager:(SQRLStateManager *)stateManager {
-	NSParameterAssert(stateManager != nil);
+- (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
+	NSParameterAssert(directoryManager != nil);
 
 	self = [super init];
 	if (self == nil) return nil;
 
-	_stateManager = stateManager;
+	_directoryManager = directoryManager;
 
 	@weakify(self);
 
@@ -62,24 +63,28 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		switchToLatest]
 		setNameWithFormat:@"aborting"];
 
-	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(id _) {
+	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItState *state) {
 		@strongify(self);
+		NSParameterAssert(state != nil);
+
 		return [[self
-			signalForCurrentState]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), self.stateManager.targetBundleURL.path];
+			installUsingState:state]
+			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 	}];
 
-	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(id _) {
+	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItState *state) {
 		@strongify(self);
-		return [[RACSignal
+		NSParameterAssert(state != nil);
+
+		return [[[RACSignal
 			zip:@[
-				[self targetBundleURL],
-				[[self backupBundleURL] catchTo:[RACSignal return:nil]],
-				[self verifier]
-			] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
-				return [self verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL];
+				[self ensure:@keypath(state.targetBundleURL) fromState:state],
+				[self ensure:@keypath(state.codeSignature) fromState:state]
+			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
 			}]
-			flatten];
+			flatten]
+			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 	}];
 	
 	return self;
@@ -87,112 +92,69 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 #pragma mark Installer State
 
-- (RACSignal *)retrieveDefaultsValueWithDescription:(NSString *)description block:(id (^)(void))block {
-	NSParameterAssert(description != nil);
-	NSParameterAssert(block != nil);
+- (RACSignal *)ensure:(NSString *)key fromState:(SQRLShipItState *)state {
+	NSParameterAssert(key != nil);
+	NSParameterAssert(state != nil);
 
 	return [[RACSignal
 		defer:^{
-			id value = block();
+			id value = [state valueForKey:key];
 			if (value == nil) {
-				NSString *errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Missing %@", nil), description];
+				NSString *errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Missing %@", nil), key];
 				return [RACSignal error:[self missingDataErrorWithDescription:errorDescription]];
 			} else {
 				return [RACSignal return:value];
 			}
 		}]
-		setNameWithFormat:@"-retrieveDefaultsValueWithDescription: %@ block:", description];
+		setNameWithFormat:@"%@ -ensure: %@ fromState: %@", self, key, state];
 }
 
-- (RACSignal *)targetBundleURL {
-	return [self retrieveDefaultsValueWithDescription:@"target bundle URL" block:^{
-		return self.stateManager.targetBundleURL;
-	}];
-}
+- (RACSignal *)installUsingState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
 
-- (RACSignal *)backupBundleURL {
-	return [self retrieveDefaultsValueWithDescription:@"backup bundle URL" block:^{
-		return self.stateManager.backupBundleURL;
-	}];
-}
-
-- (RACSignal *)updateBundleURL {
-	return [self retrieveDefaultsValueWithDescription:@"update bundle URL" block:^{
-		return self.stateManager.updateBundleURL;
-	}];
-}
-
-- (RACSignal *)relaunchAfterInstallation {
-	return [[RACSignal
-		defer:^{
-			return [RACSignal return:@(self.stateManager.relaunchAfterInstallation)];
-		}]
-		setNameWithFormat:@"-relaunchAfterInstallation"];
-}
-
-- (RACSignal *)verifier {
-	return [[[self
-		retrieveDefaultsValueWithDescription:@"code signing requirement" block:^{
-			return self.stateManager.requirementData;
-		}]
-		flattenMap:^(NSData *requirementData) {
-			SecRequirementRef requirement = NULL;
-			OSStatus status = SecRequirementCreateWithData((__bridge CFDataRef)requirementData, kSecCSDefaultFlags, &requirement);
-			@onExit {
-				if (requirement != NULL) CFRelease(requirement);
-			};
-
-			if (status == noErr) {
-				return [RACSignal return:[[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement]];
-			} else {
-				return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:status userInfo:nil]];
-			}
-		}]
-		setNameWithFormat:@"-verifier"];
-}
-
-- (RACSignal *)signalForCurrentState {
-	SQRLShipItState state = self.stateManager.state;
-	if (state == SQRLShipItStateNothingToDo) return [RACSignal empty];
+	SQRLInstallerState installerState = state.installerState;
+	if (installerState == SQRLInstallerStateNothingToDo) return [RACSignal empty];
 
 	return [[[[self
 		signalForState:state]
 		doCompleted:^{
-			NSLog(@"Completed step %i", (int)state);
+			NSLog(@"Completed step %i", (int)installerState);
 		}]
 		concat:[RACSignal defer:^{
-			return [self signalForCurrentState];
+			return [self installUsingState:state];
 		}]]
-		setNameWithFormat:@"-signalForCurrentState"];
+		setNameWithFormat:@"%@ -installUsingState: %@", self, state];
 }
 
-- (RACSignal *)signalForState:(SQRLShipItState)state {
-	// This case is covered in -signalForCurrentState.
-	NSParameterAssert(state != SQRLShipItStateNothingToDo);
+- (RACSignal *)signalForState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
 
-	switch (state) {
-		case SQRLShipItStateClearingQuarantine:
-			return [[[[[self
-				updateBundleURL]
+	// This case is covered in -installUsingState:.
+	NSParameterAssert(state.installerState != SQRLInstallerStateNothingToDo);
+
+	switch (state.installerState) {
+		case SQRLInstallerStateClearingQuarantine:
+			return [[[[self
+				ensure:@keypath(state.updateBundleURL) fromState:state]
 				flattenMap:^(NSURL *bundleURL) {
 					return [self clearQuarantineForDirectory:bundleURL];
 				}]
-				doCompleted:^{
-					self.stateManager.state = SQRLShipItStateBackingUp;
+				then:^{
+					state.installerState = SQRLInstallerStateBackingUp;
+					state.installationStateAttempt = 1;
+					return [state writeUsingDirectoryManager:self.directoryManager];
 				}]
-				ignoreValues]
-				setNameWithFormat:@"SQRLShipItStateClearingQuarantine"];
+				setNameWithFormat:@"SQRLInstallerStateClearingQuarantine"];
 
-		case SQRLShipItStateBackingUp:
-			return [[[[[[RACSignal
+		case SQRLInstallerStateBackingUp:
+			return [[[[[RACSignal
 				zip:@[
-					[self targetBundleURL],
-					[[self backupBundleURL] catchTo:[RACSignal return:nil]],
-					[self verifier],
-				] reduce:^(NSURL *bundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					[self ensure:@keypath(state.targetBundleURL) fromState:state],
+					[self ensure:@keypath(state.codeSignature) fromState:state],
+				] reduce:^(NSURL *bundleURL, SQRLCodeSignature *codeSignature) {
 					RACSignal *skipBackup = [RACSignal return:@NO];
-					if (backupBundleURL != nil) {
-						skipBackup = [self checkWhetherItemPreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingVerifier:verifier];
+					if (state.backupBundleURL != nil) {
+						skipBackup = [self checkWhetherItemPreviouslyAtURL:bundleURL wasInstalledAtURL:state.backupBundleURL usingSignature:codeSignature];
 					}
 
 					return [skipBackup flattenMap:^(NSNumber *skip) {
@@ -204,28 +166,29 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					}];
 				}]
 				flatten]
-				doNext:^(NSURL *backupBundleURL) {
+				flattenMap:^(NSURL *backupBundleURL) {
 					// Save the chosen backup URL as soon as we have it, so we
 					// can resume even if the state change hasn't taken effect.
-					self.stateManager.backupBundleURL = backupBundleURL;
-					[self.stateManager synchronize];
+					state.backupBundleURL = backupBundleURL;
+					return [state writeUsingDirectoryManager:self.directoryManager];
 				}]
-				doCompleted:^{
-					self.stateManager.state = SQRLShipItStateInstalling;
+				then:^{
+					state.installerState = SQRLInstallerStateInstalling;
+					state.installationStateAttempt = 1;
+					return [state writeUsingDirectoryManager:self.directoryManager];
 				}]
-				ignoreValues]
-				setNameWithFormat:@"SQRLShipItStateBackingUp"];
+				setNameWithFormat:@"SQRLInstallerStateBackingUp"];
 
-		case SQRLShipItStateInstalling:
-			return [[[[[RACSignal
+		case SQRLInstallerStateInstalling:
+			return [[[[RACSignal
 				zip:@[
-					[self targetBundleURL],
-					[self updateBundleURL],
-					[self backupBundleURL],
-					[self verifier]
-				] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					[self ensure:@keypath(state.targetBundleURL) fromState:state],
+					[self ensure:@keypath(state.updateBundleURL) fromState:state],
+					[self ensure:@keypath(state.backupBundleURL) fromState:state],
+					[self ensure:@keypath(state.codeSignature) fromState:state]
+				] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 					return [[[[self
-						checkWhetherItemPreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingVerifier:verifier]
+						checkWhetherItemPreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
 						flattenMap:^(NSNumber *skip) {
 							if (skip.boolValue) {
 								return [RACSignal empty];
@@ -241,7 +204,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 							// Verify that the target bundle didn't get corrupted during
 							// failure. Try recovering it if it did.
 							return [[self
-								verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL]
+								verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
 								then:^{
 									// Recovery succeeded, but we still want to pass
 									// through the original error.
@@ -250,21 +213,22 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 						}];
 				}]
 				flatten]
-				doCompleted:^{
-					self.stateManager.state = SQRLShipItStateVerifyingInPlace;
+				then:^{
+					state.installerState = SQRLInstallerStateVerifyingInPlace;
+					state.installationStateAttempt = 1;
+					return [state writeUsingDirectoryManager:self.directoryManager];
 				}]
-				ignoreValues]
-				setNameWithFormat:@"SQRLShipItStateInstalling"];
+				setNameWithFormat:@"SQRLInstallerStateInstalling"];
 
-		case SQRLShipItStateVerifyingInPlace:
-			return [[[[[RACSignal
+		case SQRLInstallerStateVerifyingInPlace:
+			return [[[[RACSignal
 				zip:@[
-					[self targetBundleURL],
-					[self backupBundleURL],
-					[self verifier]
-				] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignatureVerifier *verifier) {
+					[self ensure:@keypath(state.targetBundleURL) fromState:state],
+					[self ensure:@keypath(state.backupBundleURL) fromState:state],
+					[self ensure:@keypath(state.codeSignature) fromState:state]
+				] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 					return [[self
-						verifyCodeSignatureOfBundleAtURL:targetBundleURL usingVerifier:verifier recoveringUsingBackupAtURL:backupBundleURL]
+						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
 						then:^{
 							return [[self
 								deleteBackupAtURL:backupBundleURL]
@@ -272,18 +236,18 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 						}];
 				}]
 				flatten]
-				doCompleted:^{
-					self.stateManager.state = SQRLShipItStateRelaunching;
+				then:^{
+					state.installerState = SQRLInstallerStateRelaunching;
+					state.installationStateAttempt = 1;
+					return [state writeUsingDirectoryManager:self.directoryManager];
 				}]
-				ignoreValues]
-				setNameWithFormat:@"SQRLShipItStateVerifyingInPlace"];
+				setNameWithFormat:@"SQRLInstallerStateVerifyingInPlace"];
 
-		case SQRLShipItStateRelaunching:
-			return [[[[[[[self
-				relaunchAfterInstallation]
-				flattenMap:^(NSNumber *shouldRelaunch) {
-					if (shouldRelaunch.boolValue) {
-						return [self targetBundleURL];
+		case SQRLInstallerStateRelaunching:
+			return [[[[[RACSignal
+				defer:^{
+					if (state.relaunchAfterInstallation) {
+						return [self ensure:@keypath(state.targetBundleURL) fromState:state];
 					} else {
 						return [RACSignal empty];
 					}
@@ -297,11 +261,12 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 						return [RACSignal error:error];
 					}
 				}]
-				doCompleted:^{
-					self.stateManager.state = SQRLShipItStateNothingToDo;
+				then:^{
+					state.installerState = SQRLInstallerStateNothingToDo;
+					state.installationStateAttempt = 1;
+					return [state writeUsingDirectoryManager:self.directoryManager];
 				}]
-				ignoreValues]
-				setNameWithFormat:@"SQRLShipItStateRelaunching"];
+				setNameWithFormat:@"SQRLInstallerStateRelaunching"];
 		
 		default: {
 			NSDictionary *userInfo = @{
@@ -319,14 +284,10 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 - (RACSignal *)backUpBundleAtURL:(NSURL *)targetBundleURL {
 	NSParameterAssert(targetBundleURL != nil);
 
-	return [[[[[RACSignal
-		defer:^{
+	return [[[[[[self.directoryManager
+		applicationSupportURL]
+		flattenMap:^(NSURL *applicationSupportURL) {
 			NSError *error = nil;
-			NSURL *applicationSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:self.stateManager.applicationSupportURL create:YES error:&error];
-			if (applicationSupportURL == nil) {
-				return [RACSignal error:error];
-			}
-
 			NSURL *temporaryDirectoryURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:applicationSupportURL create:YES error:&error];
 			if (temporaryDirectoryURL == nil) {
 				return [RACSignal error:error];
@@ -383,15 +344,12 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 		setNameWithFormat:@"-deleteBackupAtURL: %@", backupURL];
 }
 
-- (RACSignal *)verifyCodeSignatureOfBundleAtURL:(NSURL *)bundleURL usingVerifier:(SQRLCodeSignatureVerifier *)verifier recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
+- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
 	NSParameterAssert(bundleURL != nil);
-	NSParameterAssert(verifier != nil);
+	NSParameterAssert(signature != nil);
 
-	return [[[[verifier
-		verifyCodeSignatureOfBundle:bundleURL]
-		doError:^(NSError *error) {
-			NSLog(@"Bundle %@ is missing or corrupted: %@", bundleURL, error);
-		}]
+	return [[[signature
+		verifyBundleAtURL:bundleURL]
 		catch:^(NSError *error) {
 			if (backupBundleURL == nil) return [RACSignal error:error];
 
@@ -407,18 +365,18 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 					NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, bundleURL, recoveryError.sqrl_verboseDescription);
 				}];
 		}]
-		setNameWithFormat:@"-verifyCodeSignatureOfBundleAtURL: %@ usingVerifier: %@ recoveringUsingBackupAtURL: %@", bundleURL, verifier, backupBundleURL];
+		setNameWithFormat:@"-verifyBundleAtURL: %@ usingSignature: %@ recoveringUsingBackupAtURL: %@", bundleURL, signature, backupBundleURL];
 }
 
 #pragma mark Installation
 
-- (RACSignal *)checkWhetherItemPreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingVerifier:(SQRLCodeSignatureVerifier *)verifier {
+- (RACSignal *)checkWhetherItemPreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingSignature:(SQRLCodeSignature *)signature {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
-	NSParameterAssert(verifier != nil);
+	NSParameterAssert(signature != nil);
 
 	return [[[[self
-		verifyCodeSignatureOfBundleAtURL:targetURL usingVerifier:verifier recoveringUsingBackupAtURL:nil]
+		verifyBundleAtURL:targetURL usingSignature:signature recoveringUsingBackupAtURL:nil]
 		then:^{
 			return [RACSignal return:@YES];
 		}]

@@ -16,8 +16,8 @@ extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
 // The Info.plist key associated with a bundle's short version string.
 extern NSString * const SQRLBundleShortVersionStringKey;
 
-@class SQRLCodeSignatureVerifier;
-@class SQRLXPCConnection;
+@class SQRLCodeSignature;
+@class SQRLDirectoryManager;
 
 @interface SQRLTestCase : SPTSenTestCase
 
@@ -42,6 +42,16 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // This bundle will be deleted between each example.
 @property (nonatomic, copy, readonly) NSBundle *testApplicationBundle;
 
+// A code signature with requirements from TestApplication.app.
+@property (nonatomic, strong, readonly) SQRLCodeSignature *testApplicationSignature;
+
+// A serialized `SecRequirementRef` representing the requirements from
+// TestApplication.app.
+@property (nonatomic, copy, readonly) NSData *testApplicationCodeSigningRequirementData;
+
+// A directory manager for finding URLs that apply to ShipIt.
+@property (nonatomic, strong, readonly) SQRLDirectoryManager *shipItDirectoryManager;
+
 // Launches a new copy of TestApplication.app from the `testApplicationBundle`.
 //
 // Invoking this method multiple times will result in multiple running instances
@@ -64,19 +74,8 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // deleted at the end of the example.
 - (NSURL *)createTestApplicationUpdate;
 
-// Returns a code signature verifier that uses requirements from
-// TestApplication.app.
-- (SQRLCodeSignatureVerifier *)testApplicationVerifier;
-
-// Returns a serialized SecRequirementRef representing the requirements from
-// TestApplication.app.
-- (NSData *)testApplicationCodeSigningRequirementData;
-
-// Opens and resumes a new XPC connection to the ShipIt service.
-//
-// Returns the new connection, which will be automatically closed at the end of
-// the example.
-- (SQRLXPCConnection *)connectToShipIt;
+// Submits ShipIt's launchd job to start it up.
+- (void)launchShipIt;
 
 // Creates a disk image, then mounts it.
 //

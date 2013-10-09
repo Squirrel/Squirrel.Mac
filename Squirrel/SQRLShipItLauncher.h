@@ -22,14 +22,13 @@ extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
 // Returns the label for the ShipIt launchd job.
 + (NSString *)shipItJobLabel;
 
-// Attempts to launch the ShipIt service.
+// Attempts to launch ShipIt.
 //
 // privileged - Determines which launchd domain to launch the job in.
 //              If YES, ShipIt is launched in the root domain, otherwise it is
 //              launched in the current user’s domain.
 //
-// Returns a signal which will send an active `SQRLXPCConnection` then complete, or
-// error, on a background scheduler.
+// Returns a signal which will complete, or error, on a background scheduler.
 + (RACSignal *)launchPrivileged:(BOOL)privileged;
 
 @end
