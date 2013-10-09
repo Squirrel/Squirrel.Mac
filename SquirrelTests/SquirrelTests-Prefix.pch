@@ -14,8 +14,6 @@
 	#import <ReactiveCocoa/ReactiveCocoa.h>
 	#import <ReactiveCocoa/EXTScope.h>
 	#import <Squirrel/Squirrel.h>
-	#import "SQRLArguments.h"
-	#import "SQRLXPCObject.h"
 
 	#define SPT_SUBCLASS SQRLTestCase
 	#import "Specta.h"

@@ -18,7 +18,6 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 
 @class SQRLCodeSignature;
 @class SQRLDirectoryManager;
-@class SQRLXPCConnection;
 
 @interface SQRLTestCase : SPTSenTestCase
 
@@ -75,11 +74,8 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // deleted at the end of the example.
 - (NSURL *)createTestApplicationUpdate;
 
-// Opens and resumes a new XPC connection to the ShipIt service.
-//
-// Returns the new connection, which will be automatically closed at the end of
-// the example.
-- (SQRLXPCConnection *)connectToShipIt;
+// Submits ShipIt's launchd job to start it up.
+- (void)launchShipIt;
 
 // Creates a disk image, then mounts it.
 //

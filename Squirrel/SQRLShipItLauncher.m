@@ -8,9 +8,7 @@
 
 #import "SQRLShipItLauncher.h"
 #import "EXTScope.h"
-#import "SQRLArguments.h"
 #import "SQRLDirectoryManager.h"
-#import "SQRLXPCConnection.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
@@ -30,6 +28,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
 	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.shipItJobLabel];
+	NSLog(@"directoryManager: %@", directoryManager);
 
 	return [[[directoryManager
 		applicationSupportURL]
@@ -130,20 +129,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 				return [RACSignal error:CFBridgingRelease(cfError)];
 			}
 
-			xpc_connection_t connection = xpc_connection_create_mach_service(jobLabel.UTF8String, NULL, privileged ? XPC_CONNECTION_MACH_SERVICE_PRIVILEGED : 0);
-			if (connection == NULL) {
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Error opening XPC connection to %@", nil), jobLabel],
-				};
-
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItLauncherErrorDomain code:SQRLShipItLauncherErrorCouldNotStartService userInfo:userInfo]];
-			}
-
-			SQRLXPCConnection *boxedConnection = [[SQRLXPCConnection alloc] initWithXPCObject:connection];
-			xpc_release(connection);
-
-			[boxedConnection resume];
-			return [RACSignal return:boxedConnection];
+			return [RACSignal empty];
 		}]
 		setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];
 }
