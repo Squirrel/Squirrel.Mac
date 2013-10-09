@@ -69,6 +69,41 @@ it(@"should install an update to another volume", ^{
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
+it(@"should install an update in process", ^{
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.installerState = SQRLInstallerStateClearingQuarantine;
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
+	expect(installer).notTo.beNil();
+
+	NSError *installError = nil;
+	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
+	expect(install).to.beTruthy();
+	expect(installError).to.beNil();
+});
+
+it(@"should not install an update after too many attempts", ^{
+	NSURL *targetURL = self.testApplicationURL;
+	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
+	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
+
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.backupBundleURL = backupURL;
+	state.installerState = SQRLInstallerStateInstalling;
+	state.installationStateAttempt = 4;
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+
+	[self launchShipIt];
+
+	// No update should've been installed, and the application should be
+	// restored from the backup.
+	__block NSError *error = nil;
+	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
+	expect(error).to.beNil();
+
+	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+});
+
 describe(@"signal handling", ^{
 	__block NSURL *targetURL;
 
@@ -127,41 +162,6 @@ describe(@"signal handling", ^{
 			[NSThread sleepForTimeInterval:delay];
 		}
 	});
-});
-
-it(@"should install an update in process", ^{
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.installerState = SQRLInstallerStateClearingQuarantine;
-
-	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
-	expect(installer).notTo.beNil();
-
-	NSError *installError = nil;
-	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
-	expect(install).to.beTruthy();
-	expect(installError).to.beNil();
-});
-
-it(@"should not install an update after too many attempts", ^{
-	NSURL *targetURL = self.testApplicationURL;
-	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
-	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
-
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.backupBundleURL = backupURL;
-	state.installerState = SQRLInstallerStateInstalling;
-	state.installationStateAttempt = 4;
-	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
-
-	[self launchShipIt];
-
-	// No update should've been installed, and the application should be
-	// restored from the backup.
-	__block NSError *error = nil;
-	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
-	expect(error).to.beNil();
-
-	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
 SpecEnd
