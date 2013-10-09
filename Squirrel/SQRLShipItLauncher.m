@@ -28,7 +28,6 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
 	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.shipItJobLabel];
-	NSLog(@"directoryManager: %@", directoryManager);
 
 	return [[[directoryManager
 		applicationSupportURL]
