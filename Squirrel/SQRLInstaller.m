@@ -77,7 +77,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 			zip:@[
 				[self ensure:@keypath(state.targetBundleURL) fromState:state],
 				[self ensure:@keypath(state.codeSignature) fromState:state]
-			] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
+			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
 				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
 			}]
 			flatten];
