@@ -12,6 +12,7 @@
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
+#import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLShipItState.h"
@@ -68,7 +69,7 @@ static void resumeInstallation(SQRLShipItState *state) {
 
 		[[[termination
 			then:^{
-				return [sharedInstaller.abortInstallationCommand execute:nil];
+				return [sharedInstaller.abortInstallationCommand execute:state];
 			}]
 			catch:^(NSError *error) {
 				NSLog(@"Error aborting installation: %@", error);
@@ -85,7 +86,7 @@ static void resumeInstallation(SQRLShipItState *state) {
 			}]
 			then:^{
 				return [[sharedInstaller.installUpdateCommand
-					execute:nil]
+					execute:state]
 					initially:^{
 						NSLog(@"Resuming installation from state %i", (int)state.installerState);
 					}];
@@ -120,15 +121,19 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 		}
 
 		const char *waitForIdentifier = xpc_dictionary_get_string(event.object, SQRLWaitForBundleIdentifierKey);
+		NSData *requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
 
-		stateManager.targetBundleURL = targetBundleURL;
-		stateManager.updateBundleURL = updateBundleURL;
-		stateManager.requirementData = [NSData dataWithBytes:requirementDataPtr length:requirementDataLen];
-		stateManager.relaunchAfterInstallation = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
-		stateManager.waitForBundleIdentifier = (waitForIdentifier == NULL ? nil : @(waitForIdentifier));
-		stateManager.state = SQRLShipItStateClearingQuarantine;
+		// TODO: Pass a SQRLCodeSignature across instead.
+		SecRequirementRef requirement = NULL;
+		SecRequirementCreateWithData((__bridge CFDataRef)requirementData, kSecCSDefaultFlags, &requirement);
+		SQRLCodeSignature *signature = [[SQRLCodeSignature alloc] initWithRequirement:requirement];
+		CFRelease(requirement);
 
-		RACMulticastConnection *terminationConnection = [[waitForTerminationIfNecessary()
+		SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetBundleURL updateBundleURL:updateBundleURL bundleIdentifier:(waitForIdentifier == NULL ? nil : @(waitForIdentifier)) codeSignature:signature];
+		state.relaunchAfterInstallation = xpc_dictionary_get_bool(event.object, SQRLShouldRelaunchKey);
+		state.installerState = SQRLInstallerStateClearingQuarantine;
+
+		RACMulticastConnection *terminationConnection = [[waitForTerminationIfNecessary(state)
 			logAll]
 			multicast:[RACReplaySubject subject]];
 
@@ -178,14 +183,19 @@ static RACSignal *installWithArgumentsFromEvent(SQRLXPCObject *event) {
 				}];
 		}
 
-		RACDisposable *installationDisposable = [[[RACSignal
-			merge:@[
-				terminationConnection.signal,
-				notification
-			]]
+		RACDisposable *installationDisposable = [[[[state
+			writeUsingDirectoryManager:directoryManager]
 			then:^{
-				return [[[[sharedInstaller.installUpdateCommand
-					execute:nil]
+				return [RACSignal merge:@[ terminationConnection.signal, notification ]];
+			}]
+			then:^{
+				// Re-read the latest state from disk, in case the controlling
+				// application modified it since.
+				return [[[[[SQRLShipItState
+					readUsingDirectoryManager:directoryManager]
+					flattenMap:^(SQRLShipItState *state) {
+						return [sharedInstaller.installUpdateCommand execute:state];
+					}]
 					initially:^{
 						NSLog(@"Beginning installation");
 					}]
@@ -277,7 +287,7 @@ int main(int argc, const char * argv[]) {
 
 		const char *serviceName = argv[1];
 
-		directoryManager = [[SQRLDirectoryManager alloc] initWithIdentifier:@(serviceName)];
+		directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(serviceName)];
 		sharedInstaller = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
 
 		[[[[SQRLShipItState
