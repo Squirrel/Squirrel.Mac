@@ -75,8 +75,8 @@
 		}]
 		// Retry until we get the expected release.
 		repeat]
-		skipUntilBlock:^(SQRLDownloadedUpdate *update) {
-			return [update.releaseName isEqual:@"Final"];
+		skipUntilBlock:^(SQRLDownloadedUpdate *download) {
+			return [download.update.releaseName isEqual:@"Final"];
 		}]
 		take:1]
 		doNext:^(id _) {

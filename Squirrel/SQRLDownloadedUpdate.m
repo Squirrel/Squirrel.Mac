@@ -7,6 +7,7 @@
 //
 
 #import "SQRLDownloadedUpdate.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 @interface SQRLDownloadedUpdate ()
 
@@ -30,12 +31,10 @@
 	NSParameterAssert(bundle != nil);
 	NSParameterAssert(bundle.bundleURL != nil);
 
-	self = [super initWithDictionary:update.dictionaryValue error:NULL];
-	if (self == nil) return nil;
-
-	_bundleURL = bundle.bundleURL;
-
-	return self;
+	return [self initWithDictionary:@{
+		@keypath(self.update): update,
+		@keypath(self.bundleURL): bundle.bundleURL
+	} error:NULL];
 }
 
 #pragma mark MTLJSONSerializing

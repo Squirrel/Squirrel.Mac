@@ -6,13 +6,18 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLUpdate.h"
+#import <Mantle/Mantle.h>
+
+@class SQRLUpdate;
 
 // A SQRLUpdate that has been successfully downloaded to disk.
-@interface SQRLDownloadedUpdate : SQRLUpdate
+@interface SQRLDownloadedUpdate : MTLModel
 
 // The application bundle representing the downloaded and unarchived update.
 @property (nonatomic, strong, readonly) NSBundle *bundle;
+
+// The update information sent by the server.
+@property (nonatomic, copy, readonly) SQRLUpdate *update;
 
 // Initializes the receiver with update metadata and the downloaded and
 // unarchived bundle.
