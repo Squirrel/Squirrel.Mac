@@ -54,8 +54,16 @@ int main(int argc, const char * argv[]) {
 		const char *jobLabel = argv[1];
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
 
-		[[[[SQRLShipItState
+		[[[[[[SQRLShipItState
 			readUsingDirectoryManager:directoryManager]
+			flattenMap:^(SQRLShipItState *state) {
+				return waitForTerminationIfNecessary(state);
+			}]
+			then:^{
+				// Read the latest state, in case it was modified by the
+				// controlling application in the meantime.
+				return [SQRLShipItState readUsingDirectoryManager:directoryManager];
+			}]
 			catch:^(NSError *error) {
 				NSLog(@"Error reading saved installer state: %@", error);
 
@@ -68,10 +76,8 @@ int main(int argc, const char * argv[]) {
 
 				NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
 				if (attempt > SQRLShipItMaximumInstallationAttempts) {
-					return [[[waitForTerminationIfNecessary(state)
-						then:^{
-							return [installer.abortInstallationCommand execute:state];
-						}]
+					return [[[installer.abortInstallationCommand
+						execute:state]
 						initially:^{
 							NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
 						}]
@@ -82,30 +88,25 @@ int main(int argc, const char * argv[]) {
 							return [RACSignal empty];
 						}];
 				} else {
-					// Save our changes to `installerState` and
-					// `installationStateAttempt`.
-					return [[waitForTerminationIfNecessary(state)
-						then:^{
-							return [[[[state
-								writeUsingDirectoryManager:directoryManager]
-								initially:^{
-									if (freshInstall) {
-										NSLog(@"Beginning installation");
-										state.installerState = SQRLInstallerStateClearingQuarantine;
-									} else {
-										NSLog(@"Resuming installation from state %i", (int)state.installerState);
-									}
+					return [[[[[state
+						writeUsingDirectoryManager:directoryManager]
+						initially:^{
+							if (freshInstall) {
+								NSLog(@"Beginning installation");
+								state.installerState = SQRLInstallerStateClearingQuarantine;
+							} else {
+								NSLog(@"Resuming installation from state %i", (int)state.installerState);
+							}
 
-									state.installationStateAttempt = attempt;
-								}]
-								then:^{
-									return [installer.installUpdateCommand execute:state];
-								}]
-								sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+							state.installationStateAttempt = attempt;
+						}]
+						then:^{
+							return [installer.installUpdateCommand execute:state];
 						}]
 						doCompleted:^{
 							NSLog(@"Installation completed successfully");
-						}];
+						}]
+						sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 				}
 			}]
 			subscribeError:^(NSError *error) {
