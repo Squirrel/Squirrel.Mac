@@ -111,12 +111,14 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 - (RACSignal *)installUsingState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
-	if (state.installerState == SQRLInstallerStateNothingToDo) return [RACSignal empty];
+
+	SQRLInstallerState installerState = state.installerState;
+	if (installerState == SQRLInstallerStateNothingToDo) return [RACSignal empty];
 
 	return [[[[self
 		signalForState:state]
 		doCompleted:^{
-			NSLog(@"Completed step %i", (int)state.installerState);
+			NSLog(@"Completed step %i", (int)installerState);
 		}]
 		concat:[RACSignal defer:^{
 			return [self installUsingState:state];
