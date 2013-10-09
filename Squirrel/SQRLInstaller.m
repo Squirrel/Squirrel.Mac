@@ -348,11 +348,8 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 	NSParameterAssert(bundleURL != nil);
 	NSParameterAssert(signature != nil);
 
-	return [[[[signature
+	return [[[signature
 		verifyBundleAtURL:bundleURL]
-		doError:^(NSError *error) {
-			NSLog(@"Bundle %@ is missing or corrupted: %@", bundleURL, error);
-		}]
 		catch:^(NSError *error) {
 			if (backupBundleURL == nil) return [RACSignal error:error];
 
