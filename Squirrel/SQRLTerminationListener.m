@@ -14,6 +14,12 @@
 @property (nonatomic, copy, readonly) NSURL *bundleURL;
 @property (nonatomic, copy, readonly) NSString *bundleIdentifier;
 
+// Waits for the process identified by the given PID to terminate.
+//
+// Returns a signal which sends `processIdentifier` as soon as the process is
+// being monitored, then completes once it exits, all on a background thread. 
+- (RACSignal *)waitForTerminationOfProcessIdentifier:(pid_t)processIdentifier;
+
 @end
 
 @implementation SQRLTerminationListener
