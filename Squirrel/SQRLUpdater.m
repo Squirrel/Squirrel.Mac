@@ -339,10 +339,28 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 	return [[[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [[[[SQRLShipItState
+				readUsingDirectoryManager:directoryManager]
+				catchTo:[RACSignal empty]]
+				flattenMap:^(SQRLShipItState *existingState) {
+					if (existingState.installerState != SQRLInstallerStateNothingToDo) {
+						// If this happens, shit is crazy, because it implies that an
+						// update is being installed over us right now.
+						NSDictionary *userInfo = @{
+							NSLocalizedDescriptionKey: NSLocalizedString(@"Installation in progress", nil),
+							NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An update for %@ is already in progress.", nil), NSRunningApplication.currentApplication.bundleIdentifier],
+						};
 
-			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
-			state.relaunchAfterInstallation = self.shouldRelaunch;
-			return [state writeUsingDirectoryManager:directoryManager];
+						return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
+					}
+
+					return [RACSignal empty];
+				}]
+				then:^{
+					SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
+					state.relaunchAfterInstallation = self.shouldRelaunch;
+					return [state writeUsingDirectoryManager:directoryManager];
+				}];
 		}]
 		then:^{
 			return self.shipItLauncher;
