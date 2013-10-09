@@ -11,9 +11,10 @@ Your request can include authentication details, custom headers or a request
 body so that your server has the context it needs in order to supply the most
 suitable update.
 
-The update JSON Squirrel requests can be a static resource that you generate
-each time you release a new version, or dynamically generated to point to any
-release you want it to, based on criteria in the request.
+The update JSON Squirrel requests should be dynamically generated based on
+criteria in the request, and whether an update is required. Squirrel relies
+on server side support for determining whether an update is required, see [Server
+Support](#server-support) below.
 
 Squirrel’s installer is also designed to be fault tolerant, and ensure that any
 updates installed are valid.
@@ -83,6 +84,19 @@ will be added to the `Accept` header so that your server can return the
 appropriate format.
 
 "pub_date" if present must be formatted according to ISO 8601
+
+# Server Support
+
+If an update is required your server should respond with a status code of
+[200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) and include the
+update JSON in the body. Squirrel **will** download and install this update,
+even if the version of the update is the same as the currently running version.
+To save redundantly downloading the same version multiple times your server must
+inform the client not to update.
+
+If no update is required your server must respond with a status code of
+[204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5). Squirrel
+will check for an update again at the interval you specify.
 
 # User Interface
 
