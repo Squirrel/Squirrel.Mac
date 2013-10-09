@@ -70,8 +70,9 @@ const NSInteger SQRLXPCErrorReply = 4;
 }
 
 - (void)dealloc {
+	RACSubject *events = _events;
 	[self.connectionScheduler schedule:^{
-		[_events sendCompleted];
+		[events sendCompleted];
 	}];
 
 	if (_connectionQueue != NULL) {
