@@ -93,11 +93,13 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 - (BOOL)validateUpdateURL:(NSURL **)updateURLPtr error:(NSError **)error {
 	NSURL *updateURL = *updateURLPtr;
+	if (![updateURL isKindOfClass:NSURL.class]) return NO;
+
 	if (updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
 		return NO;
-	} else {
-		return YES;
 	}
+
+	return YES;
 }
 
 #pragma mark NSCopying
