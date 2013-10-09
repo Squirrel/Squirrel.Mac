@@ -50,7 +50,7 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // If an update is available, it will be sent on `updates` once downloaded.
 @property (nonatomic, strong, readonly) RACCommand *checkForUpdatesCommand;
 
-// Sends an `RACDownloadedUpdate` object on the main thread whenever a new
+// Sends an `SQRLDownloadedUpdate` object on the main thread whenever a new
 // update is available.
 //
 // This signal is actually just `checkForUpdatesCommand.executionSignals`,
