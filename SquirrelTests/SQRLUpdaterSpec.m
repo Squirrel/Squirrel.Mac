@@ -6,6 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import "SQRLTestUpdate.h"
 #import "SQRLZipArchiver.h"
 
 SpecBegin(SQRLUpdater)
@@ -50,9 +51,9 @@ beforeEach(^{
 
 it(@"should use the application's bundled version of Squirrel and update in-place", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
-		@"releaseName": @"Final"
+		@"final": @YES
 	} error:NULL];
 
 	writeUpdate(update);
@@ -67,9 +68,9 @@ it(@"should not install a corrupt update", ^{
 	NSURL *codeSignatureURL = [updateURL URLByAppendingPathComponent:@"Contents/_CodeSignature"];
 	expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to.beTruthy();
 
-	SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
-		@"releaseName": @"Final"
+		@"final": @YES
 	} error:NULL];
 
 	writeUpdate(update);
@@ -83,7 +84,7 @@ it(@"should not install a corrupt update", ^{
 });
 
 it(@"should update to the most recently enqueued job", ^{
-	SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(self.testApplicationURL)
 	} error:NULL];
 
@@ -100,9 +101,9 @@ it(@"should update to the most recently enqueued job", ^{
 	[NSThread sleepForTimeInterval:0.3];
 
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	update = [SQRLUpdate modelWithDictionary:@{
+	update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
-		@"releaseName": @"Final"
+		@"final": @YES
 	} error:NULL];
 
 	writeUpdate(update);
@@ -113,9 +114,9 @@ it(@"should update to the most recently enqueued job", ^{
 
 it(@"should use the application's bundled version of Squirrel and update in-place after a long time", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
-		@"releaseName": @"Final"
+		@"final": @YES
 	} error:NULL];
 
 	writeUpdate(update);

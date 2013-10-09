@@ -9,6 +9,7 @@
 #import "TestAppDelegate.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLTestUpdate.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -60,6 +61,7 @@
 
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
+	self.updater.updateClass = SQRLTestUpdate.class;
 
 	__block NSUInteger updateCheckCount = 1;
 
@@ -76,7 +78,10 @@
 		// Retry until we get the expected release.
 		repeat]
 		skipUntilBlock:^(SQRLDownloadedUpdate *download) {
-			return [download.update.releaseName isEqual:@"Final"];
+			SQRLTestUpdate *testUpdate = (id)download.update;
+			NSAssert([testUpdate isKindOfClass:SQRLTestUpdate.class], @"Unexpected update type: %@", testUpdate);
+
+			return testUpdate.final;
 		}]
 		take:1]
 		doNext:^(id _) {
