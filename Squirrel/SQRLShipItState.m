@@ -10,6 +10,13 @@
 #import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
+NSString * const SQRLShipItStateErrorDomain = @"SQRLShipItStateErrorDomain";
+NSString * const SQRLShipItStatePropertyErrorKey = @"SQRLShipItStatePropertyErrorKey";
+
+const NSInteger SQRLShipItStateErrorMissingRequiredProperty = 1;
+const NSInteger SQRLShipItStateErrorUnarchiving = 2;
+const NSInteger SQRLShipItStateErrorArchiving = 3;
+
 @implementation SQRLShipItState
 
 #pragma mark Lifecycle
@@ -18,11 +25,24 @@
 	self = [super initWithDictionary:dictionary error:error];
 	if (self == nil) return nil;
 
-	if (self.targetBundleURL == nil || self.updateBundleURL == nil || self.codeSignature == nil) {
-		// TODO: Real error reporting.
-		NSLog(@"%@ is missing required properties", self);
-		return nil;
-	}
+	BOOL (^validateKey)(NSString *) = ^(NSString *key) {
+		if ([self valueForKey:key] != nil) return YES;
+
+		if (error != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Missing required value", nil),
+				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"\"%@\" must not be set to nil.", nil), key]
+			};
+
+			*error = [NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorMissingRequiredProperty userInfo:userInfo];
+		}
+
+		return NO;
+	};
+
+	if (!validateKey(@keypath(self.targetBundleURL))) return nil;
+	if (!validateKey(@keypath(self.updateBundleURL))) return nil;
+	if (!validateKey(@keypath(self.codeSignature))) return nil;
 
 	return self;
 }
@@ -55,8 +75,12 @@
 		flattenMap:^(NSData *data) {
 			SQRLShipItState *state = [NSKeyedUnarchiver unarchiveObjectWithData:data];
 			if (![state isKindOfClass:SQRLShipItState.class]) {
-				// TODO: Better error.
-				return [RACSignal error:nil];
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read saved state", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
+				};
+
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorUnarchiving userInfo:userInfo]];
 			}
 
 			return [RACSignal return:state];
@@ -71,8 +95,12 @@
 		defer:^{
 			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
 			if (data == nil) {
-				// TODO: Better error.
-				return [RACSignal error:nil];
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
+				};
+
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorArchiving userInfo:userInfo]];
 			}
 
 			return [RACSignal return:data];
