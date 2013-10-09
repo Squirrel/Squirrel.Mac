@@ -88,4 +88,11 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // automatically be unmounted and deleted at the end of the example.
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL;
 
+// Add a block to cleanup after each example has run
+//
+// Blocks are run in reverse order, i.e. first in last out
+//
+// block - The block to invoke after the current example has finished
+- (void)addCleanupBlock:(dispatch_block_t)block;
+
 @end
