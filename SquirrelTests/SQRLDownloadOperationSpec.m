@@ -9,7 +9,9 @@
 #import "SQRLDownloadOperation.h"
 #import "SQRLDownloadController.h"
 #import "SQRLResumableDownload.h"
-#import "OHHTTPStubs/OHHTTPStubs.h"
+#import <sys/socket.h>
+#import <netinet/in.h>
+#import "EXTScope.h"
 
 SpecBegin(SQRLDownloadOperation);
 
@@ -56,33 +58,154 @@ it(@"should download file:// scheme URLs", ^{
 	expect(downloadContents).to.equal(testContents);
 });
 
+__block NSData *serverResponse = nil;
+
+// Returns a retained dispatch object, releasing it closes the server
+dispatch_source_t (^startTcpServer)(SQRLTestCase *) = ^ dispatch_source_t (SQRLTestCase *self) {
+	int listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+	struct sockaddr_in listenAddress = {
+		.sin_len = sizeof(listenAddress),
+		.sin_family = AF_INET,
+		.sin_port = 0,
+		.sin_addr = {
+			.s_addr = htonl(INADDR_LOOPBACK),
+		},
+	};
+	int bindError = bind(listenSocket, (struct sockaddr const *)&listenAddress, listenAddress.sin_len);
+	if (bindError != 0) {
+		close(listenSocket);
+		return NULL;
+	}
+
+	listen(listenSocket, 128);
+
+	dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_READ, listenSocket, 0, NULL);
+	dispatch_source_set_event_handler(source, ^{
+		int connectionSocket = accept(listenSocket, NULL, NULL);
+		// Wait to close the connection until after the test case is complete.
+		// We need NSURLConnection to timeout, closing the connection causes it
+		// to error immediately.
+		[self addCleanupBlock:^{
+			close(connectionSocket);
+		}];
+
+		CFHTTPMessageRef request = (__bridge CFHTTPMessageRef)CFBridgingRelease(CFHTTPMessageCreateEmpty(kCFAllocatorDefault, true));
+
+		while (1) {
+			uint8_t buffer;
+			ssize_t readLength = read(connectionSocket, &buffer, 1);
+			if (readLength < 0) {
+				return;
+			}
+
+			CFHTTPMessageAppendBytes(request, (UInt8 const *)&buffer, readLength);
+			if (!CFHTTPMessageIsHeaderComplete(request)) {
+				continue;
+			}
+
+			// Doesn't support reading requests with a body for simplicity
+			NSString *contentLength = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"Content-Length"));
+			if (contentLength != nil) {
+				return;
+			}
+
+			break;
+		}
+
+		NSLog(@"Received Request:");
+		NSLog(@"%@", [[NSString alloc] initWithData:CFBridgingRelease(CFHTTPMessageCopySerializedMessage(request)) encoding:NSASCIIStringEncoding]);
+
+		NSData *responseData = serverResponse;
+
+		NSLog(@"Sending Response:");
+		NSLog(@"%@", [[NSString alloc] initWithData:responseData encoding:NSASCIIStringEncoding]);
+
+		size_t bufferLength = responseData.length;
+		uint8_t const *buffer = responseData.bytes;
+
+		while (1) {
+			ssize_t writeLength = write(connectionSocket, buffer, bufferLength);
+			if (writeLength < 0) {
+				return;
+			}
+
+			buffer += writeLength;
+			bufferLength -= writeLength;
+
+			if (bufferLength == 0) {
+				break;
+			}
+		}
+	});
+	dispatch_source_set_cancel_handler(source, ^{
+		close(listenSocket);
+	});
+	dispatch_resume(source);
+
+	return source;
+};
+
+static NSData * (^stringTimes)(NSString *, NSUInteger) = ^ (NSString *string, NSUInteger times) {
+	NSData *stringData = [string dataUsingEncoding:NSUTF8StringEncoding];
+	NSMutableData *data = [NSMutableData dataWithCapacity:(stringData.length + 2) * times];
+	for (NSUInteger idx = 0; idx < times; idx++) {
+		[data appendData:stringData];
+		[data appendData:[NSData dataWithBytes:"\r\n" length:2]];
+	}
+	return data;
+};
+
 it(@"should resume a download", ^{
-	NSData *halfBody = [@"the quick brown fox jumped over the lazy doge" dataUsingEncoding:NSUTF8StringEncoding];
+	// Start server
 
-	NSMutableData *body = [halfBody mutableCopy];
-	[body appendData:[@"\n" dataUsingEncoding:NSUTF8StringEncoding]];
-	[body appendData:halfBody];
-
-	NSDictionary *responseHeaders = @{
-		@"Content-Length": [@(body.length) stringValue],
-		@"ETag": NSProcessInfo.processInfo.globallyUniqueString,
+	dispatch_source_t server = startTcpServer(self);
+	expect(server).notTo.beNil();
+	@onExit {
+		dispatch_release(server);
 	};
 
-	id stub = [OHHTTPStubs shouldStubRequestsPassingTest:^ BOOL (NSURLRequest *request) {
-		return YES;
-	}
-	withStubResponse:^ id (NSURLRequest *request) {
-		OHHTTPStubsResponse *response = [OHHTTPStubsResponse responseWithData:halfBody statusCode:200 responseTime:0 headers:responseHeaders];
-		//response.error = [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorNotConnectedToInternet userInfo:nil];
-		return response;
-	}];
+	int listenSocket = (int)dispatch_source_get_handle(server);
 
-	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://localhost/foo"]];
+	struct sockaddr_storage localAddress = {};
+	socklen_t localAddressLength = sizeof(localAddress);
+	int localAddressError = getsockname(listenSocket, (struct sockaddr *)&localAddress, &localAddressLength);
+	expect(localAddressError).to.equal(0);
+
+	// IPv4 and IPv6 address transport layer port fields are at the same offset
+	// and are the same size
+	in_port_t port = ntohs(((struct sockaddr_in *)&localAddress)->sin_port);
+	expect(port).to.beGreaterThan(0);
+
+
+	// Prepare half response
+
+	NSData *firstHalf = stringTimes(@"the quick brown fox", 100);
+	NSData *secondHalf = stringTimes(@"jumped over the lazy doge", 100);
+
+	NSString *ETag = NSProcessInfo.processInfo.globallyUniqueString;
+
+	NSDictionary *responseHeaders = @{
+		@"Content-Length": [@(firstHalf.length + secondHalf.length) stringValue],
+		@"ETag": ETag,
+	};
+
+	CFHTTPMessageRef response = (__bridge CFHTTPMessageRef)CFBridgingRelease(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
+	[responseHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
+		CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
+	}];
+	CFHTTPMessageSetBody(response, (__bridge CFDataRef)firstHalf);
+
+	serverResponse = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
+
+
+	// Issue first request
+
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%u/foo", port]]];
+	request.timeoutInterval = 1.;
 	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
-
-	[OHHTTPStubs removeRequestHandler:stub];
 
 	NSError *error = nil;
 	NSURL *result = [downloadOperation completionProvider:NULL error:&error];
@@ -96,29 +219,46 @@ it(@"should resume a download", ^{
 	expect(error).to.beNil();
 
 	NSData *downloadedData = [NSData dataWithContentsOfURL:download.fileURL options:0 error:&error];
-	expect(downloadedData).to.equal(halfBody);
+	expect(downloadedData).to.equal(firstHalf);
 	expect(error).to.beNil();
 
-	stub = [OHHTTPStubs shouldStubRequestsPassingTest:^ BOOL (NSURLRequest *request) {
-		return YES;
-	}
-	withStubResponse:^ id (NSURLRequest *request) {
-		return [OHHTTPStubsResponse responseWithData:body statusCode:200 responseTime:0 headers:responseHeaders];
+
+	// Prepare remainder response
+
+	response = CFHTTPMessageCreateResponse(kCFAllocatorDefault, 206, NULL, kCFHTTPVersion1_1);
+	responseHeaders = @{
+		@"Content-Length": [@(secondHalf.length) stringValue],
+		@"Range": [NSString stringWithFormat:@"%lu-%lu", firstHalf.length, secondHalf.length - 1],
+		@"ETag": ETag,
+	};
+	[responseHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
+		CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
 	}];
+	CFHTTPMessageSetBody(response, (__bridge CFDataRef)secondHalf);
+
+	serverResponse = CFBridgingRelease(CFHTTPMessageCopySerializedMessage(response));
+
+
+	// Issue second request
 
 	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 
-	[OHHTTPStubs removeRequestHandler:stub];
-
 	result = [downloadOperation completionProvider:NULL error:&error];
 	expect(result).notTo.beNil();
 	expect(error).to.beNil();
 
+	NSMutableData *fullBody = [firstHalf mutableCopy];
+	[fullBody appendData:secondHalf];
+
 	downloadedData = [NSData dataWithContentsOfURL:result options:0 error:&error];
-	expect(downloadedData).to.equal(body);
+	expect(downloadedData).to.equal(fullBody);
 	expect(error).to.beNil();
+});
+
+it(@"should not resume downloads for a response with a different ETag", ^{
+
 });
 
 SpecEnd
