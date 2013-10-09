@@ -300,7 +300,8 @@ static void SQRLSignalHandler(int sig) {
 	NSError *error = nil;
 	NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, error);
-	STAssertTrue([NSFileManager.defaultManager removeItemAtURL:stateURL error:&error], @"Could not remove all preferences for %@: %@", self.shipItDirectoryManager, error);
+	
+	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 
 	SQRLXPCConnection *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
