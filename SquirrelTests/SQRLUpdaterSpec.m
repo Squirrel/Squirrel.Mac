@@ -112,7 +112,7 @@ it(@"should update to the most recently enqueued job", ^{
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-it(@"should use the application's bundled version of Squirrel and update in-place after a long time", ^{
+it(@"should use the application's bundled version of Squirrel and update in-place after a significant delay", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
 	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
@@ -121,7 +121,7 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 
 	writeUpdate(update);
 
-	NSTimeInterval delay = 60;
+	NSTimeInterval delay = 30;
 	NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
 	Expecta.asynchronousTestTimeout = delay + 3;
