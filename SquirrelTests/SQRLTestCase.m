@@ -164,7 +164,7 @@ static void SQRLSignalHandler(int sig) {
 #pragma mark Fixtures
 
 - (NSURL *)testApplicationURL {
-	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
+	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app" isDirectory:YES];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
 		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
 		STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
@@ -241,7 +241,7 @@ static void SQRLSignalHandler(int sig) {
 		[NSFileManager.defaultManager removeItemAtURL:updateParentURL error:NULL];
 	}];
 
-	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent];
+	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent isDirectory:YES];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
 
