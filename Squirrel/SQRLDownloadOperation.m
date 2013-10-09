@@ -145,7 +145,7 @@
 
 	NSMutableURLRequest *newRequest = [originalRequest mutableCopy];
 	[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
-	[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forKey:@"Range"];
+	[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forHTTPHeaderField:@"Range"];
 	return newRequest;
 }
 
