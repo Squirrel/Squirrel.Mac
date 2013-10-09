@@ -105,7 +105,7 @@ dispatch_source_t (^startTcpServer)(SQRLTestCase *, in_port_t *) = ^ dispatch_so
 			}
 
 			// Doesn't support reading requests with a body for simplicity
-			NSString *contentLength = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"Content-Length"));
+			NSString *contentLength = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("Content-Length")));
 			if (contentLength != nil) {
 				return;
 			}
@@ -186,23 +186,22 @@ it(@"should resume a download", ^{
 
 	NSString *ETag = NSProcessInfo.processInfo.globallyUniqueString;
 
+	CFHTTPMessageRef response = (__bridge CFHTTPMessageRef)CFBridgingRelease(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
 	NSDictionary *responseHeaders = @{
 		@"Content-Length": [@(firstHalf.length + secondHalf.length) stringValue],
 		@"ETag": ETag,
 	};
-
-	CFHTTPMessageRef response = (__bridge CFHTTPMessageRef)CFBridgingRelease(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
 	[responseHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
 		CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
 	}];
 	CFHTTPMessageSetBody(response, (__bridge CFDataRef)firstHalf);
 
 	responseBlock = ^ (CFHTTPMessageRef request) {
-		NSString *requestETag = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"If-Range"));
-		expect(requestETag).to.beNil();
-
-		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"Range"));
+		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("If-Range")));
 		expect(ifRange).to.beNil();
+
+		NSString *range = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("Range")));
+		expect(range).to.beNil();
 
 		return response;
 	};
@@ -246,11 +245,11 @@ it(@"should resume a download", ^{
 	CFHTTPMessageSetBody(response, (__bridge CFDataRef)secondHalf);
 
 	responseBlock = ^ (CFHTTPMessageRef request) {
-		NSString *requestETag = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"If-Range"));
-		expect(requestETag).to.equal(ETag);
+		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("If-Range")));
+		expect(ifRange).to.equal(ETag);
 
-		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, (__bridge CFStringRef)@"Range"));
-		expect(ifRange).to.equal(([NSString stringWithFormat:@"%lu-", firstHalf.length]));
+		NSString *range = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("Range")));
+		expect(range).to.equal(([NSString stringWithFormat:@"%lu-", firstHalf.length]));
 
 		return response;
 	};
@@ -275,7 +274,107 @@ it(@"should resume a download", ^{
 });
 
 it(@"should not resume downloads for a response with a different ETag", ^{
+	// Start server
 
+	in_port_t port = 0;
+	dispatch_source_t server = startTcpServer(self, &port);
+	expect(server).notTo.beNil();
+	@onExit {
+		dispatch_release(server);
+	};
+
+
+	// Prepare first response
+
+	NSData *firstBody = stringTimes(@"the quick brown fox", 100);
+	NSString *firstETag = NSProcessInfo.processInfo.globallyUniqueString;
+
+	CFHTTPMessageRef response = (__bridge CFHTTPMessageRef)CFBridgingRelease(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
+	NSDictionary *responseHeaders = @{
+		// Claim the response to be longer so that the connection will timeout
+		// waiting for the extra bytes
+		@"Content-Length": [@(firstBody.length + 100) stringValue],
+		@"ETag": firstETag,
+	};
+	[responseHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
+		CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
+	}];
+	CFHTTPMessageSetBody(response, (__bridge CFDataRef)firstBody);
+
+	responseBlock = ^ (CFHTTPMessageRef request) {
+		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("If-Range")));
+		expect(ifRange).to.beNil();
+
+		NSString *range = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("Range")));
+		expect(range).to.beNil();
+
+		return response;
+	};
+
+
+	// Issue first request
+
+	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%u/bar", port]]];
+	request.timeoutInterval = 1.;
+	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
+	[downloadOperation start];
+	expect(downloadOperation.isFinished).will.beTruthy();
+
+	NSError *error = nil;
+	NSURL *result = [downloadOperation completionProvider:NULL error:&error];
+	expect(result).to.beNil();
+	expect(error).notTo.beNil();
+
+	error = nil;
+
+	SQRLResumableDownload *download = [downloadController downloadForRequest:request error:&error];
+	expect(download).notTo.beNil();
+	expect(error).to.beNil();
+
+	NSData *downloadedData = [NSData dataWithContentsOfURL:download.fileURL options:0 error:&error];
+	expect(downloadedData).to.equal(firstBody);
+	expect(error).to.beNil();
+
+
+	// Prepare second response
+
+	NSData *secondBody = stringTimes(@"jumps over the lazy doge", 100);
+	NSString *secondETag = NSProcessInfo.processInfo.globallyUniqueString;
+
+	response = (__bridge CFHTTPMessageRef)CFBridgingRelease(CFHTTPMessageCreateResponse(kCFAllocatorDefault, 200, NULL, kCFHTTPVersion1_1));
+	responseHeaders = @{
+		@"Content-Length": [@(secondBody.length) stringValue],
+		@"ETag": secondETag,
+	};
+	[responseHeaders enumerateKeysAndObjectsUsingBlock:^(NSString *key, NSString *obj, BOOL *stop) {
+		CFHTTPMessageSetHeaderFieldValue(response, (__bridge CFStringRef)key, (__bridge CFStringRef)obj);
+	}];
+	CFHTTPMessageSetBody(response, (__bridge CFDataRef)secondBody);
+
+	responseBlock = ^ (CFHTTPMessageRef request) {
+		NSString *ifRange = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("If-Range")));
+		expect(ifRange).to.equal(firstETag);
+
+		NSString *range = CFBridgingRelease(CFHTTPMessageCopyHeaderFieldValue(request, CFSTR("Range")));
+		expect(range).to.equal(([NSString stringWithFormat:@"%lu-", firstBody.length]));
+
+		return response;
+	};
+
+
+	// Issue second request
+
+	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
+	[downloadOperation start];
+	expect(downloadOperation.isFinished).will.beTruthy();
+
+	result = [downloadOperation completionProvider:NULL error:&error];
+	expect(result).notTo.beNil();
+	expect(error).to.beNil();
+
+	downloadedData = [NSData dataWithContentsOfURL:result options:0 error:&error];
+	expect(downloadedData).to.equal(secondBody);
+	expect(error).to.beNil();
 });
 
 SpecEnd
