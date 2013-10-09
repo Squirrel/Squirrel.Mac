@@ -50,8 +50,6 @@ const NSInteger SQRLXPCErrorReply = 4;
 	
 	xpc_connection_set_target_queue(connection, self.connectionQueue);
 	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-		if (event == XPC_ERROR_CONNECTION_INTERRUPTED) return;
-
 		// Intentionally introduce a retain cycle with `self`.
 		[self sendEvent:event toSubscriber:_events];
 
