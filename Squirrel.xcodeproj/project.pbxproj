@@ -87,6 +87,8 @@
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0C2AA9417FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */; };
 		D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */; };
+		D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */; };
+		D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */; };
 		D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0D97E4417B58FC400301C72 /* ResourceRules.plist */; };
 		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
@@ -481,6 +483,8 @@
 		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
 		D0C2AA9117FC105C0075D1D1 /* SQRLXPCConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLXPCConnection.h; sourceTree = "<group>"; };
 		D0C2AA9217FC105C0075D1D1 /* SQRLXPCConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLXPCConnection.m; sourceTree = "<group>"; };
+		D0D2B6231804E903000EA901 /* SQRLDirectoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDirectoryManager.h; sourceTree = "<group>"; };
+		D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManager.m; sourceTree = "<group>"; };
 		D0D97E4417B58FC400301C72 /* ResourceRules.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = ResourceRules.plist; sourceTree = "<group>"; };
 		D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSError+SQRLVerbosityExtensions.h"; path = "Squirrel/NSError+SQRLVerbosityExtensions.h"; sourceTree = SOURCE_ROOT; };
 		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = SOURCE_ROOT; };
@@ -714,6 +718,8 @@
 		D0A56BE71804BA2400A84EDC /* State */ = {
 			isa = PBXGroup;
 			children = (
+				D0D2B6231804E903000EA901 /* SQRLDirectoryManager.h */,
+				D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */,
 				D0A56BE81804BA3C00A84EDC /* SQRLShipItState.h */,
 				D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */,
 			);
@@ -1378,6 +1384,7 @@
 				D0C2AA9517FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D049803617F9181D001EE042 /* SQRLXPCObject.m in Sources */,
+				D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
 				D0964B3E17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
 				D014AC1B17B979AD007D79D0 /* SQRLArguments.m in Sources */,
 			);
@@ -1399,6 +1406,7 @@
 				D0964B3D17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */,
 				D049803517F9181D001EE042 /* SQRLXPCObject.m in Sources */,
+				D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
 				D0C2AA9417FC105C0075D1D1 /* SQRLXPCConnection.m in Sources */,
 				D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
