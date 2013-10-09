@@ -65,6 +65,7 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItState *state) {
 		@strongify(self);
+		NSParameterAssert(state != nil);
 
 		return [[self
 			installUsingState:state]
@@ -73,14 +74,17 @@ static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
 
 	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItState *state) {
 		@strongify(self);
-		return [[RACSignal
+		NSParameterAssert(state != nil);
+
+		return [[[RACSignal
 			zip:@[
 				[self ensure:@keypath(state.targetBundleURL) fromState:state],
 				[self ensure:@keypath(state.codeSignature) fromState:state]
 			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
 				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
 			}]
-			flatten];
+			flatten]
+			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 	}];
 	
 	return self;
