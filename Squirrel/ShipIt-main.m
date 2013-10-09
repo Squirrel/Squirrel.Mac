@@ -82,8 +82,6 @@ int main(int argc, const char * argv[]) {
 							return [RACSignal empty];
 						}];
 				} else {
-					state.installerState = SQRLInstallerStateClearingQuarantine;
-
 					// Save our changes to `installerState` and
 					// `installationStateAttempt`.
 					return [[waitForTerminationIfNecessary(state)
