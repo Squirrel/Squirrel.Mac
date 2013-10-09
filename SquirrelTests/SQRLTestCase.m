@@ -8,8 +8,8 @@
 
 #import "SQRLTestCase.h"
 #import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager+Private.h"
 #import "SQRLXPCConnection.h"
 #import <ServiceManagement/ServiceManagement.h>
 
@@ -288,11 +288,20 @@ static void SQRLSignalHandler(int sig) {
 	}];
 }
 
-- (SQRLXPCConnection *)connectToShipIt {
-	NSString *applicationID = SQRLShipItLauncher.shipItJobLabel;
-	STAssertTrue([SQRLStateManager clearStateWithIdentifier:applicationID], @"Could not remove all preferences for %@", applicationID);
+- (SQRLDirectoryManager *)shipItDirectoryManager {
+	NSString *identifier = SQRLShipItLauncher.shipItJobLabel;
+	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:identifier];
+	STAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
 
+	return manager;
+}
+
+- (SQRLXPCConnection *)connectToShipIt {
 	NSError *error = nil;
+	NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&error];
+	STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, error);
+	STAssertTrue([NSFileManager.defaultManager removeItemAtURL:stateURL error:&error], @"Could not remove all preferences for %@: %@", self.shipItDirectoryManager, error);
+
 	SQRLXPCConnection *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];
 	STAssertNotNil(connection, @"Could not open XPC connection: %@", error);
 

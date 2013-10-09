@@ -12,8 +12,9 @@
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
-#import "SQRLStateManager.h"
+#import "SQRLShipItState.h"
 #import "SQRLTerminationListener.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
@@ -35,10 +36,10 @@ static const NSInteger SQRLShipItErrorRequiredKeyMissing = 1;
 // continued, it could be subject to race conditions.
 static const NSInteger SQRLShipItErrorApplicationTerminatedTooEarly = 2;
 
-// The state manager for this job.
+// The directory manager for this job.
 //
 // Set immediately upon startup.
-static SQRLStateManager *stateManager = nil;
+static SQRLDirectoryManager *directoryManager = nil;
 
 // The shared installer for this job.
 //
@@ -46,24 +47,24 @@ static SQRLStateManager *stateManager = nil;
 static SQRLInstaller *sharedInstaller = nil;
 
 // Waits for all instances of the target application (as described in the
-// `stateManager`) to exit, then sends completed.
-static RACSignal *waitForTerminationIfNecessary(void) {
+// `state`) to exit, then sends completed.
+static RACSignal *waitForTerminationIfNecessary(SQRLShipItState *state) {
 	return [[RACSignal
 		defer:^{
-			if (stateManager.waitForBundleIdentifier == nil) return [RACSignal empty];
+			if (state.bundleIdentifier == nil) return [RACSignal empty];
 
-			SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:stateManager.targetBundleURL bundleIdentifier:stateManager.waitForBundleIdentifier];
+			SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:state.targetBundleURL bundleIdentifier:state.bundleIdentifier];
 			return [listener waitForTermination];
 		}]
 		setNameWithFormat:@"waitForTerminationIfNecessary"];
 }
 
 // Resumes an installation that was started on a previous run.
-static void resumeInstallation(void) {
-	RACSignal *termination = waitForTerminationIfNecessary();
+static void resumeInstallation(SQRLShipItState *state) {
+	RACSignal *termination = waitForTerminationIfNecessary(state);
 
-	if (++stateManager.installationStateAttempt > SQRLShipItMaximumInstallationAttempts) {
-		NSLog(@"Too many attempts to install from state %i, aborting update", (int)stateManager.state);
+	if (++state.installationStateAttempt > SQRLShipItMaximumInstallationAttempts) {
+		NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
 
 		[[[termination
 			then:^{
@@ -77,12 +78,16 @@ static void resumeInstallation(void) {
 				exit(EXIT_SUCCESS);
 			}];
 	} else {
-		[[termination
+		[[[[state
+			writeUsingDirectoryManager:directoryManager]
+			then:^{
+				return termination;
+			}]
 			then:^{
 				return [[sharedInstaller.installUpdateCommand
 					execute:nil]
 					initially:^{
-						NSLog(@"Resuming installation from state %i", (int)stateManager.state);
+						NSLog(@"Resuming installation from state %i", (int)state.installerState);
 					}];
 			}]
 			subscribeError:^(NSError *error) {
@@ -272,26 +277,37 @@ int main(int argc, const char * argv[]) {
 
 		const char *serviceName = argv[1];
 
-		stateManager = [[SQRLStateManager alloc] initWithIdentifier:@(serviceName)];
-		sharedInstaller = [[SQRLInstaller alloc] initWithStateManager:stateManager];
+		directoryManager = [[SQRLDirectoryManager alloc] initWithIdentifier:@(serviceName)];
+		sharedInstaller = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
 
-		if (stateManager.state != SQRLShipItStateNothingToDo) {
-			resumeInstallation();
-		} else {
-			xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
-			if (service == NULL) {
-				NSLog(@"Could not start Mach service \"%s\"", serviceName);
-				exit(EXIT_FAILURE);
-			}
+		[[[[SQRLShipItState
+			readUsingDirectoryManager:directoryManager]
+			map:^(SQRLShipItState *state) {
+				return (state.installerState == SQRLInstallerStateNothingToDo ? nil : state);
+			}]
+			catch:^(NSError *error) {
+				NSLog(@"Error reading saved state: %@", error);
+				return [RACSignal return:nil];
+			}]
+			subscribeNext:^(SQRLShipItState *state) {
+				if (state != nil) {
+					resumeInstallation(state);
+				} else {
+					xpc_connection_t service = xpc_connection_create_mach_service(serviceName, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+					if (service == NULL) {
+						NSLog(@"Could not start Mach service \"%s\"", serviceName);
+						exit(EXIT_FAILURE);
+					}
 
-			NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
+					NSLog(@"ShipIt started with Mach service name \"%s\"", serviceName);
 
-			@onExit {
-				xpc_release(service);
-			};
+					@onExit {
+						xpc_release(service);
+					};
 
-			handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
-		}
+					handleService([[SQRLXPCConnection alloc] initWithXPCObject:service]);
+				}
+			}];
 
 		dispatch_main();
 	}

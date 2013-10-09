@@ -36,14 +36,36 @@ typedef enum : NSInteger {
 	SQRLInstallerStateRelaunching
 } SQRLInstallerState;
 
+@class RACSignal;
 @class SQRLCodeSignature;
+@class SQRLDirectoryManager;
 
 // Encapsulates all the state needed by the ShipIt process.
 @interface SQRLShipItState : MTLModel
 
+// Reads a `SQRLShipItState` from disk, at the location specified by the given
+// directory manager.
+//
+// directoryManager - Used to find the state location on disk. This must not be
+//                    nil.
+//
+// Returns a signal which will synchronously send a `SQRLShipItState` then
+// complete, or error.
++ (RACSignal *)readUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager;
+
 // Initializes the receiver with the arguments that will not change during
 // installation.
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier codeSignature:(SQRLCodeSignature *)codeSignature;
+
+// Writes the receiver to disk, at the location specified by the given directory
+// manager.
+//
+// directoryManager - Used to find the state location on disk. This must not be
+//                    nil.
+//
+// Returns a signal which will complete, or error, on a high priority background
+// scheduler.
+- (RACSignal *)writeUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager;
 
 // The URL to the app bundle that should be replaced with an update.
 @property (nonatomic, copy, readonly) NSURL *targetBundleURL;
@@ -61,7 +83,7 @@ typedef enum : NSInteger {
 @property (nonatomic, copy, readonly) NSString *bundleIdentifier;
 
 // The current state of the installer.
-@property (atomic, assign) SQRLInstallerState state;
+@property (atomic, assign) SQRLInstallerState installerState;
 
 // The number of installation attempts that have occurred for the current
 // `state`.

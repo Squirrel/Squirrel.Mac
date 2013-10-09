@@ -17,6 +17,7 @@ extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
 extern NSString * const SQRLBundleShortVersionStringKey;
 
 @class SQRLCodeSignature;
+@class SQRLDirectoryManager;
 @class SQRLXPCConnection;
 
 @interface SQRLTestCase : SPTSenTestCase
@@ -42,6 +43,16 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // This bundle will be deleted between each example.
 @property (nonatomic, copy, readonly) NSBundle *testApplicationBundle;
 
+// A code signature with requirements from TestApplication.app.
+@property (nonatomic, strong, readonly) SQRLCodeSignature *testApplicationSignature;
+
+// A serialized `SecRequirementRef` representing the requirements from
+// TestApplication.app.
+@property (nonatomic, copy, readonly) NSData *testApplicationCodeSigningRequirementData;
+
+// A directory manager for finding URLs that apply to ShipIt.
+@property (nonatomic, strong, readonly) SQRLDirectoryManager *shipItDirectoryManager;
+
 // Launches a new copy of TestApplication.app from the `testApplicationBundle`.
 //
 // Invoking this method multiple times will result in multiple running instances
@@ -63,13 +74,6 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // Returns the URL of the update bundle. The bundle will be automatically
 // deleted at the end of the example.
 - (NSURL *)createTestApplicationUpdate;
-
-// Returns a code signature with requirements from TestApplication.app.
-- (SQRLCodeSignature *)testApplicationSignature;
-
-// Returns a serialized SecRequirementRef representing the requirements from
-// TestApplication.app.
-- (NSData *)testApplicationCodeSigningRequirementData;
 
 // Opens and resumes a new XPC connection to the ShipIt service.
 //

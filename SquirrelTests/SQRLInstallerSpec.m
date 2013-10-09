@@ -7,9 +7,10 @@
 //
 
 #import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager.h"
+#import "SQRLShipItState.h"
 #import "SQRLXPCConnection.h"
 
 SpecBegin(SQRLInstaller)
@@ -183,15 +184,11 @@ describe(@"after connecting to ShipIt", ^{
 });
 
 it(@"should install an update in process", ^{
-	SQRLStateManager *stateManager = [[SQRLStateManager alloc] initWithIdentifier:NSRunningApplication.currentApplication.localizedName];
-	expect(stateManager).notTo.beNil();
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:[self createTestApplicationUpdate] bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.installerState = SQRLInstallerStateClearingQuarantine;
+	expect([[state writeUsingDirectoryManager:SQRLDirectoryManager.currentApplicationManager] waitUntilCompleted:NULL]).to.beTruthy();
 
-	stateManager.targetBundleURL = self.testApplicationURL;
-	stateManager.updateBundleURL = [self createTestApplicationUpdate];
-	stateManager.requirementData = self.testApplicationCodeSigningRequirementData;
-	stateManager.state = SQRLShipItStateClearingQuarantine;
-
-	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithStateManager:stateManager];
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
 	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
@@ -205,14 +202,11 @@ it(@"should not install an update after too many attempts", ^{
 	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
 	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
 
-	SQRLStateManager *stateManager = [[SQRLStateManager alloc] initWithIdentifier:SQRLShipItLauncher.shipItJobLabel];
-	stateManager.targetBundleURL = targetURL;
-	stateManager.updateBundleURL = [self createTestApplicationUpdate];
-	stateManager.backupBundleURL = backupURL;
-	stateManager.requirementData = self.testApplicationCodeSigningRequirementData;
-	stateManager.state = SQRLShipItStateInstalling;
-	stateManager.installationStateAttempt = 4;
-	expect([stateManager synchronize]).to.beTruthy();
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:[self createTestApplicationUpdate] bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.backupBundleURL = backupURL;
+	state.installerState = SQRLInstallerStateInstalling;
+	state.installationStateAttempt = 4;
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
 
 	NSError *error = nil;
 	SQRLXPCConnection *connection = [[SQRLShipItLauncher launchPrivileged:NO] firstOrDefault:nil success:NULL error:&error];

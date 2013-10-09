@@ -7,6 +7,7 @@
 //
 
 #import "SQRLShipItState.h"
+#import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
 @implementation SQRLShipItState
@@ -33,6 +34,67 @@
 		@keypath(self.bundleIdentifier): bundleIdentifier ?: NSNull.null,
 		@keypath(self.codeSignature): codeSignature,
 	} error:NULL];
+}
+
+#pragma mark Serialization
+
++ (RACSignal *)readUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager {
+	NSParameterAssert(directoryManager != nil);
+
+	return [[[[directoryManager
+		shipItStateURL]
+		flattenMap:^(NSURL *stateURL) {
+			NSError *error = nil;
+			NSData *data = [NSData dataWithContentsOfURL:stateURL options:NSDataReadingUncached error:&error];
+			if (data == nil) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal return:data];
+		}]
+		flattenMap:^(NSData *data) {
+			SQRLShipItState *state = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+			if (![state isKindOfClass:SQRLShipItState.class]) {
+				// TODO: Better error.
+				return [RACSignal error:nil];
+			}
+
+			return [RACSignal return:state];
+		}]
+		setNameWithFormat:@"+readUsingDirectoryManager: %@", directoryManager];
+}
+
+- (RACSignal *)writeUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager {
+	NSParameterAssert(directoryManager != nil);
+
+	RACSignal *serialization = [[RACSignal
+		defer:^{
+			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
+			if (data == nil) {
+				// TODO: Better error.
+				return [RACSignal error:nil];
+			}
+
+			return [RACSignal return:data];
+		}]
+		subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]];
+	
+	RACSignal *stateURL = [[directoryManager
+		shipItStateURL]
+		subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityHigh]];
+
+	return [[[RACSignal
+		zip:@[ stateURL, serialization ]
+		reduce:^(NSURL *stateURL, NSData *data) {
+			NSError *error = nil;
+			if (![data writeToURL:stateURL options:NSDataWritingAtomic error:&error]) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal empty];
+		}]
+		flatten]
+		setNameWithFormat:@"%@ -writeUsingDirectoryManager: %@", self, directoryManager];
 }
 
 @end

@@ -13,9 +13,9 @@
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLArguments.h"
 #import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLStateManager.h"
 #import "SQRLUpdate+Private.h"
 #import "SQRLXPCConnection.h"
 #import "SQRLXPCObject.h"
@@ -235,31 +235,32 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 #pragma mark File Management
 
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
-	return [[RACSignal startLazilyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground] block:^(id<RACSubscriber> subscriber) {
-		NSURL *appSupportURL = [SQRLStateManager applicationSupportURLWithIdentifier:SQRLShipItLauncher.shipItJobLabel];
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
 
-		NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
-		char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
-		@onExit {
-			free(updateDirectoryCString);
-		};
-		
-		if (mkdtemp(updateDirectoryCString) == NULL) {
-			int code = errno;
-
-			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: NSLocalizedString(@"Could not create temporary directory", nil),
-				NSURLErrorKey: updateDirectoryTemplate
+	return [[[directoryManager
+		applicationSupportURL]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
+			@onExit {
+				free(updateDirectoryCString);
 			};
+			
+			if (mkdtemp(updateDirectoryCString) == NULL) {
+				int code = errno;
 
-			[subscriber sendError:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
-			return;
-		}
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not create temporary directory", nil),
+					NSURLErrorKey: updateDirectoryTemplate
+				};
 
-		NSString *updateDirectoryPath = [NSFileManager.defaultManager stringWithFileSystemRepresentation:updateDirectoryCString length:strlen(updateDirectoryCString)];
-		[subscriber sendNext:[NSURL fileURLWithPath:updateDirectoryPath isDirectory:YES]];
-		[subscriber sendCompleted];
-	}] setNameWithFormat:@"-uniqueTemporaryDirectoryForUpdate"];
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+			}
+
+			NSString *updateDirectoryPath = [NSFileManager.defaultManager stringWithFileSystemRepresentation:updateDirectoryCString length:strlen(updateDirectoryCString)];
+			return [RACSignal return:[NSURL fileURLWithPath:updateDirectoryPath isDirectory:YES]];
+		}]
+		setNameWithFormat:@"-uniqueTemporaryDirectoryForUpdate"];
 }
 
 - (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory {
