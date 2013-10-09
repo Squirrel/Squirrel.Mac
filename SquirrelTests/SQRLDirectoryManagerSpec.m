@@ -1,0 +1,53 @@
+//
+//  SQRLDirectoryManagerSpec.m
+//  Squirrel
+//
+//  Created by Justin Spahr-Summers on 2013-10-09.
+//  Copyright (c) 2013 GitHub. All rights reserved.
+//
+
+#import "SQRLDirectoryManager.h"
+
+SpecBegin(SQRLDirectoryManager)
+
+__block NSString *otestIdentifier;
+
+beforeEach(^{
+	otestIdentifier = NSRunningApplication.currentApplication.localizedName;
+	expect(otestIdentifier).notTo.beNil();
+});
+
+it(@"should initialize", ^{
+	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:otestIdentifier];
+	expect(manager).notTo.beNil();
+});
+
+it(@"should create a manager for the current app", ^{
+	SQRLDirectoryManager *manager = SQRLDirectoryManager.currentApplicationManager;
+	expect(manager).notTo.beNil();
+	expect(manager).to.equal([[SQRLDirectoryManager alloc] initWithApplicationIdentifier:otestIdentifier]);
+});
+
+it(@"should send an Application Support URL", ^{
+	SQRLDirectoryManager *manager = SQRLDirectoryManager.currentApplicationManager;
+
+	NSError *error = nil;
+	NSURL *appSupportURL = [[manager applicationSupportURL] firstOrDefault:nil success:NULL error:&error];
+	expect(appSupportURL).notTo.beNil();
+	expect(error).to.beNil();
+
+	__block BOOL directory = NO;
+	expect([NSFileManager.defaultManager fileExistsAtPath:appSupportURL.path isDirectory:&directory]).to.beTruthy();
+	expect(directory).to.beTruthy();
+});
+
+it(@"should send a ShipIt state URL", ^{
+	SQRLDirectoryManager *manager = SQRLDirectoryManager.currentApplicationManager;
+
+	NSError *error = nil;
+	NSURL *stateURL = [[manager shipItStateURL] firstOrDefault:nil success:NULL error:&error];
+	expect(stateURL).notTo.beNil();
+	expect(error).to.beNil();
+});
+
+SpecEnd

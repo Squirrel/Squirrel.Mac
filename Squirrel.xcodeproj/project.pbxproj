@@ -37,6 +37,8 @@
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
 		D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
+		D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */; };
+		D049059D18055671004E683E /* SQRLShipItStateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059C18055671004E683E /* SQRLShipItStateSpec.m */; };
 		D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
 		D061E40317FD581C00CC134A /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */; };
@@ -410,6 +412,8 @@
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
 		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
+		D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManagerSpec.m; sourceTree = "<group>"; };
+		D049059C18055671004E683E /* SQRLShipItStateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItStateSpec.m; sourceTree = "<group>"; };
 		D06B58B218032B1500656D97 /* RACSignal+SQRLTransactionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLTransactionExtensions.h"; sourceTree = "<group>"; };
 		D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "RACSignal+SQRLTransactionExtensions.m"; sourceTree = "<group>"; };
 		D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListenerSpec.m; sourceTree = "<group>"; };
@@ -894,14 +898,16 @@
 			isa = PBXGroup;
 			children = (
 				D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */,
+				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
+				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
+				D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */,
+				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
+				D049059C18055671004E683E /* SQRLShipItStateSpec.m */,
+				D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */,
 				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
 				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
-				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
-				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
-				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
-				D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */,
-				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
+				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
 			);
 			name = Specs;
@@ -1397,7 +1403,9 @@
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
+				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
+				D049059D18055671004E683E /* SQRLShipItStateSpec.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
