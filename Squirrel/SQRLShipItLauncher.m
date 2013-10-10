@@ -26,76 +26,17 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 }
 
-+ (RACSignal *)launchPrivileged:(BOOL)privileged {
-	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.shipItJobLabel];
++ (RACSignal *)shipItJobDictionary {
+	NSString *jobLabel = self.shipItJobLabel;
 
-	return [[[directoryManager
-		applicationSupportURL]
-		flattenMap:^(NSURL *appSupportURL) {
+	return [[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:jobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		map:^(NSURL *appSupportURL) {
 			NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 			NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
-
-			CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
-
-			AuthorizationRef authorization = NULL;
-			if (privileged) {
-				AuthorizationItem rightItems[] = {
-					{
-						.name = kSMRightModifySystemDaemons,
-					},
-				};
-
-				AuthorizationRights rights = {
-					.count = sizeof(rightItems) / sizeof(*rightItems),
-					.items = rightItems,
-				};
-
-				NSString *prompt = NSLocalizedString(@"An update is ready to install.", @"SQRLShipItLauncher, launch shipit, authorization prompt");
-
-				NSString *iconName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
-				NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle.resourceURL URLByAppendingPathComponent:iconName].path);
-
-				AuthorizationItem environmentItems[] = {
-					{
-						.name = kAuthorizationEnvironmentPrompt,
-						.valueLength = strlen(prompt.UTF8String),
-						.value = (void *)prompt.UTF8String,
-					},
-					{
-						.name = kAuthorizationEnvironmentIcon,
-						.valueLength = iconPath == nil ? 0 : strlen(iconPath.UTF8String),
-						.value = (void *)iconPath.UTF8String,
-					},
-				};
-
-				AuthorizationEnvironment environment = {
-					.count = sizeof(environmentItems) / sizeof(*environmentItems),
-					.items = environmentItems,
-				};
-
-				OSStatus authorizationError = AuthorizationCreate(&rights, &environment, kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights, &authorization);
-				if (authorizationError != noErr) {
-					return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil]];
-				}
-			}
-
-			@onExit {
-				if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
-			};
-
-			NSString *jobLabel = self.shipItJobLabel;
-
-			CFErrorRef cfError;
-			if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, authorization, true, &cfError)) {
-				#if DEBUG
-				NSLog(@"Could not remove previous ShipIt job: %@", cfError);
-				#endif
-
-				if (cfError != NULL) {
-					CFRelease(cfError);
-					cfError = NULL;
-				}
-			}
 
 			NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
 			jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
@@ -123,13 +64,92 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			#if DEBUG
 			jobDict[@(LAUNCH_JOBKEY_DEBUG)] = @YES;
 			#endif
+			
+			return jobDict;
+		}]
+		setNameWithFormat:@"+shipItJobDictionary"];
+}
 
-			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDict, authorization, &cfError)) {
++ (RACSignal *)shipItAuthorization {
+	return [[RACSignal
+		createSignal:^(id<RACSubscriber> subscriber) {
+			AuthorizationItem rightItems[] = {
+				{
+					.name = kSMRightModifySystemDaemons,
+				},
+			};
+
+			AuthorizationRights rights = {
+				.count = sizeof(rightItems) / sizeof(*rightItems),
+				.items = rightItems,
+			};
+
+			NSString *prompt = NSLocalizedString(@"An update is ready to install.", @"SQRLShipItLauncher, launch shipit, authorization prompt");
+
+			NSString *iconName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
+			NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle.resourceURL URLByAppendingPathComponent:iconName].path);
+
+			AuthorizationItem environmentItems[] = {
+				{
+					.name = kAuthorizationEnvironmentPrompt,
+					.valueLength = strlen(prompt.UTF8String),
+					.value = (void *)prompt.UTF8String,
+				},
+				{
+					.name = kAuthorizationEnvironmentIcon,
+					.valueLength = iconPath == nil ? 0 : strlen(iconPath.UTF8String),
+					.value = (void *)iconPath.UTF8String,
+				},
+			};
+
+			AuthorizationEnvironment environment = {
+				.count = sizeof(environmentItems) / sizeof(*environmentItems),
+				.items = environmentItems,
+			};
+
+			AuthorizationRef authorization = NULL;
+			OSStatus authorizationError = AuthorizationCreate(&rights, &environment, kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights, &authorization);
+			if (authorizationError == noErr) {
+				[subscriber sendNext:(__bridge id)authorization];
+				[subscriber sendCompleted];
+			} else {
+				[subscriber sendError:[NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil]];
+			}
+
+			return [RACDisposable disposableWithBlock:^{
+				if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
+			}];
+		}]
+		setNameWithFormat:@"+shipItAuthorization"];
+}
+
++ (RACSignal *)launchPrivileged:(BOOL)privileged {
+	return [[[RACSignal
+		zip:@[
+			self.shipItJobDictionary,
+			(privileged ? self.shipItAuthorization : [RACSignal return:nil])
+		] reduce:^(NSDictionary *jobDictionary, id authorization) {
+			CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
+
+			CFErrorRef cfError;
+			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, (__bridge AuthorizationRef)authorization, true, &cfError)) {
+				#if DEBUG
+				NSLog(@"Could not remove previous ShipIt job: %@", cfError);
+				#endif
+
+				if (cfError != NULL) {
+					CFRelease(cfError);
+					cfError = NULL;
+				}
+			}
+
+			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, (__bridge AuthorizationRef)authorization, &cfError)) {
 				return [RACSignal error:CFBridgingRelease(cfError)];
 			}
 
 			return [RACSignal empty];
 		}]
+		flatten]
 		setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];
 }
 
