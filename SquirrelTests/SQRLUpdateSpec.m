@@ -9,13 +9,19 @@
 SpecBegin(SQRLUpdate);
 
 it(@"should return nil when initialised without a url", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{} error:NULL];
+	NSError *error = nil;
+	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{} error:&error];
 	expect(update).to.beNil();
+	expect(error.domain).to.equal(NSCocoaErrorDomain);
+	expect(error.code).to.equal(NSKeyValueValidationError);
 });
 
 it(@"should return nil when initialised with a url not in URL syntax", ^{
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{ @"updateURL": @"test" } error:NULL];
+	NSError *error = nil;
+	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{ @"updateURL": @"test" } error:&error];
 	expect(update).to.beNil();
+	expect(error.domain).to.equal(NSCocoaErrorDomain);
+	expect(error.code).to.equal(NSKeyValueValidationError);
 });
 
 it(@"should parse Central style dates", ^{

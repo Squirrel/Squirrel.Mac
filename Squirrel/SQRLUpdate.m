@@ -23,7 +23,15 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	if (self == nil) return nil;
 
 	if (self.updateURL == nil) {
-		NSLog(@"Missing updateURL for %@", self);
+		if (error != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
+				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"SQRLUpdate must be initialized with a valid updateURL.", nil)
+			};
+
+			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
+		}
+
 		return nil;
 	}
 
@@ -91,9 +99,16 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 - (BOOL)validateUpdateURL:(NSURL **)updateURLPtr error:(NSError **)error {
 	NSURL *updateURL = *updateURLPtr;
-	if (![updateURL isKindOfClass:NSURL.class]) return NO;
+	if (![updateURL isKindOfClass:NSURL.class] || updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
+		if (error != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
+				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An invalid URL was given to SQRLUpdate: %@", nil), updateURL]
+			};
 
-	if (updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
+			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
+		}
+		
 		return NO;
 	}
 
