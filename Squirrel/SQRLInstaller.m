@@ -29,11 +29,6 @@ const NSInteger SQRLInstallerErrorMissingInstallationData = -5;
 const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 
-// How long before the `SQRLInstallerPowerAssertion` times out.
-//
-// This will not actually affect behavior -- it is used only for logging.
-static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
-
 @interface SQRLInstaller ()
 
 // Finds the state file to read and write from.
