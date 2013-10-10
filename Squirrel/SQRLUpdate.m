@@ -38,6 +38,25 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	return self;
 }
 
+#pragma mark Validation
+
+- (BOOL)validateString:(NSString *)proposedString forKey:(NSString *)key error:(NSError **)error {
+	if (![proposedString isKindOfClass:NSString.class]) {
+		if (error != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
+				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An invalid %@ was given to SQRLUpdate: %@", nil), key, proposedString]
+			};
+
+			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
+		}
+		
+		return NO;
+	}
+
+	return YES;
+}
+
 #pragma mark MTLJSONSerializing
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
@@ -97,13 +116,29 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 #pragma mark NSKeyValueCoding
 
+- (BOOL)validateReleaseName:(NSString **)stringPtr error:(NSError **)error {
+	if (![self validateString:*stringPtr forKey:@keypath(self.releaseName) error:error]) {
+		*stringPtr = nil;
+	}
+
+	return YES;
+}
+
+- (BOOL)validateReleaseNotes:(NSString **)stringPtr error:(NSError **)error {
+	if (![self validateString:*stringPtr forKey:@keypath(self.releaseNotes) error:error]) {
+		*stringPtr = nil;
+	}
+
+	return YES;
+}
+
 - (BOOL)validateUpdateURL:(NSURL **)updateURLPtr error:(NSError **)error {
 	NSURL *updateURL = *updateURLPtr;
 	if (![updateURL isKindOfClass:NSURL.class] || updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
 		if (error != NULL) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
-				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An invalid URL was given to SQRLUpdate: %@", nil), updateURL]
+				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An invalid updateURL was given to SQRLUpdate: %@", nil), updateURL]
 			};
 
 			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];

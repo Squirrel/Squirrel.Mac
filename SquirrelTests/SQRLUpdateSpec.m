@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-SpecBegin(SQRLUpdate);
+SpecBegin(SQRLUpdate)
 
 it(@"should return nil when initialised without a url", ^{
 	NSError *error = nil;
@@ -18,10 +18,24 @@ it(@"should return nil when initialised without a url", ^{
 
 it(@"should return nil when initialised with a url not in URL syntax", ^{
 	NSError *error = nil;
-	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{ @"updateURL": @"test" } error:&error];
+	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{ @"updateURL": [NSURL URLWithString:@"test"] } error:&error];
 	expect(update).to.beNil();
 	expect(error.domain).to.equal(NSCocoaErrorDomain);
 	expect(error.code).to.equal(NSKeyValueValidationError);
+});
+
+it(@"should validate release name and notes", ^{
+	NSURL *updateURL = [NSURL URLWithString:@"http://example.com/update"];
+	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{
+		@"updateURL": updateURL,
+		@"releaseName": @5,
+		@"releaseNotes": [[NSObject alloc] init]
+	} error:NULL];
+
+	expect(update).notTo.beNil();
+	expect(update.updateURL).to.equal(updateURL);
+	expect(update.releaseName).to.beNil();
+	expect(update.releaseNotes).to.beNil();
 });
 
 it(@"should parse Central style dates", ^{
