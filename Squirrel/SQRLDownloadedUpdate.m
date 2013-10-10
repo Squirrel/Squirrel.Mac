@@ -41,7 +41,7 @@
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
 	return [super.JSONKeyPathsByPropertyKey mtl_dictionaryByAddingEntriesFromDictionary:@{
-		@"bundleURL": NSNull.null
+		@keypath(SQRLDownloadedUpdate.new, bundleURL): NSNull.null
 	}];
 }
 

@@ -7,6 +7,7 @@
 //
 
 #import "SQRLUpdate.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 NSString * const SQRLUpdateJSONURLKey = @"url";
 NSString * const SQRLUpdateJSONReleaseNotesKey = @"notes";
@@ -33,12 +34,10 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
 	return @{
-		@"releaseNotes": @"notes",
-		@"releaseName": @"name",
-		@"releaseDate": @"pub_date",
-
-		// Declared in SQRLUpdate+Private.h
-		@"updateURL": @"url",
+		@keypath(SQRLUpdate.new, releaseNotes): @"notes",
+		@keypath(SQRLUpdate.new, releaseName): @"name",
+		@keypath(SQRLUpdate.new, releaseDate): @"pub_date",
+		@keypath(SQRLUpdate.new, updateURL): @"url",
 	};
 }
 
