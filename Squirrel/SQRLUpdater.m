@@ -137,8 +137,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 	_updateRequest = [updateRequest copy];
 	_updateClass = SQRLUpdate.class;
 
-	_signature = [SQRLCodeSignature currentApplicationSignature];
-	if (_signature == nil) return nil;
+	NSError *error = nil;
+	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
+	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
 
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 

@@ -37,8 +37,8 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 
 #pragma mark Lifecycle
 
-+ (instancetype)currentApplicationSignature {
-	return [self modelWithDictionary:nil error:NULL];
++ (instancetype)currentApplicationSignature:(NSError **)error {
+	return [self modelWithDictionary:nil error:error];
 }
 
 - (id)initWithRequirement:(SecRequirementRef)requirement {

@@ -28,9 +28,13 @@ extern const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode;
 // initialized with.
 @property (nonatomic, copy, readonly) NSData *requirementData;
 
-// Returns the code signature of the currently-executing application, or nil if an error
-// occurs retrieving the signature for the running code.
-+ (instancetype)currentApplicationSignature;
+// Determines the code signature of the currently-executing application.
+//
+// error - If not NULL, set to any error that occurs.
+//
+// Returns a `SQRLCodeSignature`, or nil if an error occurs retrieving the
+// signature for the running code.
++ (instancetype)currentApplicationSignature:(NSError **)error;
 
 // Initializes the receiver with the given requirement.
 //
