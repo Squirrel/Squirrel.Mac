@@ -29,6 +29,18 @@ const NSInteger SQRLInstallerErrorMissingInstallationData = -5;
 const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 
+// Maps an installer state to a selector to invoke.
+typedef struct {
+	// The state for which the associated method should be invoked.
+	SQRLInstallerState installerState;
+
+	// A method accepting a `SQRLShipItState` argument and returning a cold
+	// signal.
+	//
+	// If NULL, installation should complete.
+	SEL selector;
+} SQRLInstallerDispatchTableEntry;
+
 @interface SQRLInstaller ()
 
 // Finds the state file to read and write from.
@@ -49,14 +61,7 @@ const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 // state - The installation state. This must not be nil.
 //
 // Returns a signal which will complete or error on an unspecified thread.
-- (RACSignal *)installUsingState:(SQRLShipItState *)state;
-
-// Creates a signal that will perform the current installation step.
-//
-// state - The installation state. This must not be nil.
-//
-// Returns a signal which will complete or error on an unspecified thread.
-- (RACSignal *)installationStepWithState:(SQRLShipItState *)state;
+- (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state;
 
 // Moves the specified bundle to a backup location.
 //
@@ -156,7 +161,7 @@ const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 		NSParameterAssert(state != nil);
 
 		return [[self
-			installUsingState:state]
+			resumeInstallationFromState:state]
 			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 	}];
 
@@ -197,89 +202,93 @@ const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 		setNameWithFormat:@"%@ -getRequiredKey: %@ fromState: %@", self, key, state];
 }
 
-- (RACSignal *)installUsingState:(SQRLShipItState *)state {
+- (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[RACSignal
-		defer:^{
-			SQRLInstallerState installerState = state.installerState;
-			if (installerState == SQRLInstallerStateNothingToDo) return [RACSignal empty];
+	const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
+		{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
+		{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
+		{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
+		{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
+		{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
+		{ .installerState = SQRLInstallerStateRelaunching, .selector = @selector(relaunchWithState:) },
+	};
 
-			return [[[self
-				installationStepWithState:state]
-				doCompleted:^{
-					NSLog(@"Completed step %i", (int)installerState);
-				}]
-				concat:[self installUsingState:state]];
-		}]
-		setNameWithFormat:@"%@ -installUsingState: %@", self, state];
+	const size_t tableCount = sizeof(dispatchTablePrototype) / sizeof(*dispatchTablePrototype);
+	NSValue *boxedDispatchTable = [NSValue valueWithBytes:dispatchTablePrototype objCType:@encode(__typeof__(dispatchTablePrototype))];
+
+	RACSignal *step = [RACSignal defer:^{
+		SQRLInstallerDispatchTableEntry dispatchTable[tableCount];
+		[boxedDispatchTable getValue:&dispatchTable];
+
+		SQRLInstallerState installerState = state.installerState;
+
+		size_t tableIndex;
+		for (tableIndex = 0; tableIndex < tableCount; tableIndex++) {
+			if (dispatchTable[tableIndex].installerState == installerState) {
+				break;
+			}
+		}
+
+		if (tableIndex >= tableCount) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Invalid installer state %i", nil), (int)installerState],
+				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
+			};
+
+			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
+		}
+
+		SEL selector = dispatchTable[tableIndex].selector;
+		if (selector == NULL) {
+			// Nothing to do.
+			return [RACSignal empty];
+		}
+
+		NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
+		invocation.target = self;
+		invocation.selector = selector;
+		
+		SQRLShipItState *stateArg = state;
+		[invocation setArgument:&stateArg atIndex:2];
+		[invocation invoke];
+
+		__unsafe_unretained RACSignal *step = nil;
+		[invocation getReturnValue:&step];
+
+		SQRLInstallerState nextState;
+		if (tableIndex + 1 >= tableCount) {
+			nextState = SQRLInstallerStateNothingToDo;
+		} else {
+			nextState = dispatchTable[tableIndex + 1].installerState;
+		}
+
+		return [[step
+			doCompleted:^{
+				NSLog(@"Completed state %i", (int)installerState);
+			}]
+			then:^{
+				return [RACSignal return:@(nextState)];
+			}];
+	}];
+
+	return [[self
+		stepRepeatedly:step withState:state]
+		setNameWithFormat:@"%@ -resumeInstallationFromState: %@", self, state];
 }
 
-- (RACSignal *)installationStepWithState:(SQRLShipItState *)state {
+- (RACSignal *)stepRepeatedly:(RACSignal *)step withState:(SQRLShipItState *)state {
+	NSParameterAssert(step != nil);
 	NSParameterAssert(state != nil);
 
-	return [[RACSignal
-		defer:^{
-			// This case is covered in -installUsingState:.
-			NSParameterAssert(state.installerState != SQRLInstallerStateNothingToDo);
-
-			switch (state.installerState) {
-				case SQRLInstallerStateClearingQuarantine:
-					return [[self
-						clearQuarantineWithState:state]
-						then:^{
-							state.installerState = SQRLInstallerStateBackingUp;
-							state.installationStateAttempt = 1;
-							return [state writeUsingDirectoryManager:self.directoryManager];
-						}];
-
-				case SQRLInstallerStateBackingUp:
-					return [[self
-						backUpWithState:state]
-						then:^{
-							state.installerState = SQRLInstallerStateInstalling;
-							state.installationStateAttempt = 1;
-							return [state writeUsingDirectoryManager:self.directoryManager];
-						}];
-
-				case SQRLInstallerStateInstalling:
-					return [[self
-						installWithState:state]
-						then:^{
-							state.installerState = SQRLInstallerStateVerifyingInPlace;
-							state.installationStateAttempt = 1;
-							return [state writeUsingDirectoryManager:self.directoryManager];
-						}];
-
-				case SQRLInstallerStateVerifyingInPlace:
-					return [[self
-						verifyInPlaceWithState:state]
-						then:^{
-							state.installerState = SQRLInstallerStateRelaunching;
-							state.installationStateAttempt = 1;
-							return [state writeUsingDirectoryManager:self.directoryManager];
-						}];
-
-				case SQRLInstallerStateRelaunching:
-					return [[self
-						relaunchWithState:state]
-						then:^{
-							state.installerState = SQRLInstallerStateNothingToDo;
-							state.installationStateAttempt = 1;
-							return [state writeUsingDirectoryManager:self.directoryManager];
-						}];
-				
-				default: {
-					NSDictionary *userInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Invalid installer state", nil),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
-					};
-
-					return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
-				}
-			}
-		}]
-		setNameWithFormat:@"%@ -installationStepWithState: %@", self, state];
+	return [step flattenMap:^(NSNumber *nextState) {
+		state.installerState = nextState.integerValue;
+		state.installationStateAttempt = 1;
+		return [[state
+			writeUsingDirectoryManager:self.directoryManager]
+			// Automatically begin the next step.
+			concat:[self stepRepeatedly:step withState:state]];
+	}];
 }
 
 - (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
