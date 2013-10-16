@@ -14,14 +14,14 @@
 // Designated initialiser.
 //
 // response - HTTP response whose body is being downloaded, may be nil.
-// fileURL  - local file system location where the download is being saved to,
+// fileURL  - Local file system location where the download is being saved to,
 //            must not be nil.
 - (instancetype)initWithResponse:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL;
 
-// response initialised with.
+// The `response` the receiver was initialised with.
 @property (readonly, copy, nonatomic) NSHTTPURLResponse *response;
 
-// fileURL initialised with.
+// The `fileURL` the receiver was initialised with.
 @property (readonly, copy, nonatomic) NSURL *fileURL;
 
 @end
