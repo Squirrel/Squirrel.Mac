@@ -42,18 +42,18 @@ it(@"should copy", ^{
 
 it(@"should fail to read state when no file exists yet", ^{
 	NSError *error = nil;
-	BOOL success = [[SQRLShipItState readUsingDirectoryManager:directoryManager] waitUntilCompleted:&error];
+	BOOL success = [[SQRLShipItState readUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
 	expect(success).to.beFalsy();
 	expect(error).notTo.beNil();
 });
 
 it(@"should write and read state", ^{
 	NSError *error = nil;
-	BOOL success = [[state writeUsingDirectoryManager:directoryManager] waitUntilCompleted:&error];
+	BOOL success = [[state writeUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
-	SQRLShipItState *readState = [[SQRLShipItState readUsingDirectoryManager:directoryManager] firstOrDefault:nil success:&success error:&error];
+	SQRLShipItState *readState = [[SQRLShipItState readUsingURL:directoryManager.shipItStateURL] firstOrDefault:nil success:&success error:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 

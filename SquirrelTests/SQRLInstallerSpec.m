@@ -22,7 +22,7 @@ beforeEach(^{
 
 it(@"should install an update", ^{
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 	[self launchShipIt];
 
@@ -36,7 +36,7 @@ it(@"should install an update and relaunch", ^{
 
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 	state.relaunchAfterInstallation = YES;
-	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 	[self launchShipIt];
 
@@ -49,7 +49,7 @@ it(@"should install an update from another volume", ^{
 	updateURL = [diskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
 
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 	[self launchShipIt];
 
@@ -61,7 +61,7 @@ it(@"should install an update to another volume", ^{
 	NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
 
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 	[self launchShipIt];
 
@@ -91,7 +91,7 @@ it(@"should not install an update after too many attempts", ^{
 	state.backupBundleURL = backupURL;
 	state.installerState = SQRLInstallerStateInstalling;
 	state.installationStateAttempt = 4;
-	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 	[self launchShipIt];
 
@@ -113,7 +113,7 @@ describe(@"signal handling", ^{
 		targetURL = self.testApplicationURL;
 
 		SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-		expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+		expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 		[self launchShipIt];
 
