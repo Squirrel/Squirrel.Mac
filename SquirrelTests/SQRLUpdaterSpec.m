@@ -6,46 +6,59 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import "SQRLTestUpdate.h"
 #import "SQRLZipArchiver.h"
-#import "SQRLUpdate+Private.h"
 
 SpecBegin(SQRLUpdater)
 
-NSRunningApplication * (^launchWithMockUpdate)(NSURL *) = ^(NSURL *updateURL) {
-	__block BOOL finished = NO;
+__block NSURL *JSONURL;
 
-	NSURL *zippedUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.zip"];
-	[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL completion:^(BOOL success) {
-		expect(success).to.beTruthy();
-		finished = YES;
-	}];
-
-	expect(finished).will.beTruthy();
-
-	NSDictionary *updateInfo = @{
-		SQRLUpdateJSONURLKey: zippedUpdateURL.absoluteString
-	};
+void (^writeUpdate)(SQRLUpdate *) = ^(SQRLUpdate *update) {
+	NSDictionary *updateInfo = [MTLJSONAdapter JSONDictionaryFromModel:update];
+	expect(updateInfo).notTo.beNil();
 
 	NSError *error = nil;
 	NSData *JSON = [NSJSONSerialization dataWithJSONObject:updateInfo options:NSJSONWritingPrettyPrinted error:&error];
 	expect(JSON).notTo.beNil();
 	expect(error).to.beNil();
 
-	NSURL *JSONURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.json"];
 	BOOL success = [JSON writeToURL:JSONURL options:NSDataWritingAtomic error:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
+};
 
-	NSDictionary *environment = @{
-		@"SQRLUpdateFromURL": JSONURL.absoluteString
-	};
+NSURL * (^zipUpdate)(NSURL *) = ^(NSURL *updateURL) {
+	NSURL *zipFolderURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.temporaryDirectoryURL create:YES error:NULL];
+	expect(zipFolderURL).notTo.beNil();
+
+	NSURL *zippedUpdateURL = [[zipFolderURL URLByAppendingPathComponent:updateURL.lastPathComponent] URLByAppendingPathExtension:@"zip"];
+	BOOL success = [[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL] asynchronouslyWaitUntilCompleted:NULL];
+	expect(success).to.beTruthy();
+
+	return zippedUpdateURL;
+};
+
+NSRunningApplication * (^launchWithEnvironment)(NSDictionary *) = ^(NSDictionary *moreEnvironment) {
+	NSMutableDictionary *environment = [moreEnvironment mutableCopy] ?: [NSMutableDictionary dictionary];
+	environment[@"SQRLUpdateFromURL"] = JSONURL.absoluteString;
 
 	return [self launchTestApplicationWithEnvironment:environment];
 };
 
+beforeEach(^{
+	JSONURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.json"];
+});
+
 it(@"should use the application's bundled version of Squirrel and update in-place", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	NSRunningApplication *app = launchWithMockUpdate(updateURL);
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+		@"updateURL": zipUpdate(updateURL),
+		@"final": @YES
+	} error:NULL];
+
+	writeUpdate(update);
+
+	NSRunningApplication *app = launchWithEnvironment(nil);
 	expect(app.terminated).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -55,12 +68,66 @@ it(@"should not install a corrupt update", ^{
 	NSURL *codeSignatureURL = [updateURL URLByAppendingPathComponent:@"Contents/_CodeSignature"];
 	expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to.beTruthy();
 
-	NSRunningApplication *app = launchWithMockUpdate(updateURL);
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+		@"updateURL": zipUpdate(updateURL),
+		@"final": @YES
+	} error:NULL];
+
+	writeUpdate(update);
+
+	NSRunningApplication *app = launchWithEnvironment(nil);
 	expect(app.terminated).will.beTruthy();
 
 	// Give the update some time to finish installing.
 	[NSThread sleepForTimeInterval:0.2];
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+});
+
+it(@"should update to the most recently enqueued job", ^{
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+		@"updateURL": zipUpdate(self.testApplicationURL)
+	} error:NULL];
+
+	writeUpdate(update);
+
+	NSRunningApplication *app = launchWithEnvironment(nil);
+
+	// Now that Test Application is launched, it's going to keep checking the
+	// JSON URL until it has the proper release name. So we'll wait a short bit,
+	// and then add the correct name in.
+	//
+	// This exercises ShipIt's ability to discard previous commands and
+	// install an even newer update.
+	[NSThread sleepForTimeInterval:0.3];
+
+	NSURL *updateURL = [self createTestApplicationUpdate];
+	update = [SQRLTestUpdate modelWithDictionary:@{
+		@"updateURL": zipUpdate(updateURL),
+		@"final": @YES
+	} error:NULL];
+
+	writeUpdate(update);
+
+	expect(app.terminated).will.beTruthy();
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+it(@"should use the application's bundled version of Squirrel and update in-place after a significant delay", ^{
+	NSURL *updateURL = [self createTestApplicationUpdate];
+	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+		@"updateURL": zipUpdate(updateURL),
+		@"final": @YES
+	} error:NULL];
+
+	writeUpdate(update);
+
+	NSTimeInterval delay = 30;
+	NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
+
+	Expecta.asynchronousTestTimeout = delay + 3;
+	expect(app.terminated).will.beTruthy();
+
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
 SpecEnd

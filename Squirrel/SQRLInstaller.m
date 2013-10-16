@@ -7,10 +7,16 @@
 //
 
 #import "SQRLInstaller.h"
+#import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
-#import "SQRLCodeSignatureVerifier.h"
-#import <IOKit/pwr_mgt/IOPMLib.h>
+#import "RACSignal+SQRLTransactionExtensions.h"
+#import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
+#import "SQRLShipItState.h"
+#import "SQRLTerminationListener.h"
 #import <libkern/OSAtomic.h>
+#import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 #import <sys/xattr.h>
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
@@ -19,57 +25,112 @@ const NSInteger SQRLInstallerErrorBackupFailed = -1;
 const NSInteger SQRLInstallerErrorReplacingTarget = -2;
 const NSInteger SQRLInstallerErrorCouldNotOpenTarget = -3;
 const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
+const NSInteger SQRLInstallerErrorMissingInstallationData = -5;
+const NSInteger SQRLInstallerErrorInvalidState = -6;
+const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 
-// Protects access to resources that are used during the opening/closing of
-// a transaction.
-static NSLock *SQRLInstallerTransactionLock;
+// Maps an installer state to a selector to invoke.
+typedef struct {
+	// The state for which the associated method should be invoked.
+	SQRLInstallerState installerState;
 
-// Tracks how many concurrent transactions are in progress.
-//
-// This variable must only be used while `SQRLInstallerTransactionLock` is held.
-static NSUInteger SQRLInstallerTransactionCount = 0;
-
-// Prevents the machine from shutting down or sleeping while a transaction is in
-// progress.
-//
-// This variable must only be used while `SQRLInstallerTransactionLock` is held.
-static IOPMAssertionID SQRLInstallerPowerAssertion;
-
-// How long before the `SQRLInstallerPowerAssertion` times out.
-//
-// This will not actually affect behavior -- it is used only for logging.
-static const CFTimeInterval SQRLInstallerPowerAssertionTimeout = 10;
-
-// Updates the behavior for handling termination signals to `func`.
-//
-// This function must only be called while `SQRLInstallerTransactionLock` is held.
-static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
-	signal(SIGHUP, func);
-	signal(SIGINT, func);
-	signal(SIGQUIT, func);
-	signal(SIGTERM, func);
-}
+	// A method accepting a `SQRLShipItState` argument and returning a cold
+	// signal.
+	//
+	// If NULL, installation should complete.
+	SEL selector;
+} SQRLInstallerDispatchTableEntry;
 
 @interface SQRLInstaller ()
 
-@property (nonatomic, strong, readonly) NSURL *targetBundleURL;
-@property (nonatomic, strong, readonly) NSURL *updateBundleURL;
-@property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
+// Finds the state file to read and write from.
+@property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 
-// Invoked when the installer needs to begin some uninterruptible work.
+// Reads the given key from `state`, failing if it's not set.
 //
-// A best-effort attempt will be made to protect the process from termination
-// during this time.
+// key   - The property key to read from `state`. This must not be nil, and
+//         should refer to a property of object type.
+// state - The state object to read. This must not be nil.
 //
-// -endTransaction must be called after the work is completed. These calls can
-// be nested.
-- (void)beginTransaction;
+// Returns a signal which synchronously sends the non-nil read value then
+// completes, or errors.
+- (RACSignal *)getRequiredKey:(NSString *)key fromState:(SQRLShipItState *)state;
 
-// Ends a transaction previously opened with -beginTransaction.
+// Performs the remaining stages of installation, as specified by `state`.
 //
-// These calls may be nested, but there must be one -endTransaction call for
-// each -beginTransaction call.
-- (void)endTransaction;
+// state - The installation state. This must not be nil.
+//
+// Returns a signal which will complete or error on an unspecified thread.
+- (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state;
+
+// Moves the specified bundle to a backup location.
+//
+// bundleURL - The URL to the bundle that should be backed up. This must not be
+//             nil.
+//
+// Returns a signal which will send the `NSURL` to the proposed backup location
+// as soon as possible, then complete once the bundle has actually been moved.
+- (RACSignal *)backUpBundleAtURL:(NSURL *)bundleURL;
+
+// Deletes a bundle that was backed up using -backUpBundleAtURL:.
+//
+// backupURL - The URL to the backup bundle, as sent from -backUpBundleAtURL:.
+//             This must not be nil.
+//
+// Returns a signal which will synchronously complete or error.
+- (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL;
+
+// Validates the code signature of a bundle, optionally restoring it upon
+// failure.
+//
+// bundleURL       - The URL of the bundle whose code signature should be
+//                   verified. This must not be nil.
+// signature       - The code signature that the bundle must match. This must
+//                   not be nil.
+// backupBundleURL - If not nil, the URL to a bundle that should replace
+//                   `bundleURL` if the code signature does not pass validation.
+//
+// Returns a signal which will synchronously complete if `bundleURL` passes
+// validation, or if the bundle was recovered from `backupBundleURL`. If
+// validation or recovery fails, an error will be sent.
+- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL;
+
+// Attempts to determine whether a bundle has already been moved on disk.
+//
+// sourceURL - The original URL to the bundle. This must not be nil.
+// targetURL - The proposed destination URL for the bundle. This must not be
+//             nil.
+// signature - The code signature that any item must match in order to be
+//             considered the correct bundle. This must not be nil.
+//
+// Returns a signal which will synchronously send YES if `targetURL` points to
+// a bundle matching the code signature, NO if it doesn't and `sourceURL` still
+// exists, or an error otherwise.
+- (RACSignal *)checkWhetherBundlePreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingSignature:(SQRLCodeSignature *)signature;
+
+// Moves `sourceURL` to `targetURL`.
+//
+// If the two URLs lie on the same volume, the installation will be performed
+// atomically. Otherwise, the target item will be deleted, the source item will
+// be copied to the target, then the source item will be deleted.
+//
+// targetURL - The URL to overwrite with the install. This must not be nil.
+// sourceURL - The URL to move from. This must not be nil.
+//
+// Retruns a signal which will synchronously complete or error.
+- (RACSignal *)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL;
+
+// Recursively clears the quarantine extended attribute from the given
+// directory.
+//
+// This ensures users don't see a warning that the application was downloaded
+// from the Internet.
+//
+// directory - The directory to recursively clear the quarantine bit upon. This
+//             must not be nil.
+//
+// Returns a signal which will send completed or error on a background thread.
+- (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory;
 
 @end
 
@@ -77,293 +138,497 @@ static void SQRLInstallerReplaceSignalHandlers(sig_t func) {
 
 #pragma mark Lifecycle
 
-+ (void)initialize {
-	if (self != SQRLInstaller.class) return;
+- (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
+	NSParameterAssert(directoryManager != nil);
 
-	SQRLInstallerTransactionLock = [[NSLock alloc] init];
-	SQRLInstallerTransactionLock.name = @"com.github.Squirrel.ShipIt.SQRLInstallerTransactionLock";
-}
-
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL requirementData:(NSData *)requirementData {
-	NSParameterAssert(targetBundleURL != nil);
-	NSParameterAssert(updateBundleURL != nil);
-	NSParameterAssert(requirementData != nil);
-	
 	self = [super init];
 	if (self == nil) return nil;
 
-	SecRequirementRef requirement = NULL;
-	OSStatus status = SecRequirementCreateWithData((__bridge CFDataRef)requirementData, kSecCSDefaultFlags, &requirement);
-	@onExit {
-		if (requirement != NULL) CFRelease(requirement);
-	};
+	_directoryManager = directoryManager;
 
-	if (status != noErr) return nil;
+	@weakify(self);
 
-	_verifier = [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
-	_targetBundleURL = targetBundleURL;
-	_updateBundleURL = updateBundleURL;
+	RACSignal *aborting = [[[[RACObserve(self, abortInstallationCommand)
+		ignore:nil]
+		map:^(RACCommand *command) {
+			return command.executing;
+		}]
+		switchToLatest]
+		setNameWithFormat:@"aborting"];
+
+	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItState *state) {
+		@strongify(self);
+		NSParameterAssert(state != nil);
+
+		return [[self
+			resumeInstallationFromState:state]
+			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+	}];
+
+	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItState *state) {
+		@strongify(self);
+		NSParameterAssert(state != nil);
+
+		return [[[RACSignal
+			zip:@[
+				[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
+				[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
+			}]
+			flatten]
+			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+	}];
 	
 	return self;
 }
 
-#pragma mark Transactions
+#pragma mark Installer State
 
-- (void)beginTransaction {
-	[SQRLInstallerTransactionLock lock];
-	@onExit {
-		[SQRLInstallerTransactionLock unlock];
-	};
+- (RACSignal *)getRequiredKey:(NSString *)key fromState:(SQRLShipItState *)state {
+	NSParameterAssert(key != nil);
+	NSParameterAssert(state != nil);
 
-	// If there are any transactions already, skip initial setup.
-	if (SQRLInstallerTransactionCount++ > 0) return;
-
-	SQRLInstallerReplaceSignalHandlers(SIG_IGN);
-
-	NSString *details = [NSString stringWithFormat:@"%@ is being updated, and interrupting the process could corrupt the application", self.targetBundleURL.path];
-	IOReturn result = IOPMAssertionCreateWithDescription(kIOPMAssertionTypePreventSystemSleep, CFSTR("Updating"), (__bridge CFStringRef)details, NULL, NULL, SQRLInstallerPowerAssertionTimeout, kIOPMAssertionTimeoutActionLog, &SQRLInstallerPowerAssertion);
-	if (result != kIOReturnSuccess) {
-		NSLog(@"Could not install power assertion: %li", (long)result);
-	}
+	return [[RACSignal
+		defer:^{
+			id value = [state valueForKey:key];
+			if (value == nil) {
+				NSString *errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Missing %@", nil), key];
+				return [RACSignal error:[self missingDataErrorWithDescription:errorDescription]];
+			} else {
+				return [RACSignal return:value];
+			}
+		}]
+		setNameWithFormat:@"%@ -getRequiredKey: %@ fromState: %@", self, key, state];
 }
 
-- (void)endTransaction {
-	[SQRLInstallerTransactionLock lock];
-	@onExit {
-		[SQRLInstallerTransactionLock unlock];
+- (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
+		{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
+		{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
+		{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
+		{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
+		{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
+		{ .installerState = SQRLInstallerStateRelaunching, .selector = @selector(relaunchWithState:) },
 	};
 
-	// If there are still transactions left, skip teardown.
-	if (--SQRLInstallerTransactionCount > 0) return;
+	const size_t tableCount = sizeof(dispatchTablePrototype) / sizeof(*dispatchTablePrototype);
+	NSValue *boxedDispatchTable = [NSValue valueWithBytes:dispatchTablePrototype objCType:@encode(__typeof__(dispatchTablePrototype))];
 
-	SQRLInstallerReplaceSignalHandlers(SIG_DFL);
+	RACSignal *step = [RACSignal defer:^{
+		SQRLInstallerDispatchTableEntry dispatchTable[tableCount];
+		[boxedDispatchTable getValue:&dispatchTable];
 
-	IOReturn result = IOPMAssertionRelease(SQRLInstallerPowerAssertion);
-	if (result != kIOReturnSuccess) {
-		NSLog(@"Could not release power assertion: %li", (long)result);
-	}
+		SQRLInstallerState installerState = state.installerState;
+
+		size_t tableIndex;
+		for (tableIndex = 0; tableIndex < tableCount; tableIndex++) {
+			if (dispatchTable[tableIndex].installerState == installerState) {
+				break;
+			}
+		}
+
+		if (tableIndex >= tableCount) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Invalid installer state %i", nil), (int)installerState],
+				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
+			};
+
+			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
+		}
+
+		SEL selector = dispatchTable[tableIndex].selector;
+		if (selector == NULL) {
+			// Nothing to do.
+			return [RACSignal empty];
+		}
+
+		NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
+		invocation.target = self;
+		invocation.selector = selector;
+		
+		SQRLShipItState *stateArg = state;
+		[invocation setArgument:&stateArg atIndex:2];
+		[invocation invoke];
+
+		__unsafe_unretained RACSignal *step = nil;
+		[invocation getReturnValue:&step];
+
+		SQRLInstallerState nextState;
+		if (tableIndex + 1 >= tableCount) {
+			nextState = SQRLInstallerStateNothingToDo;
+		} else {
+			nextState = dispatchTable[tableIndex + 1].installerState;
+		}
+
+		return [[step
+			doCompleted:^{
+				NSLog(@"Completed state %i", (int)installerState);
+			}]
+			then:^{
+				return [RACSignal return:@(nextState)];
+			}];
+	}];
+
+	return [[self
+		stepRepeatedly:step withState:state]
+		setNameWithFormat:@"%@ -resumeInstallationFromState: %@", self, state];
+}
+
+- (RACSignal *)stepRepeatedly:(RACSignal *)step withState:(SQRLShipItState *)state {
+	NSParameterAssert(step != nil);
+	NSParameterAssert(state != nil);
+
+	return [step flattenMap:^(NSNumber *nextState) {
+		state.installerState = nextState.integerValue;
+		state.installationStateAttempt = 1;
+		return [[state
+			writeUsingURL:self.directoryManager.shipItStateURL]
+			// Automatically begin the next step.
+			concat:[self stepRepeatedly:step withState:state]];
+	}];
+}
+
+- (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[[self
+		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
+		flattenMap:^(NSURL *bundleURL) {
+			return [self clearQuarantineForDirectory:bundleURL];
+		}]
+		setNameWithFormat:@"%@ -clearQuarantineWithState: %@", self, state];
+}
+
+- (RACSignal *)backUpWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[[[RACSignal
+		zip:@[
+			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state],
+		] reduce:^(NSURL *bundleURL, SQRLCodeSignature *codeSignature) {
+			RACSignal *skipBackup = [RACSignal return:@NO];
+			if (state.backupBundleURL != nil) {
+				skipBackup = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:state.backupBundleURL usingSignature:codeSignature];
+			}
+
+			return [skipBackup flattenMap:^(NSNumber *skip) {
+				if (skip.boolValue) {
+					return [RACSignal empty];
+				} else {
+					return [self backUpBundleAtURL:bundleURL];
+				}
+			}];
+		}]
+		flatten]
+		flattenMap:^(NSURL *backupBundleURL) {
+			// Save the chosen backup URL as soon as we have it, so we
+			// can resume even if the state change hasn't taken effect.
+			//
+			// N.B. It's important that this method remain
+			// synchronous, so it finishes before returning
+			// control to -backUpBundleAtURL:. Really, the flow
+			// here should be refactored so it doesn't matter.
+			state.backupBundleURL = backupBundleURL;
+			return [state writeUsingURL:self.directoryManager.shipItStateURL];
+		}]
+		setNameWithFormat:@"%@ -backUpWithState: %@", self, state];
+}
+
+- (RACSignal *)installWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[[RACSignal
+		zip:@[
+			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.backupBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+		] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
+			return [[[[self
+				checkWhetherBundlePreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
+				flattenMap:^(NSNumber *skip) {
+					if (skip.boolValue) {
+						return [RACSignal empty];
+					} else {
+						return [self installItemAtURL:targetBundleURL fromURL:updateBundleURL];
+					}
+				}]
+				catch:^(NSError *error) {
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, updateBundleURL];
+					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorReplacingTarget toError:error]];
+				}]
+				catch:^(NSError *error) {
+					// Verify that the target bundle didn't get corrupted during
+					// failure. Try recovering it if it did.
+					return [[self
+						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
+						then:^{
+							// Recovery succeeded, but we still want to pass
+							// through the original error.
+							return [RACSignal error:error];
+						}];
+				}];
+		}]
+		flatten]
+		setNameWithFormat:@"%@ -installWithState: %@", self, state];
+}
+
+- (RACSignal *)verifyInPlaceWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[[RACSignal
+		zip:@[
+			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.backupBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+		] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
+			return [[self
+				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
+				then:^{
+					return [[self
+						deleteBackupAtURL:backupBundleURL]
+						catchTo:[RACSignal empty]];
+				}];
+		}]
+		flatten]
+		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
+}
+
+- (RACSignal *)relaunchWithState:(SQRLShipItState *)state {
+	return [[[[RACSignal
+		defer:^{
+			if (state.relaunchAfterInstallation) {
+				return [self getRequiredKey:@keypath(state.targetBundleURL) fromState:state];
+			} else {
+				return [RACSignal empty];
+			}
+		}]
+		deliverOn:RACScheduler.mainThreadScheduler]
+		flattenMap:^(NSURL *bundleURL) {
+			NSError *error = nil;
+			if ([NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+				return [RACSignal empty];
+			} else {
+				return [RACSignal error:error];
+			}
+		}]
+		setNameWithFormat:@"%@ -relaunch", self];
+}
+
+#pragma mark Backing Up
+
+- (RACSignal *)backUpBundleAtURL:(NSURL *)targetBundleURL {
+	NSParameterAssert(targetBundleURL != nil);
+
+	return [[[[[[self.directoryManager
+		applicationSupportURL]
+		flattenMap:^(NSURL *applicationSupportURL) {
+			NSError *error = nil;
+			NSURL *temporaryDirectoryURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:applicationSupportURL create:YES error:&error];
+			if (temporaryDirectoryURL == nil) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal return:temporaryDirectoryURL];
+		}]
+		catch:^(NSError *error) {
+			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)];
+			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
+		}]
+		map:^(NSURL *temporaryDirectoryURL) {
+			return [temporaryDirectoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
+		}]
+		flattenMap:^(NSURL *backupBundleURL) {
+			return [[[[self
+				installItemAtURL:backupBundleURL fromURL:targetBundleURL]
+				catch:^(NSError *error) {
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), targetBundleURL, backupBundleURL];
+					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
+				}]
+				ignoreValues]
+				// Return the backup URL before doing any work, to increase
+				// fault tolerance.
+				startWith:backupBundleURL];
+		}]
+		setNameWithFormat:@"%@ -backUpBundleAtURL: %@", self, targetBundleURL];
+}
+
+- (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL {
+	NSParameterAssert(backupURL != nil);
+
+	return [[[RACSignal
+		defer:^{
+			NSError *error = nil;
+			if ([NSFileManager.defaultManager removeItemAtURL:backupURL error:&error]) {
+				return [RACSignal empty];
+			} else {
+				return [RACSignal error:error];
+			}
+		}]
+		then:^{
+			// Also remove the temporary directory that the backup lived in.
+			NSURL *temporaryDirectoryURL = backupURL.URLByDeletingLastPathComponent;
+
+			// However, use rmdir() to skip it in case there are other files
+			// contained within (for whatever reason).
+			if (rmdir(temporaryDirectoryURL.path.fileSystemRepresentation) == 0) {
+				return [RACSignal empty];
+			} else {
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+			}
+		}]
+		setNameWithFormat:@"%@ -deleteBackupAtURL: %@", self, backupURL];
+}
+
+- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
+	NSParameterAssert(bundleURL != nil);
+	NSParameterAssert(signature != nil);
+
+	return [[[signature
+		verifyBundleAtURL:bundleURL]
+		catch:^(NSError *error) {
+			if (backupBundleURL == nil) return [RACSignal error:error];
+
+			return [[[[self
+				installItemAtURL:bundleURL fromURL:backupBundleURL]
+				initially:^{
+					[NSFileManager.defaultManager removeItemAtURL:bundleURL error:NULL];
+				}]
+				doCompleted:^{
+					NSLog(@"Restored backup bundle to %@", bundleURL);
+				}]
+				doError:^(NSError *recoveryError) {
+					NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, bundleURL, recoveryError.sqrl_verboseDescription);
+				}];
+		}]
+		setNameWithFormat:@"%@ -verifyBundleAtURL: %@ usingSignature: %@ recoveringUsingBackupAtURL: %@", self, bundleURL, signature, backupBundleURL];
 }
 
 #pragma mark Installation
 
-- (BOOL)installUpdateWithError:(NSError **)errorPtr {
-	[self beginTransaction];
-	@try {
-		return [self reallyInstallUpdateWithError:errorPtr];
-	} @finally {
-		[self endTransaction];
-	}
-}
+- (RACSignal *)checkWhetherBundlePreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingSignature:(SQRLCodeSignature *)signature {
+	NSParameterAssert(targetURL != nil);
+	NSParameterAssert(sourceURL != nil);
+	NSParameterAssert(signature != nil);
 
-- (BOOL)reallyInstallUpdateWithError:(NSError **)errorPtr {
-	// Verify the update bundle.
-	if (![self.verifier verifyCodeSignatureOfBundle:self.updateBundleURL error:errorPtr]) {
-		return NO;
-	}
-
-	// Clear the quarantine bit on the update.
-	if (![self clearQuarantineForDirectory:self.targetBundleURL error:errorPtr]) {
-		return NO;
-	}
-	
-	// Create a backup location for the original bundle.
-	NSBundle *targetBundle = [NSBundle bundleWithURL:self.targetBundleURL];
-	if (targetBundle == nil) {
-		if (errorPtr != NULL) {
-			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"URL %@ could not be opened as a bundle", nil), self.targetBundleURL],
-			};
-
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorCouldNotOpenTarget userInfo:userInfo];
-		}
-
-		return NO;
-	}
-
-	NSString *bundleVersion = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
-	if (bundleVersion == nil) {
-		if (errorPtr != NULL) {
-			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Target bundle %@ has an invalid version", nil), self.targetBundleURL],
-			};
-
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidBundleVersion userInfo:userInfo];
-		}
-
-		return NO;
-	}
-
-	NSError *error = nil;
-
-	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForURL:self.targetBundleURL error:&error];
-	if (temporaryDirectory == nil) {
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [@{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)],
-			} mutableCopy];
-
-			if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-			*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
-		}
-
-		return NO;
-	}
-
-	NSURL *backupBundleURL = [temporaryDirectory URLByAppendingPathComponent:self.targetBundleURL.lastPathComponent];
-
-	@try {
-		// First, move the target out of place and into the backup location.
-		if (![self installItemAtURL:backupBundleURL fromURL:self.targetBundleURL error:&error]) {
-			if (errorPtr != NULL) {
-				NSMutableDictionary *userInfo = [@{
-					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), self.targetBundleURL, backupBundleURL],
-				} mutableCopy];
-
-				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-				*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorBackupFailed userInfo:userInfo];
-			}
-
-			return NO;
-		}
-		
-		// Move the new bundle into place.
-		if (![self installItemAtURL:self.targetBundleURL fromURL:self.updateBundleURL error:&error]) {
-			if (errorPtr != NULL) {
-				NSMutableDictionary *userInfo = [@{
-					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), self.targetBundleURL, self.updateBundleURL],
-				} mutableCopy];
-
-				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-				*errorPtr = [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorReplacingTarget userInfo:userInfo];
-			}
-
-			return NO;
-		}
-	} @finally {
-		if (![self.verifier verifyCodeSignatureOfBundle:self.targetBundleURL error:&error]) {
-			NSLog(@"Target bundle %@ is missing or corrupted: %@", self.targetBundleURL, error);
-			[NSFileManager.defaultManager removeItemAtURL:self.targetBundleURL error:NULL];
-
-			NSError *installBackupError = nil;
-			if ([self installItemAtURL:self.targetBundleURL fromURL:backupBundleURL error:&installBackupError]) {
-				NSLog(@"Restored backup bundle to %@", self.targetBundleURL);
-				[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
+	return [[[[self
+		verifyBundleAtURL:targetURL usingSignature:signature recoveringUsingBackupAtURL:nil]
+		then:^{
+			return [RACSignal return:@YES];
+		}]
+		catch:^(NSError *error) {
+			BOOL directory;
+			if ([NSFileManager.defaultManager fileExistsAtPath:sourceURL.path isDirectory:&directory]) {
+				// If the source still exists, this isn't an error.
+				return [RACSignal return:@NO];
 			} else {
-				NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, self.targetBundleURL, installBackupError.sqrl_verboseDescription);
-				// Leave the temporary directory in place so that it's restored to trash on reboot
+				return [RACSignal error:error];
 			}
-
-			if (errorPtr != NULL) *errorPtr = error;
-			return NO;
-		}
-
-		// This directory must be removed once we succeed otherwise it ends up
-		// in the user's trash directory on reboot
-		[NSFileManager.defaultManager removeItemAtURL:temporaryDirectory error:NULL];
-	}
-
-	return YES;
+		}]
+		setNameWithFormat:@"%@ -checkWhetherBundlePreviouslyAtURL: %@ wasInstalledAtURL: %@", self, sourceURL, targetURL];
 }
 
-- (NSURL *)temporaryDirectoryAppropriateForURL:(NSURL *)targetURL error:(NSError **)errorPtr {
-	NSURL *temporaryDirectory = [self temporaryDirectoryAppropriateForVolumeOfURL:targetURL];
-	if (temporaryDirectory != nil) return temporaryDirectory;
-
-	temporaryDirectory = [NSURL fileURLWithPathComponents:@[
-		NSTemporaryDirectory(),
-		[NSString stringWithFormat:@"com~github~ShipIt"],
-		NSProcessInfo.processInfo.globallyUniqueString,
-	]];
-	if (![NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectory withIntermediateDirectories:YES attributes:nil error:errorPtr]) return nil;
-
-	return temporaryDirectory;
-}
-
-- (NSURL *)temporaryDirectoryAppropriateForVolumeOfURL:(NSURL *)targetURL {
-	NSError *error = nil;
-
-	NSURL *volumeURL = nil;
-	BOOL getVolumeURL = [targetURL getResourceValue:&volumeURL forKey:NSURLVolumeURLKey error:&error];
-	if (!getVolumeURL) return nil;
-
-	return [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:volumeURL create:YES error:&error];
-}
-
-- (BOOL)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL error:(NSError **)errorPtr {
+- (RACSignal *)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
-	// rename() is atomic, NSFileManager sucks.
-	if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) != 0) {
-		int code = errno;
-		if (code == EXDEV) {
-			// If the locations lie on two different volumes, remove the
-			// destination by hand, then perform a move.
-			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
-
-			NSError *moveItemError = nil;
-			if (![NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&moveItemError]) {
-				NSLog(@"Couldn't move bundle across volumes %@", moveItemError.sqrl_verboseDescription);
-				if (errorPtr != NULL) *errorPtr = moveItemError;
-				return NO;
-			}
-
-			NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
-			return YES;
-		}
-
-		if (errorPtr != NULL) {
-			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-			
-			const char *desc = strerror(code);
-			if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
-
-			*errorPtr = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
-		}
-
-		return NO;
-	}
-
-	NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
-	return YES;
-}
-
-- (BOOL)clearQuarantineForDirectory:(NSURL *)directory error:(NSError **)error {
-	NSParameterAssert(directory != nil);
-
-	NSFileManager *manager = [[NSFileManager alloc] init];
-	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:nil options:0 errorHandler:^(NSURL *URL, NSError *error) {
-		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
-		return YES;
-	}];
-
-	for (NSURL *URL in enumerator) {
-		const char *path = URL.path.fileSystemRepresentation;
-		if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
-			int code = errno;
-			if (code == ENOATTR) {
-				// This just means the extended attribute was never set on the
-				// file to begin with.
-				continue;
-			}
-
-			if (error != NULL) {
+	return [[[[RACSignal
+		defer:^{
+			// rename() is atomic, NSFileManager sucks.
+			if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) == 0) {
+				return [RACSignal empty];
+			} else {
+				int code = errno;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 				
 				const char *desc = strerror(code);
 				if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
 
-				*error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+			}
+		}]
+		doCompleted:^{
+			NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
+		}]
+		catch:^(NSError *error) {
+			if (![error.domain isEqual:NSPOSIXErrorDomain] || error.code != EXDEV) return [RACSignal error:error];
+
+			// If the locations lie on two different volumes, remove the
+			// destination by hand, then perform a move.
+			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+
+			if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&error]) {
+				NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
+				return [RACSignal empty];
+			} else {
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't move bundle %@ across volumes to %@", nil), sourceURL, targetURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:error]];
+			}
+		}]
+		setNameWithFormat:@"%@ -installItemAtURL: %@ fromURL: %@", self, targetURL, sourceURL];
+}
+
+#pragma Quarantine Bit Removal
+
+- (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory {
+	NSParameterAssert(directory != nil);
+
+	return [[[RACSignal
+		defer:^{
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:nil options:0 errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
+				return YES;
+			}];
+
+			return enumerator.rac_sequence.signal;
+		}]
+		flattenMap:^(NSURL *URL) {
+			const char *path = URL.path.fileSystemRepresentation;
+			if (removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW) != 0) {
+				int code = errno;
+
+				// This code just means the extended attribute was never set on the
+				// file to begin with.
+				if (code != ENOATTR) {
+					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+					
+					const char *desc = strerror(code);
+					if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
+
+					return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+				}
 			}
 
-			return NO;
-		}
-	}
+			return [RACSignal empty];
+		}]
+		setNameWithFormat:@"%@ -clearQuarantineForDirectory: %@", self, directory];
+}
 
-	return YES;
+#pragma mark Error Handling
+
+- (NSError *)missingDataErrorWithDescription:(NSString *)description {
+	NSParameterAssert(description != nil);
+
+	NSDictionary *userInfo = @{
+		NSLocalizedDescriptionKey: description,
+		NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
+	};
+
+	return [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorMissingInstallationData userInfo:userInfo];
+}
+
+- (NSError *)errorByAddingDescription:(NSString *)description code:(NSInteger)code toError:(NSError *)error {
+	NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+
+	if (description != nil) userInfo[NSLocalizedDescriptionKey] = description;
+	if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+	return [NSError errorWithDomain:SQRLInstallerErrorDomain code:code userInfo:userInfo];
 }
 
 @end

@@ -23,28 +23,45 @@ extern const NSInteger SQRLInstallerErrorCouldNotOpenTarget;
 // The target bundle has an invalid version set.
 extern const NSInteger SQRLInstallerErrorInvalidBundleVersion;
 
-// Performs the installation of an update.
+// The `SQRLShipItState` read from disk does not contain the information we need
+// to perform an installation.
+extern const NSInteger SQRLInstallerErrorMissingInstallationData;
+
+// The `SQRLShipItState` read from disk is invalid, so installation cannot
+// safely resume.
+extern const NSInteger SQRLInstallerErrorInvalidState;
+
+// There was an error moving a bundle across volumes.
+extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
+
+@class RACCommand;
+@class SQRLDirectoryManager;
+
+// Performs the installation of an update, using the `SQRLShipItState` on disk,
+// as located by `SQRLDirectoryManager`.
 //
 // This class is meant to be used only after the app that will be updated has
 // terminated.
 @interface SQRLInstaller : NSObject
 
-// Initializes the installer with the bundles to use.
+// When executed with a `SQRLShipItState`, attempts to install the update or
+// resume an in-progress installation.
 //
-// targetBundleURL - The URL to the app bundle that should be replaced with the
-//                   update. This must not be nil.
-// updateBundleURL - The URL to the downloaded update's app bundle. This must
-//                   not be nil.
-// backupURL       - A URL to a folder in which the target app will be backed up
-//                   before updating. This must not be nil.
-// requirementData - A serialized SecRequirementRef describing what the update
-//                   bundle must satisfy in order to be valid. This must not be
-//                   nil.
-//
-// Returns an initialized installer, or nil if an error occurred.
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL requirementData:(NSData *)requirementData;
+// Each execution will complete or error on an unspecified scheduler when
+// installation has completed or failed.
+@property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
 
-// Attempts to install the update specified at the time of initialization.
-- (BOOL)installUpdateWithError:(NSError **)errorPtr;
+// When executed with a `SQRLShipItState`, aborts an installation, and attempts
+// to restore the old version of the application if necessary.
+//
+// This must not be executed while `installUpdateCommand` is executing.
+//
+// Each execution will complete or error on an unspecified scheduler once
+// aborting/recovery has finished.
+@property (nonatomic, strong, readonly) RACCommand *abortInstallationCommand;
+
+// Initializes an installer using the given directory manager to read and write the
+// state of the installation.
+- (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager;
 
 @end

@@ -7,6 +7,11 @@
 //
 
 #import "TestAppDelegate.h"
+#import "SQRLDirectoryManager.h"
+#import "SQRLShipItLauncher.h"
+#import "SQRLTestUpdate.h"
+#import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 @interface TestAppDelegate ()
 
@@ -19,15 +24,34 @@
 #pragma mark Lifecycle
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification {
-	NSString *folder = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath.stringByDeletingLastPathComponent;
-	NSString *logPath = [folder stringByAppendingPathComponent:@"TestApplication.log"];
-	
-	NSLog(@"Redirecting logging to %@", logPath);
+	NSString *bundlePath = [NSBundle bundleWithIdentifier:@"com.github.Squirrel.TestApplication"].bundlePath;
+	NSString *logPath = [bundlePath.stringByDeletingLastPathComponent stringByAppendingPathComponent:@"TestApplication.log"];
 	freopen(logPath.fileSystemRepresentation, "a+", stderr);
+
+	NSLog(@"TestApplication launched at %@", bundlePath);
 
 	atexit_b(^{
 		NSLog(@"TestApplication quitting");
 	});
+
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+
+	NSError *error = nil;
+	BOOL removed = [[[directoryManager
+		shipItStateURL]
+		flattenMap:^(NSURL *stateURL) {
+			NSError *error = nil;
+			if (![NSFileManager.defaultManager removeItemAtURL:stateURL error:&error]) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal empty];
+		}]
+		waitUntilCompleted:&error];
+
+	if (!removed) {
+		NSLog(@"Could not remove all preferences for %@: %@", directoryManager, error);
+	}
 
 	NSString *updateURLString = NSProcessInfo.processInfo.environment[@"SQRLUpdateFromURL"];
 	if (updateURLString == nil) {
@@ -35,37 +59,48 @@
 		return;
 	}
 
-	NSLog(@"Installing update from URL %@", updateURLString);
-
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
-	[self.updater addObserver:self forKeyPath:@"state" options:0 context:NULL];
-	[self.updater checkForUpdates];
-}
+	self.updater.updateClass = SQRLTestUpdate.class;
 
-- (void)dealloc {
-	[self.updater removeObserver:self forKeyPath:@"state"];
-}
+	__block NSUInteger updateCheckCount = 1;
 
-#pragma mark KVO
+	[[[[[[[[[[RACSignal
+		defer:^{
+			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
+			updateCheckCount++;
 
-- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(SQRLUpdater *)updater change:(NSDictionary *)change context:(void *)context {
-	NSParameterAssert([updater isKindOfClass:SQRLUpdater.class]);
+			return [self.updater.checkForUpdatesCommand execute:RACUnit.defaultUnit];
+		}]
+		doNext:^(SQRLDownloadedUpdate *update) {
+			NSLog(@"Got a candidate update: %@", update);
+		}]
+		// Retry until we get the expected release.
+		repeat]
+		skipUntilBlock:^(SQRLDownloadedUpdate *download) {
+			SQRLTestUpdate *testUpdate = (id)download.update;
+			NSAssert([testUpdate isKindOfClass:SQRLTestUpdate.class], @"Unexpected update type: %@", testUpdate);
 
-	if (updater.state == SQRLUpdaterStateAwaitingRelaunch) {
-		[updater installUpdateIfNeeded:^(BOOL success, NSError *error) {
-			if (success) {
-				NSLog(@"Update installed");
-			} else {
-				NSLog(@"Error in updater: %@", error);
-			}
+			return testUpdate.final;
+		}]
+		take:1]
+		doNext:^(id _) {
+			NSLog(@"***** READY TO INSTALL UPDATE *****");
+		}]
+		timeout:10 onScheduler:RACScheduler.mainThreadScheduler]
+		catch:^(NSError *error) {
+			NSLog(@"Error in updater: %@", error);
+			return [RACSignal empty];
+		}]
+		then:^{
+			NSString *delayString = NSProcessInfo.processInfo.environment[@"SQRLUpdateDelay"];
+			if (delayString == nil) return [RACSignal empty];
 
+			return [[RACSignal interval:delayString.doubleValue onScheduler:RACScheduler.mainThreadScheduler] take:1];
+		}]
+		subscribeCompleted:^{
 			[NSApp terminate:self];
 		}];
-	} else if (updater.state == SQRLUpdaterStateIdle) {
-		NSLog(@"Updater reset to idle state, terminating");
-		[NSApp terminate:self];
-	}
 }
 
 @end

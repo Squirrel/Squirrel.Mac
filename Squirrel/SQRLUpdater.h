@@ -6,37 +6,8 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-// Represents the current state of the updater.
-//
-// SQRLUpdaterStateIdle              - Doing absolutely diddly squat.
-// SQRLUpdaterStateCheckingForUpdate - Checking for any updates from the server.
-// SQRLUpdaterStateDownloadingUpdate - Update found, downloading the .zip.
-// SQRLUpdaterStateUnzippingUpdate   - Unzipping the .app.
-// SQRLUpdaterStateAwaitingRelaunch  - Awaiting a relaunch to install
-//                                     the update.
-typedef enum : NSUInteger {
-	SQRLUpdaterStateIdle,
-	SQRLUpdaterStateCheckingForUpdate,
-	SQRLUpdaterStateDownloadingUpdate,
-	SQRLUpdaterStateUnzippingUpdate,
-	SQRLUpdaterStateAwaitingRelaunch,
-} SQRLUpdaterState;
-
-// Posted when an update is available to be installed.
-extern NSString * const SQRLUpdaterUpdateAvailableNotification;
-
-// Associated with an SQRLUpdate object.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey;
-
-// Asscociated with a string containing the bundle version for the available
-// update.
-extern NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey;
-
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
-
-// There is no update to be installed from -installUpdateIfNeeded:.
-extern const NSInteger SQRLUpdaterErrorNoUpdateWaiting;
 
 // The downloaded update does not contain an app bundle, or it was deleted on
 // disk before we could get to it.
@@ -49,13 +20,42 @@ extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;
 // retrieved.
 extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 
-// Downloads and installs updates from GitHub.com The Website.
+// The server sent a response that we didn't understand.
+//
+// Includes `SQRLUpdaterServerDataErrorKey` in the error's `userInfo`.
+extern const NSInteger SQRLUpdaterErrorInvalidServerResponse;
+
+// The server sent update JSON that we didn't understand.
+//
+// Includes `SQRLUpdaterJSONObjectErrorKey` in the error's `userInfo`.
+extern const NSInteger SQRLUpdaterErrorInvalidJSON;
+
+// Associated with the `NSData` received from the server when an error with code
+// `SQRLUpdaterErrorInvalidServerResponse` is generated.
+extern NSString * const SQRLUpdaterServerDataErrorKey;
+
+// Associated with the JSON object that was received from the server when an
+// error with code `SQRLUpdaterErrorInvalidJSON` is generated.
+extern NSString * const SQRLUpdaterJSONObjectErrorKey;
+
+@class RACCommand;
+@class RACDisposable;
+@class RACSignal;
+
+// Checks for, downloads, and installs updates.
 @interface SQRLUpdater : NSObject
 
-// The current state of the manager.
+// Kicks off a check for updates.
 //
-// This property is KVO-compliant.
-@property (atomic, readonly) SQRLUpdaterState state;
+// If an update is available, it will be sent on `updates` once downloaded.
+@property (nonatomic, strong, readonly) RACCommand *checkForUpdatesCommand;
+
+// Sends an `SQRLDownloadedUpdate` object on the main thread whenever a new
+// update is available.
+//
+// This signal is actually just `checkForUpdatesCommand.executionSignals`,
+// flattened for convenience.
+@property (nonatomic, strong, readonly) RACSignal *updates;
 
 // Whether or not to relaunch after installing an update.
 //
@@ -70,6 +70,13 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // This property must never be set to nil.
 @property (atomic, copy) NSURLRequest *updateRequest;
 
+// The `SQRLUpdate` subclass to instantiate with the server's response.
+//
+// By default, this is `SQRLUpdate` itself, but it can be set to a custom
+// subclass in order to preserve additional JSON data. See the `SQRLUpdate`
+// documentation for more information.
+@property (atomic, strong) Class updateClass;
+
 // Initializes an updater that will send the given request to check for updates.
 //
 // This is the designated initializer for this class.
@@ -82,29 +89,15 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // Returns the initialized `SQRLUpdater`.
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest;
 
-// If one isn't already running, kicks off a check for updates.
+// Executes `checkForUpdatesCommand` (if enabled) every `interval` seconds.
 //
-// After the successful installation of an update, an
-// `SQRLUpdaterUpdateAvailableNotificationName` will be posted.
-- (void)checkForUpdates;
-
-// Schedules an update check every `interval` seconds. The first check will not
-// occur until `interval` seconds have passed.
+// The first check will not occur until `interval` seconds have passed.
 //
 // interval - The interval, in seconds, between each check.
-- (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
-
-// Enqueues a job that will install a previously downloaded, unzipped, and verified
-// update after the app quits.
 //
-// This will disable sudden termination if the job is enqueued successfully.
-//
-// If `shouldRelaunch` is YES, the app will be launched back up after the update
-// is installed successfully.
-//
-// completionHandler - A block to invoke when updating in place has completed or failed.
-//                     The app should immediately terminate once this block is invoked.
-- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler;
+// Returns a disposable which can be used to cancel the automatic update
+// checking.
+- (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
 
 @end
 

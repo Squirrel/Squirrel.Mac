@@ -7,44 +7,119 @@
 //
 
 #import "SQRLUpdater.h"
+#import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSProcessInfo+SQRLVersionExtensions.h"
-#import "SQRLArguments.h"
-#import "SQRLCodeSignatureVerifier.h"
+#import "RACSignal+SQRLTransactionExtensions.h"
+#import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
+#import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLZipArchiver.h"
+#import "SQRLShipItState.h"
 #import "SQRLUpdate.h"
-#import "SQRLUpdate+Private.h"
-
-NSString * const SQRLUpdaterUpdateAvailableNotification = @"SQRLUpdaterUpdateAvailableNotification";
-NSString * const SQRLUpdaterUpdateAvailableNotificationUpdateKey = @"SQRLUpdaterUpdateAvailableNotificationUpdateKey";
-NSString * const SQRLUpdaterUpdateAvailableNotificationBundleVersionKey = @"SQRLUpdaterUpdateAvailableNotificationBundleVersionKey";
+#import "SQRLZipArchiver.h"
+#import <ReactiveCocoa/EXTScope.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
-const NSInteger SQRLUpdaterErrorNoUpdateWaiting = 1;
+NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
+NSString * const SQRLUpdaterJSONObjectErrorKey = @"SQRLUpdaterJSONObjectErrorKey";
+
 const NSInteger SQRLUpdaterErrorMissingUpdateBundle = 2;
 const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
+const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
+const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 @interface SQRLUpdater ()
 
-@property (atomic, readwrite) SQRLUpdaterState state;
+// The code signature for the running application, used to check updates before
+// sending them to ShipIt.
+@property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
 
-// A serial operation queue for update checks.
-@property (nonatomic, strong, readonly) NSOperationQueue *updateQueue;
+// Lazily launches ShipIt upon first subscription.
+//
+// Sends completed or error.
+@property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 
-// A timer used to poll for updates.
-@property (nonatomic, strong) NSTimer *updateTimer;
+// Parses an update model from downloaded data.
+//
+// data - JSON data representing an update manifest. This must not be nil.
+//
+// Returns a signal which synchronously sends a `SQRLUpdate` then completes, or
+// errors.
+- (RACSignal *)updateFromJSONData:(NSData *)data;
 
-// The folder into which the latest update will be/has been downloaded.
-@property (nonatomic, strong) NSURL *downloadFolder;
+// Downloads an update bundle and prepares it for installation.
+//
+// Upon success, the update will be automatically installed after the
+// application terminates.
+//
+// update - Describes the update to download and prepare. This must not be nil.
+//
+// Returns a signal which sends a `SQRLDownloadedUpdate` then completes, or
+// errors, on a background thread.
+- (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update;
 
-// The verifier used to check code against the running application's signature.
-@property (nonatomic, strong, readonly) SQRLCodeSignatureVerifier *verifier;
+// Downloads the archived bundle associated with the given update.
+//
+// update            - Describes the update to install. This must not be nil.
+// downloadDirectory - A directory in which to create a temporary directory for this
+//                     download. This must not be nil.
+//
+// Returns a signal which sends an unarchived `NSBundle` then completes, or
+// errors, on a background thread.
+- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
+
+// Creates a unique directory in which to save the update bundle, for later use
+// by ShipIt.
+//
+// Returns a signal which sends an `NSURL` then completes, or errors, on an
+// unspecified thread.
+- (RACSignal *)uniqueTemporaryDirectoryForUpdate;
+
+// Recursively searches the given directory for an application bundle that has
+// the same identifier as the running application.
+//
+// directory - The directory in which to search. This must not be nil.
+//
+// Returns a signal which synchronously sends an `NSBundle` then completes, or
+// errors.
+- (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory;
+
+// Validates the code signature of the given update bundle, then prepares it for
+// installation.
+//
+// Upon success, the update will be automatically installed after the
+// application terminates.
+//
+// update - Describes the update to verify and prepare. This must not be nil.
+//
+// Returns a signal which sends a `SQRLDownloadedUpdate` then completes, or
+// errors, on a background thread.
+- (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle;
+
+// Prepares the given update for installation.
+//
+// Upon success, the update will be automatically installed after the
+// application terminates.
+//
+// update - Describes the update and bundle to prepare. This must not be nil.
+//
+// Returns a signal which completes or errors on a background thread.
+- (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update;
 
 @end
 
 @implementation SQRLUpdater
+
+#pragma mark Properties
+
+- (RACSignal *)updates {
+	return [[self.checkForUpdatesCommand.executionSignals
+		concat]
+		setNameWithFormat:@"%@ -updates", self];
+}
 
 #pragma mark Lifecycle
 
@@ -60,311 +135,310 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 	if (self == nil) return nil;
 
 	_updateRequest = [updateRequest copy];
-	
-	_updateQueue = [[NSOperationQueue alloc] init];
-	self.updateQueue.maxConcurrentOperationCount = 1;
-	self.updateQueue.name = @"com.github.Squirrel.updateCheckingQueue";
+	_updateClass = SQRLUpdate.class;
 
-	_verifier = [[SQRLCodeSignatureVerifier alloc] init];
-	if (_verifier == nil) return nil;
+	NSError *error = nil;
+	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
+	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
+
+	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
+
+	@weakify(self);
+	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
+		@strongify(self);
+		NSParameterAssert(self.updateRequest != nil);
+
+		// TODO: Maybe allow this to be an argument to the command?
+		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
+		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
+		return [[[[[[NSURLConnection
+			rac_sendAsynchronousRequest:request]
+			reduceEach:^(id _, NSData *data) {
+				return data;
+			}]
+			flattenMap:^(NSData *data) {
+				return [self updateFromJSONData:data];
+			}]
+			flattenMap:^(SQRLUpdate *update) {
+				return [self downloadAndPrepareUpdate:update];
+			}]
+			doError:^(id _) {
+				self.shouldRelaunch = NO;
+			}]
+			deliverOn:RACScheduler.mainThreadScheduler];
+	}];
+
+	_shipItLauncher = [[[RACSignal
+		defer:^{
+			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+
+			NSNumber *targetWritable = nil;
+			NSError *targetWritableError = nil;
+			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
+
+			// If we can't determine whether it can be written, assume nonprivileged and
+			// wait for another, more canonical error.
+			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
+		}]
+		replayLazily]
+		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
 }
 
-- (void)dealloc {
-	[_updateTimer invalidate];
-}
-
-#pragma mark Update Timer
-
-- (void)setUpdateTimer:(NSTimer *)updateTimer {
-	if (_updateTimer == updateTimer) return;
-
-	[_updateTimer invalidate];
-	_updateTimer = updateTimer;
-}
-
-- (void)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
-	dispatch_async(dispatch_get_main_queue(), ^{
-		self.updateTimer = [NSTimer scheduledTimerWithTimeInterval:interval target:self selector:@selector(checkForUpdates) userInfo:nil repeats:YES];
-	});
-}
-
 #pragma mark Checking for Updates
 
-- (void)checkForUpdates {
-	NSParameterAssert(self.updateRequest != nil);
+- (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
+	@weakify(self);
 
-	if (getenv("DISABLE_UPDATE_CHECK") != NULL) return;
-	
-	if (self.state != SQRLUpdaterStateIdle) return; //We have a new update installed already, you crazy fool!
-	self.state = SQRLUpdaterStateCheckingForUpdate;
-	
-	NSMutableURLRequest *request = [self.updateRequest mutableCopy];
-	[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-
-	[NSURLConnection sendAsynchronousRequest:request queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-		if (data == nil) {
-			NSLog(@"No data received for request %@", request);
-			
-			[self finishAndSetIdle];
-			return;
-		}
-		
-		NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
-		if (response == nil || ![JSON isKindOfClass:NSDictionary.class]) { //No updates for us
-			NSLog(@"Instead of update information, server returned:\n%@", [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding]);
-
-			[self finishAndSetIdle];
-			return;
-		}
-
-		SQRLUpdate *update = [[SQRLUpdate alloc] initWithJSON:JSON];
-		if (update == nil) {
-			NSLog(@"Update JSON is invalid: %@", JSON);
-
-			[self finishAndSetIdle];
-			return;
-		}
-
-		NSFileManager *fileManager = NSFileManager.defaultManager;
-		
-		NSString *tempDirectory = [NSTemporaryDirectory() stringByAppendingPathComponent:NSRunningApplication.currentApplication.bundleIdentifier];
-		NSError *directoryCreationError = nil;
-		if (![fileManager createDirectoryAtURL:[NSURL fileURLWithPath:tempDirectory] withIntermediateDirectories:YES attributes:nil error:&directoryCreationError]) {
-			NSLog(@"Could not create directory at %@: %@", tempDirectory, directoryCreationError.sqrl_verboseDescription);
-			[self finishAndSetIdle];
-			return;
-		}
-		
-		char *tempDirectoryNameCString = strdup([tempDirectory stringByAppendingPathComponent:@"update.XXXXXXX"].fileSystemRepresentation);
-		@onExit {
-			free(tempDirectoryNameCString);
-		};
-		
-		if (mkdtemp(tempDirectoryNameCString) == NULL) {
-			NSLog(@"Could not create temporary directory. Bailing."); //this would be bad
-			[self finishAndSetIdle];
-			return;
-		}
-		
-		self.downloadFolder = [NSURL fileURLWithPath:[fileManager stringWithFileSystemRepresentation:tempDirectoryNameCString length:strlen(tempDirectoryNameCString)] isDirectory:YES];
-		
-		NSURL *zipDownloadURL = update.updateURL;
-		NSURL *zipOutputURL = [self.downloadFolder URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
-
-		NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
-		[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
-		[NSURLConnection sendAsynchronousRequest:zipDownloadRequest queue:self.updateQueue completionHandler:^(NSURLResponse *response, NSData *data, NSError *connectionError) {
-			if (response == nil) {
-				NSLog(@"Error downloading zipped update at %@", zipDownloadURL);
-				[self finishAndSetIdle];
-				return;
-			}
-			
-			if (![data writeToURL:zipOutputURL atomically:YES]) {
-				NSLog(@"Error saved zipped update to %@", zipOutputURL);
-				[self finishAndSetIdle];
-				return;
-			}
-			
-			NSLog(@"Download completed to: %@", zipOutputURL);
-			self.state = SQRLUpdaterStateUnzippingUpdate;
-			
-			[SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:self.downloadFolder completion:^(BOOL unzipped) {
-				if (!unzipped) {
-					NSLog(@"Could not extract update.");
-					[self finishAndSetIdle];
-					return;
-				}
-
-				NSString *bundleIdentifier = NSRunningApplication.currentApplication.bundleIdentifier;
-				NSBundle *updateBundle = [self applicationBundleWithIdentifier:bundleIdentifier inDirectory:self.downloadFolder];
-				if (updateBundle == nil) {
-					NSLog(@"Could not locate update bundle for %@ within %@", bundleIdentifier, self.downloadFolder);
-					[self finishAndSetIdle];
-					return;
-				}
-
-				NSError *error = nil;
-				BOOL verified = [self.verifier verifyCodeSignatureOfBundle:updateBundle.bundleURL error:&error];
-				if (!verified) {
-					NSLog(@"Failed to validate the code signature for app update. Error: %@", error.sqrl_verboseDescription);
-					[self finishAndSetIdle];
-					return;
-				}
-
-				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-				userInfo[SQRLUpdaterUpdateAvailableNotificationUpdateKey] = update;
-
-				NSString *bundleVersion = [updateBundle objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
-				if (bundleVersion != nil) userInfo[SQRLUpdaterUpdateAvailableNotificationBundleVersionKey] = bundleVersion;
-				
-				self.state = SQRLUpdaterStateAwaitingRelaunch;
-				
-				dispatch_async(dispatch_get_main_queue(), ^{
-					[NSNotificationCenter.defaultCenter postNotificationName:SQRLUpdaterUpdateAvailableNotification object:self userInfo:userInfo];
-				});
-			}];
-		}];
-		
-		self.state = SQRLUpdaterStateDownloadingUpdate;
-	}];
+	return [[[[[RACSignal
+		interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
+		flattenMap:^(id _) {
+			@strongify(self);
+			return [[self.checkForUpdatesCommand
+				execute:RACUnit.defaultUnit]
+				catch:^(NSError *error) {
+					NSLog(@"Error checking for updates: %@", error);
+					return [RACSignal empty];
+				}];
+		}]
+		takeUntil:self.rac_willDeallocSignal]
+		publish]
+		connect];
 }
 
-- (void)finishAndSetIdle {
-	if (self.downloadFolder != nil) {
-		NSError *deleteError = nil;
-		if (![NSFileManager.defaultManager removeItemAtURL:self.downloadFolder error:&deleteError]) {
-			NSLog(@"Error removing downloaded update at %@, error: %@", self.downloadFolder, deleteError.sqrl_verboseDescription);
-		}
-		
-		self.downloadFolder = nil;
-	}
-	
-	self.shouldRelaunch = NO;
-	self.state = SQRLUpdaterStateIdle;
+- (RACSignal *)updateFromJSONData:(NSData *)data {
+	NSParameterAssert(data != nil);
+
+	return [[RACSignal
+		defer:^{
+			NSError *error = nil;
+			NSDictionary *JSON = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+			if (JSON == nil) {
+				NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+				userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+				userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
+				userInfo[SQRLUpdaterServerDataErrorKey] = data;
+				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
+			}
+
+			Class updateClass = self.updateClass;
+			NSAssert([updateClass isSubclassOfClass:SQRLUpdate.class], @"%@ is not a subclass of SQRLUpdate", updateClass);
+
+			SQRLUpdate *update = nil;
+			error = nil;
+			if ([JSON isKindOfClass:NSDictionary.class]) update = [MTLJSONAdapter modelOfClass:updateClass fromJSONDictionary:JSON error:&error];
+
+			if (update == nil) {
+				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+				userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+				userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid JSON response. Try again later.", nil);
+				userInfo[SQRLUpdaterJSONObjectErrorKey] = JSON;
+				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidJSON userInfo:userInfo]];
+			}
+
+			return [RACSignal return:update];
+		}]
+		setNameWithFormat:@"%@ -updateFromJSONData:", self];
+}
+
+- (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update {
+	NSParameterAssert(update != nil);
+
+	return [[[self
+		uniqueTemporaryDirectoryForUpdate]
+		flattenMap:^(NSURL *downloadDirectory) {
+			return [[[self
+				downloadBundleForUpdate:update intoDirectory:downloadDirectory]
+				flattenMap:^(NSBundle *updateBundle) {
+					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
+				}]
+				doError:^(id _) {
+					NSError *error = nil;
+					if (![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&error]) {
+						NSLog(@"Error removing temporary download directory at %@: %@", downloadDirectory, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
+}
+
+- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
+	NSParameterAssert(update != nil);
+	NSParameterAssert(downloadDirectory != nil);
+
+	return [[[[[RACSignal
+		defer:^{
+			NSURL *zipDownloadURL = update.updateURL;
+			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
+			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
+
+			return [[[NSURLConnection
+				rac_sendAsynchronousRequest:zipDownloadRequest]
+				reduceEach:^(id _, NSData *data) {
+					return data;
+				}]
+				flattenMap:^(NSData *data) {
+					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
+
+					NSError *error = nil; 
+					if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
+						return [RACSignal return:zipOutputURL];
+					} else {
+						return [RACSignal error:error];
+					}
+				}];
+		}]
+		doNext:^(NSURL *zipOutputURL) {
+			NSLog(@"Download completed to: %@", zipOutputURL);
+		}]
+		flattenMap:^(NSURL *zipOutputURL) {
+			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
+		}]
+		then:^{
+			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
+		}]
+		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
+}
+
+#pragma mark File Management
+
+- (RACSignal *)uniqueTemporaryDirectoryForUpdate {
+	return [[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
+			@onExit {
+				free(updateDirectoryCString);
+			};
+			
+			if (mkdtemp(updateDirectoryCString) == NULL) {
+				int code = errno;
+
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not create temporary directory", nil),
+					NSURLErrorKey: updateDirectoryTemplate
+				};
+
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+			}
+
+			NSString *updateDirectoryPath = [NSFileManager.defaultManager stringWithFileSystemRepresentation:updateDirectoryCString length:strlen(updateDirectoryCString)];
+			return [RACSignal return:[NSURL fileURLWithPath:updateDirectoryPath isDirectory:YES]];
+		}]
+		setNameWithFormat:@"%@ -uniqueTemporaryDirectoryForUpdate", self];
+}
+
+- (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory {
+	NSParameterAssert(directory != nil);
+
+	return [[[RACSignal
+		defer:^{
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
+				return YES;
+			}];
+			
+			NSURL *updateBundleURL = [enumerator.rac_sequence objectPassingTest:^(NSURL *URL) {
+				NSString *type = nil;
+				NSError *error = nil;
+				if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
+					NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
+					return NO;
+				}
+
+				if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
+
+				NSBundle *bundle = [NSBundle bundleWithURL:URL];
+				if (bundle == nil) {
+					NSLog(@"Could not open application bundle at %@", URL);
+					return NO;
+				}
+
+				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
+			}];
+
+			if (updateBundleURL != nil) {
+				return [RACSignal return:updateBundleURL];
+			} else {
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), NSRunningApplication.currentApplication.bundleIdentifier, directory],
+				};
+
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]];
+			}
+		}]
+		map:^(NSURL *URL) {
+			return [NSBundle bundleWithURL:URL];
+		}]
+		setNameWithFormat:@"%@ -applicationBundleMatchingCurrentApplicationInDirectory: %@", self, directory];
 }
 
 #pragma mark Installing Updates
 
-- (NSBundle *)applicationBundleWithIdentifier:(NSString *)bundleIdentifier inDirectory:(NSURL *)directory {
-	NSParameterAssert(bundleIdentifier != nil);
+- (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle {
+	NSParameterAssert(update != nil);
+	NSParameterAssert(updateBundle != nil);
 
-	if (directory == nil) return nil;
-
-	NSFileManager *manager = [[NSFileManager alloc] init];
-	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:directory includingPropertiesForKeys:@[ NSURLTypeIdentifierKey ] options:NSDirectoryEnumerationSkipsPackageDescendants | NSDirectoryEnumerationSkipsHiddenFiles errorHandler:^(NSURL *URL, NSError *error) {
-		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
-		return YES;
-	}];
-
-	for (NSURL *URL in enumerator) {
-		NSString *type = nil;
-		NSError *error = nil;
-		if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
-			NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
-			continue;
-		}
-
-		if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) continue;
-
-		NSBundle *bundle = [NSBundle bundleWithURL:URL];
-		if (bundle == nil) {
-			NSLog(@"Could not open application bundle at %@", URL);
-			continue;
-		}
-
-		if ([bundle.bundleIdentifier isEqual:bundleIdentifier]) {
-			return bundle;
-		}
-	}
-
-	return nil;
+	return [[[[self.signature
+		verifyBundleAtURL:updateBundle.bundleURL]
+		then:^{
+			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
+			return [RACSignal return:downloadedUpdate];
+		}]
+		flattenMap:^(SQRLDownloadedUpdate *downloadedUpdate) {
+			return [[self prepareUpdateForInstallation:downloadedUpdate] then:^{
+				return [RACSignal return:downloadedUpdate];
+			}];
+		}]
+		setNameWithFormat:@"%@ -verifyAndPrepareUpdate: %@ fromBundle: %@", self, update, updateBundle];
 }
 
-- (NSURL *)applicationSupportURL {
-	NSString *path = nil;
-	NSArray *paths = NSSearchPathForDirectoriesInDomains(NSApplicationSupportDirectory, NSUserDomainMask, YES);
-	path = (paths.count > 0 ? paths[0] : NSTemporaryDirectory());
-	
-	NSString *appDirectoryName = NSBundle.mainBundle.bundleIdentifier;
-	NSURL *appSupportURL = [[NSURL fileURLWithPath:path] URLByAppendingPathComponent:appDirectoryName];
-	
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
+- (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
+	NSParameterAssert(update != nil);
 
-	NSError *error = nil;
-	BOOL success = [fileManager createDirectoryAtPath:appSupportURL.path withIntermediateDirectories:YES attributes:nil error:&error];
-	if (!success) {
-		NSLog(@"Error creating Application Support folder: %@", error.sqrl_verboseDescription);
-	}
-	
-	return appSupportURL;
-}
+	return [[[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			RACSignal *stateLocation = directoryManager.shipItStateURL;
+			return [[[[SQRLShipItState
+				readUsingURL:stateLocation]
+				catchTo:[RACSignal empty]]
+				flattenMap:^(SQRLShipItState *existingState) {
+					if (existingState.installerState != SQRLInstallerStateNothingToDo) {
+						// If this happens, shit is crazy, because it implies that an
+						// update is being installed over us right now.
+						NSDictionary *userInfo = @{
+							NSLocalizedDescriptionKey: NSLocalizedString(@"Installation in progress", nil),
+							NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An update for %@ is already in progress.", nil), NSRunningApplication.currentApplication.bundleIdentifier],
+						};
 
-- (void)installUpdateIfNeeded:(void (^)(BOOL success, NSError *error))completionHandler {
-	__typeof__(completionHandler) originalHandler = [completionHandler copy];
+						return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
+					}
 
-	completionHandler = ^(BOOL success, NSError *error) {
-		if (!success) [self finishAndSetIdle];
-		originalHandler(success, error);
-	};
-
-	if (self.state != SQRLUpdaterStateAwaitingRelaunch) {
-		NSDictionary *userInfo = @{
-			NSLocalizedDescriptionKey: NSLocalizedString(@"No update to install", nil),
-		};
-
-		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorNoUpdateWaiting userInfo:userInfo]);
-		return;
-	}
-	
-	NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
-	NSBundle *updateBundle = [self applicationBundleWithIdentifier:currentApplication.bundleIdentifier inDirectory:self.downloadFolder];
-	if (updateBundle == nil) {
-		NSDictionary *userInfo = @{
-			NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), currentApplication.bundleIdentifier, self.downloadFolder],
-		};
-
-		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]);
-		return;
-	}
-
-	NSURL *targetURL = currentApplication.bundleURL;
-
-	NSData *requirementData = self.verifier.requirementData;
-	if (requirementData == nil) {
-		NSDictionary *userInfo = @{
-			NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not load code signing requirement for %@", nil), currentApplication.bundleIdentifier],
-		};
-
-		completionHandler(NO, [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorRetrievingCodeSigningRequirement userInfo:userInfo]);
-		return;
-	}
-
-	// If we can't determine whether it can be written, assume nonprivileged and
-	// wait for another more canonical error
-	NSNumber *targetWritable = nil;
-	NSError *targetWritableError = nil;
-	BOOL getWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
-
-	NSError *error = nil;
-	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:(getWritable && !targetWritable.boolValue) error:&error];
-	if (connection == NULL) {
-		completionHandler(NO, error);
-		return;
-	}
-	
-	[NSProcessInfo.processInfo disableSuddenTermination];
-
-	xpc_object_t message = xpc_dictionary_create(NULL, NULL, 0);
-	@onExit {
-		xpc_release(message);
-	};
-
-	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
-	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateBundle.bundleURL.absoluteString.UTF8String);
-	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, self.shouldRelaunch);
-	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, true);
-	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
-
-	xpc_connection_resume(connection);
-	xpc_connection_send_message_with_reply(connection, message, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0), ^(xpc_object_t reply) {
-		BOOL success = xpc_dictionary_get_bool(reply, SQRLShipItSuccessKey);
-		NSError *error = nil;
-		if (!success) {
-			const char *errorStr = xpc_dictionary_get_string(reply, SQRLShipItErrorKey);
-			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: @(errorStr) ?: NSLocalizedString(@"An unknown error occurred within ShipIt", nil),
-			};
-
-			error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo];
-			[NSProcessInfo.processInfo enableSuddenTermination];
-		}
-
-		completionHandler(success, error);
-	});
+					return [RACSignal empty];
+				}]
+				then:^{
+					SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
+					state.relaunchAfterInstallation = self.shouldRelaunch;
+					return [state writeUsingURL:stateLocation];
+				}];
+		}]
+		then:^{
+			return self.shipItLauncher;
+		}]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
+		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
 }
 
 @end

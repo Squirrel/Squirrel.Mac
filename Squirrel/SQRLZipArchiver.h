@@ -8,6 +8,19 @@
 
 #import <Foundation/Foundation.h>
 
+@class RACSignal;
+
+extern NSString * const SQRLZipArchiverErrorDomain;
+
+// Associated with an NSNumber containing the code that a shell task exited
+// with.
+extern NSString * const SQRLZipArchiverExitCodeErrorKey;
+
+// `SQRLZipArchiver` tried to invoke the shell and failed.
+//
+// Contains `SQRLZipArchiverExitStatusErrorKey` in the `userInfo` dictionary.
+extern const NSInteger SQRLZipArchiverShellTaskFailed;
+
 // Uses `ditto` on the command line to zip and unzip archives.
 @interface SQRLZipArchiver : NSObject
 
@@ -19,9 +32,9 @@
 // directoryURL      - The directory to include in the zip archive. The name
 //                     (but not path) of the directory itself will be embedded
 //                     into the archive. This must not be nil.
-// completionHandler - A block to invoke when zipping has succeeded or failed.
-//                     This must not be nil.
-+ (void)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL completion:(void (^)(BOOL success))completionHandler;
+//
+// Returns a signal which will complete or error on an unspecified thread.
++ (RACSignal *)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL;
 
 // Asynchronously extracts a zip archive.
 //
@@ -29,8 +42,8 @@
 // directoryURL      - The directory to extract the contents of the archive to.
 //                     Any files or folders that use the same name as entries in
 //                     the archive will be overridden. This must not be nil.
-// completionHandler - A block to invoke when unzipping has succeeded or failed.
-//                     This must not be nil.
-+ (void)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL completion:(void (^)(BOOL success))completionHandler;
+//
+// Returns a signal which will complete or error on an unspecified thread.
++ (RACSignal *)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL;
 
 @end

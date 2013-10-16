@@ -7,9 +7,10 @@
 //
 
 #import "SQRLTestCase.h"
-#import "EXTScope.h"
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
+#import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
@@ -63,17 +64,34 @@ static void SQRLSignalHandler(int sig) {
 + (void)load {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
-	
-	appSupportURL = [appSupportURL URLByAppendingPathComponent:@"com.github.Squirrel.TestApplication.ShipIt"];
 
-	NSURL *stdoutShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
-	NSURL *stderrShipIt = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
+	NSArray *folders = @[
+		@"com.github.Squirrel.TestApplication.ShipIt",
+		@"otest.ShipIt",
+		@"otest-x86_64.ShipIt",
+	];
 
-	[[NSData data] writeToURL:stdoutShipIt atomically:YES];
-	[[NSData data] writeToURL:stderrShipIt atomically:YES];
+	RACSequence *URLs = [folders.rac_sequence flattenMap:^(NSString *folder) {
+		NSURL *baseURL = [appSupportURL URLByAppendingPathComponent:folder];
+		return @[
+			[baseURL URLByAppendingPathComponent:@"ShipIt_stdout.log"],
+			[baseURL URLByAppendingPathComponent:@"ShipIt_stderr.log"]
+		].rac_sequence;
+	}];
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", stdoutShipIt.path, stderrShipIt.path ]];
-	NSAssert([readShipIt isRunning], @"Could not start task %@ to read %@ and %@", readShipIt, stdoutShipIt, stderrShipIt);
+	for (NSURL *URL in URLs) {
+		[[NSData data] writeToURL:URL atomically:YES];
+	}
+
+	NSArray *args = [[[URLs
+		map:^(NSURL *URL) {
+			return URL.path;
+		}]
+		startWith:@"-f"]
+		array];
+
+	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:args];
+	NSAssert([readShipIt isRunning], @"Could not start task %@ with arguments: %@", readShipIt, args);
 
 	atexit_b(^{
 		[readShipIt terminate];
@@ -146,7 +164,7 @@ static void SQRLSignalHandler(int sig) {
 #pragma mark Fixtures
 
 - (NSURL *)testApplicationURL {
-	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app"];
+	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app" isDirectory:YES];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
 		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
 		STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
@@ -199,6 +217,13 @@ static void SQRLSignalHandler(int sig) {
 			[app terminate];
 			[app forceTerminate];
 		}
+
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		CFErrorRef error = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, CFSTR("com.github.Squirrel.TestApplication.ShipIt"), NULL, true, &error)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", error);
+			if (error != NULL) CFRelease(error);
+		}
 	}];
 
 	return app;
@@ -216,7 +241,7 @@ static void SQRLSignalHandler(int sig) {
 		[NSFileManager.defaultManager removeItemAtURL:updateParentURL error:NULL];
 	}];
 
-	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent];
+	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent isDirectory:YES];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
 	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
 
@@ -246,9 +271,9 @@ static void SQRLSignalHandler(int sig) {
 	return block(requirement);
 }
 
-- (SQRLCodeSignatureVerifier *)testApplicationVerifier {
+- (SQRLCodeSignature *)testApplicationSignature {
 	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		return [[SQRLCodeSignatureVerifier alloc] initWithRequirement:requirement];
+		return [[SQRLCodeSignature alloc] initWithRequirement:requirement];
 	}];
 }
 
@@ -262,27 +287,32 @@ static void SQRLSignalHandler(int sig) {
 	}];
 }
 
-- (xpc_connection_t)connectToShipIt {
+- (SQRLDirectoryManager *)shipItDirectoryManager {
+	NSString *identifier = SQRLShipItLauncher.shipItJobLabel;
+	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:identifier];
+	STAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
+
+	return manager;
+}
+
+- (void)launchShipIt {
 	NSError *error = nil;
-	xpc_connection_t connection = [SQRLShipItLauncher launchPrivileged:NO error:&error];
-	STAssertTrue(connection != NULL, @"Could not open XPC connection: %@", error);
-	
-	xpc_connection_set_event_handler(connection, ^(xpc_object_t event) {
-		if (xpc_get_type(event) == XPC_TYPE_ERROR) {
-			if (event == XPC_ERROR_CONNECTION_INVALID) {
-				STFail(@"ShipIt connection invalid: %@", [self errorFromObject:event]);
-			} else if (event == XPC_ERROR_CONNECTION_INTERRUPTED) {
-				STFail(@"ShipIt connection interrupted: %@", [self errorFromObject:event]);
-			}
-		}
-	});
+	STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
 
 	[self addCleanupBlock:^{
-		xpc_connection_cancel(connection);
-	}];
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		CFErrorRef removeError = NULL;
+		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &removeError)) {
+			NSLog(@"Could not remove ShipIt job after tests: %@", removeError);
+			if (removeError != NULL) CFRelease(removeError);
+		}
 
-	xpc_connection_resume(connection);
-	return connection;
+		NSError *lookupError = nil;
+		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
+		STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, lookupError);
+		
+		[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+	}];
 }
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {
@@ -308,21 +338,6 @@ static void SQRLSignalHandler(int sig) {
 	}];
 
 	return [NSURL fileURLWithPath:path isDirectory:YES];
-}
-
-#pragma mark Diagnostics
-
-- (NSString *)errorFromObject:(xpc_object_t)object {
-	const char *desc = NULL;
-
-	if (xpc_get_type(object) == XPC_TYPE_ERROR) {
-		desc = xpc_dictionary_get_string(object, XPC_ERROR_KEY_DESCRIPTION);
-	} else if (xpc_get_type(object) == XPC_TYPE_DICTIONARY) {
-		desc = xpc_dictionary_get_string(object, SQRLShipItErrorKey);
-	}
-
-	if (desc == NULL) return nil;
-	return @(desc);
 }
 
 @end
