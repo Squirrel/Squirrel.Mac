@@ -410,8 +410,9 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 	return [[[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			RACSignal *stateLocation = directoryManager.shipItStateURL;
 			return [[[[SQRLShipItState
-				readUsingDirectoryManager:directoryManager]
+				readUsingURL:stateLocation]
 				catchTo:[RACSignal empty]]
 				flattenMap:^(SQRLShipItState *existingState) {
 					if (existingState.installerState != SQRLInstallerStateNothingToDo) {
@@ -430,7 +431,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				then:^{
 					SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
 					state.relaunchAfterInstallation = self.shouldRelaunch;
-					return [state writeUsingDirectoryManager:directoryManager];
+					return [state writeUsingURL:stateLocation];
 				}];
 		}]
 		then:^{

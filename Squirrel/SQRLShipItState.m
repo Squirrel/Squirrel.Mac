@@ -7,7 +7,6 @@
 //
 
 #import "SQRLShipItState.h"
-#import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
 NSString * const SQRLShipItStateErrorDomain = @"SQRLShipItStateErrorDomain";
@@ -58,11 +57,10 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 #pragma mark Serialization
 
-+ (RACSignal *)readUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager {
-	NSParameterAssert(directoryManager != nil);
++ (RACSignal *)readUsingURL:(RACSignal *)URL {
+	NSParameterAssert(URL != nil);
 
-	return [[[[directoryManager
-		shipItStateURL]
+	return [[[URL
 		flattenMap:^(NSURL *stateURL) {
 			NSError *error = nil;
 			NSData *data = [NSData dataWithContentsOfURL:stateURL options:NSDataReadingUncached error:&error];
@@ -85,11 +83,11 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 			return [RACSignal return:state];
 		}]
-		setNameWithFormat:@"+readUsingDirectoryManager: %@", directoryManager];
+		setNameWithFormat:@"+readUsingURL: %@", URL];
 }
 
-- (RACSignal *)writeUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager {
-	NSParameterAssert(directoryManager != nil);
+- (RACSignal *)writeUsingURL:(RACSignal *)URL {
+	NSParameterAssert(URL != nil);
 
 	RACSignal *serialization = [RACSignal defer:^{
 		NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
@@ -107,7 +105,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 	return [[[RACSignal
 		zip:@[
-			[directoryManager shipItStateURL],
+			URL,
 			serialization
 		] reduce:^(NSURL *stateURL, NSData *data) {
 			NSError *error = nil;
@@ -118,7 +116,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 			return [RACSignal empty];
 		}]
 		flatten]
-		setNameWithFormat:@"%@ -writeUsingDirectoryManager: %@", self, directoryManager];
+		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
 }
 
 @end

@@ -58,33 +58,32 @@ typedef enum : NSInteger {
 
 @class RACSignal;
 @class SQRLCodeSignature;
-@class SQRLDirectoryManager;
 
 // Encapsulates all the state needed by the ShipIt process.
 @interface SQRLShipItState : MTLModel
 
 // Reads a `SQRLShipItState` from disk, at the location specified by the given
-// directory manager.
+// URL signal.
 //
-// directoryManager - Used to find the state location on disk. This must not be
-//                    nil.
+// URLSignal - Determines the file location to read from, the signal should send
+//             an `NSURL` object then complete, or error. This must not be nil.
 //
 // Returns a signal which will synchronously send a `SQRLShipItState` then
 // complete, or error.
-+ (RACSignal *)readUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager;
++ (RACSignal *)readUsingURL:(RACSignal *)URL;
 
 // Initializes the receiver with the arguments that will not change during
 // installation.
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier codeSignature:(SQRLCodeSignature *)codeSignature;
 
-// Writes the receiver to disk, at the location specified by the given directory
-// manager.
+// Writes the receiver to disk, at the location specified by the given URL
+// signal.
 //
-// directoryManager - Used to find the state location on disk. This must not be
-//                    nil.
+// URL - Determines the file location to write to. The signal should send an
+//       `NSURL` object then complete, or error. This must not be nil.
 //
 // Returns a signal which will synchronously complete or error.
-- (RACSignal *)writeUsingDirectoryManager:(SQRLDirectoryManager *)directoryManager;
+- (RACSignal *)writeUsingURL:(RACSignal *)URL;
 
 // The URL to the app bundle that should be replaced with an update.
 @property (nonatomic, copy, readonly) NSURL *targetBundleURL;
