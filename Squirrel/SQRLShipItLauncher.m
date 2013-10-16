@@ -19,13 +19,14 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 @implementation SQRLShipItLauncher
 
++ (NSString *)jobLabel {
+	NSString *currentAppIdentifier = NSBundle.mainBundle.bundleIdentifier ?: [NSString stringWithFormat:@"%@:%d", NSProcessInfo.processInfo.processName, NSProcessInfo.processInfo.processIdentifier];
+	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+}
+
 + (xpc_connection_t)launchPrivileged:(BOOL)privileged error:(NSError **)errorPtr {
 	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
-
-	NSRunningApplication *currentApp = NSRunningApplication.currentApplication;
-	NSString *currentAppIdentifier = currentApp.bundleIdentifier ?: currentApp.executableURL.lastPathComponent.stringByDeletingPathExtension;
-	NSString *jobLabel = [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 
 	CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
@@ -74,6 +75,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	@onExit {
 		if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
 	};
+
+	NSString *jobLabel = self.jobLabel;
 
 	CFErrorRef cfError;
 	if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, authorization, true, &cfError)) {
