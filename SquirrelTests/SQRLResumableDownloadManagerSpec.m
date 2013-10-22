@@ -9,15 +9,16 @@
 #import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import "NSError+SQRLVerbosityExtensions.h"
+#import "ReactiveCocoa/ReactiveCocoa.h"
 
 SpecBegin(SQRLResumableDownloadManager)
 
-__block SQRLDownloadController *downloadController = nil;
+__block SQRLResumableDownloadManager *downloadManager = nil;
 
 void (^removeAllResumableDownloads)() = ^ {
 	NSError *removeError = nil;
-	BOOL remove = [downloadController removeAllResumableDownloads:&removeError];
-	if (!remove) {
+	id result = [[downloadManager removeAllResumableDownloads] firstOrDefault:nil success:NULL error:&removeError];
+	if (result == nil) {
 		if ([removeError.domain isEqualToString:NSCocoaErrorDomain] && removeError.code == NSFileNoSuchFileError) return;
 
 		NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
@@ -25,7 +26,7 @@ void (^removeAllResumableDownloads)() = ^ {
 };
 
 beforeAll(^{
-	downloadController = SQRLDownloadController.defaultDownloadController;
+	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
 
 	removeAllResumableDownloads();
 });
@@ -36,7 +37,7 @@ NSURL * (^newTestURL)() = ^ () {
 
 NSURL * (^newDownloadURL)() = ^ () {
 	NSError *error = nil;
-	SQRLResumableDownload *download = [downloadController downloadForRequest:[NSURLRequest requestWithURL:newTestURL()] error:&error];
+	SQRLResumableDownload *download = [downloadManager downloadForRequest:[NSURLRequest requestWithURL:newTestURL()] error:&error];
 	expect(download).notTo.beNil();
 	expect(error).to.beNil();
 
@@ -63,8 +64,8 @@ it(@"should return a path in a writable directory for new URLs", ^{
 it(@"should return the same path for the same URL", ^{
 	NSURL *testURL = newTestURL();
 
-	SQRLResumableDownload *download1 = [downloadController downloadForRequest:[NSURLRequest requestWithURL:testURL] error:NULL];
-	SQRLResumableDownload *download2 = [downloadController downloadForRequest:[NSURLRequest requestWithURL:testURL] error:NULL];
+	SQRLResumableDownload *download1 = [downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL] error:NULL];
+	SQRLResumableDownload *download2 = [downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL] error:NULL];
 	expect(download1).notTo.beNil();
 	expect(download1).to.equal(download2);
 });
@@ -73,13 +74,13 @@ it(@"should remember a response", ^{
 	NSURLRequest *request = [NSURLRequest requestWithURL:newTestURL()];
 	NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL statusCode:200 HTTPVersion:(__bridge NSString *)kCFHTTPVersion1_1 headerFields:@{ @"ETag": NSProcessInfo.processInfo.globallyUniqueString }];
 
-	SQRLResumableDownload *initialDownload = [downloadController downloadForRequest:request error:NULL];
+	SQRLResumableDownload *initialDownload = [downloadManager downloadForRequest:request error:NULL];
 
 	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:initialDownload.fileURL];
-	[downloadController setDownload:newDownload forRequest:request];
+	[downloadManager setDownload:newDownload forRequest:request];
 	expect(initialDownload).notTo.equal(newDownload);
 
-	SQRLResumableDownload *resumedDownload = [downloadController downloadForRequest:request error:NULL];
+	SQRLResumableDownload *resumedDownload = [downloadManager downloadForRequest:request error:NULL];
 	expect(resumedDownload).to.equal(newDownload);
 });
 

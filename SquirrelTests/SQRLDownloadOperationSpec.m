@@ -21,8 +21,8 @@ beforeAll(^{
 	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
 
 	NSError *error = nil;
-	BOOL remove = [downloadController removeAllResumableDownloads:&error];
-	expect(remove).to.beTruthy();
+	id result = [[downloadManager removeAllResumableDownloads] firstOrDefault:nil success:NULL error:&error];
+	expect(result).to.beTruthy();
 	expect(error).to.beNil();
 });
 
@@ -43,7 +43,7 @@ it(@"should download file:// scheme URLs", ^{
 	expect(write).to.beTruthy();
 	expect(error).to.beNil();
 
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:[NSURLRequest requestWithURL:fileLocation] downloadController:downloadController];
+	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:[NSURLRequest requestWithURL:fileLocation] downloadManager:downloadManager];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 
@@ -211,7 +211,7 @@ it(@"should resume a download", ^{
 
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%u/foo", port]]];
 	request.timeoutInterval = 1.;
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
+	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 
@@ -222,7 +222,7 @@ it(@"should resume a download", ^{
 
 	error = nil;
 
-	SQRLResumableDownload *download = [downloadController downloadForRequest:request error:&error];
+	SQRLResumableDownload *download = [downloadManager downloadForRequest:request error:&error];
 	expect(download).notTo.beNil();
 	expect(error).to.beNil();
 
@@ -257,7 +257,7 @@ it(@"should resume a download", ^{
 
 	// Issue second request
 
-	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
+	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 
@@ -316,7 +316,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%u/bar", port]]];
 	request.timeoutInterval = 1.;
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
+	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 
@@ -327,7 +327,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 
 	error = nil;
 
-	SQRLResumableDownload *download = [downloadController downloadForRequest:request error:&error];
+	SQRLResumableDownload *download = [downloadManager downloadForRequest:request error:&error];
 	expect(download).notTo.beNil();
 	expect(error).to.beNil();
 
@@ -364,7 +364,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 
 	// Issue second request
 
-	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadController:downloadController];
+	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
 	[downloadOperation start];
 	expect(downloadOperation.isFinished).will.beTruthy();
 

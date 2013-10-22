@@ -9,21 +9,21 @@
 #import <Foundation/Foundation.h>
 
 @class SQRLResumableDownload;
-@class RACStream;
+@class RACSignal;
 
 // Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
 @interface SQRLResumableDownloadManager : NSObject
 
-// Default download controller, stores downloads in the ~/Library/Caches
-// directory.
-+ (instancetype)defaultDownloadController;
+// Default download manager, stores downloads in 
+// SQRLDirectoryManager.currentApplicationManager.downloadDirectoryURL.
++ (instancetype)defaultDownloadManager;
 
 // Clean the resumable download state, removes downloaded data and tracking
 // state.
 //
 // Returns a signal which sends RACUnit.defaultUnit then completes, or errors.
-- (RACStream *)removeAllResumableDownloads:(NSError **)errorRef;
+- (RACSignal *)removeAllResumableDownloads;
 
 // Retrieve a previously started download, or initialise a new download, callers
 // don't need to know whether a download has been previously started or not.

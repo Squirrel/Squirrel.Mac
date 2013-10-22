@@ -25,7 +25,7 @@
 @property (nonatomic, strong, readonly) NSOperationQueue *controlQueue;
 
 // Download controller for resumable state
-@property (nonatomic, strong, readonly) SQRLResumableDownloadManager *downloadController;
+@property (nonatomic, strong, readonly) SQRLResumableDownloadManager *downloadManager;
 // Download retrieved from the download controller, resume state
 @property (nonatomic, strong) SQRLResumableDownload *download;
 
@@ -40,9 +40,9 @@
 
 @implementation SQRLDownloadOperation
 
-- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLResumableDownloadManager *)downloadController {
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLResumableDownloadManager *)downloadManager {
 	NSParameterAssert(request != nil);
-	NSParameterAssert(downloadController != nil);
+	NSParameterAssert(downloadManager != nil);
 
 	self = [self init];
 	if (self == nil) return nil;
@@ -53,7 +53,7 @@
 	_controlQueue.maxConcurrentOperationCount = 1;
 	_controlQueue.name = @"com.github.Squirrel.SQRLDownloadOperation.controlQueue";
 
-	_downloadController = downloadController;
+	_downloadManager = downloadManager;
 
 	_completionProvider = [^ NSURL * (NSURLResponse **responseProvider, NSError **errorRef) {
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
@@ -122,7 +122,7 @@
 
 - (void)startDownload {
 	NSError *error = nil;
-	self.download = [self.downloadController downloadForRequest:self.request error:&error];
+	self.download = [self.downloadManager downloadForRequest:self.request error:&error];
 	if (self.download == nil) {
 		[self completeWithError:error];
 		return;
@@ -199,7 +199,7 @@
 - (void)recordDownloadWithResponse:(NSHTTPURLResponse *)response {
 	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:self.download.fileURL];
 
-	[self.downloadController setDownload:newDownload forRequest:self.request];
+	[self.downloadManager setDownload:newDownload forRequest:self.request];
 	self.download = newDownload;
 }
 

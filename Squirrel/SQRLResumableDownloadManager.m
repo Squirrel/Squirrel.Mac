@@ -21,15 +21,15 @@
 
 @implementation SQRLResumableDownloadManager
 
-+ (instancetype)defaultDownloadController {
-	static SQRLResumableDownloadManager *defaultDownloadController = nil;
-	static dispatch_once_t defaultDownloadControllerPredicate = 0;
++ (instancetype)defaultDownloadManager {
+	static SQRLResumableDownloadManager *defaultDownloadManager = nil;
+	static dispatch_once_t defaultDownloadManagerPredicate = 0;
 
-	dispatch_once(&defaultDownloadControllerPredicate, ^{
-		defaultDownloadController = [[self alloc] init];
+	dispatch_once(&defaultDownloadManagerPredicate, ^{
+		defaultDownloadManager = [[self alloc] init];
 	});
 
-	return defaultDownloadController;
+	return defaultDownloadManager;
 }
 
 - (id)init {
@@ -47,10 +47,11 @@
 	dispatch_release(_indexQueue);
 }
 
-- (RACStream *)removeAllResumableDownloads:(NSError **)errorRef {
+- (RACSignal *)removeAllResumableDownloads {
 	NSArray *locationSignals = @[ [self downloadStoreIndexFileLocation], [self.directoryManager downloadDirectoryURL] ];
-	return [[[locationSignals
+	return [[[[locationSignals
 		rac_sequence]
+		signalWithScheduler:RACScheduler.immediateScheduler]
 		map:^ RACSignal * (NSURL *location) {
 			NSError *error = nil;
 			BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
