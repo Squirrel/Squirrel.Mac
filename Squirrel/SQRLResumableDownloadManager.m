@@ -16,7 +16,7 @@
 
 @interface SQRLResumableDownloadManager ()
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
-@property (nonatomic, strong, readonly) RACScheduler *serialScheduler;
+@property (nonatomic, assign, readonly) dispatch_queue_t queue;
 @end
 
 @implementation SQRLResumableDownloadManager
@@ -38,9 +38,13 @@
 
 	_directoryManager = [SQRLDirectoryManager currentApplicationManager];
 
-	_serialScheduler = [[RACTargetQueueScheduler alloc] initWithName:@"com.github.Squirrel.SQRLDownloadController.serialScheduler" targetQueue:DISPATCH_TARGET_QUEUE_DEFAULT];
+	_queue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadController.queue", DISPATCH_QUEUE_CONCURRENT);
 
 	return self;
+}
+
+- (void)dealloc {
+	dispatch_release(_queue);
 }
 
 - (RACSignal *)removeAllResumableDownloads {
@@ -61,7 +65,8 @@
 }
 
 - (RACSignal *)downloadStoreIndexFileLocation {
-	return [[[self.directoryManager
+	return [[[[self
+		directoryManager]
 		applicationSupportURL]
 		flattenMap:^ RACSignal * (NSURL *directory) {
 			return [RACSignal return:[directory URLByAppendingPathComponent:@"DownloadIndex.plist"]];
@@ -69,52 +74,91 @@
 		setNameWithFormat:@"%@ -downloadStoreIndexFileLocation", self];
 }
 
-- (RACSignal *)readDownloadIndexWithBlock:(RACSignal * (^)(NSDictionary *))block {
-	NSParameterAssert(block != nil);
-
-	return [[self.downloadStoreIndexFileLocation
-		deliverOn:self.serialScheduler]
+// Reads the download index.
+//
+// Returns a signal which sends the download index at time of read then
+// completes, or errors.
+- (RACSignal *)readDownloadIndex {
+	return [[self
+		downloadStoreIndexFileLocation]
 		flattenMap:^ RACSignal * (NSURL *location) {
-			NSError *error = nil;
-			NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
-			if (propertyListData == nil) return [RACSignal error:error];
+			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+				dispatch_async(self.queue, ^{
+					NSError *error = nil;
+					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
+					if (propertyListData == nil) {
+						[subscriber sendError:error];
+						return;
+					}
 
-			NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-			if (propertyList == nil) {
-				return [RACSignal error:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
-			}
+					NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
+					if (propertyList == nil) {
+						[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
+						return;
+					}
 
-			return block(propertyList);
+					[subscriber sendNext:propertyList];
+					[subscriber sendCompleted];
+				});
+
+				return nil;
+			}];
 		}];
 }
 
+// Write a new download index.
+//
+// block - Map from the old download index to the new download index. Writing
+//         is serialised, subsequent writers will receive the output of the
+//         previous map block. If the output of the map is equal to the input
+//         no write is attempted and the returned signal completes.
+//
+// Returns a signal which completes or errors.
 - (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
-	return [[self.downloadStoreIndexFileLocation
-		deliverOn:self.serialScheduler]
+	return [[self
+		downloadStoreIndexFileLocation]
 		flattenMap:^ RACSignal * (NSURL *location) {
-			NSDictionary *propertyList = nil;
+			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+				dispatch_barrier_async(self.queue, ^{
+					NSDictionary *propertyList = nil;
 
-			NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:NULL];
-			if (propertyListData == nil) {
-				propertyList = @{};
-			} else {
-				propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-				if (propertyList == nil) return [RACSignal error:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
-			}
+					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:NULL];
+					if (propertyListData == nil) {
+						propertyList = @{};
+					} else {
+						propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
+						if (propertyList == nil) {
+							[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
+							return;
+						}
+					}
 
-			NSDictionary *newPropertyList = block(propertyList);
-			if ([newPropertyList isEqual:propertyList]) return [RACSignal empty];
+					NSDictionary *newPropertyList = block(propertyList);
+					if ([newPropertyList isEqual:propertyList]) {
+						[subscriber sendCompleted];
+						return;
+					}
 
-			NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
-			if (newData == nil) return [RACSignal error:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil]];
+					NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
+					if (newData == nil) {
+						[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil]];
+						return;
+					}
 
-			NSError *error = nil;
-			BOOL write = [newData writeToURL:location options:NSDataWritingAtomic error:&error];
-			if (!write) return [RACSignal error:error];
+					NSError *error = nil;
+					BOOL write = [newData writeToURL:location options:NSDataWritingAtomic error:&error];
+					if (!write) {
+						[subscriber sendError:error];
+						return;
+					}
 
-			return [RACSignal empty];
+					[subscriber sendCompleted];
+				});
+
+				return nil;
+			}];
 		}];
 }
 
@@ -146,20 +190,26 @@
 - (RACSignal *)downloadForRequest:(NSURLRequest *)request {
 	NSParameterAssert(request != nil);
 
-	return [self readDownloadIndexWithBlock:^ RACSignal * (NSDictionary *index) {
-		NSString *key = [self.class keyForURL:request.URL];
-		SQRLResumableDownload *download = index[key];
-		if (download != nil) return [RACSignal return:download];
+	return [[[self
+		readDownloadIndex]
+		catch:^ RACSignal * (NSError *error) {
+			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileReadNoSuchFileError) return [RACSignal return:@{}];
+			return [RACSignal error:error];
+		}]
+		flattenMap:^ RACSignal * (NSDictionary *index) {
+			NSString *key = [self.class keyForURL:request.URL];
+			SQRLResumableDownload *download = index[key];
+			if (download != nil) return [RACSignal return:download];
 
-		return [[[self.directoryManager
-			downloadDirectoryURL]
-			map:^ NSURL * (NSURL *downloadDirectory) {
-				return [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
-			}]
-			map:^ SQRLResumableDownload * (NSURL *location) {
-				return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:location];
-			}];
-	}];
+			return [[[self.directoryManager
+				downloadDirectoryURL]
+				map:^ NSURL * (NSURL *downloadDirectory) {
+					return [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
+				}]
+				map:^ SQRLResumableDownload * (NSURL *location) {
+					return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:location];
+				}];
+		}];
 }
 
 - (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request {

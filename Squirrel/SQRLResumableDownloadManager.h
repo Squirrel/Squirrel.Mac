@@ -46,6 +46,8 @@
 //
 // download - Must have a response, this is asserted.
 // request  - Must not be nil.
+//
+// Returns a signal which completes or errors.
 - (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request;
 
 @end

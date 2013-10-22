@@ -73,8 +73,12 @@ it(@"should remember a response", ^{
 	SQRLResumableDownload *initialDownload = [[downloadManager downloadForRequest:request] first];
 
 	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:initialDownload.fileURL];
-	[downloadManager setDownload:newDownload forRequest:request];
 	expect(initialDownload).notTo.equal(newDownload);
+
+	NSError *error = nil;
+	BOOL setNewDownload = [[downloadManager setDownload:newDownload forRequest:request] waitUntilCompleted:&error];
+	expect(setNewDownload).to.beTruthy();
+	expect(error).to.beNil();
 
 	SQRLResumableDownload *resumedDownload = [[downloadManager downloadForRequest:request] first];
 	expect(resumedDownload).to.equal(newDownload);
