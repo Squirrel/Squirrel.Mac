@@ -145,7 +145,7 @@ NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
 
 - (BOOL)validateUpdateURL:(NSURL **)updateURLPtr error:(NSError **)error {
 	NSURL *updateURL = *updateURLPtr;
-	if (![updateURL isKindOfClass:NSURL.class] || updateURL.scheme == nil || updateURL.host == nil || updateURL.path == nil) {
+	if (![updateURL isKindOfClass:NSURL.class] || updateURL.scheme == nil || (![updateURL.scheme isEqualToString:@"file"] && updateURL.host == nil) || updateURL.path == nil) {
 		if (error != NULL) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
