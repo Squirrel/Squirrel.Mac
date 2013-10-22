@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class SQRLDownloadController;
+@class SQRLResumableDownloadManager;
 
 // Resumably download a remote resource.
 //
@@ -27,7 +27,7 @@
 //                      stored and resumed from. For a previously started
 //                      download to be resumed, an equivalent download
 //                      controller should be provided.
-- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLDownloadController *)downloadController __attribute__((nonnull (1, 2)));
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLResumableDownloadManager *)downloadController __attribute__((nonnull (1, 2)));
 
 // When the operation `isFinished` this can be invoked to get the operation
 // result, retrieve the response and the location that the download has been

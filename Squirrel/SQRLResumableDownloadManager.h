@@ -13,7 +13,7 @@
 
 // Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
-@interface SQRLDownloadController : NSObject
+@interface SQRLResumableDownloadManager : NSObject
 
 // Default download controller, stores downloads in the ~/Library/Caches
 // directory.

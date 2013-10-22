@@ -11,7 +11,7 @@
 #import "EXTKeyPathCoding.h"
 #import "EXTScope.h"
 
-#import "SQRLDownloadController.h"
+#import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloadOperation () <NSURLConnectionDataDelegate>
@@ -25,7 +25,7 @@
 @property (nonatomic, strong, readonly) NSOperationQueue *controlQueue;
 
 // Download controller for resumable state
-@property (nonatomic, strong, readonly) SQRLDownloadController *downloadController;
+@property (nonatomic, strong, readonly) SQRLResumableDownloadManager *downloadController;
 // Download retrieved from the download controller, resume state
 @property (nonatomic, strong) SQRLResumableDownload *download;
 
@@ -40,7 +40,7 @@
 
 @implementation SQRLDownloadOperation
 
-- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLDownloadController *)downloadController {
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadController:(SQRLResumableDownloadManager *)downloadController {
 	NSParameterAssert(request != nil);
 	NSParameterAssert(downloadController != nil);
 

@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDownloadController.h"
+#import "SQRLResumableDownloadManager.h"
 
 #import "ReactiveCocoa/ReactiveCocoa.h"
 #import <CommonCrypto/CommonCrypto.h>
@@ -14,15 +14,15 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLResumableDownload.h"
 
-@interface SQRLDownloadController ()
+@interface SQRLResumableDownloadManager ()
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 @property (nonatomic, assign, readonly) dispatch_queue_t indexQueue;
 @end
 
-@implementation SQRLDownloadController
+@implementation SQRLResumableDownloadManager
 
 + (instancetype)defaultDownloadController {
-	static SQRLDownloadController *defaultDownloadController = nil;
+	static SQRLResumableDownloadManager *defaultDownloadController = nil;
 	static dispatch_once_t defaultDownloadControllerPredicate = 0;
 
 	dispatch_once(&defaultDownloadControllerPredicate, ^{
