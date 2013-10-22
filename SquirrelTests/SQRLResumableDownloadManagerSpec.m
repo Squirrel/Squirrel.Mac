@@ -15,20 +15,16 @@ SpecBegin(SQRLResumableDownloadManager)
 
 __block SQRLResumableDownloadManager *downloadManager = nil;
 
-void (^removeAllResumableDownloads)() = ^ {
-	NSError *removeError = nil;
-	id result = [[downloadManager removeAllResumableDownloads] firstOrDefault:nil success:NULL error:&removeError];
-	if (result == nil) {
-		if ([removeError.domain isEqualToString:NSCocoaErrorDomain] && removeError.code == NSFileNoSuchFileError) return;
-
-		NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
-	}
-};
-
 beforeAll(^{
 	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
 
-	removeAllResumableDownloads();
+	NSError *removeError = nil;
+	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&removeError];
+	if (!remove) {
+		if ([removeError.domain isEqualToString:NSCocoaErrorDomain] && removeError.code == NSFileNoSuchFileError) return;
+		
+		NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
+	}
 });
 
 NSURL * (^newTestURL)() = ^ () {

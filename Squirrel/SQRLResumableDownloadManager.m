@@ -52,12 +52,14 @@
 	return [[[[locationSignals
 		rac_sequence]
 		signalWithScheduler:RACScheduler.immediateScheduler]
-		map:^ RACSignal * (NSURL *location) {
-			NSError *error = nil;
-			BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
-			if (!remove) return [RACSignal error:error];
-			
-			return [RACSignal return:RACUnit.defaultUnit];
+		map:^ RACSignal * (RACSignal *locationSignal) {
+			return [locationSignal map:^ RACSignal * (NSURL *location) {
+				NSError *error = nil;
+				BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
+				if (!remove) return [RACSignal error:error];
+
+				return [RACSignal empty];
+			}];
 		}]
 		flatten];
 }

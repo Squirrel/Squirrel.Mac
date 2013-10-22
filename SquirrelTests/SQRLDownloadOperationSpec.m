@@ -12,6 +12,7 @@
 #import <sys/socket.h>
 #import <netinet/in.h>
 #import "ReactiveCocoa/EXTScope.h"
+#import "NSError+SQRLVerbosityExtensions.h"
 
 SpecBegin(SQRLDownloadOperation);
 
@@ -20,10 +21,13 @@ __block SQRLResumableDownloadManager *downloadManager;
 beforeAll(^{
 	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
 
-	NSError *error = nil;
-	id result = [[downloadManager removeAllResumableDownloads] firstOrDefault:nil success:NULL error:&error];
-	expect(result).to.beTruthy();
-	expect(error).to.beNil();
+	NSError *removeError = nil;
+	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&removeError];
+	if (!remove) {
+		if ([removeError.domain isEqualToString:NSCocoaErrorDomain] && removeError.code == NSFileNoSuchFileError) return;
+
+		NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
+	}
 });
 
 beforeEach(^{

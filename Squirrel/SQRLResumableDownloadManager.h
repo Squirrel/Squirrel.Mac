@@ -22,7 +22,8 @@
 // Clean the resumable download state, removes downloaded data and tracking
 // state.
 //
-// Returns a signal which sends RACUnit.defaultUnit then completes, or errors.
+// Returns a signal which errors or completes when all file operations have been
+// attempted.
 - (RACSignal *)removeAllResumableDownloads;
 
 // Retrieve a previously started download, or initialise a new download, callers
