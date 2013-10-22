@@ -33,7 +33,7 @@ NSURL * (^newTestURL)() = ^ () {
 
 NSURL * (^newDownloadURL)() = ^ () {
 	NSError *error = nil;
-	SQRLResumableDownload *download = [downloadManager downloadForRequest:[NSURLRequest requestWithURL:newTestURL()] error:&error];
+	SQRLResumableDownload *download = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:newTestURL()]] firstOrDefault:nil success:NULL error:&error];
 	expect(download).notTo.beNil();
 	expect(error).to.beNil();
 
@@ -60,8 +60,8 @@ it(@"should return a path in a writable directory for new URLs", ^{
 it(@"should return the same path for the same URL", ^{
 	NSURL *testURL = newTestURL();
 
-	SQRLResumableDownload *download1 = [downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL] error:NULL];
-	SQRLResumableDownload *download2 = [downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL] error:NULL];
+	SQRLResumableDownload *download1 = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL]] first];
+	SQRLResumableDownload *download2 = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL]] first];
 	expect(download1).notTo.beNil();
 	expect(download1).to.equal(download2);
 });
@@ -70,13 +70,13 @@ it(@"should remember a response", ^{
 	NSURLRequest *request = [NSURLRequest requestWithURL:newTestURL()];
 	NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL statusCode:200 HTTPVersion:(__bridge NSString *)kCFHTTPVersion1_1 headerFields:@{ @"ETag": NSProcessInfo.processInfo.globallyUniqueString }];
 
-	SQRLResumableDownload *initialDownload = [downloadManager downloadForRequest:request error:NULL];
+	SQRLResumableDownload *initialDownload = [[downloadManager downloadForRequest:request] first];
 
 	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:initialDownload.fileURL];
 	[downloadManager setDownload:newDownload forRequest:request];
 	expect(initialDownload).notTo.equal(newDownload);
 
-	SQRLResumableDownload *resumedDownload = [downloadManager downloadForRequest:request error:NULL];
+	SQRLResumableDownload *resumedDownload = [[downloadManager downloadForRequest:request] first];
 	expect(resumedDownload).to.equal(newDownload);
 });
 

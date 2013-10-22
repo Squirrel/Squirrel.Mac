@@ -37,12 +37,15 @@
 //            saved to disk.
 // errorRef - May be `NULL`, populated if there is an error preparing a new
 //            resumable download.
-- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request error:(NSError **)errorRef;
+//
+// Returns a signal which sends a SQRLResumableDownload then completes, or
+// errors.
+- (RACSignal *)downloadForRequest:(NSURLRequest *)request;
 
 // Store metadata for a download so that it can be resumed later.
 //
 // download - Must have a response, this is asserted.
 // request  - Must not be nil.
-- (void)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request;
+- (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request;
 
 @end

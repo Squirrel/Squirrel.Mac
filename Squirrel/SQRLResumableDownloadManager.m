@@ -16,7 +16,7 @@
 
 @interface SQRLResumableDownloadManager ()
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
-@property (nonatomic, assign, readonly) dispatch_queue_t indexQueue;
+@property (nonatomic, strong, readonly) RACScheduler *serialScheduler;
 @end
 
 @implementation SQRLResumableDownloadManager
@@ -38,13 +38,9 @@
 
 	_directoryManager = [SQRLDirectoryManager currentApplicationManager];
 
-	_indexQueue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadController.index", DISPATCH_QUEUE_CONCURRENT);
+	_serialScheduler = [[RACTargetQueueScheduler alloc] initWithName:@"com.github.Squirrel.SQRLDownloadController.serialScheduler" targetQueue:DISPATCH_TARGET_QUEUE_DEFAULT];
 
 	return self;
-}
-
-- (void)dealloc {
-	dispatch_release(_indexQueue);
 }
 
 - (RACSignal *)removeAllResumableDownloads {
@@ -73,68 +69,53 @@
 		setNameWithFormat:@"%@ -downloadStoreIndexFileLocation", self];
 }
 
-- (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
+- (RACSignal *)readDownloadIndexWithBlock:(RACSignal * (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
-	__block BOOL result = NO;
+	return [[self.downloadStoreIndexFileLocation
+		deliverOn:self.serialScheduler]
+		flattenMap:^ RACSignal * (NSURL *location) {
+			NSError *error = nil;
+			NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
+			if (propertyListData == nil) return [RACSignal error:error];
 
-	dispatch_sync(self.indexQueue, ^{
-		NSData *propertyListData = [NSData dataWithContentsOfURL:self.downloadStoreIndexFileLocation.first options:0 error:errorRef];
-		if (propertyListData == nil) return;
+			NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
+			if (propertyList == nil) {
+				return [RACSignal error:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
+			}
 
-		NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-		if (propertyList == nil) {
-			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil];
-			return;
-		}
-
-		block(propertyList);
-
-		result = YES;
-	});
-
-	return result;
+			return block(propertyList);
+		}];
 }
 
-- (BOOL)coordinateWritingIndex:(NSError **)errorRef byAccessor:(NSDictionary * (^)(NSDictionary *))block {
+- (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
-	__block BOOL result = NO;
+	return [[self.downloadStoreIndexFileLocation
+		deliverOn:self.serialScheduler]
+		flattenMap:^ RACSignal * (NSURL *location) {
+			NSDictionary *propertyList = nil;
 
-	dispatch_barrier_sync(self.indexQueue, ^{
-		NSURL *fileLocation = self.downloadStoreIndexFileLocation.first;
-
-		NSDictionary *propertyList = nil;
-
-		NSData *propertyListData = [NSData dataWithContentsOfURL:fileLocation options:0 error:NULL];
-		if (propertyListData == nil) {
-			propertyList = @{};
-		} else {
-			propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-			if (propertyList == nil) {
-				if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil];
-				return;
+			NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:NULL];
+			if (propertyListData == nil) {
+				propertyList = @{};
+			} else {
+				propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
+				if (propertyList == nil) return [RACSignal error:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
 			}
-		}
 
-		NSDictionary *newPropertyList = block(propertyList);
-		if ([newPropertyList isEqual:propertyList]) {
-			result = YES;
-			return;
-		}
+			NSDictionary *newPropertyList = block(propertyList);
+			if ([newPropertyList isEqual:propertyList]) return [RACSignal empty];
 
-		NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
-		if (newData == nil) {
-			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil];
-			return;
-		}
+			NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
+			if (newData == nil) return [RACSignal error:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil]];
 
-		if (![newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef]) return;
+			NSError *error = nil;
+			BOOL write = [newData writeToURL:location options:NSDataWritingAtomic error:&error];
+			if (!write) return [RACSignal error:error];
 
-		result = YES;
-	});
-
-	return result;
+			return [RACSignal empty];
+		}];
 }
 
 + (NSString *)keyForURL:(NSURL *)URL {
@@ -162,37 +143,32 @@
 	return base16;
 }
 
-- (SQRLResumableDownload *)downloadForRequest:(NSURLRequest *)request error:(NSError **)errorRef {
+- (RACSignal *)downloadForRequest:(NSURLRequest *)request {
 	NSParameterAssert(request != nil);
 
-	NSError *downloadError = nil;
-	__block SQRLResumableDownload *download = nil;
+	return [self readDownloadIndexWithBlock:^ RACSignal * (NSDictionary *index) {
+		NSString *key = [self.class keyForURL:request.URL];
+		SQRLResumableDownload *download = index[key];
+		if (download != nil) return [RACSignal return:download];
 
-	NSString *key = [self.class keyForURL:request.URL];
-
-	[self coordinateReadingIndex:&downloadError byAccessor:^(NSDictionary *index) {
-		download = index[key];
+		return [[[self.directoryManager
+			downloadDirectoryURL]
+			map:^ NSURL * (NSURL *downloadDirectory) {
+				return [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
+			}]
+			map:^ SQRLResumableDownload * (NSURL *location) {
+				return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:location];
+			}];
 	}];
-
-	if (download == nil) {
-		NSURL *downloadDirectory = self.directoryManager.downloadDirectoryURL.first;
-		if (![NSFileManager.defaultManager createDirectoryAtURL:downloadDirectory withIntermediateDirectories:YES attributes:nil error:errorRef]) return nil;
-
-		NSURL *localURL = [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
-		return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:localURL];
-	}
-
-	return download;
 }
 
-- (void)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request {
+- (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request {
 	NSParameterAssert(download.response != nil);
 	NSParameterAssert(request != nil);
 
-	NSString *key = [self.class keyForURL:request.URL];
+	return [self writeDownloadIndexWithBlock:^ NSDictionary * (NSDictionary *index) {
+		NSString *key = [self.class keyForURL:request.URL];
 
-	NSError *writeError = nil;
-	[self coordinateWritingIndex:&writeError byAccessor:^(NSDictionary *index) {
 		NSMutableDictionary *newIndex = [index mutableCopy];
 
 		if (download != nil) {

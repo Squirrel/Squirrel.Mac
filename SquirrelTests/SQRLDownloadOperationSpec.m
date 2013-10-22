@@ -226,7 +226,7 @@ it(@"should resume a download", ^{
 
 	error = nil;
 
-	SQRLResumableDownload *download = [downloadManager downloadForRequest:request error:&error];
+	SQRLResumableDownload *download = [[downloadManager downloadForRequest:request] firstOrDefault:nil success:NULL error:&error];
 	expect(download).notTo.beNil();
 	expect(error).to.beNil();
 
@@ -331,7 +331,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 
 	error = nil;
 
-	SQRLResumableDownload *download = [downloadManager downloadForRequest:request error:&error];
+	SQRLResumableDownload *download = [[downloadManager downloadForRequest:request] firstOrDefault:nil success:NULL error:&error];
 	expect(download).notTo.beNil();
 	expect(error).to.beNil();
 

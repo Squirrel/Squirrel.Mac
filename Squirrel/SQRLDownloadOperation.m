@@ -8,8 +8,9 @@
 
 #import "SQRLDownloadOperation.h"
 
-#import "EXTKeyPathCoding.h"
-#import "EXTScope.h"
+#import "ReactiveCocoa/ReactiveCocoa.h"
+#import "ReactiveCocoa/EXTKeyPathCoding.h"
+#import "ReactiveCocoa/EXTScope.h"
 
 #import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
@@ -122,7 +123,7 @@
 
 - (void)startDownload {
 	NSError *error = nil;
-	self.download = [self.downloadManager downloadForRequest:self.request error:&error];
+	self.download = [[self.downloadManager downloadForRequest:self.request] firstOrDefault:nil success:NULL error:&error];
 	if (self.download == nil) {
 		[self completeWithError:error];
 		return;
