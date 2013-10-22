@@ -8,10 +8,21 @@
 
 #import <Foundation/Foundation.h>
 
-extern NSString * const SQRLZipOperationErrorDomain;
+@class RACSignal;
+
+extern NSString * const SQRLZipArchiverErrorDomain;
+
+// Associated with an NSNumber containing the code that a shell task exited
+// with.
+extern NSString * const SQRLZipArchiverExitCodeErrorKey;
+
+// `SQRLZipArchiver` tried to invoke the shell and failed.
+//
+// Contains `SQRLZipArchiverExitStatusErrorKey` in the `userInfo` dictionary.
+extern const NSInteger SQRLZipArchiverShellTaskFailed;
 
 // Uses `ditto` on the command line to zip and unzip archives.
-@interface SQRLZipOperation : NSOperation
+@interface SQRLZipArchiver : NSObject
 
 // Asynchronously creates a zip archive.
 //
@@ -21,9 +32,9 @@ extern NSString * const SQRLZipOperationErrorDomain;
 // directoryURL      - The directory to include in the zip archive. The name
 //                     (but not path) of the directory itself will be embedded
 //                     into the archive. This must not be nil.
-// completionHandler - A block to invoke when zipping has succeeded or failed.
-//                     This must not be nil.
-+ (instancetype)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL;
+//
+// Returns a signal which will complete or error on an unspecified thread.
++ (RACSignal *)createZipArchiveAtURL:(NSURL *)zipArchiveURL fromDirectoryAtURL:(NSURL *)directoryURL;
 
 // Asynchronously extracts a zip archive.
 //
@@ -31,16 +42,8 @@ extern NSString * const SQRLZipOperationErrorDomain;
 // directoryURL      - The directory to extract the contents of the archive to.
 //                     Any files or folders that use the same name as entries in
 //                     the archive will be overridden. This must not be nil.
-// completionHandler - A block to invoke when unzipping has succeeded or failed.
-//                     This must not be nil.
-+ (instancetype)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL;
-
-// When the operation `isFinished` this can be invoked to get the operation
-// result.
 //
-// errorRef - may be NULL.
-//
-// Returns whether the zip/unzip operation succeeded.
-- (BOOL)completionProvider:(NSError **)errorRef;
+// Returns a signal which will complete or error on an unspecified thread.
++ (RACSignal *)unzipArchiveAtURL:(NSURL *)zipArchiveURL intoDirectoryAtURL:(NSURL *)directoryURL;
 
 @end

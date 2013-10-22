@@ -1,37 +1,52 @@
 //
-//  SQRLFileManager.h
+//  SQRLDirectoryManager.h
 //  Squirrel
 //
-//  Created by Keith Duncan on 26/09/2013.
+//  Created by Justin Spahr-Summers on 2013-10-08.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
 
-// Provides the file locations that Squirrel uses per application.
+@class RACSignal;
+
+// Provides the file locations that Squirrel/ShipIt use.
 @interface SQRLDirectoryManager : NSObject
 
-// Determine the current app identifier, uses bundle identifier or app name.
+// Returns the shared `SQRLDirectoryManager` for the running application, based
+// on the bundle identifier or application name.
++ (instancetype)currentApplicationManager;
+
+// Initializes the receiver to store files in a location identified by
+// `appIdentifier`.
 //
-// Calls `initWithAppIdentifier:`.
-+ (instancetype)directoryManagerForCurrentApplication;
-
-// Designated initialiser.
+// This is the designated initializer for this class.
 //
-// appIdentifier - Must not be nil, all files Squirrel writes are scoped per
-//                 application.
-- (instancetype)initWithAppIdentifier:(NSString *)appIdentifier;
+// appIdentifier - The unique identifier for the application or job to find
+//                 on-disk locations for. This must not be nil.
+- (instancetype)initWithApplicationIdentifier:(NSString *)appIdentifier;
 
-// The root directory for the per app identifier Squirrel files. Callers must
-// create the directory themselves.
-@property (readonly, nonatomic) NSURL *containerDirectoryURL;
+// Finds or creates an Application Support subdirectory for the receiver’s
+// application identifier.
+//
+// Returns a signal which synchronously sends a URL then completes, or errors.
+- (RACSignal *)applicationSupportURL;
 
-// The directory to store update downloads in prior to installation. Callers
-// must create the directory themselves.
-@property (readonly, nonatomic) NSURL *downloadDirectoryURL;
+// Finds or creates a downloads directory to store update downloads in prior to
+// installation. This is an applicationSupportURL subdirectory.
+//
+// Returns a signal which sends a URL then completes, or errors.
+- (RACSignal *)downloadDirectoryURL;
 
-// The directory to unpack updates into prior to to installation. Callers must
-// create the directory themselves.
-@property (readonly, nonatomic) NSURL *unpackDirectoryURL;
+// Finds or creates a directory to unpack downloaded updates into prior to
+// installation. This is an applicationSupportURL subdirectory.
+//
+// Returns a signal which sends a URL then completes, or errors.
+- (RACSignal *)unpackDirectoryURL;
+
+// Determines where archived `SQRLShipItState` should be saved.
+//
+// Returns a signal which synchronously sends a URL then completes, or errors.
+- (RACSignal *)shipItStateURL;
 
 @end

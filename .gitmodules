@@ -1,9 +1,6 @@
-[submodule "External/xcconfigs"]
-	path = External/xcconfigs
-	url = https://github.com/jspahrsummers/xcconfigs.git
-[submodule "External/expecta"]
-	path = External/expecta
-	url = https://github.com/github/expecta.git
-[submodule "External/specta"]
-	path = External/specta
-	url = https://github.com/github/specta.git
+[submodule "External/ReactiveCocoa"]
+	path = External/ReactiveCocoa
+	url = https://github.com/ReactiveCocoa/ReactiveCocoa.git
+[submodule "External/Mantle"]
+	path = External/Mantle
+	url = https://github.com/github/Mantle.git

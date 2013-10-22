@@ -7,52 +7,25 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <Mantle/Mantle.h>
 
-// The domain for errors originating within SQRLUpdate.
-extern NSString * const SQRLUpdateErrorDomain;
-
-// Error codes in the `SQRLUpdateErrorDomain` domain.
+// An update parsed from a response to the `SQRLUpdater.updateRequest`.
 //
-// SQRLUpdateErrorInvalidJSON - JSON didn't conform to expected schema.
-enum : NSInteger {
-	SQRLUpdateErrorInvalidJSON = -1,
-};
+// This can be subclassed, and `SQRLUpdater.updateClass` set, to preserve
+// additional JSON data. Any subclasses must be immutable, and should inherit
+// their superclass' property key and transformer behaviors.
+@interface SQRLUpdate : MTLModel <MTLJSONSerializing>
 
-// Update parsed from a response to the `SQRLUpdater.updateRequest`.
-@interface SQRLUpdate : NSObject
-
-// Initialises an update from an `updateRequest` response body.
-//
-// Deserialises JSON from the response and invokes `+updateWithJSON:error:`.
-//
-// responseBody - Must not be nil.
-// errorRef     - May be NULL.
-+ (instancetype)updateWithResponseBody:(NSData *)responseBody error:(NSError **)errorRef __attribute__((nonnull (1)));
-
-// Initialises an update from already deserialised JSON.
-//
-// JSON     - Must not be nil, schema defined in README.
-// errorRef - May be NULL.
-+ (instancetype)updateWithJSON:(NSDictionary *)JSON error:(NSError **)errorRef __attribute__((nonnull (1)));
-
-// Underlying JSON the update was initialised with.
-// Custom properties that Squirrel doesn't parse can be retrieved from this.
-@property (readonly, copy, nonatomic) NSDictionary *JSON;
-
-#pragma mark Standard Squirrel properties
-
-// Release notes for the update
+// The release notes for the update.
 @property (readonly, copy, nonatomic) NSString *releaseNotes;
 
-// Release name for the update
+// The release name for the update.
 @property (readonly, copy, nonatomic) NSString *releaseName;
 
-// Release date for the update
+// The release date for the update.
 @property (readonly, copy, nonatomic) NSDate *releaseDate;
 
-#pragma mark Local properties
-
-// CFBundleVersion from the downloaded update's Info.plist
-@property (readonly, nonatomic) NSString *bundleVersion;
+// The URL to the update package that should be downloaded for installation.
+@property (readonly, copy, nonatomic) NSURL *updateURL;
 
 @end

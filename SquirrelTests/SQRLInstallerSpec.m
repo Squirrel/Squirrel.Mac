@@ -6,61 +6,40 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignatureVerifier.h"
+#import "SQRLCodeSignature.h"
+#import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
+#import "SQRLShipItLauncher.h"
+#import "SQRLShipItState.h"
 
 SpecBegin(SQRLInstaller)
 
 __block NSURL *updateURL;
-__block xpc_connection_t shipitConnection;
-__block xpc_object_t message;
 
 beforeEach(^{
 	updateURL = [self createTestApplicationUpdate];
-	shipitConnection = [self connectToShipIt];
-
-	message = xpc_dictionary_create(NULL, NULL, 0);
-	xpc_dictionary_set_string(message, SQRLShipItCommandKey, SQRLShipItInstallCommand);
-
-	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, self.testApplicationURL.absoluteString.UTF8String);
-	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, false);
-	xpc_dictionary_set_bool(message, SQRLWaitForConnectionKey, false);
-
-	NSData *requirementData = self.testApplicationCodeSigningRequirementData;
-	xpc_dictionary_set_data(message, SQRLCodeSigningRequirementKey, requirementData.bytes, requirementData.length);
 });
 
 it(@"should install an update", ^{
-	__block BOOL installed = NO;
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
 
-	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect([self errorFromObject:event]).to.beNil();
+	[self launchShipIt];
 
-		installed = YES;
-	});
-
-	expect(installed).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
 it(@"should install an update and relaunch", ^{
-	__block BOOL installed = NO;
-
 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
 	expect(apps.count).to.equal(0);
 
-	xpc_dictionary_set_bool(message, SQRLShouldRelaunchKey, true);
-	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect([self errorFromObject:event]).to.beNil();
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.relaunchAfterInstallation = YES;
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
 
-		installed = YES;
-	});
+	[self launchShipIt];
 
-	expect(installed).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
 });
@@ -69,17 +48,11 @@ it(@"should install an update from another volume", ^{
 	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication 2.1" fromDirectory:updateURL.URLByDeletingLastPathComponent];
 	updateURL = [diskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
 
-	__block BOOL installed = NO;
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
 
-	xpc_dictionary_set_string(message, SQRLUpdateBundleURLKey, updateURL.absoluteString.UTF8String);
-	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect([self errorFromObject:event]).to.beNil();
+	[self launchShipIt];
 
-		installed = YES;
-	});
-
-	expect(installed).will.beTruthy();
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
@@ -87,26 +60,51 @@ it(@"should install an update to another volume", ^{
 	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
 	NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
 
-	__block BOOL installed = NO;
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
 
-	xpc_dictionary_set_string(message, SQRLTargetBundleURLKey, targetURL.absoluteString.UTF8String);
-	xpc_connection_send_message_with_reply(shipitConnection, message, dispatch_get_main_queue(), ^(xpc_object_t event) {
-		expect(xpc_dictionary_get_bool(event, SQRLShipItSuccessKey)).to.beTruthy();
-		expect([self errorFromObject:event]).to.beNil();
-
-		installed = YES;
-	});
-
-	expect(installed).will.beTruthy();
+	[self launchShipIt];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-describe(@"signal handling", ^{
-	__block BOOL terminated;
-	__block void (^sendMessage)(void);
+it(@"should install an update in process", ^{
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.installerState = SQRLInstallerStateClearingQuarantine;
 
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
+	expect(installer).notTo.beNil();
+
+	NSError *installError = nil;
+	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
+	expect(install).to.beTruthy();
+	expect(installError).to.beNil();
+});
+
+it(@"should not install an update after too many attempts", ^{
+	NSURL *targetURL = self.testApplicationURL;
+	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
+	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
+
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.backupBundleURL = backupURL;
+	state.installerState = SQRLInstallerStateInstalling;
+	state.installationStateAttempt = 4;
+	expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
+
+	[self launchShipIt];
+
+	// No update should've been installed, and the application should be
+	// restored from the backup.
+	__block NSError *error = nil;
+	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
+	expect(error).to.beNil();
+
+	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+});
+
+describe(@"signal handling", ^{
 	__block NSURL *targetURL;
 
 	beforeEach(^{
@@ -114,95 +112,56 @@ describe(@"signal handling", ^{
 		// accessing the property.
 		targetURL = self.testApplicationURL;
 
-		terminated = NO;
-		xpc_connection_set_event_handler(shipitConnection, ^(xpc_object_t event) {
-			if (event == XPC_ERROR_CONNECTION_INVALID || event == XPC_ERROR_CONNECTION_INTERRUPTED) {
-				terminated = YES;
-			}
-		});
+		SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+		expect([[state writeUsingDirectoryManager:self.shipItDirectoryManager] waitUntilCompleted:NULL]).to.beTruthy();
 
-		sendMessage = ^{
-			xpc_connection_send_message(shipitConnection, message);
+		[self launchShipIt];
 
-			__block BOOL launched = NO;
-			xpc_connection_send_barrier(shipitConnection, ^{
-				// Ensure that ShipIt has launched before we send any signal to
-				// it.
-				launched = YES;
-			});
+		// Apply a random delay before sending the termination signal, to
+		// fuzz out race conditions.
+		NSTimeInterval delay = arc4random_uniform(50) / 1000.0;
+		[NSThread sleepForTimeInterval:delay];
+	});
 
-			expect(launched).will.beTruthy();
+	afterEach(^{
+		// Wait up to the launchd throttle interval, then verify that ShipIt
+		// relaunched and finished installing the update.
+		Expecta.asynchronousTestTimeout = 5;
+		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
-			// Apply a random delay before sending the termination signal, to
-			// fuzz out race conditions.
-			NSTimeInterval delay = (20 + arc4random_uniform(80)) / 1000.0;
-			NSLog(@"Waiting for %g seconds before sending signal", delay);
+		NSError *error = nil;
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
+		expect(success).to.beTruthy();
+		expect(error).to.beNil();
+	});
+
+	it(@"should handle SIGHUP", ^{
+		system("killall -v -HUP ShipIt");
+	});
+
+	it(@"should handle SIGTERM", ^{
+		system("killall -v -TERM ShipIt");
+	});
+
+	it(@"should handle SIGINT", ^{
+		system("killall -v -INT ShipIt");
+	});
+
+	it(@"should handle SIGQUIT", ^{
+		system("killall -v -QUIT ShipIt");
+	});
+
+	it(@"should handle SIGKILL", ^{
+		// SIGKILL is unique in that it'll always terminate ShipIt, so send it
+		// a few times to really test resumption.
+		for (int i = 0; i < 3; i++) {
+			system("killall -v -KILL ShipIt");
+
+			// Wait at least for the launchd throttle interval.
+			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);
 			[NSThread sleepForTimeInterval:delay];
-		};
-	});
-
-	describe(@"with a guaranteed target bundle", ^{
-		afterEach(^{
-			// Wait until ShipIt isn't running anymore before verifying the code
-			// signature.
-			expect(terminated).will.beTruthy();
-
-			NSError *error = nil;
-			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
-			expect(success).to.beTruthy();
-			expect(error).to.beNil();
-		});
-
-		it(@"should handle SIGHUP", ^{
-			sendMessage();
-			system("killall -v -HUP ShipIt");
-		});
-
-		it(@"should handle SIGTERM", ^{
-			sendMessage();
-			system("killall -v -TERM ShipIt");
-		});
-
-		it(@"should handle SIGINT", ^{
-			sendMessage();
-			system("killall -v -INT ShipIt");
-		});
-
-		it(@"should handle SIGQUIT", ^{
-			sendMessage();
-			system("killall -v -QUIT ShipIt");
-		});
-	});
-
-	it(@"should leave the target missing or in a valid state after being sent SIGKILL", ^{
-		sendMessage();
-		system("killall -v -KILL ShipIt");
-
-		// Our behavior can't be as well-defined in the case of SIGKILL (since
-		// we get no opportunity to handle it), but we should at least guarantee
-		// that:
-		//
-		//  1. The target bundle is missing, or
-		//  2. The target bundle passes code signing.
-		//
-		// Any corruption of the target bundle is a critical failure.
-		if ([NSFileManager.defaultManager fileExistsAtPath:targetURL.path]) {
-			NSError *error = nil;
-			BOOL success = [self.testApplicationVerifier verifyCodeSignatureOfBundle:targetURL error:&error];
-			expect(success).to.beTruthy();
-			expect(error).to.beNil();
 		}
 	});
-});
-
-it(@"should install an update in process", ^{
-	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:[self createTestApplicationUpdate] requirementData:self.testApplicationCodeSigningRequirementData];
-	expect(installer).notTo.beNil();
-
-	NSError *installError = nil;
-	BOOL install = [installer installUpdateWithError:&installError];
-	expect(install).to.beTruthy();
-	expect(installError).to.beNil();
 });
 
 SpecEnd

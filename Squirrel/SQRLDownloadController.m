@@ -8,6 +8,7 @@
 
 #import "SQRLDownloadController.h"
 
+#import "ReactiveCocoa/ReactiveCocoa.h"
 #import <CommonCrypto/CommonCrypto.h>
 
 #import "SQRLDirectoryManager.h"
@@ -35,7 +36,7 @@
 	self = [super init];
 	if (self == nil) return nil;
 
-	_directoryManager = [SQRLDirectoryManager directoryManagerForCurrentApplication];
+	_directoryManager = [SQRLDirectoryManager currentApplicationManager];
 
 	_indexQueue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadController.index", DISPATCH_QUEUE_CONCURRENT);
 
@@ -46,12 +47,29 @@
 	dispatch_release(_indexQueue);
 }
 
-- (BOOL)removeAllResumableDownloads:(NSError **)errorRef {
-	return [NSFileManager.defaultManager removeItemAtURL:self.directoryManager.containerDirectoryURL error:errorRef];
+- (RACSignal *)removeAllResumableDownloads:(NSError **)errorRef {
+	return [[RACSignal
+		zip:@[ [self downloadStoreIndexFileLocation], [self.directoryManager downloadDirectoryURL] ]
+		reduce:^ NSArray * (NSURL *downloadIndex, NSURL *downloadDirectory) {
+			return @[ downloadDirectory, downloadIndex ];
+		}]
+		flattenMap:^ RACSignal * (NSArray *locations) {
+			for (NSURL *currentLocation in locations) {
+				NSError *error = nil;
+				BOOL remove = [NSFileManager.defaultManager removeItemAtURL:currentLocation error:&error];
+				if (!remove) return [RACSignal error:error];
+			}
+			
+			return [RACSignal return:RACUnit.defaultUnit];
+		}];
 }
 
-- (NSURL *)downloadStoreIndexFileLocation {
-	return [self.directoryManager.containerDirectoryURL URLByAppendingPathComponent:@"Index.plist"];
+- (RACSignal *)downloadStoreIndexFileLocation {
+	return [[self.directoryManager
+		applicationSupportURL]
+		flattenMap:^ RACSignal * (NSURL *directory) {
+			return [RACSignal return:[directory URLByAppendingPathComponent:@"DownloadIndex.plist"]];
+		}];
 }
 
 - (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
@@ -60,7 +78,7 @@
 	__block BOOL result = NO;
 
 	dispatch_sync(self.indexQueue, ^{
-		NSData *propertyListData = [NSData dataWithContentsOfURL:self.downloadStoreIndexFileLocation options:0 error:errorRef];
+		NSData *propertyListData = [NSData dataWithContentsOfURL:self.downloadStoreIndexFileLocation.first options:0 error:errorRef];
 		if (propertyListData == nil) return;
 
 		NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
@@ -83,7 +101,7 @@
 	__block BOOL result = NO;
 
 	dispatch_barrier_sync(self.indexQueue, ^{
-		NSURL *fileLocation = self.downloadStoreIndexFileLocation;
+		NSURL *fileLocation = self.downloadStoreIndexFileLocation.first;
 
 		NSDictionary *propertyList = nil;
 
@@ -109,8 +127,6 @@
 			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil];
 			return;
 		}
-
-		if (![NSFileManager.defaultManager createDirectoryAtURL:self.directoryManager.containerDirectoryURL withIntermediateDirectories:YES attributes:nil error:errorRef]) return;
 
 		if (![newData writeToURL:fileLocation options:NSDataWritingAtomic error:errorRef]) return;
 
@@ -158,7 +174,7 @@
 	}];
 
 	if (download == nil) {
-		NSURL *downloadDirectory = self.directoryManager.downloadDirectoryURL;
+		NSURL *downloadDirectory = self.directoryManager.downloadDirectoryURL.first;
 		if (![NSFileManager.defaultManager createDirectoryAtURL:downloadDirectory withIntermediateDirectories:YES attributes:nil error:errorRef]) return nil;
 
 		NSURL *localURL = [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];

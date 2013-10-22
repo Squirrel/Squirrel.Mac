@@ -5,7 +5,4 @@
 #ifdef __OBJC__
 	#import <Cocoa/Cocoa.h>
     #import <SystemConfiguration/SystemConfiguration.h>
-
-    #import "EXTScope.h"
-    #import "EXTKeyPathCoding.h"
 #endif
