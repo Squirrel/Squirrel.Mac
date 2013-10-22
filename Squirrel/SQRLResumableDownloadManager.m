@@ -63,11 +63,12 @@
 }
 
 - (RACSignal *)downloadStoreIndexFileLocation {
-	return [[self.directoryManager
+	return [[[self.directoryManager
 		applicationSupportURL]
 		flattenMap:^ RACSignal * (NSURL *directory) {
 			return [RACSignal return:[directory URLByAppendingPathComponent:@"DownloadIndex.plist"]];
-		}];
+		}]
+		setNameWithFormat:@"%@ -downloadStoreIndexFileLocation", self];
 }
 
 - (BOOL)coordinateReadingIndex:(NSError **)errorRef byAccessor:(void (^)(NSDictionary *))block {
