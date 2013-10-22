@@ -6,11 +6,11 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDownloadController.h"
+#import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 
-SpecBegin(SQRLDownloadController)
+SpecBegin(SQRLResumableDownloadManager)
 
 __block SQRLDownloadController *downloadController = nil;
 

@@ -47,21 +47,18 @@
 	dispatch_release(_indexQueue);
 }
 
-- (RACSignal *)removeAllResumableDownloads:(NSError **)errorRef {
-	return [[RACSignal
-		zip:@[ [self downloadStoreIndexFileLocation], [self.directoryManager downloadDirectoryURL] ]
-		reduce:^ NSArray * (NSURL *downloadIndex, NSURL *downloadDirectory) {
-			return @[ downloadDirectory, downloadIndex ];
-		}]
-		flattenMap:^ RACSignal * (NSArray *locations) {
-			for (NSURL *currentLocation in locations) {
-				NSError *error = nil;
-				BOOL remove = [NSFileManager.defaultManager removeItemAtURL:currentLocation error:&error];
-				if (!remove) return [RACSignal error:error];
-			}
+- (RACStream *)removeAllResumableDownloads:(NSError **)errorRef {
+	NSArray *locationSignals = @[ [self downloadStoreIndexFileLocation], [self.directoryManager downloadDirectoryURL] ];
+	return [[[locationSignals
+		rac_sequence]
+		map:^ RACSignal * (NSURL *location) {
+			NSError *error = nil;
+			BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
+			if (!remove) return [RACSignal error:error];
 			
 			return [RACSignal return:RACUnit.defaultUnit];
-		}];
+		}]
+		flatten];
 }
 
 - (RACSignal *)downloadStoreIndexFileLocation {

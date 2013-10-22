@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @class SQRLResumableDownload;
-@class RACSignal;
+@class RACStream;
 
 // Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
@@ -23,7 +23,7 @@
 // state.
 //
 // Returns a signal which sends RACUnit.defaultUnit then completes, or errors.
-- (RACSignal *)removeAllResumableDownloads:(NSError **)errorRef;
+- (RACStream *)removeAllResumableDownloads:(NSError **)errorRef;
 
 // Retrieve a previously started download, or initialise a new download, callers
 // don't need to know whether a download has been previously started or not.

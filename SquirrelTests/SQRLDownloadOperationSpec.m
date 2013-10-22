@@ -7,18 +7,18 @@
 //
 
 #import "SQRLDownloadOperation.h"
-#import "SQRLDownloadController.h"
+#import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import <sys/socket.h>
 #import <netinet/in.h>
-#import "EXTScope.h"
+#import "ReactiveCocoa/EXTScope.h"
 
 SpecBegin(SQRLDownloadOperation);
 
-__block SQRLDownloadController *downloadController;
+__block SQRLResumableDownloadManager *downloadManager;
 
 beforeAll(^{
-	downloadController = SQRLDownloadController.defaultDownloadController;
+	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
 
 	NSError *error = nil;
 	BOOL remove = [downloadController removeAllResumableDownloads:&error];
