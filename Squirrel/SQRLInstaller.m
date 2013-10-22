@@ -285,7 +285,7 @@ typedef struct {
 		state.installerState = nextState.integerValue;
 		state.installationStateAttempt = 1;
 		return [[state
-			writeUsingDirectoryManager:self.directoryManager]
+			writeUsingURL:self.directoryManager.shipItStateURL]
 			// Automatically begin the next step.
 			concat:[self stepRepeatedly:step withState:state]];
 	}];
@@ -333,7 +333,7 @@ typedef struct {
 			// control to -backUpBundleAtURL:. Really, the flow
 			// here should be refactored so it doesn't matter.
 			state.backupBundleURL = backupBundleURL;
-			return [state writeUsingDirectoryManager:self.directoryManager];
+			return [state writeUsingURL:self.directoryManager.shipItStateURL];
 		}]
 		setNameWithFormat:@"%@ -backUpWithState: %@", self, state];
 }

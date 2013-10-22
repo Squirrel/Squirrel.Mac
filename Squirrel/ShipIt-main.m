@@ -53,16 +53,17 @@ int main(int argc, const char * argv[]) {
 
 		const char *jobLabel = argv[1];
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
+		RACSignal *stateLocation = directoryManager.shipItStateURL;
 
 		[[[[[[SQRLShipItState
-			readUsingDirectoryManager:directoryManager]
+			readUsingURL:stateLocation]
 			flattenMap:^(SQRLShipItState *state) {
 				return waitForTerminationIfNecessary(state);
 			}]
 			then:^{
 				// Read the latest state, in case it was modified by the
 				// controlling application in the meantime.
-				return [SQRLShipItState readUsingDirectoryManager:directoryManager];
+				return [SQRLShipItState readUsingURL:stateLocation];
 			}]
 			catch:^(NSError *error) {
 				NSLog(@"Error reading saved installer state: %@", error);
@@ -89,7 +90,7 @@ int main(int argc, const char * argv[]) {
 						}];
 				} else {
 					return [[[[[state
-						writeUsingDirectoryManager:directoryManager]
+						writeUsingURL:stateLocation]
 						initially:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");

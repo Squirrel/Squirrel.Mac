@@ -18,7 +18,7 @@ describe(@"-sqrl_operatingSystemShortVersionString", ^{
 
 	it(@"should follow major.minor.patch format", ^{
 		NSError *error = nil;
-		NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^([0-9]+)\\.([0-9]+)\\.([0-9]+)$" options:0 error:&error];
+		NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"^[0-9]+(\\.[0-9]+)*$" options:0 error:&error];
 		expect(regex).notTo.beNil();
 		expect(error).to.beNil();
 
