@@ -122,11 +122,11 @@
 - (void)startDownload:(SQRLResumableDownload *)download withRequest:(NSURLRequest *)request {
 	self.currentDownload = download;
 
+	self.connectionSubject = [RACSubject subject];
+
 	self.connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
 	self.connection.delegateQueue = [[NSOperationQueue alloc] init];
 	[self.connection start];
-
-	self.connectionSubject = [RACSubject subject];
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
