@@ -49,7 +49,7 @@
 
 - (RACSignal *)removeAllResumableDownloads {
 	NSArray *locationSignals = @[ [self downloadStoreIndexFileLocation], [self.directoryManager downloadDirectoryURL] ];
-	return [[[[locationSignals
+	return [[[[[locationSignals
 		rac_sequence]
 		signalWithScheduler:RACScheduler.immediateScheduler]
 		map:^ RACSignal * (RACSignal *locationSignal) {
@@ -61,7 +61,8 @@
 				return [RACSignal empty];
 			}];
 		}]
-		flatten];
+		flatten]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 - (RACSignal *)downloadStoreIndexFileLocation {
@@ -71,7 +72,7 @@
 		flattenMap:^ RACSignal * (NSURL *directory) {
 			return [RACSignal return:[directory URLByAppendingPathComponent:@"DownloadIndex.plist"]];
 		}]
-		setNameWithFormat:@"%@ -downloadStoreIndexFileLocation", self];
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 // Reads the download index.
@@ -79,7 +80,7 @@
 // Returns a signal which sends the download index at time of read then
 // completes, or errors.
 - (RACSignal *)readDownloadIndex {
-	return [[self
+	return [[[self
 		downloadStoreIndexFileLocation]
 		flattenMap:^ RACSignal * (NSURL *location) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
@@ -103,7 +104,8 @@
 
 				return nil;
 			}];
-		}];
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 // Write a new download index.
@@ -117,7 +119,7 @@
 - (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
-	return [[self
+	return [[[self
 		downloadStoreIndexFileLocation]
 		flattenMap:^ RACSignal * (NSURL *location) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
@@ -159,7 +161,8 @@
 
 				return nil;
 			}];
-		}];
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 + (NSString *)keyForURL:(NSURL *)URL {
@@ -190,7 +193,7 @@
 - (RACSignal *)downloadForRequest:(NSURLRequest *)request {
 	NSParameterAssert(request != nil);
 
-	return [[[self
+	return [[[[self
 		readDownloadIndex]
 		catch:^ RACSignal * (NSError *error) {
 			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileReadNoSuchFileError) return [RACSignal return:@{}];
@@ -209,26 +212,29 @@
 				map:^ SQRLResumableDownload * (NSURL *location) {
 					return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:location];
 				}];
-		}];
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 - (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request {
 	NSParameterAssert(download.response != nil);
 	NSParameterAssert(request != nil);
 
-	return [self writeDownloadIndexWithBlock:^ NSDictionary * (NSDictionary *index) {
-		NSString *key = [self.class keyForURL:request.URL];
+	return [[self
+		writeDownloadIndexWithBlock:^ NSDictionary * (NSDictionary *index) {
+			NSString *key = [self.class keyForURL:request.URL];
 
-		NSMutableDictionary *newIndex = [index mutableCopy];
+			NSMutableDictionary *newIndex = [index mutableCopy];
 
-		if (download != nil) {
-			newIndex[key] = download;
-		} else {
-			[newIndex removeObjectForKey:key];
-		}
+			if (download != nil) {
+				newIndex[key] = download;
+			} else {
+				[newIndex removeObjectForKey:key];
+			}
 
-		return newIndex;
-	}];
+			return newIndex;
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 @end
