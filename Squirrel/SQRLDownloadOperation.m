@@ -16,27 +16,21 @@
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloadOperation () <NSURLConnectionDataDelegate>
-@property (atomic, assign) BOOL isExecuting;
-@property (atomic, assign) BOOL isFinished;
-
-// Request the operation was initialised with
+// Request the operation was initialised with.
 @property (nonatomic, copy, readonly) NSURLRequest *request;
-
-// Serial queue for managing operation state
-@property (nonatomic, strong, readonly) NSOperationQueue *controlQueue;
-
-// Download controller for resumable state
+// Download manager for resumable state.
 @property (nonatomic, strong, readonly) SQRLResumableDownloadManager *downloadManager;
-// Download retrieved from the download controller, resume state
-@property (nonatomic, strong) SQRLResumableDownload *download;
 
-// Connection to retreive the remote object
+// Connection to retreive the remote resource.
 @property (nonatomic, strong) NSURLConnection *connection;
 
-// Latest response received from connection
-@property (nonatomic, strong) NSURLResponse *response;
+// Download that the body is being saved to.
+@property (nonatomic, strong) SQRLResumableDownload *currentDownload;
+// Latest response received from connection.
+@property (nonatomic, strong) NSURLResponse *currentResponse;
 
-@property (readwrite, copy, atomic) NSURL * (^completionProvider)(NSURLResponse **, NSError **);
+// Events arising from the `NSURLConnection` are sent on this subject.
+@property (nonatomic, strong) RACSubject *connectionSubject;
 @end
 
 @implementation SQRLDownloadOperation
@@ -50,104 +44,49 @@
 
 	_request = [request copy];
 
-	_controlQueue = [[NSOperationQueue alloc] init];
-	_controlQueue.maxConcurrentOperationCount = 1;
-	_controlQueue.name = @"com.github.Squirrel.SQRLDownloadOperation.controlQueue";
-
 	_downloadManager = downloadManager;
-
-	_completionProvider = [^ NSURL * (NSURLResponse **responseProvider, NSError **errorRef) {
-		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
-		return nil;
-	} copy];
 
 	return self;
 }
 
-- (NSURL *)completionProvider:(NSURLResponse **)responseRef error:(NSError **)errorRef {
-	return self.completionProvider(responseRef, errorRef);
-}
-
-#pragma mark Operation
-
-- (BOOL)isConcurrent {
-	return YES;
-}
-
-- (void)start {
-	[self.controlQueue addOperationWithBlock:^{
-		if (self.isCancelled) {
-			[self finish];
-			return;
-		}
-
-		[self willChangeValueForKey:@keypath(self, isExecuting)];
-		self.isExecuting = YES;
-		[self didChangeValueForKey:@keypath(self, isExecuting)];
-
-		[self startDownload];
-	}];
-}
-
-- (void)cancel {
-	[super cancel];
-
-	[self.controlQueue addOperationWithBlock:^{
-		if (self.connection == nil) return;
-
-		[self finish];
-	}];
-}
-
-- (void)finish {
-	[self.connection cancel];
-
-	[self willChangeValueForKey:@keypath(self, isExecuting)];
-	self.isExecuting = NO;
-	[self didChangeValueForKey:@keypath(self, isExecuting)];
-
-	[self willChangeValueForKey:@keypath(self, isFinished)];
-	self.isFinished = YES;
-	[self didChangeValueForKey:@keypath(self, isFinished)];
-}
-
-- (void)completeWithError:(NSError *)error {
-	self.completionProvider = ^ NSURL * (NSURLResponse **responseRef, NSError **errorRef) {
-		if (errorRef != NULL) *errorRef = error;
-		return nil;
-	};
-	[self finish];
-}
-
 #pragma mark Download
 
-- (void)startDownload {
-	NSError *error = nil;
-	self.download = [[self.downloadManager downloadForRequest:self.request] firstOrDefault:nil success:NULL error:&error];
-	if (self.download == nil) {
-		[self completeWithError:error];
-		return;
-	}
-
-	[self startRequest:[self.class requestWithOriginalRequest:self.request download:self.download]];
+// Returns a signal which sends the resumable download for `request` from
+// `downloadManager` then completes, or errors.
+- (RACSignal *)resumableDownload {
+	return [[self.downloadManager
+		downloadForRequest:self.request]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-+ (NSURLRequest *)requestWithOriginalRequest:(NSURLRequest *)originalRequest download:(SQRLResumableDownload *)download {
-	NSHTTPURLResponse *response = download.response;
-	NSString *ETag = [self ETagFromResponse:response];
-	if (ETag == nil) return originalRequest;
+// Returns a signal which sends a tuple of SQRLResumableDownload and the request
+// that should be performed for that download. Either the original request or a
+// new request with the state added to resume a prior download, then completes,
+// or errors.
+- (RACSignal *)resumeRequest {
+	return [[[self
+		resumableDownload]
+		map:^ RACTuple * (SQRLResumableDownload *resumableDownload) {
+			NSURLRequest *originalRequest = self.request;
+			RACTuple *originalTuple = [RACTuple tupleWithObjects:resumableDownload, originalRequest, nil];
 
-	NSURL *downloadLocation = download.fileURL;
+			NSHTTPURLResponse *response = resumableDownload.response;
+			NSString *ETag = [self.class ETagFromResponse:response];
+			if (ETag == nil) return originalTuple;
 
-	NSNumber *alreadyDownloadedSize = nil;
-	NSError *alreadyDownloadedSizeError = nil;
-	BOOL getAlreadyDownloadedSize = [downloadLocation getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
-	if (!getAlreadyDownloadedSize) return originalRequest;
+			NSURL *downloadLocation = resumableDownload.fileURL;
 
-	NSMutableURLRequest *newRequest = [originalRequest mutableCopy];
-	[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
-	[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forHTTPHeaderField:@"Range"];
-	return newRequest;
+			NSNumber *alreadyDownloadedSize = nil;
+			NSError *alreadyDownloadedSizeError = nil;
+			BOOL getAlreadyDownloadedSize = [downloadLocation getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
+			if (!getAlreadyDownloadedSize) return originalTuple;
+
+			NSMutableURLRequest *newRequest = [originalRequest mutableCopy];
+			[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
+			[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forHTTPHeaderField:@"Range"];
+			return [RACTuple tupleWithObjects:resumableDownload, newRequest, nil];
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 + (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
@@ -159,18 +98,43 @@
 	return nil;
 }
 
-- (void)startRequest:(NSURLRequest *)request {
+- (RACSignal *)download {
+	return [[[self
+		resumeRequest]
+		flattenMap:^ RACSignal * (RACTuple *downloadRequestTuple) {
+			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+				[self startDownload:downloadRequestTuple[0] withRequest:downloadRequestTuple[1]];
+
+				NSURLConnection *connection = self.connection;
+				RACSubject *connectionSubject = self.connectionSubject;
+
+				RACDisposable *connectionDisposable = [connectionSubject subscribe:subscriber];
+
+				return [RACDisposable disposableWithBlock:^{
+					[connection cancel];
+					[connectionDisposable dispose];
+				}];
+			}];
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+}
+
+- (void)startDownload:(SQRLResumableDownload *)download withRequest:(NSURLRequest *)request {
+	self.currentDownload = download;
+
 	self.connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
-	self.connection.delegateQueue = self.controlQueue;
+	self.connection.delegateQueue = [[NSOperationQueue alloc] init];
 	[self.connection start];
+
+	self.connectionSubject = [RACSubject subject];
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-	[self completeWithError:error];
+	[self.connectionSubject sendError:error];
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	self.response = response;
+	self.currentResponse = response;
 
 	// Can only resume HTTP responses which indicate whether we can resume
 	if (![response isKindOfClass:NSHTTPURLResponse.class]) {
@@ -197,16 +161,9 @@
 	[self recordDownloadWithResponse:httpResponse];
 }
 
-- (void)recordDownloadWithResponse:(NSHTTPURLResponse *)response {
-	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:self.download.fileURL];
-
-	[self.downloadManager setDownload:newDownload forRequest:self.request];
-	self.download = newDownload;
-}
-
 - (void)removeDownloadFile {
 	NSError *error = nil;
-	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.download.fileURL error:&error];
+	BOOL remove = [NSFileManager.defaultManager removeItemAtURL:self.currentDownload.fileURL error:&error];
 	if (!remove) {
 		if (![error.domain isEqualToString:NSCocoaErrorDomain] || error.code != NSFileNoSuchFileError) {
 			[self completeWithError:error];
@@ -216,8 +173,19 @@
 	}
 }
 
+- (void)recordDownloadWithResponse:(NSHTTPURLResponse *)response {
+	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:self.currentDownload.fileURL];
+	self.currentDownload = newDownload;
+
+	// Need to write the response we're saving data for to disk before writing
+	// any data, ensures that bytes don't get associated with a rogue ETag.
+	NSError *error = nil;
+	BOOL result = [[self.downloadManager setDownload:newDownload forRequest:self.request] waitUntilCompleted:&error];
+	if (!result) [self completeWithError:error];
+}
+
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.download.fileURL append:YES];
+	NSOutputStream *outputStream = [NSOutputStream outputStreamWithURL:self.currentDownload.fileURL append:YES];
 
 	[outputStream open];
 	@onExit {
@@ -246,14 +214,17 @@
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
-	NSURLResponse *response = self.response;
-	NSURL *localURL = self.download.fileURL;
+	NSURL *localURL = self.currentDownload.fileURL;
+	NSURLResponse *response = self.currentResponse;
 
-	self.completionProvider = ^ NSURL * (NSURLResponse **responseRef, NSError **errorRef) {
-		if (responseRef != NULL) *responseRef = response;
-		return localURL;
-	};
-	[self finish];
+	[self.connectionSubject sendNext:[RACTuple tupleWithObjects:localURL, response, nil]];
+	[self.connectionSubject sendCompleted];
+}
+
+- (void)completeWithError:(NSError *)error {
+	[self.connection cancel];
+
+	[self.connectionSubject sendError:error];
 }
 
 @end
