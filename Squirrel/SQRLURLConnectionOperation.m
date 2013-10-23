@@ -8,30 +8,29 @@
 
 #import "SQRLURLConnectionOperation.h"
 
-#import "EXTKeyPathCoding.h"
+#import "ReactiveCocoa/ReactiveCocoa.h"
 
 @interface SQRLURLConnectionOperation () <NSURLConnectionDataDelegate>
-@property (atomic, assign) BOOL isExecuting;
-@property (atomic, assign) BOOL isFinished;
-
 // Request the operation was initialised with
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 
-// Serial queue for managing operation state
-@property (nonatomic, strong, readonly) NSOperationQueue *controlQueue;
-
-// Connection for the request the operation was initialised with
+// Connection for the request the operation was initialised with.
 @property (nonatomic, strong) NSURLConnection *connection;
 
-// Latest response received from the connection
-@property (nonatomic, strong) NSURLResponse *response;
+// Latest response received from the connection.
+@property (nonatomic, strong) NSURLResponse *currentResponse;
 // Ongoing accumumlated data from the connection
-@property (nonatomic, strong) NSMutableData *bodyData;
+@property (nonatomic, strong) NSMutableData *currentBodyData;
 
-@property (readwrite, copy, atomic) NSData * (^responseProvider)(NSURLResponse **, NSError **);
+// Connection events are sent on this subject.
+@property (nonatomic, strong) RACSubject *connectionSubject;
 @end
 
 @implementation SQRLURLConnectionOperation
+
++ (RACSignal *)sqrl_sendAsynchronousRequest:(NSURLRequest *)request {
+	return [[[self alloc] initWithRequest:request] result];
+}
 
 - (instancetype)initWithRequest:(NSURLRequest *)request {
 	NSParameterAssert(request != nil);
@@ -41,104 +40,54 @@
 
 	_request = [request copy];
 
-	_controlQueue = [[NSOperationQueue alloc] init];
-	_controlQueue.maxConcurrentOperationCount = 1;
-	_controlQueue.name = @"com.github.Squirrel.SQRLURLConnectionOperation.controlQueue";
-
-	_responseProvider = [^ NSData * (NSURLResponse **responseRef, NSError **errorRef) {
-		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSUserCancelledError userInfo:nil];
-		return nil;
-	} copy];
-
 	return self;
-}
-
-- (NSData *)responseProvider:(NSURLResponse **)responseRef error:(NSError **)errorRef {
-	return self.responseProvider(responseRef, errorRef);
-}
-
-#pragma mark Operation
-
-- (BOOL)isConcurrent {
-	return YES;
-}
-
-- (void)start {
-	[self.controlQueue addOperationWithBlock:^{
-		if (self.isCancelled) {
-			[self finish];
-			return;
-		}
-
-		[self willChangeValueForKey:@keypath(self, isExecuting)];
-		self.isExecuting = YES;
-		[self didChangeValueForKey:@keypath(self, isExecuting)];
-
-		[self startConnection];
-	}];
-}
-
-- (void)cancel {
-	[super cancel];
-
-	[self.controlQueue addOperationWithBlock:^{
-		if (self.connection == nil) return;
-
-		[self finish];
-	}];
-}
-
-- (void)finish {
-	[self.connection cancel];
-
-	[self willChangeValueForKey:@keypath(self, isExecuting)];
-	self.isExecuting = NO;
-	[self didChangeValueForKey:@keypath(self, isExecuting)];
-
-	[self willChangeValueForKey:@keypath(self, isFinished)];
-	self.isFinished = YES;
-	[self didChangeValueForKey:@keypath(self, isFinished)];
 }
 
 #pragma mark Connection
 
-- (void)startConnection {
-	self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
-	self.connection.delegateQueue = self.controlQueue;
-	[self.connection start];
+// Returns a signal which sends a tuple of NSURLResponse, NSData then completes,
+// or errors.
+- (RACSignal *)result {
+	return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		self.connectionSubject = [RACSubject subject];
+		RACDisposable *subscriptionDisposable = [self.connectionSubject subscribe:subscriber];
+
+		self.connection = [[NSURLConnection alloc] initWithRequest:self.request delegate:self startImmediately:NO];
+		self.connection.delegateQueue = [[NSOperationQueue alloc] init];
+		[self.connection start];
+
+		RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
+			[self.connection cancel];
+		}];
+
+		return [RACCompoundDisposable compoundDisposableWithDisposables:@[ subscriptionDisposable, connectionDisposable ]];
+	}];
 }
 
 - (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-	self.responseProvider = ^ NSData * (NSURLResponse **responseRef, NSError **errorRef) {
-		if (errorRef != NULL) *errorRef = error;
-		return nil;
-	};
-	[self finish];
+	[self.connectionSubject sendError:error];
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	self.response = response;
-	self.bodyData = nil;
+	self.currentResponse = response;
+	self.currentBodyData = nil;
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-	if (self.bodyData == nil) {
-		long long expectedSize = self.response.expectedContentLength;
-		self.bodyData = [NSMutableData dataWithCapacity:(expectedSize != NSURLResponseUnknownLength ? expectedSize : 0)];
+	if (self.currentBodyData == nil) {
+		long long expectedSize = self.currentResponse.expectedContentLength;
+		self.currentBodyData = [NSMutableData dataWithCapacity:(expectedSize != NSURLResponseUnknownLength ? expectedSize : 0)];
 	}
 
-	[self.bodyData appendData:data];
+	[self.currentBodyData appendData:data];
 }
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
-	NSURLResponse *response = self.response;
-	NSData *bodyData = self.bodyData;
+	NSURLResponse *response = self.currentResponse;
+	NSData *bodyData = self.currentBodyData;
 
-	self.responseProvider = ^ NSData * (NSURLResponse **responseRef, NSError **errorRef) {
-		if (responseRef != NULL) *responseRef = response;
-		return bodyData;
-	};
-	[self finish];
+	[self.connectionSubject sendNext:RACTuplePack(response, bodyData)];
+	[self.connectionSubject sendCompleted];
 }
 
 @end
