@@ -219,7 +219,7 @@
 	NSURL *localURL = self.currentDownload.fileURL;
 	NSURLResponse *response = self.currentResponse;
 
-	[self.connectionSubject sendNext:RACTuplePack(localURL, response)];
+	[self.connectionSubject sendNext:RACTuplePack(response, localURL)];
 	[self.connectionSubject sendCompleted];
 }
 

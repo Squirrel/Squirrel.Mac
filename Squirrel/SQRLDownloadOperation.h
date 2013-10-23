@@ -33,8 +33,9 @@
 // Starts downloading the resource, cancels when the the subscription is
 // disposed.
 //
-// Returns a signal which sends a `RACTuple` of `NSURL` where the resource has
-// been stored on disk and an `NSHTTPURLResponse` then completes, or errors.
+// Returns a signal which sends a tuple of `NSURLResponse` and a file
+// scheme `NSURL` where the resource has been stored on disk, then completes, or
+// errors.
 - (RACSignal *)download;
 
 @end

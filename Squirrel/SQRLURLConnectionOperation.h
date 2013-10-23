@@ -17,8 +17,8 @@
 //
 // request - Must be non nil.
 //
-// Returns a signal which sends a tuple of NSURLResponse, NSData then completes,
-// or errors.
+// Returns a signal which sends a tuple of `NSURLResponse`, `NSData` then
+// completes, or errors.
 + (RACSignal *)sqrl_sendAsynchronousRequest:(NSURLRequest *)request;
 
 @end
