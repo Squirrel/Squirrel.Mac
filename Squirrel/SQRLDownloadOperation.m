@@ -68,7 +68,7 @@
 		resumableDownload]
 		map:^ RACTuple * (SQRLResumableDownload *resumableDownload) {
 			NSURLRequest *originalRequest = self.request;
-			RACTuple *originalTuple = [RACTuple tupleWithObjects:resumableDownload, originalRequest, nil];
+			RACTuple *originalTuple = RACTuplePack(resumableDownload, originalRequest);
 
 			NSHTTPURLResponse *response = resumableDownload.response;
 			NSString *ETag = [self.class ETagFromResponse:response];
@@ -84,7 +84,7 @@
 			NSMutableURLRequest *newRequest = [originalRequest mutableCopy];
 			[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
 			[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forHTTPHeaderField:@"Range"];
-			return [RACTuple tupleWithObjects:resumableDownload, newRequest, nil];
+			return RACTuplePack(resumableDownload, newRequest);
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
@@ -103,17 +103,19 @@
 		resumeRequest]
 		flattenMap:^ RACSignal * (RACTuple *downloadRequestTuple) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-				[self startDownload:downloadRequestTuple[0] withRequest:downloadRequestTuple[1]];
+				RACTupleUnpack(SQRLResumableDownload *download, NSURLRequest *request) = downloadRequestTuple;
+				[self startDownload:download withRequest:request];
 
 				NSURLConnection *connection = self.connection;
 				RACSubject *connectionSubject = self.connectionSubject;
 
-				RACDisposable *connectionDisposable = [connectionSubject subscribe:subscriber];
+				RACDisposable *subscriptionDisposable = [connectionSubject subscribe:subscriber];
 
-				return [RACDisposable disposableWithBlock:^{
+				RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
 					[connection cancel];
-					[connectionDisposable dispose];
 				}];
+
+				return [RACCompoundDisposable compoundDisposableWithDisposables:@[ subscriptionDisposable, connectionDisposable ]];
 			}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
@@ -217,7 +219,7 @@
 	NSURL *localURL = self.currentDownload.fileURL;
 	NSURLResponse *response = self.currentResponse;
 
-	[self.connectionSubject sendNext:[RACTuple tupleWithObjects:localURL, response, nil]];
+	[self.connectionSubject sendNext:RACTuplePack(localURL, response)];
 	[self.connectionSubject sendCompleted];
 }
 
