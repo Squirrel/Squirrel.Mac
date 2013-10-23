@@ -66,7 +66,7 @@
 - (RACSignal *)resumeRequest {
 	return [[[self
 		resumableDownload]
-		map:^ RACTuple * (SQRLResumableDownload *resumableDownload) {
+		map:^(SQRLResumableDownload *resumableDownload) {
 			NSURLRequest *originalRequest = self.request;
 			RACTuple *originalTuple = RACTuplePack(resumableDownload, originalRequest);
 
@@ -101,7 +101,7 @@
 - (RACSignal *)download {
 	return [[[self
 		resumeRequest]
-		flattenMap:^ RACSignal * (RACTuple *downloadRequestTuple) {
+		flattenMap:^(RACTuple *downloadRequestTuple) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 				RACTupleUnpack(SQRLResumableDownload *download, NSURLRequest *request) = downloadRequestTuple;
 				[self startDownload:download withRequest:request];

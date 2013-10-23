@@ -52,7 +52,7 @@
 	return [[[[[locationSignals
 		rac_sequence]
 		signalWithScheduler:RACScheduler.immediateScheduler]
-		map:^ RACSignal * (RACSignal *locationSignal) {
+		map:^(RACSignal *locationSignal) {
 			return [locationSignal map:^ RACSignal * (NSURL *location) {
 				NSError *error = nil;
 				BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
@@ -69,7 +69,7 @@
 	return [[[[self
 		directoryManager]
 		applicationSupportURL]
-		flattenMap:^ RACSignal * (NSURL *directory) {
+		flattenMap:^(NSURL *directory) {
 			return [RACSignal return:[directory URLByAppendingPathComponent:@"DownloadIndex.plist"]];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
@@ -82,7 +82,7 @@
 - (RACSignal *)readDownloadIndex {
 	return [[[self
 		downloadStoreIndexFileLocation]
-		flattenMap:^ RACSignal * (NSURL *location) {
+		flattenMap:^(NSURL *location) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 				dispatch_async(self.queue, ^{
 					NSError *error = nil;
@@ -121,7 +121,7 @@
 
 	return [[[self
 		downloadStoreIndexFileLocation]
-		flattenMap:^ RACSignal * (NSURL *location) {
+		flattenMap:^(NSURL *location) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 				dispatch_barrier_async(self.queue, ^{
 					NSDictionary *propertyList = nil;
@@ -195,11 +195,11 @@
 
 	return [[[[self
 		readDownloadIndex]
-		catch:^ RACSignal * (NSError *error) {
+		catch:^(NSError *error) {
 			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileReadNoSuchFileError) return [RACSignal return:@{}];
 			return [RACSignal error:error];
 		}]
-		flattenMap:^ RACSignal * (NSDictionary *index) {
+		flattenMap:^(NSDictionary *index) {
 			NSString *key = [self.class keyForURL:request.URL];
 			SQRLResumableDownload *download = index[key];
 			if (download != nil) return [RACSignal return:download];
