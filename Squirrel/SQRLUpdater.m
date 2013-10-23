@@ -20,6 +20,9 @@
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import "SQRLDownloadOperation.h"
+#import "SQRLURLConnectionOperation.h"
+#import "SQRLResumableDownloadManager.h"
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
@@ -152,8 +155,8 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-		return [[[[[[NSURLConnection
-			rac_sendAsynchronousRequest:request]
+		return [[[[[[SQRLURLConnectionOperation
+			sqrl_sendAsynchronousRequest:request]
 			reduceEach:^(id _, NSData *data) {
 				return data;
 			}]
@@ -278,20 +281,20 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-			return [[[NSURLConnection
-				rac_sendAsynchronousRequest:zipDownloadRequest]
-				reduceEach:^(id _, NSData *data) {
-					return data;
+			SQRLDownloadOperation *downloader = [[SQRLDownloadOperation alloc] initWithRequest:zipDownloadRequest downloadManager:SQRLResumableDownloadManager.defaultDownloadManager];
+			return [[[downloader
+				download]
+				reduceEach:^(id _, NSURL *location){
+					return location;
 				}]
-				flattenMap:^(NSData *data) {
-					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
+				flattenMap:^(NSURL *location) {
+					NSURL *destination = [downloadDirectory URLByAppendingPathComponent:location.lastPathComponent];
 
 					NSError *error = nil;
-					if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
-						return [RACSignal return:zipOutputURL];
-					} else {
-						return [RACSignal error:error];
-					}
+					BOOL move = [NSFileManager.defaultManager moveItemAtURL:location toURL:destination error:&error];
+					if (!move) return [RACSignal error:error];
+
+					return [RACSignal return:destination];
 				}];
 		}]
 		doNext:^(NSURL *zipOutputURL) {
