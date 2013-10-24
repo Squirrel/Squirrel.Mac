@@ -8,40 +8,18 @@
 
 #import "SQRLResumableDownload.h"
 
-static NSString * const SQRLResumableDownloadResponseKey = @"response";
-static NSString * const SQRLResumableDownloadFileURLKey = @"fileURL";
+#import "ReactiveCocoa/ReactiveCocoa.h"
 
 @implementation SQRLResumableDownload
 
 - (instancetype)initWithResponse:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL {
 	NSParameterAssert(fileURL != nil);
 
-	self = [self init];
-	if (self == nil) return nil;
-
-	_response = [response copy];
-	_fileURL = [fileURL copy];
-
-	return self;
-}
-
-- (instancetype)initWithCoder:(NSCoder *)decoder {
-	NSParameterAssert(decoder.allowsKeyedCoding);
-
-	self = [self init];
-	if (self == nil) return nil;
-
-	_response = [[decoder decodeObjectForKey:SQRLResumableDownloadResponseKey] copy];
-	_fileURL = [[decoder decodeObjectForKey:SQRLResumableDownloadFileURLKey] copy];
-
-	return self;
-}
-
-- (void)encodeWithCoder:(NSCoder *)coder {
-	NSParameterAssert(coder.allowsKeyedCoding);
-
-	[coder encodeObject:self.response forKey:SQRLResumableDownloadResponseKey];
-	[coder encodeObject:self.fileURL forKey:SQRLResumableDownloadFileURLKey];
+	return [self initWithDictionary:@{
+		@keypath(self, response): response ?: NSNull.null,
+		@keypath(self, fileURL): fileURL,
+	}
+	error:NULL];
 }
 
 - (BOOL)isEqual:(id)object {
@@ -59,10 +37,6 @@ static NSString * const SQRLResumableDownloadFileURLKey = @"fileURL";
 	if (response.statusCode != self.response.statusCode) return NO;
 	if (![response.allHeaderFields isEqual:self.response.allHeaderFields]) return NO;
 	return YES;
-}
-
-- (NSUInteger)hash {
-	return self.fileURL.hash;
 }
 
 @end
