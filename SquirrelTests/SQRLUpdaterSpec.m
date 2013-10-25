@@ -51,10 +51,14 @@ beforeEach(^{
 
 it(@"should use the application's bundled version of Squirrel and update in-place", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
+
+	NSError *error = nil;
 	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
 		@"final": @YES
-	} error:NULL];
+	} error:&error];
+	expect(update).notTo.beNil();
+	expect(error).to.beNil();
 
 	writeUpdate(update);
 
