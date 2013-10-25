@@ -30,6 +30,7 @@ const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
 const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
 const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
+const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 @interface SQRLUpdater ()
 
@@ -154,8 +155,27 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 		return [[[[[[NSURLConnection
 			rac_sendAsynchronousRequest:request]
-			reduceEach:^(id _, NSData *data) {
-				return data;
+			flattenMap:^(RACTuple *responseDataTuple) {
+				RACTupleUnpack(NSURLResponse *response, NSData *bodyData) = responseDataTuple;
+
+				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+					NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+						NSDictionary *errorInfo = @{
+							NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+							NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+							SQRLUpdaterServerDataErrorKey: bodyData,
+						};
+						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+						return [RACSignal error:error];
+					}
+
+					if (httpResponse.statusCode == 204 /* No Content */) {
+						return [RACSignal empty];
+					}
+				}
+
+				return [RACSignal return:bodyData];
 			}]
 			flattenMap:^(NSData *data) {
 				return [self updateFromJSONData:data];
@@ -222,7 +242,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				userInfo[SQRLUpdaterServerDataErrorKey] = data;
 				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
 			}
 
 			Class updateClass = self.updateClass;
