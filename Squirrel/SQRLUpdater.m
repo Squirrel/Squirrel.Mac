@@ -300,8 +300,23 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 			return [[[NSURLConnection
 				rac_sendAsynchronousRequest:zipDownloadRequest]
-				reduceEach:^(id _, NSData *data) {
-					return data;
+				flattenMap:^(RACTuple *responseDataTuple) {
+					RACTupleUnpack(NSURLResponse *response, NSData *bodyData) = responseDataTuple;
+
+					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+						NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+							NSDictionary *errorInfo = @{
+								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
+								NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+								SQRLUpdaterServerDataErrorKey: bodyData,
+							};
+							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+							return [RACSignal error:error];
+						}
+					}
+
+					return [RACSignal return:bodyData];
 				}]
 				flattenMap:^(NSData *data) {
 					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
