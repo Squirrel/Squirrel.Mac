@@ -134,16 +134,30 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 - (BOOL)validateUpdateURL:(NSURL **)updateURLPtr error:(NSError **)error {
 	NSURL *updateURL = *updateURLPtr;
-	if (![updateURL isKindOfClass:NSURL.class] || updateURL.scheme == nil || (![updateURL.scheme isEqualToString:@"file"] && updateURL.host == nil) || updateURL.path == nil) {
+	if (![updateURL isKindOfClass:NSURL.class]) {
 		if (error != NULL) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
 				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An invalid updateURL was given to SQRLUpdate: %@", nil), updateURL]
 			};
-
 			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
 		}
 		
+		return NO;
+	}
+
+	BOOL valid = (updateURL.scheme != nil);
+	valid &= ([updateURL.scheme isEqualToString:@"file"] || updateURL.host != nil);
+	valid &= (updateURL.path != nil);
+	if (!valid) {
+		if (error != NULL) {
+			NSDictionary *userInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
+				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"Update URLs must have a scheme, a host and a path: %@", nil), updateURL]
+			};
+			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
+		}
+
 		return NO;
 	}
 
