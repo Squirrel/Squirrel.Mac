@@ -8,6 +8,7 @@
 
 #import "SQRLTestUpdate.h"
 #import "SQRLZipArchiver.h"
+#import "OHHTTPStubs/OHHTTPStubs.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -132,6 +133,28 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 	expect(app.terminated).will.beTruthy();
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+it(@"should return an error for non 2xx code HTTP responses", ^{
+	NSURLRequest *localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"fake://host/path"]];
+
+	OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+		return [request.URL isEqual:localRequest.URL];
+	}
+	withStubResponse:^(NSURLRequest *request) {
+		return [OHHTTPStubsResponse responseWithData:nil statusCode:/* Server Error */ 500 responseTime:0 headers:nil];
+	}];
+	[self addCleanupBlock:^{
+		[OHHTTPStubs removeRequestHandler:stubs];
+	}];
+
+	SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
+
+	NSError *error = nil;
+	BOOL result = [[[updater checkForUpdatesCommand] execute:nil] asynchronouslyWaitUntilCompleted:&error];
+	expect(result).to.beFalsy();
+	expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
+	expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerResponse);
 });
 
 SpecEnd
