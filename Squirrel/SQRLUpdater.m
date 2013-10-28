@@ -153,11 +153,9 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-		return [[[[[[NSURLConnection
+		return [[[[[[[NSURLConnection
 			rac_sendAsynchronousRequest:request]
-			flattenMap:^(RACTuple *responseDataTuple) {
-				RACTupleUnpack(NSURLResponse *response, NSData *bodyData) = responseDataTuple;
-
+			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
 					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
@@ -177,6 +175,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 				return [RACSignal return:bodyData];
 			}]
+			flatten]
 			flattenMap:^(NSData *data) {
 				return [self updateFromJSONData:data];
 			}]
@@ -298,11 +297,9 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-			return [[[NSURLConnection
+			return [[[[NSURLConnection
 				rac_sendAsynchronousRequest:zipDownloadRequest]
-				flattenMap:^(RACTuple *responseDataTuple) {
-					RACTupleUnpack(NSURLResponse *response, NSData *bodyData) = responseDataTuple;
-
+				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
@@ -318,6 +315,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 					return [RACSignal return:bodyData];
 				}]
+				flatten]
 				flattenMap:^(NSData *data) {
 					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
 
