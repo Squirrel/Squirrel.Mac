@@ -157,7 +157,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			rac_sendAsynchronousRequest:request]
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
-					NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+					NSHTTPURLResponse *httpResponse = (id)response;
 					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 						NSDictionary *errorInfo = @{
 							NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
@@ -301,7 +301,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				rac_sendAsynchronousRequest:zipDownloadRequest]
 				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
-						NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)response;
+						NSHTTPURLResponse *httpResponse = (id)response;
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
