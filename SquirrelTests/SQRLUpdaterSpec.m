@@ -140,8 +140,7 @@ it(@"should return an error for non 2xx code HTTP responses", ^{
 
 	OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
 		return [request.URL isEqual:localRequest.URL];
-	}
-	withStubResponse:^(NSURLRequest *request) {
+	} withStubResponse:^(NSURLRequest *request) {
 		return [OHHTTPStubsResponse responseWithData:nil statusCode:/* Server Error */ 500 responseTime:0 headers:nil];
 	}];
 	[self addCleanupBlock:^{
