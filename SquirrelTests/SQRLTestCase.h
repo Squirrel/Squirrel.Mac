@@ -90,7 +90,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 
 // Add a block to cleanup after each example has run
 //
-// Blocks are run in reverse order, i.e. first in last out
+// Blocks are run in reverse order, i.e. FILO
 //
 // block - The block to invoke after the current example has finished
 - (void)addCleanupBlock:(dispatch_block_t)block;
