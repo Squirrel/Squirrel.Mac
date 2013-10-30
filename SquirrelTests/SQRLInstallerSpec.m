@@ -69,9 +69,9 @@ it(@"should install an update to another volume", ^{
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-it(@"should install an update in process", ^{
+fit(@"should install an update in process", ^{
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.installerState = SQRLInstallerStateClearingQuarantine;
+	state.installerState = SQRLInstaller.initialInstallerState;
 
 	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
 	expect(installer).notTo.beNil();

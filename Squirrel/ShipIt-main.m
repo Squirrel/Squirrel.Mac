@@ -93,7 +93,7 @@ int main(int argc, const char * argv[]) {
 						initially:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");
-								state.installerState = SQRLInstallerStateClearingQuarantine;
+								state.installerState = SQRLInstaller.initialInstallerState;
 							} else {
 								NSLog(@"Resuming installation from state %i", (int)state.installerState);
 							}

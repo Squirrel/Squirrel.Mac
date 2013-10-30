@@ -8,6 +8,8 @@
 
 #import <Foundation/Foundation.h>
 
+#import "SQRLShipItState.h"
+
 // The domain for errors originating within SQRLInstaller.
 extern NSString * const SQRLInstallerErrorDomain;
 
@@ -46,6 +48,11 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 // This class is meant to be used only after the app that will be updated has
 // terminated.
 @interface SQRLInstaller : NSObject
+
+// The first state that `SQRLInstaller` wants to perform for fresh state
+// objects, an `SQRLShipItState` that hasn't been read from disk should be given
+// this state.
++ (SQRLInstallerState)initialInstallerState;
 
 // When executed with a `SQRLShipItState`, attempts to install the update or
 // resume an in-progress installation.

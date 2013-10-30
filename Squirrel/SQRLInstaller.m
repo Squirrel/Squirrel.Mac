@@ -186,6 +186,46 @@ typedef struct {
 
 #pragma mark Installer State
 
+static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
+	return sizeof(SQRLInstallerDispatchTableEntry);
+}
+
++ (NSPointerArray *)stateDispatchTable {
+	static NSPointerArray *dispatchTable = nil;
+	static dispatch_once_t dispatchTablePredicate = 0;
+
+	dispatch_once(&dispatchTablePredicate, ^{
+		const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
+			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(changeUpdatePermissionsWithState:) },
+			{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
+			{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
+			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
+			{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
+			{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
+			{ .installerState = SQRLInstallerStateRelaunching, .selector = @selector(relaunchWithState:) },
+			{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
+		};
+
+		NSPointerFunctions *pointerFunctions = [[NSPointerFunctions alloc] initWithOptions:NSPointerFunctionsMallocMemory | NSPointerFunctionsStructPersonality | NSPointerFunctionsCopyIn];
+		pointerFunctions.sizeFunction = SQRLInstallerDispatchTableEntrySize;
+		dispatchTable = [[NSPointerArray alloc] initWithPointerFunctions:pointerFunctions];
+
+		for (NSUInteger idx = 0; idx < sizeof(dispatchTablePrototype) / sizeof(*dispatchTablePrototype); idx++) {
+			SQRLInstallerDispatchTableEntry const *entry = &dispatchTablePrototype[idx];
+			[dispatchTable addPointer:(void *)entry];
+		}
+	});
+
+	return dispatchTable;
+}
+
++ (SQRLInstallerState)initialInstallerState {
+	NSPointerArray *dispatchTable = self.stateDispatchTable;
+	NSParameterAssert(dispatchTable.count >= 1);
+	SQRLInstallerDispatchTableEntry *firstState = [dispatchTable pointerAtIndex:0];
+	return firstState->installerState;
+}
+
 - (RACSignal *)getRequiredKey:(NSString *)key fromState:(SQRLShipItState *)state {
 	NSParameterAssert(key != nil);
 	NSParameterAssert(state != nil);
@@ -206,34 +246,20 @@ typedef struct {
 - (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
-		{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
-		{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(changeUpdatePermissionsWithState:) },
-		{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
-		{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
-		{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
-		{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
-		{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
-		{ .installerState = SQRLInstallerStateRelaunching, .selector = @selector(relaunchWithState:) },
-	};
-
-	const size_t tableCount = sizeof(dispatchTablePrototype) / sizeof(*dispatchTablePrototype);
-	NSValue *boxedDispatchTable = [NSValue valueWithBytes:dispatchTablePrototype objCType:@encode(__typeof__(dispatchTablePrototype))];
-
 	RACSignal *step = [RACSignal defer:^{
-		SQRLInstallerDispatchTableEntry dispatchTable[tableCount];
-		[boxedDispatchTable getValue:&dispatchTable];
+		NSPointerArray *dispatchTable = self.class.stateDispatchTable;
 
 		SQRLInstallerState installerState = state.installerState;
 
 		size_t tableIndex;
-		for (tableIndex = 0; tableIndex < tableCount; tableIndex++) {
-			if (dispatchTable[tableIndex].installerState == installerState) {
+		for (tableIndex = 0; tableIndex < dispatchTable.count; tableIndex++) {
+			SQRLInstallerDispatchTableEntry *currentEntry = [dispatchTable pointerAtIndex:tableIndex];
+			if (currentEntry->installerState == installerState) {
 				break;
 			}
 		}
 
-		if (tableIndex >= tableCount) {
+		if (tableIndex >= dispatchTable.count) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Invalid installer state %i", nil), (int)installerState],
 				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
@@ -242,7 +268,8 @@ typedef struct {
 			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
 		}
 
-		SEL selector = dispatchTable[tableIndex].selector;
+		SQRLInstallerDispatchTableEntry *dispatch = [dispatchTable pointerAtIndex:tableIndex];
+		SEL selector = dispatch->selector;
 		if (selector == NULL) {
 			// Nothing to do.
 			return [RACSignal empty];
@@ -259,12 +286,8 @@ typedef struct {
 		__unsafe_unretained RACSignal *step = nil;
 		[invocation getReturnValue:&step];
 
-		SQRLInstallerState nextState;
-		if (tableIndex + 1 >= tableCount) {
-			nextState = SQRLInstallerStateNothingToDo;
-		} else {
-			nextState = dispatchTable[tableIndex + 1].installerState;
-		}
+		SQRLInstallerDispatchTableEntry *nextDispatch = [dispatchTable pointerAtIndex:tableIndex + 1];
+		SQRLInstallerState nextState = nextDispatch->installerState;
 
 		return [[step
 			doCompleted:^{
