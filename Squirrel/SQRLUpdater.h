@@ -25,6 +25,11 @@ extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
 // Includes `SQRLUpdaterServerDataErrorKey` in the error's `userInfo`.
 extern const NSInteger SQRLUpdaterErrorInvalidServerResponse;
 
+// The server sent a response body that we didn't understand.
+//
+// Includes `SQRLUpdaterServerDataErrorKey` in the error's `userInfo`.
+extern const NSInteger SQRLUpdaterErrorInvalidServerBody;
+
 // The server sent update JSON that we didn't understand.
 //
 // Includes `SQRLUpdaterJSONObjectErrorKey` in the error's `userInfo`.

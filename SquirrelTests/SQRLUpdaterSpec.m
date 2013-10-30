@@ -8,6 +8,7 @@
 
 #import "SQRLTestUpdate.h"
 #import "SQRLZipArchiver.h"
+#import "OHHTTPStubs/OHHTTPStubs.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -51,10 +52,14 @@ beforeEach(^{
 
 it(@"should use the application's bundled version of Squirrel and update in-place", ^{
 	NSURL *updateURL = [self createTestApplicationUpdate];
+
+	NSError *error = nil;
 	SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 		@"updateURL": zipUpdate(updateURL),
 		@"final": @YES
-	} error:NULL];
+	} error:&error];
+	expect(update).notTo.beNil();
+	expect(error).to.beNil();
 
 	writeUpdate(update);
 
@@ -128,6 +133,50 @@ it(@"should use the application's bundled version of Squirrel and update in-plac
 	expect(app.terminated).will.beTruthy();
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+describe(@"response handling", ^{
+	__block NSURLRequest *localRequest = nil;
+	__block SQRLUpdater *updater = nil;
+
+	before(^{
+		localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"fake://host/path"]];
+		updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
+	});
+
+	it(@"should return an error for non 2xx code HTTP responses", ^{
+		OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL isEqual:localRequest.URL];
+		} withStubResponse:^(NSURLRequest *request) {
+			return [OHHTTPStubsResponse responseWithData:nil statusCode:/* Server Error */ 500 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{
+			[OHHTTPStubs removeRequestHandler:stubs];
+		}];
+
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		expect(result).to.beFalsy();
+		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
+		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerResponse);
+	});
+
+	it(@"should return an error for non JSON data", ^{
+		OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL isEqual:localRequest.URL];
+		} withStubResponse:^(NSURLRequest *request) {
+			return [OHHTTPStubsResponse responseWithData:NSData.data statusCode:/* OK */ 200 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{
+			[OHHTTPStubs removeRequestHandler:stubs];
+		}];
+
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		expect(result).to.beFalsy();
+		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
+		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
+	});
 });
 
 SpecEnd
