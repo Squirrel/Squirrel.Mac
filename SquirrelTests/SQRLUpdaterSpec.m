@@ -155,7 +155,7 @@ describe(@"response handling", ^{
 		}];
 
 		NSError *error = nil;
-		BOOL result = [[[updater checkForUpdatesCommand] execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerResponse);
@@ -165,14 +165,14 @@ describe(@"response handling", ^{
 		OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
 			return [request.URL isEqual:localRequest.URL];
 		} withStubResponse:^(NSURLRequest *request) {
-			return [OHHTTPStubsResponse responseWithData:[NSData data] statusCode:/* OK */ 200 responseTime:0 headers:nil];
+			return [OHHTTPStubsResponse responseWithData:NSData.data statusCode:/* OK */ 200 responseTime:0 headers:nil];
 		}];
 		[self addCleanupBlock:^{
 			[OHHTTPStubs removeRequestHandler:stubs];
 		}];
 
 		NSError *error = nil;
-		BOOL result = [[[updater checkForUpdatesCommand] execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
