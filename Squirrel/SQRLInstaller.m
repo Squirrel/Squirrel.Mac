@@ -380,9 +380,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 	// left as is.
 	fileMode = (fileMode & ~(S_IWGRP | S_IWOTH));
 
-	if (!CFFileSecuritySetMode(fileSecurity, fileMode)) return NO;
-
-	return YES;
+	return CFFileSecuritySetMode(fileSecurity, fileMode);
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
