@@ -34,6 +34,9 @@ extern const NSInteger SQRLInstallerErrorInvalidState;
 // There was an error moving a bundle across volumes.
 extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 
+// There was an error changing the file permissions of the update.
+extern const NSInteger SQRLInstallerErrorChangingPermissions;
+
 @class RACCommand;
 @class SQRLDirectoryManager;
 

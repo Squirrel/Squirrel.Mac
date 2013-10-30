@@ -11,7 +11,6 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
-#import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLShipItState.h"

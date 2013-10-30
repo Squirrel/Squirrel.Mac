@@ -31,19 +31,29 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // The current state of the installer, for persistence across relaunches and for
 // tolerance of system failures.
 //
-// SQRLInstallerStateNothingToDo        - ShipIt has not started installing yet.
-// SQRLInstallerStateClearingQuarantine - Clearing the quarantine flag on the
-//                                        update bundle so it can used without
-//                                        issue.
-// SQRLInstallerStateBackingUp          - Backing up the target bundle so it can
-//                                        be restored in the event of failure.
-// SQRLInstallerStateInstalling         - Replacing the target bundle with the
-//                                        update bundle.
-// SQRLInstallerStateVerifyingInPlace   - Verifying that the target bundle is
-//                                        still valid after updating.
-// SQRLInstallerStateRelaunching        - Relaunching the updated application.
-//                                        This state will be entered even if
-//                                        there's no relaunching to do.
+// SQRLInstallerStateNothingToDo          - ShipIt has not started installing
+//                                          yet.
+// SQRLInstallerStateClearingQuarantine   - Clearing the quarantine flag on the
+//                                          update bundle so it can used without
+//                                          issue.
+// SQRLInstallerStateBackingUp            - Backing up the target bundle so it
+//                                          can be restored in the event of
+//                                          failure.
+// SQRLInstallerStateInstalling           - Replacing the target bundle with the
+//                                          update bundle.
+// SQRLInstallerStateVerifyingInPlace     - Verifying that the target bundle is
+//                                          still valid after updating.
+// SQRLInstallerStateRelaunching          - Relaunching the updated application.
+//                                          This state will be entered even if
+//                                          there's no relaunching to do.
+// SQRLInstallerStateUpdatingPermissions  - Changing the BSD permissions of the
+//                                          replacement bundle so that we can
+//                                          check the code sign signature and
+//                                          install without an attack window.
+// SQRLInstallerStateVerifyingRequirement - Checking that the update meets the
+//                                          designated requirement of the target
+//                                          ensuring the replacement is
+//                                          suitable.
 //
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
@@ -53,7 +63,9 @@ typedef enum : NSInteger {
 	SQRLInstallerStateBackingUp,
 	SQRLInstallerStateInstalling,
 	SQRLInstallerStateVerifyingInPlace,
-	SQRLInstallerStateRelaunching
+	SQRLInstallerStateRelaunching,
+	SQRLInstallerStateUpdatingPermissions,
+	SQRLInstallerStateVerifyingTargetRequirement,
 } SQRLInstallerState;
 
 @class RACSignal;

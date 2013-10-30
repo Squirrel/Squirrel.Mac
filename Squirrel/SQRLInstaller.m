@@ -28,6 +28,7 @@ const NSInteger SQRLInstallerErrorInvalidBundleVersion = -4;
 const NSInteger SQRLInstallerErrorMissingInstallationData = -5;
 const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
+const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
 // Maps an installer state to a selector to invoke.
 typedef struct {
@@ -207,6 +208,8 @@ typedef struct {
 
 	const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
 		{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
+		{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(changeUpdatePermissionsWithState:) },
+		{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
 		{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
 		{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
 		{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
@@ -289,6 +292,78 @@ typedef struct {
 			// Automatically begin the next step.
 			concat:[self stepRepeatedly:step withState:state]];
 	}];
+}
+
+- (RACSignal *)changeUpdatePermissionsWithState:(SQRLShipItState *)state {
+	return [[[self
+		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
+		flattenMap:^ RACSignal * (NSURL *updateURL) {
+			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+				RACDisposable *disposable = [[RACDisposable alloc] init];
+
+				[[[NSOperationQueue alloc] init] addOperationWithBlock:^{
+					NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:updateURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
+						[subscriber sendError:error];
+						return NO;
+					}];
+
+					NSURL *currentURL;
+					while (!disposable.disposed && (currentURL = [enumerator nextObject]) != nil) {
+						NSError *error;
+						NSFileSecurity *fileSecurity;
+						if (![currentURL getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
+							[subscriber sendError:error];
+							return;
+						}
+						
+						CFFileSecurityRef actualFileSecurity = (__bridge CFFileSecurityRef)fileSecurity;
+
+						if (![self updateFileSecurity:actualFileSecurity]) {
+							NSDictionary *errorInfo = @{
+								NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn’t change the file permissions of the update", nil),
+								NSURLErrorKey: currentURL,
+							};
+							[subscriber sendError:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorChangingPermissions userInfo:errorInfo]];
+							return;
+						}
+
+						if (![currentURL setResourceValue:(__bridge NSFileSecurity *)actualFileSecurity forKey:NSURLFileSecurityKey error:&error]) {
+							[subscriber sendError:error];
+							return;
+						}
+					}
+
+					[subscriber sendCompleted];
+				}];
+
+				return disposable;
+			}];
+		}]
+		setNameWithFormat:@"%@ -changeUpdateFileOwnershipWithState: %@", self, state];
+}
+
+- (BOOL)updateFileSecurity:(CFFileSecurityRef)fileSecurity {
+	// If ShipIt is running as root, this will change the owner to root:wheel.
+	if (!CFFileSecuritySetOwner(fileSecurity, getuid())) return NO;
+	if (!CFFileSecuritySetGroup(fileSecurity, getgid())) return NO;
+
+	mode_t fileMode = 0;
+	if (!CFFileSecurityGetMode(fileSecurity, &fileMode)) return NO;
+
+	// Remove write permission from group and other, leave executable bit
+	// as it was for both.
+	//
+	// Permissions will be r-(x?)r-(x?) afterwards, with owner permissions
+	// left as is.
+	fileMode = (fileMode & ~(S_IWGRP | S_IWOTH));
+
+	if (!CFFileSecuritySetMode(fileSecurity, fileMode)) return NO;
+
+	return YES;
+}
+
+- (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
+	return [RACSignal empty];
 }
 
 - (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
