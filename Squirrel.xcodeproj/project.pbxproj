@@ -16,6 +16,9 @@
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
+		53A60408182134F9002DB2C7 /* Squirrel-Constants.h in Headers */ = {isa = PBXBuildFile; fileRef = 53A60406182134F9002DB2C7 /* Squirrel-Constants.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		53A60409182134F9002DB2C7 /* Squirrel-Constants.m in Sources */ = {isa = PBXBuildFile; fileRef = 53A60407182134F9002DB2C7 /* Squirrel-Constants.m */; };
+		53A6040A182134F9002DB2C7 /* Squirrel-Constants.m in Sources */ = {isa = PBXBuildFile; fileRef = 53A60407182134F9002DB2C7 /* Squirrel-Constants.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
@@ -391,6 +394,8 @@
 		53710D8217D8F5C300A992DE /* targets.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = targets.awk; sourceTree = "<group>"; };
 		53710D8317D8F5C300A992DE /* xcodebuild.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = xcodebuild.awk; sourceTree = "<group>"; };
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
+		53A60406182134F9002DB2C7 /* Squirrel-Constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Squirrel-Constants.h"; sourceTree = "<group>"; };
+		53A60407182134F9002DB2C7 /* Squirrel-Constants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "Squirrel-Constants.m"; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
@@ -591,6 +596,15 @@
 			path = script;
 			sourceTree = "<group>";
 		};
+		53A603F7182134D3002DB2C7 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				53A60406182134F9002DB2C7 /* Squirrel-Constants.h */,
+				53A60407182134F9002DB2C7 /* Squirrel-Constants.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 		D00F5B8217E82CFB009A4818 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
@@ -705,9 +719,9 @@
 			isa = PBXGroup;
 			children = (
 				D0A56BA41804B1FD00A84EDC /* Mantle.framework */,
-				D0A56BA61804B1FD00A84EDC /* Mantle Mac Tests.octest */,
+				D0A56BA61804B1FD00A84EDC /* Mantle Tests.octest */,
 				D0A56BA81804B1FD00A84EDC /* libMantle-iOS.a */,
-				D0A56BAA1804B1FD00A84EDC /* Mantle iOS Tests.octest */,
+				D0A56BAA1804B1FD00A84EDC /* Mantle-iOS Tests.octest */,
 				D0A56BAC1804B1FD00A84EDC /* libMantle-Mac.a */,
 			);
 			name = Products;
@@ -926,6 +940,7 @@
 				D0A56BF61804BABB00A84EDC /* Code Signing */,
 				D0A56BE71804BA2400A84EDC /* State */,
 				D06B58BC18032BE800656D97 /* Transactions */,
+				53A603F7182134D3002DB2C7 /* Supporting Files */,
 			);
 			name = Shared;
 			path = Squirrel;
@@ -979,6 +994,7 @@
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
+				53A60408182134F9002DB2C7 /* Squirrel-Constants.h in Headers */,
 				D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1153,10 +1169,9 @@
 			remoteRef = D0A56BA31804B1FD00A84EDC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D0A56BA61804B1FD00A84EDC /* Mantle Mac Tests.octest */ = {
+		D0A56BA61804B1FD00A84EDC /* Mantle Tests.octest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
-			name = "Mantle Mac Tests.octest";
 			path = "Mantle Tests.octest";
 			remoteRef = D0A56BA51804B1FD00A84EDC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
@@ -1168,10 +1183,9 @@
 			remoteRef = D0A56BA71804B1FD00A84EDC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
 		};
-		D0A56BAA1804B1FD00A84EDC /* Mantle iOS Tests.octest */ = {
+		D0A56BAA1804B1FD00A84EDC /* Mantle-iOS Tests.octest */ = {
 			isa = PBXReferenceProxy;
 			fileType = wrapper.cfbundle;
-			name = "Mantle iOS Tests.octest";
 			path = "Mantle-iOS Tests.octest";
 			remoteRef = D0A56BA91804B1FD00A84EDC /* PBXContainerItemProxy */;
 			sourceTree = BUILT_PRODUCTS_DIR;
@@ -1361,6 +1375,7 @@
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */,
 				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
+				53A6040A182134F9002DB2C7 /* Squirrel-Constants.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
 				D0964B3E17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
@@ -1391,6 +1406,7 @@
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
+				53A60409182134F9002DB2C7 /* Squirrel-Constants.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 			);
