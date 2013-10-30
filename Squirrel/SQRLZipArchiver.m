@@ -9,10 +9,9 @@
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import "Squirrel-Constants.h"
 
-NSString * const SQRLZipArchiverErrorDomain = @"SQRLZipArchiverErrorDomain";
 NSString * const SQRLZipArchiverExitCodeErrorKey = @"SQRLZipArchiverExitCodeErrorKey";
-const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
 @interface SQRLZipArchiver () {
 	RACSubject *_taskTerminated;
@@ -143,7 +142,7 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 					errorString = [errorString stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
 					if (errorString.length > 0) userInfo[NSLocalizedDescriptionKey] = errorString;
 
-					return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
+					return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
 				}];
 		}]
 		take:1]

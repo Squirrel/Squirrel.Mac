@@ -9,16 +9,6 @@
 #import <Foundation/Foundation.h>
 #import <Mantle/Mantle.h>
 
-// The domain for errors originating within SQRLCodeSignature.
-extern NSString * const SQRLCodeSignatureErrorDomain;
-
-// The bundle did not pass codesign verification.
-extern const NSInteger SQRLCodeSignatureErrorDidNotPass;
-
-// A static code object could not be created for the target bundle or running
-// code.
-extern const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode;
-
 @class RACSignal;
 
 // Implements the verification of Apple code signatures.

@@ -18,8 +18,7 @@
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <sys/xattr.h>
-
-NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
+#import "Squirrel-Constants.h"
 
 const NSInteger SQRLInstallerErrorBackupFailed = -1;
 const NSInteger SQRLInstallerErrorReplacingTarget = -2;
@@ -236,7 +235,7 @@ typedef struct {
 				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
 			};
 
-			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
+			return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
 		}
 
 		SEL selector = dispatchTable[tableIndex].selector;
@@ -619,7 +618,7 @@ typedef struct {
 		NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
 	};
 
-	return [NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorMissingInstallationData userInfo:userInfo];
+	return [NSError errorWithDomain:SQRLErrorDomain code:SQRLInstallerErrorMissingInstallationData userInfo:userInfo];
 }
 
 - (NSError *)errorByAddingDescription:(NSString *)description code:(NSInteger)code toError:(NSError *)error {
@@ -628,7 +627,7 @@ typedef struct {
 	if (description != nil) userInfo[NSLocalizedDescriptionKey] = description;
 	if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-	return [NSError errorWithDomain:SQRLInstallerErrorDomain code:code userInfo:userInfo];
+	return [NSError errorWithDomain:SQRLErrorDomain code:code userInfo:userInfo];
 }
 
 @end

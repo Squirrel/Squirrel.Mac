@@ -8,22 +8,6 @@
 
 #import <Mantle/Mantle.h>
 
-// The domain for errors originating within `SQRLShipItState`.
-extern NSString * const SQRLShipItStateErrorDomain;
-
-// A required property was `nil` upon initialization.
-//
-// The `userInfo` dictionary for this error will contain
-// `SQRLShipItStatePropertyErrorKey`.
-extern const NSInteger SQRLShipItStateErrorMissingRequiredProperty;
-
-// The saved state on disk could not be unarchived, possibly because it's
-// invalid.
-extern const NSInteger SQRLShipItStateErrorUnarchiving;
-
-// The state object could not be archived.
-extern const NSInteger SQRLShipItStateErrorArchiving;
-
 // Associated with an NSString indicating the required property key that did not
 // have a value upon initialization.
 extern NSString * const SQRLShipItStatePropertyErrorKey;

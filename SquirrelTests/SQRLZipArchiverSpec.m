@@ -8,6 +8,7 @@
 
 #import "SQRLCodeSignature.h"
 #import "SQRLZipArchiver.h"
+#import "Squirrel-Constants.h"
 
 SpecBegin(SQRLZipArchiver)
 
@@ -35,7 +36,7 @@ it(@"should fail to extract a nonexistent zip archive", ^{
 	NSLog(@"%@", error);
 
 	expect(error).notTo.beNil();
-	expect(error.domain).to.equal(SQRLZipArchiverErrorDomain);
+	expect(error.domain).to.equal(SQRLErrorDomain);
 	expect(error.code).to.equal(SQRLZipArchiverShellTaskFailed);
 	expect(error.userInfo[SQRLZipArchiverExitCodeErrorKey]).notTo.equal(0);
 });

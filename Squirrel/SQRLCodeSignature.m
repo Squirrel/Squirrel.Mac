@@ -10,11 +10,7 @@
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Security/Security.h>
-
-NSString * const SQRLCodeSignatureErrorDomain = @"SQRLCodeSignatureErrorDomain";
-
-const NSInteger SQRLCodeSignatureErrorDidNotPass = -1;
-const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
+#import "Squirrel-Constants.h"
 
 @interface SQRLCodeSignature ()
 
@@ -99,7 +95,7 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 			NSString *failureReason = CFBridgingRelease(SecCopyErrorMessageString(result, NULL));
 			if (failureReason != nil) userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
 			
-			[subscriber sendError:[NSError errorWithDomain:SQRLCodeSignatureErrorDomain code:SQRLCodeSignatureErrorCouldNotCreateStaticCode userInfo:userInfo]];
+			[subscriber sendError:[NSError errorWithDomain:SQRLErrorDomain code:SQRLCodeSignatureErrorCouldNotCreateStaticCode userInfo:userInfo]];
 			return nil;
 		}
 		
@@ -118,7 +114,7 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 			if (failureReason != nil) userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
 			if (validityError != NULL) userInfo[NSUnderlyingErrorKey] = (__bridge NSError *)validityError;
 			
-			[subscriber sendError:[NSError errorWithDomain:SQRLCodeSignatureErrorDomain code:SQRLCodeSignatureErrorDidNotPass userInfo:userInfo]];
+			[subscriber sendError:[NSError errorWithDomain:SQRLErrorDomain code:SQRLCodeSignatureErrorDidNotPass userInfo:userInfo]];
 			return nil;
 		}
 		

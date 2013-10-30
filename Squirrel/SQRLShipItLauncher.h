@@ -10,12 +10,6 @@
 
 @class RACSignal;
 
-// The domain for errors originating within SQRLShipItLauncher.
-extern NSString * const SQRLShipItLauncherErrorDomain;
-
-// The ShipIt service could not be started.
-extern const NSInteger SQRLShipItLauncherErrorCouldNotStartService;
-
 // Responsible for launching the ShipIt service to actually install an update.
 @interface SQRLShipItLauncher : NSObject
 

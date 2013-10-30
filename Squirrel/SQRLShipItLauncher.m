@@ -13,10 +13,7 @@
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
-
-NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
-
-const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+#import "Squirrel-Constants.h"
 
 @implementation SQRLShipItLauncher
 

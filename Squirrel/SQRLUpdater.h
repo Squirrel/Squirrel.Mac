@@ -6,30 +6,6 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-// The domain for errors originating within SQRLUpdater.
-extern NSString * const SQRLUpdaterErrorDomain;
-
-// The downloaded update does not contain an app bundle, or it was deleted on
-// disk before we could get to it.
-extern const NSInteger SQRLUpdaterErrorMissingUpdateBundle;
-
-// An error occurred in the out-of-process updater while it was setting up.
-extern const NSInteger SQRLUpdaterErrorPreparingUpdateJob;
-
-// The code signing requirement for the running application could not be
-// retrieved.
-extern const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement;
-
-// The server sent a response that we didn't understand.
-//
-// Includes `SQRLUpdaterServerDataErrorKey` in the error's `userInfo`.
-extern const NSInteger SQRLUpdaterErrorInvalidServerResponse;
-
-// The server sent update JSON that we didn't understand.
-//
-// Includes `SQRLUpdaterJSONObjectErrorKey` in the error's `userInfo`.
-extern const NSInteger SQRLUpdaterErrorInvalidJSON;
-
 // Associated with the `NSData` received from the server when an error with code
 // `SQRLUpdaterErrorInvalidServerResponse` is generated.
 extern NSString * const SQRLUpdaterServerDataErrorKey;
