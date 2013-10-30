@@ -8,13 +8,9 @@
 
 #import "SQRLShipItState.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import "Squirrel-Constants.h"
 
-NSString * const SQRLShipItStateErrorDomain = @"SQRLShipItStateErrorDomain";
 NSString * const SQRLShipItStatePropertyErrorKey = @"SQRLShipItStatePropertyErrorKey";
-
-const NSInteger SQRLShipItStateErrorMissingRequiredProperty = 1;
-const NSInteger SQRLShipItStateErrorUnarchiving = 2;
-const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 @implementation SQRLShipItState
 
@@ -33,7 +29,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"\"%@\" must not be set to nil.", nil), key]
 			};
 
-			*error = [NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorMissingRequiredProperty userInfo:userInfo];
+			*error = [NSError errorWithDomain:SQRLErrorDomain code:SQRLShipItStateErrorMissingRequiredProperty userInfo:userInfo];
 		}
 
 		return NO;
@@ -78,7 +74,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
 				};
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorUnarchiving userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLShipItStateErrorUnarchiving userInfo:userInfo]];
 			}
 
 			return [RACSignal return:state];
@@ -97,7 +93,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
 			};
 
-			return [RACSignal error:[NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorArchiving userInfo:userInfo]];
+			return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLShipItStateErrorArchiving userInfo:userInfo]];
 		}
 
 		return [RACSignal return:data];

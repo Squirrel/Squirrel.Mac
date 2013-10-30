@@ -10,16 +10,9 @@
 
 @class RACSignal;
 
-extern NSString * const SQRLZipArchiverErrorDomain;
-
 // Associated with an NSNumber containing the code that a shell task exited
 // with.
 extern NSString * const SQRLZipArchiverExitCodeErrorKey;
-
-// `SQRLZipArchiver` tried to invoke the shell and failed.
-//
-// Contains `SQRLZipArchiverExitStatusErrorKey` in the `userInfo` dictionary.
-extern const NSInteger SQRLZipArchiverShellTaskFailed;
 
 // Uses `ditto` on the command line to zip and unzip archives.
 @interface SQRLZipArchiver : NSObject

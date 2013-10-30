@@ -20,16 +20,10 @@
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import "Squirrel-Constants.h"
 
-NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
 NSString * const SQRLUpdaterJSONObjectErrorKey = @"SQRLUpdaterJSONObjectErrorKey";
-
-const NSInteger SQRLUpdaterErrorMissingUpdateBundle = 2;
-const NSInteger SQRLUpdaterErrorPreparingUpdateJob = 3;
-const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
-const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
-const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 
 @interface SQRLUpdater ()
 
@@ -222,7 +216,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				userInfo[SQRLUpdaterServerDataErrorKey] = data;
 				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:userInfo]];
 			}
 
 			Class updateClass = self.updateClass;
@@ -239,7 +233,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 				userInfo[SQRLUpdaterJSONObjectErrorKey] = JSON;
 				if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidJSON userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLUpdaterErrorInvalidJSON userInfo:userInfo]];
 			}
 
 			return [RACSignal return:update];
@@ -375,7 +369,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 					NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Could not locate update bundle for %@ within %@", nil), NSRunningApplication.currentApplication.bundleIdentifier, directory],
 				};
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:userInfo]];
 			}
 		}]
 		map:^(NSURL *URL) {
@@ -423,7 +417,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 							NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An update for %@ is already in progress.", nil), NSRunningApplication.currentApplication.bundleIdentifier],
 						};
 
-						return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
+						return [RACSignal error:[NSError errorWithDomain:SQRLErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
 					}
 
 					return [RACSignal empty];

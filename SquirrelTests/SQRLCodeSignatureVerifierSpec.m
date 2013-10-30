@@ -7,6 +7,7 @@
 //
 
 #import "SQRLCodeSignature.h"
+#import "Squirrel-Constants.h"
 
 SpecBegin(SQRLCodeSignature)
 
@@ -54,7 +55,7 @@ describe(@"code signature changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
@@ -66,7 +67,7 @@ describe(@"code signature changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
@@ -80,7 +81,7 @@ describe(@"main executable changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorCouldNotCreateStaticCode);
 	});
 
@@ -92,7 +93,7 @@ describe(@"main executable changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
@@ -113,7 +114,7 @@ describe(@"helper executable changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
@@ -125,7 +126,7 @@ describe(@"helper executable changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
@@ -146,7 +147,7 @@ describe(@"resource changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
@@ -158,7 +159,7 @@ describe(@"resource changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });
@@ -178,7 +179,7 @@ describe(@"framework changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 
@@ -190,7 +191,7 @@ describe(@"framework changes", ^{
 		expect(success).to.beFalsy();
 
 		expect(error).notTo.beNil();
-		expect(error.domain).to.equal(SQRLCodeSignatureErrorDomain);
+		expect(error.domain).to.equal(SQRLErrorDomain);
 		expect(error.code).to.equal(SQRLCodeSignatureErrorDidNotPass);
 	});
 });

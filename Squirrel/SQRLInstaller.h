@@ -8,9 +8,6 @@
 
 #import <Foundation/Foundation.h>
 
-// The domain for errors originating within SQRLInstaller.
-extern NSString * const SQRLInstallerErrorDomain;
-
 // There was an error copying the target bundle to the backup location.
 extern const NSInteger SQRLInstallerErrorBackupFailed;
 

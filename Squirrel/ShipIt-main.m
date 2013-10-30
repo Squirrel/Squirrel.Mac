@@ -24,9 +24,6 @@
 // updating will abort.
 static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 
-// The domain for errors generated here.
-static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
-
 // Waits for all instances of the target application (as described in the
 // `state`) to exit, then sends completed.
 static RACSignal *waitForTerminationIfNecessary(SQRLShipItState *state) {
