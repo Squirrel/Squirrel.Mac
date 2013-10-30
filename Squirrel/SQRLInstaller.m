@@ -363,7 +363,35 @@ typedef struct {
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
-	return [RACSignal empty];
+	return [[[[RACSignal
+		zip:@[
+			  [self getRequiredKey:@keypath(state, updateBundleURL) fromState:state],
+			  [self getRequiredKey:@keypath(state, targetBundleURL) fromState:state],
+		]]
+		reduceEach:^ (NSURL *updateBundleURL, NSURL *targetBundleURL) {
+			SecStaticCodeRef targetCode = NULL;
+			OSStatus error = SecStaticCodeCreateWithPath((__bridge CFURLRef)targetBundleURL, kSecCSDefaultFlags, &targetCode);
+			if (error != noErr) {
+				return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil]];
+			}
+			@onExit {
+				CFRelease(targetCode);
+			};
+
+			SecRequirementRef designatedRequirement = NULL;
+			error = SecCodeCopyDesignatedRequirement(targetCode, kSecCSDefaultFlags, &designatedRequirement);
+			if (error != noErr) {
+				return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil]];
+			}
+			@onExit {
+				CFRelease(designatedRequirement);
+			};
+
+			SQRLCodeSignature *codeSignature = [[SQRLCodeSignature alloc] initWithRequirement:designatedRequirement];
+			return [codeSignature verifyBundleAtURL:updateBundleURL];
+		}]
+		flatten]
+		setNameWithFormat:@"%@ -verifyTargetDesignatedRequirementAgainstUpdateWithState: %@", self, state];
 }
 
 - (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
