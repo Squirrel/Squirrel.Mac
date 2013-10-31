@@ -33,6 +33,15 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 //
 // SQRLInstallerStateNothingToDo          - ShipIt has not started installing
 //                                          yet.
+// SQRLInstallerStateUpdatingPermissions  - Changing the BSD permissions of the
+//                                          replacement bundle so that we can
+//                                          check the code sign signature and
+//                                          install without an attack window.
+// SQRLInstallerStateVerifyingRequirement - Checking that the updateBundle meets
+//                                          the designated requirement of the
+//                                          targetBundle. This ensures that
+//                                          updateBundle is a suitable
+//                                          replacement.
 // SQRLInstallerStateClearingQuarantine   - Clearing the quarantine flag on the
 //                                          update bundle so it can used without
 //                                          issue.
@@ -46,14 +55,6 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // SQRLInstallerStateRelaunching          - Relaunching the updated application.
 //                                          This state will be entered even if
 //                                          there's no relaunching to do.
-// SQRLInstallerStateUpdatingPermissions  - Changing the BSD permissions of the
-//                                          replacement bundle so that we can
-//                                          check the code sign signature and
-//                                          install without an attack window.
-// SQRLInstallerStateVerifyingRequirement - Checking that the update meets the
-//                                          designated requirement of the target
-//                                          ensuring the replacement is
-//                                          suitable.
 //
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
