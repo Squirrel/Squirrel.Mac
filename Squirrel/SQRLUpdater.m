@@ -322,14 +322,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 					return [RACSignal return:bodyData];
 				}]
 				flatten]
-				flattenMap:^(NSURL *location) {
-					NSURL *destination = [downloadDirectory URLByAppendingPathComponent:location.lastPathComponent];
-
-					NSError *error = nil;
-					BOOL move = [NSFileManager.defaultManager moveItemAtURL:location toURL:destination error:&error];
-					if (!move) return [RACSignal error:error];
-
-					return [RACSignal return:destination];
+				tryMap:^ NSURL * (NSURL *downloadLocation, NSError **errorRef) {
+					NSURL *updateLocation = [downloadDirectory URLByAppendingPathComponent:downloadLocation.lastPathComponent];
+					if (![NSFileManager.defaultManager moveItemAtURL:downloadLocation toURL:updateLocation error:errorRef]) return nil;
+					return updateLocation;
 				}]
 				concat:[[downloadManager
 					removeAllResumableDownloads]
