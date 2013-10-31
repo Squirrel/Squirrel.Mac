@@ -333,8 +333,9 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 						return NO;
 					}];
 
-					NSURL *currentURL;
-					while (!disposable.disposed && (currentURL = [enumerator nextObject]) != nil) {
+					for (NSURL *currentURL in enumerator) {
+						if (disposable.disposed) return;
+
 						NSError *error;
 						NSFileSecurity *fileSecurity;
 						if (![currentURL getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
