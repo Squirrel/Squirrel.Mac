@@ -37,8 +37,46 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 
 #pragma mark Lifecycle
 
-+ (instancetype)currentApplicationSignature:(NSError **)error {
-	return [self modelWithDictionary:nil error:error];
++ (instancetype)currentApplicationSignature:(NSError **)errorRef {
+	SecCodeRef staticCode = NULL;
+	OSStatus error = SecCodeCopySelf(kSecCSDefaultFlags, &staticCode);
+	if (error != noErr) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
+		return nil;
+	}
+	@onExit {
+		CFRelease(staticCode);
+	};
+
+	return [self signatureForCode:staticCode error:errorRef];
+}
+
++ (instancetype)signatureForBundle:(NSURL *)bundleURL error:(NSError **)errorRef {
+	SecStaticCodeRef bundleCode = NULL;
+	OSStatus error = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &bundleCode);
+	if (error != noErr) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
+		return nil;
+	}
+	@onExit {
+		CFRelease(bundleCode);
+	};
+
+	return [self signatureForCode:bundleCode error:errorRef];
+}
+
++ (instancetype)signatureForCode:(SecStaticCodeRef)code error:(NSError **)errorRef {
+	SecRequirementRef designatedRequirement = NULL;
+	OSStatus error = SecCodeCopyDesignatedRequirement(code, kSecCSDefaultFlags, &designatedRequirement);
+	if (error != noErr) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
+		return nil;
+	}
+	@onExit {
+		CFRelease(designatedRequirement);
+	};
+
+	return [[SQRLCodeSignature alloc] initWithRequirement:designatedRequirement];
 }
 
 - (id)initWithRequirement:(SecRequirementRef)requirement {
@@ -47,35 +85,6 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 	return [self initWithDictionary:@{
 		@keypath(self.requirement): (__bridge id)requirement
 	} error:NULL];
-}
-
-- (id)initWithDictionary:(NSDictionary *)dictionary error:(NSError **)error {
-	self = [super initWithDictionary:dictionary error:error];
-	if (self == nil) return nil;
-
-	if (self.requirement == nil) {
-		SecCodeRef staticCode = NULL;
-		OSStatus result = SecCodeCopySelf(kSecCSDefaultFlags, &staticCode);
-		@onExit {
-			if (staticCode != NULL) CFRelease(staticCode);
-		};
-
-		if (result != noErr) {
-			if (error != NULL) *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:result userInfo:nil];
-			return nil;
-		}
-
-		SecRequirementRef req = NULL;
-		result = SecCodeCopyDesignatedRequirement(staticCode, kSecCSDefaultFlags, &req);
-		self.requirement = CFBridgingRelease(req);
-
-		if (result != noErr) {
-			if (error != NULL) *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:result userInfo:nil];
-			return nil;
-		}
-	}
-
-	return self;
 }
 
 #pragma mark Verification

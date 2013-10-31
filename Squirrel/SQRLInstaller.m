@@ -409,25 +409,10 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
 		] reduce:^ (NSURL *updateBundleURL, NSURL *targetBundleURL) {
-			SecStaticCodeRef targetCode = NULL;
-			OSStatus error = SecStaticCodeCreateWithPath((__bridge CFURLRef)targetBundleURL, kSecCSDefaultFlags, &targetCode);
-			if (error != noErr) {
-				return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil]];
-			}
-			@onExit {
-				CFRelease(targetCode);
-			};
+			NSError *error;
+			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureForBundle:targetBundleURL error:&error];
+			if (codeSignature == nil) return [RACSignal error:error];
 
-			SecRequirementRef designatedRequirement = NULL;
-			error = SecCodeCopyDesignatedRequirement(targetCode, kSecCSDefaultFlags, &designatedRequirement);
-			if (error != noErr) {
-				return [RACSignal error:[NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil]];
-			}
-			@onExit {
-				CFRelease(designatedRequirement);
-			};
-
-			SQRLCodeSignature *codeSignature = [[SQRLCodeSignature alloc] initWithRequirement:designatedRequirement];
 			return [codeSignature verifyBundleAtURL:updateBundleURL];
 		}]
 		flatten]
