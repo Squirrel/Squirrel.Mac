@@ -10,14 +10,24 @@
 
 @class SQRLResumableDownload;
 @class RACSignal;
+@class SQRLDirectoryManager;
 
 // Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
 @interface SQRLResumableDownloadManager : NSObject
 
-// Default download manager, stores downloads in 
-// SQRLDirectoryManager.currentApplicationManager.downloadDirectoryURL.
+// Default download manager, initializes a download manager with the current
+// application directory manager. Stores downloads in
+// `directoryManager.downloadDirectoryURL`.
 + (instancetype)defaultDownloadManager;
+
+// Designated initialiser
+//
+// directoryManager - Must not be nil.
+//
+// Returns a download manager which can resume previously started downloads for
+// the initialised directory manager's application.
+- (instancetype)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager;
 
 // Clean the resumable download state, removes downloaded data and tracking
 // state.

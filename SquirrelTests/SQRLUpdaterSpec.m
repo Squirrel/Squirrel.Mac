@@ -9,6 +9,9 @@
 #import "SQRLTestUpdate.h"
 #import "SQRLZipArchiver.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
+#import "SQRLDirectoryManager.h"
+#import "SQRLDownloadOperation.h"
+#import "SQRLResumableDownloadManager.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -177,6 +180,50 @@ describe(@"response handling", ^{
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
 	});
+});
+
+it(@"should clean up resumable downloads after a successful download", ^{
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication"];
+	SQRLResumableDownloadManager *downloadManager = [[SQRLResumableDownloadManager alloc] initWithDirectoryManager:directoryManager];
+
+	NSError *error = nil;
+	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&error];
+	expect(remove).to.beTruthy();
+	expect(error).to.beNil();
+
+	NSURL *updateApplicationBundle = [self createTestApplicationUpdate];
+
+	NSURL *firstDownload = zipUpdate(updateApplicationBundle);
+	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:[NSURLRequest requestWithURL:firstDownload] downloadManager:downloadManager];
+	BOOL download = [[downloadOperation download] waitUntilCompleted:&error];
+	expect(download).to.beTruthy();
+	expect(error).to.beNil();
+
+	NSURL *downloadDirectory = [[directoryManager downloadDirectoryURL] firstOrDefault:nil success:NULL error:&error];
+	expect(downloadDirectory).notTo.beNil();
+	expect(error).to.beNil();
+
+	NSArray *contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:downloadDirectory includingPropertiesForKeys:@[] options:0 error:&error];
+	expect(contents.count).to.equal(1);
+
+	SQRLTestUpdate *update = [[SQRLTestUpdate alloc] initWithDictionary:@{
+		@"updateURL": zipUpdate(updateApplicationBundle),
+		@"final": @YES,
+	} error:NULL];
+
+	writeUpdate(update);
+
+	NSRunningApplication *app = launchWithEnvironment(nil);
+	expect(app.terminated).will.beTruthy();
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+
+	contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:downloadDirectory includingPropertiesForKeys:@[] options:0 error:&error];
+	if (contents == nil) {
+		expect(error.domain).to.equal(NSCocoaErrorDomain);
+		expect(error.code).to.equal(NSFileReadNoSuchFileError);
+	} else {
+		expect(contents.count).to.equal(0);
+	}
 });
 
 SpecEnd

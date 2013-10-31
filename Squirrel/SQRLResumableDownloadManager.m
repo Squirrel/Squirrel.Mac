@@ -26,17 +26,17 @@
 	static dispatch_once_t defaultDownloadManagerPredicate = 0;
 
 	dispatch_once(&defaultDownloadManagerPredicate, ^{
-		defaultDownloadManager = [[self alloc] init];
+		defaultDownloadManager = [[self alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
 	});
 
 	return defaultDownloadManager;
 }
 
-- (id)init {
+- (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
 	self = [super init];
 	if (self == nil) return nil;
 
-	_directoryManager = [SQRLDirectoryManager currentApplicationManager];
+	_directoryManager = directoryManager;
 
 	_queue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadController.queue", DISPATCH_QUEUE_CONCURRENT);
 
