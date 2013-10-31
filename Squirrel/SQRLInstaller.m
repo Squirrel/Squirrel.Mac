@@ -196,7 +196,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 
 	dispatch_once(&dispatchTablePredicate, ^{
 		const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
-			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(changeUpdatePermissionsWithState:) },
+			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(changeUpdateBundlePermissionsWithState:) },
 			{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
 			{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
 			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
@@ -317,7 +317,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 	}];
 }
 
-- (RACSignal *)changeUpdatePermissionsWithState:(SQRLShipItState *)state {
+- (RACSignal *)changeUpdateBundlePermissionsWithState:(SQRLShipItState *)state {
 	return [[[self
 		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
 		flattenMap:^ RACSignal * (NSURL *updateURL) {
@@ -362,7 +362,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 				return disposable;
 			}];
 		}]
-		setNameWithFormat:@"%@ -changeUpdateFileOwnershipWithState: %@", self, state];
+		setNameWithFormat:@"%@ -changeUpdateBundlePermissionsWithState: %@", self, state];
 }
 
 - (BOOL)updateFileSecurity:(CFFileSecurityRef)fileSecurity {
