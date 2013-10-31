@@ -300,8 +300,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-			SQRLDownloadOperation *downloader = [[SQRLDownloadOperation alloc] initWithRequest:zipDownloadRequest downloadManager:SQRLResumableDownloadManager.defaultDownloadManager];
-			return [[[[downloader
+			SQRLResumableDownloadManager *downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
+
+			SQRLDownloadOperation *downloader = [[SQRLDownloadOperation alloc] initWithRequest:zipDownloadRequest downloadManager:downloadManager];
+			return [[[[[downloader
 				download]
 				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
@@ -328,7 +330,11 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 					if (!move) return [RACSignal error:error];
 
 					return [RACSignal return:destination];
-				}];
+				}]
+				concat:[[downloadManager
+					removeAllResumableDownloads]
+					catchTo:RACSignal.empty]
+				];
 		}]
 		doNext:^(NSURL *zipOutputURL) {
 			NSLog(@"Download completed to: %@", zipOutputURL);
