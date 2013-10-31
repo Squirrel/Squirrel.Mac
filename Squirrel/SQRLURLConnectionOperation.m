@@ -84,7 +84,7 @@
 
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection {
 	NSURLResponse *response = self.currentResponse;
-	NSData *bodyData = self.currentBodyData;
+	NSData *bodyData = self.currentBodyData ?: NSData.data;
 
 	[self.connectionSubject sendNext:RACTuplePack(response, bodyData)];
 	[self.connectionSubject sendCompleted];
