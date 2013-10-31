@@ -37,6 +37,9 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 @interface SQRLUpdater ()
 
+// The directory manager used for downloads and unpacks.
+@property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
+
 // The code signature for the running application, used to check updates before
 // sending them to ShipIt.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
@@ -74,13 +77,6 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 // Returns a signal which sends an unarchived `NSBundle` then completes, or
 // errors, on a background thread.
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
-
-// Creates a unique directory in which to save the update bundle, for later use
-// by ShipIt.
-//
-// Returns a signal which sends an `NSURL` then completes, or errors, on an
-// unspecified thread.
-- (RACSignal *)uniqueTemporaryDirectoryForUpdate;
 
 // Recursively searches the given directory for an application bundle that has
 // the same identifier as the running application.
@@ -140,6 +136,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 	_updateRequest = [updateRequest copy];
 	_updateClass = SQRLUpdate.class;
+
+	_directoryManager = SQRLDirectoryManager.currentApplicationManager;
 
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
@@ -272,8 +270,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[self
-		uniqueTemporaryDirectoryForUpdate]
+	return [[[self.directoryManager
+		perUpdateDirectoryURL]
 		flattenMap:^(NSURL *downloadDirectory) {
 			return [[[self
 				downloadBundleForUpdate:update intoDirectory:downloadDirectory]
@@ -300,7 +298,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-			SQRLResumableDownloadManager *downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
+			SQRLResumableDownloadManager *downloadManager = [[SQRLResumableDownloadManager alloc] initWithDirectoryManager:self.directoryManager];
 
 			SQRLDownloadOperation *downloader = [[SQRLDownloadOperation alloc] initWithRequest:zipDownloadRequest downloadManager:downloadManager];
 			return [[[[[downloader
@@ -345,36 +343,6 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 #pragma mark File Management
-
-- (RACSignal *)uniqueTemporaryDirectoryForUpdate {
-	return [[[RACSignal
-		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return [directoryManager applicationSupportURL];
-		}]
-		flattenMap:^(NSURL *appSupportURL) {
-			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
-			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
-			@onExit {
-				free(updateDirectoryCString);
-			};
-
-			if (mkdtemp(updateDirectoryCString) == NULL) {
-				int code = errno;
-
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not create temporary directory", nil),
-					NSURLErrorKey: updateDirectoryTemplate
-				};
-
-				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
-			}
-
-			NSString *updateDirectoryPath = [NSFileManager.defaultManager stringWithFileSystemRepresentation:updateDirectoryCString length:strlen(updateDirectoryCString)];
-			return [RACSignal return:[NSURL fileURLWithPath:updateDirectoryPath isDirectory:YES]];
-		}]
-		setNameWithFormat:@"%@ -uniqueTemporaryDirectoryForUpdate", self];
-}
 
 - (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory {
 	NSParameterAssert(directory != nil);

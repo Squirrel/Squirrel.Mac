@@ -8,6 +8,7 @@
 
 #import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveCocoa/EXTScope.h>
 
 @interface SQRLDirectoryManager ()
 
@@ -101,16 +102,24 @@
 	return [self.class createDirectoryForURL:downloadDirectoryURL];
 }
 
-- (RACSignal *)unpackDirectoryURL {
-	RACSignal *unpackDirectoryURL = [[[self
+- (RACSignal *)perUpdateDirectoryURL {
+	return [[[self
 		applicationSupportURLNoCreate]
-		map:^(NSURL *directoryURL) {
+		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
 			// noindex so that Spotlight doesn't pick up apps pending update and add
 			// them to the Launch Services database
-			return [directoryURL URLByAppendingPathComponent:@"unpack.noindex"];
+			NSURL *updateDirectory = [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
+
+			// Explicitly just provide the owner with permission, discarding the
+			// current umask. This matches the `mkdtemp` behaviour.
+			NSDictionary *directoryAttributes = @{
+				NSFilePosixPermissions: @(S_IRWXU),
+			};
+			if (![NSFileManager.defaultManager createDirectoryAtURL:updateDirectory withIntermediateDirectories:YES attributes:directoryAttributes error:errorRef]) return nil;
+
+			return updateDirectory;
 		}]
-		setNameWithFormat:@"%@ -unpackDirectoryURL", self];
-	return [self.class createDirectoryForURL:unpackDirectoryURL];
+		setNameWithFormat:@"%@ -perUpdateDirectoryURL", self];
 }
 
 - (RACSignal *)shipItStateURL {
