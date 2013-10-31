@@ -4,3 +4,6 @@
 [submodule "External/Mantle"]
 	path = External/Mantle
 	url = https://github.com/github/Mantle.git
+[submodule "External/OHHTTPStubs"]
+	path = External/OHHTTPStubs
+	url = https://github.com/github/OHHTTPStubs

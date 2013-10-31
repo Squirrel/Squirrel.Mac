@@ -29,6 +29,7 @@
 		53C3187C1816CCD70074B481 /* SQRLResumableDownloadManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C318791816CCD70074B481 /* SQRLResumableDownloadManagerSpec.m */; };
 		53C3187D1816CCD70074B481 /* SQRLDownloadOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3187A1816CCD70074B481 /* SQRLDownloadOperationSpec.m */; };
 		53C3187E1816CCD70074B481 /* SQRLURLConnectionOperationSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3187B1816CCD70074B481 /* SQRLURLConnectionOperationSpec.m */; };
+		53B70030181E9460000FFBD0 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53B70025181E944F000FFBD0 /* OHHTTPStubs.framework */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -116,6 +117,34 @@
 			proxyType = 1;
 			remoteGlobalIDString = 534FF35F17D8E90A0020A51A;
 			remoteInfo = TestService;
+		};
+		53B70020181E944F000FFBD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 09793579161B6251006DB5D5;
+			remoteInfo = "OHHTTPStubs-iOS";
+		};
+		53B70022181E944F000FFBD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = 098368CE168FC7920082B1A4;
+			remoteInfo = UnitTests;
+		};
+		53B70024181E944F000FFBD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */;
+			proxyType = 2;
+			remoteGlobalIDString = F6C37BA016F6C8680082B630;
+			remoteInfo = OHHTTPStubs;
+		};
+		53B7002E181E9456000FFBD0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = F6C37B9F16F6C8680082B630;
+			remoteInfo = OHHTTPStubs;
 		};
 		D014AC1617B9793A007D79D0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -415,6 +444,7 @@
 		53C318791816CCD70074B481 /* SQRLResumableDownloadManagerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLResumableDownloadManagerSpec.m; sourceTree = "<group>"; };
 		53C3187A1816CCD70074B481 /* SQRLDownloadOperationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadOperationSpec.m; sourceTree = "<group>"; };
 		53C3187B1816CCD70074B481 /* SQRLURLConnectionOperationSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnectionOperationSpec.m; sourceTree = "<group>"; };
+		53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OHHTTPStubs.xcodeproj; path = External/ReactiveCocoa/external/specta/../../../OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.xcodeproj; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
@@ -562,6 +592,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53B70030181E9460000FFBD0 /* OHHTTPStubs.framework in Frameworks */,
 				D0A56BCF1804B8FC00A84EDC /* Mantle.framework in Frameworks */,
 				D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */,
 				D0F3F06817E83B27003AFA6B /* ReactiveCocoa.framework in Frameworks */,
@@ -626,6 +657,16 @@
 				53C318761816C3C70074B481 /* SQRLURLConnectionOperation.m */,
 			);
 			name = Downloads;
+			sourceTree = "<group>";
+		};
+		53B70015181E944F000FFBD0 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				53B70021181E944F000FFBD0 /* libOHHTTPStubs-iOS.a */,
+				53B70023181E944F000FFBD0 /* UnitTests.octest */,
+				53B70025181E944F000FFBD0 /* OHHTTPStubs.framework */,
+			);
+			name = Products;
 			sourceTree = "<group>";
 		};
 		D00F5B8217E82CFB009A4818 /* Extensions */ = {
@@ -803,6 +844,7 @@
 			children = (
 				D097B9BC17BB4777006C3FEB /* IOKit.framework */,
 				D014ABB917B97403007D79D0 /* ServiceManagement.framework */,
+				53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */,
 				D0F3F01417E83918003AFA6B /* Expecta.xcodeproj */,
 				D0A56B961804B1FD00A84EDC /* Mantle.xcodeproj */,
 				D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */,
@@ -1123,6 +1165,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				53B7002F181E9456000FFBD0 /* PBXTargetDependency */,
 				D0F3F03317E83924003AFA6B /* PBXTargetDependency */,
 				D0F3F03517E83924003AFA6B /* PBXTargetDependency */,
 				D08D4E4C17B4520C0012B22D /* PBXTargetDependency */,
@@ -1164,6 +1207,10 @@
 					ProjectRef = D0A56B961804B1FD00A84EDC /* Mantle.xcodeproj */;
 				},
 				{
+					ProductGroup = 53B70015181E944F000FFBD0 /* Products */;
+					ProjectRef = 53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */;
+				},
+				{
 					ProductGroup = D0F3F04B17E83A1D003AFA6B /* Products */;
 					ProjectRef = D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */;
 				},
@@ -1184,6 +1231,27 @@
 /* End PBXProject section */
 
 /* Begin PBXReferenceProxy section */
+		53B70021181E944F000FFBD0 /* libOHHTTPStubs-iOS.a */ = {
+			isa = PBXReferenceProxy;
+			fileType = archive.ar;
+			path = "libOHHTTPStubs-iOS.a";
+			remoteRef = 53B70020181E944F000FFBD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		53B70023181E944F000FFBD0 /* UnitTests.octest */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.cfbundle;
+			path = UnitTests.octest;
+			remoteRef = 53B70022181E944F000FFBD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+		53B70025181E944F000FFBD0 /* OHHTTPStubs.framework */ = {
+			isa = PBXReferenceProxy;
+			fileType = wrapper.framework;
+			path = OHHTTPStubs.framework;
+			remoteRef = 53B70024181E944F000FFBD0 /* PBXContainerItemProxy */;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
 		D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */ = {
 			isa = PBXReferenceProxy;
 			fileType = archive.ar;
@@ -1474,6 +1542,11 @@
 			isa = PBXTargetDependency;
 			target = 534FF35F17D8E90A0020A51A /* TestService */;
 			targetProxy = 534FF37017D8E9170020A51A /* PBXContainerItemProxy */;
+		};
+		53B7002F181E9456000FFBD0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = OHHTTPStubs;
+			targetProxy = 53B7002E181E9456000FFBD0 /* PBXContainerItemProxy */;
 		};
 		D014AC1717B9793A007D79D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
