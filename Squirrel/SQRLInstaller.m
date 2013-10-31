@@ -404,12 +404,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
-	return [[[[RACSignal
+	return [[[RACSignal
 		zip:@[
 			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-		]]
-		reduceEach:^ (NSURL *updateBundleURL, NSURL *targetBundleURL) {
+		] reduce:^ (NSURL *updateBundleURL, NSURL *targetBundleURL) {
 			SecStaticCodeRef targetCode = NULL;
 			OSStatus error = SecStaticCodeCreateWithPath((__bridge CFURLRef)targetBundleURL, kSecCSDefaultFlags, &targetCode);
 			if (error != noErr) {
