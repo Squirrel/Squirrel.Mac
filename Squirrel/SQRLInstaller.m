@@ -324,7 +324,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 				RACDisposable *disposable = [[RACDisposable alloc] init];
 
-				[[[NSOperationQueue alloc] init] addOperationWithBlock:^{
+				[RACScheduler.scheduler schedule:^{
 					NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:updateURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
 						[subscriber sendError:error];
 						return NO;
