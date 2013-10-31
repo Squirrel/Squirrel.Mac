@@ -325,8 +325,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 				RACDisposable *disposable = [[RACDisposable alloc] init];
 
 				[RACScheduler.scheduler schedule:^{
+					__block BOOL success = YES;
 					NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:updateURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
 						[subscriber sendError:error];
+						success = NO;
+
 						return NO;
 					}];
 
@@ -354,6 +357,10 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 							[subscriber sendError:error];
 							return;
 						}
+					}
+
+					if (!success) {
+						return;
 					}
 
 					[subscriber sendCompleted];
