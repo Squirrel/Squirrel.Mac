@@ -321,74 +321,86 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 	return [[[self
 		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
 		flattenMap:^ RACSignal * (NSURL *updateURL) {
-			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-				RACDisposable *disposable = [[RACDisposable alloc] init];
+			return [[RACSignal
+				createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+					RACDisposable *disposable = [[RACDisposable alloc] init];
 
-				[RACScheduler.scheduler schedule:^{
-					__block BOOL success = YES;
-					NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:updateURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
-						[subscriber sendError:error];
-						success = NO;
+					[RACScheduler.scheduler schedule:^{
+						__block BOOL success = YES;
+						NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:updateURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
+							[subscriber sendError:error];
+							success = NO;
 
-						return NO;
+							return NO;
+						}];
+
+						for (NSURL *currentURL in enumerator) {
+							if (disposable.disposed) return;
+
+							[subscriber sendNext:[self updateFileSecurity:currentURL]];
+						}
+
+						if (success) [subscriber sendCompleted];
 					}];
 
-					for (NSURL *currentURL in enumerator) {
-						if (disposable.disposed) return;
-
-						NSError *error;
-						NSFileSecurity *fileSecurity;
-						if (![currentURL getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
-							[subscriber sendError:error];
-							return;
-						}
-						
-						CFFileSecurityRef actualFileSecurity = (__bridge CFFileSecurityRef)fileSecurity;
-
-						if (![self updateFileSecurity:actualFileSecurity]) {
-							NSDictionary *errorInfo = @{
-								NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn’t change the file permissions of the update", nil),
-								NSURLErrorKey: currentURL,
-							};
-							[subscriber sendError:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorChangingPermissions userInfo:errorInfo]];
-							return;
-						}
-
-						if (![currentURL setResourceValue:(__bridge NSFileSecurity *)actualFileSecurity forKey:NSURLFileSecurityKey error:&error]) {
-							[subscriber sendError:error];
-							return;
-						}
-					}
-
-					if (!success) {
-						return;
-					}
-
-					[subscriber sendCompleted];
-				}];
-
-				return disposable;
-			}];
+					return disposable;
+			}]
+			flatten];
 		}]
 		setNameWithFormat:@"%@ -changeUpdateBundlePermissionsWithState: %@", self, state];
 }
 
-- (BOOL)updateFileSecurity:(CFFileSecurityRef)fileSecurity {
-	// If ShipIt is running as root, this will change the owner to root:wheel.
-	if (!CFFileSecuritySetOwner(fileSecurity, getuid())) return NO;
-	if (!CFFileSecuritySetGroup(fileSecurity, getgid())) return NO;
+- (RACSignal *)updateFileSecurity:(NSURL *)location {
+	return [[[[RACSignal
+		defer:^{
+			NSError *error;
+			NSFileSecurity *fileSecurity;
+			if (![location getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal return:fileSecurity];
+		}]
+		flattenMap:^(NSFileSecurity *fileSecurity) {
+			if (![self actuallyUpdateFileSecurity:fileSecurity]) {
+				NSDictionary *errorInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn’t change update file permissions", nil),
+				};
+				return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorChangingPermissions userInfo:errorInfo]];
+			}
+
+			return [RACSignal return:fileSecurity];
+		}]
+		flattenMap:^(NSFileSecurity *fileSecurity) {
+			NSError *error;
+			if (![location setResourceValue:fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
+				return [RACSignal return:error];
+			}
+
+			return [RACSignal empty];
+		}]
+		setNameWithFormat:@"%@ -updateFileSecurity: %@", self, location];
+}
+
+- (BOOL)actuallyUpdateFileSecurity:(NSFileSecurity *)fileSecurity {
+	CFFileSecurityRef actualFileSecurity = (__bridge CFFileSecurityRef)fileSecurity;
+
+	// If ShipIt is running as root, this will change the owner to
+	// root:wheel.
+	if (!CFFileSecuritySetOwner(actualFileSecurity, getuid())) return NO;
+	if (!CFFileSecuritySetGroup(actualFileSecurity, getgid())) return NO;
 
 	mode_t fileMode = 0;
-	if (!CFFileSecurityGetMode(fileSecurity, &fileMode)) return NO;
+	if (!CFFileSecurityGetMode(actualFileSecurity, &fileMode)) return NO;
 
-	// Remove write permission from group and other, leave executable bit
-	// as it was for both.
+	// Remove write permission from group and other, leave executable
+	// bit as it was for both.
 	//
-	// Permissions will be r-(x?)r-(x?) afterwards, with owner permissions
-	// left as is.
+	// Permissions will be r-(x?)r-(x?) afterwards, with owner
+	// permissions left as is.
 	fileMode = (fileMode & ~(S_IWGRP | S_IWOTH));
 
-	return CFFileSecuritySetMode(fileSecurity, fileMode);
+	return CFFileSecuritySetMode(actualFileSecurity, fileMode);
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
