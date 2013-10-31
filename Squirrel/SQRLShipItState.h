@@ -34,9 +34,12 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // SQRLInstallerStateNothingToDo          - ShipIt has not started installing
 //                                          yet.
 // SQRLInstallerStateUpdatingPermissions  - Changing the BSD permissions of the
-//                                          replacement bundle so that we can
+//                                          updateBundle so that we can safely
 //                                          check the code sign signature and
-//                                          install without an attack window.
+//                                          then install, without leaving an
+//                                          opportunity for other processes to
+//                                          modify the bundle between check and
+//                                          use.
 // SQRLInstallerStateVerifyingRequirement - Checking that the updateBundle meets
 //                                          the designated requirement of the
 //                                          targetBundle. This ensures that
