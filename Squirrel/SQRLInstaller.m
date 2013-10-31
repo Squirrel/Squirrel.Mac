@@ -406,8 +406,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
 	return [[[[RACSignal
 		zip:@[
-			  [self getRequiredKey:@keypath(state, updateBundleURL) fromState:state],
-			  [self getRequiredKey:@keypath(state, targetBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
 		]]
 		reduceEach:^ (NSURL *updateBundleURL, NSURL *targetBundleURL) {
 			SecStaticCodeRef targetCode = NULL;
