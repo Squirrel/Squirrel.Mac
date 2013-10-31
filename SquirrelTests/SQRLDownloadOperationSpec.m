@@ -22,12 +22,10 @@ beforeAll(^{
 	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
 
 	NSError *removeError = nil;
-	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&removeError];
-	if (!remove) {
-		if ([removeError.domain isEqualToString:NSCocoaErrorDomain] && removeError.code == NSFileNoSuchFileError) return;
-
-		NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
-	}
+	BOOL remove = [[downloadManager
+		removeAllResumableDownloads]
+		waitUntilCompleted:&removeError];
+	if (!remove) NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
 });
 
 beforeEach(^{
