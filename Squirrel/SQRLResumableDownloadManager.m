@@ -53,13 +53,14 @@
 		rac_sequence]
 		signalWithScheduler:RACScheduler.immediateScheduler]
 		map:^(RACSignal *locationSignal) {
-			return [[locationSignal try:^(NSURL *location, NSError **errorRef) {
+			return [[[locationSignal try:^(NSURL *location, NSError **errorRef) {
 				return [NSFileManager.defaultManager removeItemAtURL:location error:errorRef];
 			}]
 			catch:^(NSError *error) {
 				if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return [RACSignal empty];
 				return [RACSignal error:error];
-			}];
+			}]
+			ignoreValues];
 		}]
 		flatten]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
