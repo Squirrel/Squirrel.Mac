@@ -53,12 +53,8 @@
 		rac_sequence]
 		signalWithScheduler:RACScheduler.immediateScheduler]
 		map:^(RACSignal *locationSignal) {
-			return [locationSignal map:^ RACSignal * (NSURL *location) {
-				NSError *error = nil;
-				BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
-				if (!remove) return [RACSignal error:error];
-
-				return [RACSignal empty];
+			return [locationSignal try:^(NSURL *location, NSError **errorRef) {
+				return [NSFileManager.defaultManager removeItemAtURL:location error:errorRef];
 			}];
 		}]
 		flatten]
@@ -83,27 +79,31 @@
 	return [[[self
 		downloadStoreIndexFileLocation]
 		flattenMap:^(NSURL *location) {
-			return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-				dispatch_async(self.queue, ^{
-					NSError *error = nil;
-					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
-					if (propertyListData == nil) {
-						[subscriber sendError:error];
-						return;
-					}
+			return [[RACSignal
+				createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+					dispatch_async(self.queue, ^{
+						NSError *error = nil;
+						NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
+						if (propertyListData == nil) {
+							[subscriber sendError:error];
+							return;
+						}
 
+						[subscriber sendNext:propertyListData];
+						[subscriber sendCompleted];
+					});
+
+					return nil;
+				}]
+				tryMap:^ NSDictionary * (NSData *propertyListData, NSError **errorRef) {
 					NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
 					if (propertyList == nil) {
-						[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
-						return;
+						if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil];
+						return nil;
 					}
 
-					[subscriber sendNext:propertyList];
-					[subscriber sendCompleted];
-				});
-
-				return nil;
-			}];
+					return propertyList;
+				}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
