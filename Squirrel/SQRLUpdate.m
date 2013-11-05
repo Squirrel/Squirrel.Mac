@@ -16,15 +16,6 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
 
-@interface SQRLUpdate ()
-@property (readwrite, copy, nonatomic) NSDictionary *JSON;
-@property (readwrite, copy, nonatomic) NSString *releaseNotes;
-@property (readwrite, copy, nonatomic) NSString *releaseName;
-@property (readwrite, copy, nonatomic) NSDate *releaseDate;
-
-@property (readwrite, copy, nonatomic) NSURL *updateURL;
-@end
-
 @implementation SQRLUpdate
 
 #pragma mark Lifecycle
