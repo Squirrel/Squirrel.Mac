@@ -227,10 +227,10 @@
 
 			return [[[self.directoryManager
 				downloadDirectoryURL]
-				map:^ NSURL * (NSURL *downloadDirectory) {
+				map:^(NSURL *downloadDirectory) {
 					return [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
 				}]
-				map:^ SQRLResumableDownload * (NSURL *location) {
+				map:^(NSURL *location) {
 					return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:location];
 				}];
 		}]
@@ -242,7 +242,7 @@
 	NSParameterAssert(request != nil);
 
 	return [[self
-		writeDownloadIndexWithBlock:^ NSDictionary * (NSDictionary *index) {
+		writeDownloadIndexWithBlock:^(NSDictionary *index) {
 			NSString *key = [self.class keyForURL:request.URL];
 
 			NSMutableDictionary *newIndex = [index mutableCopy];
