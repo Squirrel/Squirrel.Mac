@@ -105,8 +105,8 @@ NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
 		}
 
 		// If neither match, try removing the ':' in the time zone
-		static NSRegularExpression *timeZoneSuffix = nil;
-		static dispatch_once_t timeZoneSuffixPredicate = 0;
+		static NSRegularExpression *timeZoneSuffix;
+		static dispatch_once_t timeZoneSuffixPredicate;
 		dispatch_once(&timeZoneSuffixPredicate, ^ {
 			timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:0 error:NULL];
 		});

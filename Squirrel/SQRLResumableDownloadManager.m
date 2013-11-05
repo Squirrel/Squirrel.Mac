@@ -22,8 +22,8 @@
 @implementation SQRLResumableDownloadManager
 
 + (instancetype)defaultDownloadManager {
-	static SQRLResumableDownloadManager *defaultDownloadManager = nil;
-	static dispatch_once_t defaultDownloadManagerPredicate = 0;
+	static SQRLResumableDownloadManager *defaultDownloadManager;
+	static dispatch_once_t defaultDownloadManagerPredicate;
 
 	dispatch_once(&defaultDownloadManagerPredicate, ^{
 		defaultDownloadManager = [[self alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
