@@ -327,8 +327,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				}]
 				concat:[[downloadManager
 					removeAllResumableDownloads]
-					catchTo:RACSignal.empty]
-				];
+					catchTo:RACSignal.empty]];
 		}]
 		doNext:^(NSURL *zipOutputURL) {
 			NSLog(@"Download completed to: %@", zipOutputURL);
