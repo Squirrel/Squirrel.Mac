@@ -18,12 +18,13 @@
 // original response.
 @interface SQRLDownloadOperation : NSObject
 
-// Designated initialiser.
+// This is the designated initialiser. The body of the response is streamed to
+// disk. If the response includes an ETag the download can be resumed
+// automatically by subsequent download operations initialised with a request of
+// equal URL.
 //
-// request            - Must be non nil, body of the response is streamed to
-//                      disk. If the response includes an ETag the download can
-//                      be resumed automatically by subsequent download
-//                      operations with the same URL.
+// request            - Must be non nil, the request is issued with
+//                      NSURLConnection.
 // downloadController - Must be non nil, determines where the downloads will be
 //                      stored and resumed from. For a previously started
 //                      download to be resumed, an equivalent download
