@@ -84,12 +84,14 @@
 }
 
 + (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
-	NSDictionary *headers = response.allHeaderFields;
-	for (NSString *header in headers) {
-		if ([header caseInsensitiveCompare:@"ETag"] != NSOrderedSame) continue;
-		return headers[header];
-	}
-	return nil;
+	return [[[response.allHeaderFields.rac_sequence
+		filter:^ BOOL (RACTuple *keyValuePair) {
+			return [keyValuePair.first caseInsensitiveCompare:@"ETag"] == NSOrderedSame;
+		}]
+		reduceEach:^(NSString *key, NSString *value) {
+			return value;
+		}]
+		head];
 }
 
 - (void)startDownloadWithRequest:(NSURLRequest *)request {
