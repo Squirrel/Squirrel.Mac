@@ -33,6 +33,8 @@
 }
 
 - (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
+	NSParameterAssert(directoryManager != nil);
+
 	self = [super init];
 	if (self == nil) return nil;
 
