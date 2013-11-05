@@ -9,7 +9,7 @@
 #import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import "NSError+SQRLVerbosityExtensions.h"
-#import "ReactiveCocoa/ReactiveCocoa.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 SpecBegin(SQRLResumableDownloadManager)
 

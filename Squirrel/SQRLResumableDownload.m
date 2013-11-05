@@ -8,7 +8,7 @@
 
 #import "SQRLResumableDownload.h"
 
-#import "ReactiveCocoa/ReactiveCocoa.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 @implementation SQRLResumableDownload
 

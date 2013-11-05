@@ -11,7 +11,7 @@
 #import "SQRLResumableDownload.h"
 #import <sys/socket.h>
 #import <netinet/in.h>
-#import "ReactiveCocoa/EXTScope.h"
+#import <ReactiveCocoa/EXTScope.h>
 #import "NSError+SQRLVerbosityExtensions.h"
 
 SpecBegin(SQRLDownloadOperation);

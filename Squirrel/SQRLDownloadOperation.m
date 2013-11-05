@@ -8,8 +8,8 @@
 
 #import "SQRLDownloadOperation.h"
 
-#import "ReactiveCocoa/ReactiveCocoa.h"
-#import "ReactiveCocoa/EXTScope.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveCocoa/EXTScope.h>
 
 #import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"

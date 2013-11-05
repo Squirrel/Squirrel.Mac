@@ -8,7 +8,7 @@
 
 #import "SQRLURLConnectionOperation.h"
 
-#import "ReactiveCocoa/ReactiveCocoa.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 
 @interface SQRLURLConnectionOperation () <NSURLConnectionDataDelegate>
 // Request the operation was initialised with

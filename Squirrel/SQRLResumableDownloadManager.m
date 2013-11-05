@@ -8,7 +8,7 @@
 
 #import "SQRLResumableDownloadManager.h"
 
-#import "ReactiveCocoa/ReactiveCocoa.h"
+#import <ReactiveCocoa/ReactiveCocoa.h>
 #import <CommonCrypto/CommonCrypto.h>
 
 #import "SQRLDirectoryManager.h"
