@@ -103,21 +103,22 @@
 }
 
 - (RACSignal *)uniqueUpdateDirectoryURL {
-	return [[[self
+	return [[[[self
 		applicationSupportURLNoCreate]
-		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
+		map:^ (NSURL *directoryURL) {
 			// noindex so that Spotlight doesn't pick up apps pending update and add
 			// them to the Launch Services database
-			NSURL *updateDirectory = [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
-
+			return [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
+		}]
+		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
 			// Explicitly just provide the owner with permission, discarding the
 			// current umask. This matches the `mkdtemp` behaviour.
 			NSDictionary *directoryAttributes = @{
 				NSFilePosixPermissions: @(S_IRWXU),
 			};
-			if (![NSFileManager.defaultManager createDirectoryAtURL:updateDirectory withIntermediateDirectories:YES attributes:directoryAttributes error:errorRef]) return nil;
+			if (![NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:directoryAttributes error:errorRef]) return nil;
 
-			return updateDirectory;
+			return directoryURL;
 		}]
 		setNameWithFormat:@"%@ -uniqueUpdateDirectoryURL", self];
 }
