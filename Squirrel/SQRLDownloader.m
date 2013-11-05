@@ -31,7 +31,7 @@
 // that should be performed for that download. Either the original request or a
 // new request with the state added to resume a prior download, then completes,
 // or errors.
-- (RACSignal *)resumeRequest;
+- (RACSignal *)requestForResumableDownload;
 @end
 
 @implementation SQRLDownloader
@@ -58,7 +58,7 @@
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-- (RACSignal *)resumeRequest {
+- (RACSignal *)requestForResumableDownload {
 	return [[[self
 		resumableDownload]
 		map:^ NSURLRequest * (SQRLResumableDownload *resumableDownload) {
@@ -222,7 +222,7 @@
 		}];
 
 	return [[[self
-		resumeRequest]
+		requestForResumableDownload]
 		flattenMap:^(NSURLRequest *request) {
 			return [[RACSignal
 				createSignal:^(id<RACSubscriber> subscriber) {
