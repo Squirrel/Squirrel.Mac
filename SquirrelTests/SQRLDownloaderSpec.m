@@ -14,7 +14,7 @@
 #import <ReactiveCocoa/EXTScope.h>
 #import "NSError+SQRLVerbosityExtensions.h"
 
-SpecBegin(SQRLDownloadOperation);
+SpecBegin(SQRLDownload);
 
 __block SQRLResumableDownloadManager *downloadManager;
 
@@ -168,7 +168,7 @@ static NSData * (^stringTimes)(NSString *, NSUInteger) = ^ (NSString *string, NS
 	return data;
 };
 
-it(@"should resume a download", ^{
+fit(@"should resume a download", ^{
 	// Start server
 
 	in_port_t port = 0;

@@ -8,7 +8,7 @@
 
 #import "SQRLURLConnection.h"
 
-SpecBegin(SQRLURLConnectionOperation)
+SpecBegin(SQRLURLConnection)
 
 it(@"should load file:// scheme URLs", ^{
 	NSURL *fileLocation = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"test"];
