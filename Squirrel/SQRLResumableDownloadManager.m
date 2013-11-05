@@ -111,7 +111,10 @@
 				tryMap:^ NSDictionary * (NSData *propertyListData, NSError **errorRef) {
 					NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
 					if (propertyList == nil) {
-						if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil];
+						if (errorRef != NULL) {
+							NSDictionary *errorInfo = @{ NSURLErrorKey: location };
+							*errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:errorInfo];
+						}
 						return nil;
 					}
 
@@ -149,7 +152,8 @@
 					} else {
 						propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
 						if (propertyList == nil) {
-							[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:nil]];
+							NSDictionary *errorInfo = @{ NSURLErrorKey: location };
+							[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:errorInfo]];
 							return;
 						}
 					}
@@ -162,7 +166,8 @@
 
 					NSData *newData = [NSKeyedArchiver archivedDataWithRootObject:newPropertyList];
 					if (newData == nil) {
-						[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:nil]];
+						NSDictionary *errorInfo = @{ NSURLErrorKey: location };
+						[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListWriteStreamError userInfo:errorInfo]];
 						return;
 					}
 
