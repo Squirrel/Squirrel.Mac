@@ -55,8 +55,8 @@
 #pragma mark Folder URLs
 
 + (NSString *)fileSystemNameForIdentifier:(NSString *)identifier {
-	// Periods are problematic in the filesystem where they denote file type
-	// a directory can become a package which can be undesirable.
+	// Periods are problematic in the filesystem because they denote file type.
+	// A directory can become a package which can be undesirable.
 	return [identifier stringByReplacingOccurrencesOfString:@"." withString:@"~"];
 }
 
