@@ -9,7 +9,6 @@
 #import "SQRLDownloadOperation.h"
 
 #import "ReactiveCocoa/ReactiveCocoa.h"
-#import "ReactiveCocoa/EXTKeyPathCoding.h"
 #import "ReactiveCocoa/EXTScope.h"
 
 #import "SQRLResumableDownloadManager.h"
