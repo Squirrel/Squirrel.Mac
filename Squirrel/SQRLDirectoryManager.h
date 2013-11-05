@@ -38,11 +38,11 @@
 // Returns a signal which sends a URL then completes, or errors.
 - (RACSignal *)downloadDirectoryURL;
 
-// Creates a new directory to unpack downloaded updates into prior to
+// Creates a new directory to unpack a downloaded update into prior to
 // installation. This is an applicationSupportURL subdirectory.
 //
 // Returns a signal which sends a URL then completes, or errors.
-- (RACSignal *)perUpdateDirectoryURL;
+- (RACSignal *)uniqueUpdateDirectoryURL;
 
 // Determines where archived `SQRLShipItState` should be saved.
 //
