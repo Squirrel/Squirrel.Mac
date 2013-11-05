@@ -94,7 +94,7 @@
 	RACSignal *downloadDirectoryURL = [[[self
 		applicationSupportURLNoCreate]
 		map:^(NSURL *directoryURL) {
-			return [directoryURL URLByAppendingPathComponent:@"download"];
+			return [directoryURL URLByAppendingPathComponent:@"downloads"];
 		}]
 		setNameWithFormat:@"%@ -downloadDirectoryURL", self];
 	return [self.class createDirectoryForURL:downloadDirectoryURL];
