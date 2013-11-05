@@ -102,7 +102,7 @@
 	return [self.class createDirectoryForURL:downloadDirectoryURL];
 }
 
-- (RACSignal *)perUpdateDirectoryURL {
+- (RACSignal *)uniqueUpdateDirectoryURL {
 	return [[[self
 		applicationSupportURLNoCreate]
 		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
@@ -119,7 +119,7 @@
 
 			return updateDirectory;
 		}]
-		setNameWithFormat:@"%@ -perUpdateDirectoryURL", self];
+		setNameWithFormat:@"%@ -uniqueUpdateDirectoryURL", self];
 }
 
 - (RACSignal *)shipItStateURL {
