@@ -6,11 +6,11 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLURLConnectionOperation.h"
+#import "SQRLURLConnection.h"
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
-@interface SQRLURLConnectionOperation () <NSURLConnectionDataDelegate>
+@interface SQRLURLConnection () <NSURLConnectionDataDelegate>
 // Request the operation was initialised with
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 
@@ -26,7 +26,7 @@
 @property (nonatomic, strong) RACSubject *connectionSubject;
 @end
 
-@implementation SQRLURLConnectionOperation
+@implementation SQRLURLConnection
 
 + (RACSignal *)sqrl_sendAsynchronousRequest:(NSURLRequest *)request {
 	return [[[self alloc] initWithRequest:request] result];

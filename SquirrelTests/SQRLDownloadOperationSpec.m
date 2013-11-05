@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDownloadOperation.h"
+#import "SQRLDownloader.h"
 #import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import <sys/socket.h>
@@ -45,7 +45,7 @@ it(@"should download file:// scheme URLs", ^{
 	expect(write).to.beTruthy();
 	expect(error).to.beNil();
 
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:[NSURLRequest requestWithURL:fileLocation] downloadManager:downloadManager];
+	SQRLDownloader *downloadOperation = [[SQRLDownloader alloc] initWithRequest:[NSURLRequest requestWithURL:fileLocation] downloadManager:downloadManager];
 	RACTuple *result = [[downloadOperation download] firstOrDefault:nil success:NULL error:&error];
 	expect(result).notTo.beNil();
 	expect(error).to.beNil();
@@ -211,7 +211,7 @@ it(@"should resume a download", ^{
 
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%u/foo", port]]];
 	request.timeoutInterval = 1.;
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
+	SQRLDownloader *downloadOperation = [[SQRLDownloader alloc] initWithRequest:request downloadManager:downloadManager];
 	NSError *error = nil;
 	RACTuple *result = [[downloadOperation download] firstOrDefault:nil success:NULL error:&error];
 	expect(result).to.beNil();
@@ -254,7 +254,7 @@ it(@"should resume a download", ^{
 
 	// Issue second request
 
-	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
+	downloadOperation = [[SQRLDownloader alloc] initWithRequest:request downloadManager:downloadManager];
 	result = [[downloadOperation download] firstOrDefault:nil success:NULL error:&error];
 	expect(result).notTo.beNil();
 	expect(error).to.beNil();
@@ -312,7 +312,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 
 	NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:[NSString stringWithFormat:@"http://localhost:%u/bar", port]]];
 	request.timeoutInterval = 1.;
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
+	SQRLDownloader *downloadOperation = [[SQRLDownloader alloc] initWithRequest:request downloadManager:downloadManager];
 	NSError *error = nil;
 	RACTuple *result = [[downloadOperation download] firstOrDefault:nil success:NULL error:&error];
 	expect(result).to.beNil();
@@ -357,7 +357,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 
 	// Issue second request
 
-	downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:request downloadManager:downloadManager];
+	downloadOperation = [[SQRLDownloader alloc] initWithRequest:request downloadManager:downloadManager];
 	result = [[downloadOperation download] firstOrDefault:nil success:NULL error:&error];
 	expect(result).notTo.beNil();
 	expect(error).to.beNil();

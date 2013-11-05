@@ -16,7 +16,7 @@
 // If the resource has previously been downloaded this operation may return the
 // URL of an existing file, contingent on the server matching the ETag of the
 // original response.
-@interface SQRLDownloadOperation : NSObject
+@interface SQRLDownloader : NSObject
 
 // This is the designated initialiser. The body of the response is streamed to
 // disk. If the response includes an ETag the download can be resumed

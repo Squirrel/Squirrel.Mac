@@ -10,7 +10,7 @@
 #import "SQRLZipArchiver.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "SQRLDirectoryManager.h"
-#import "SQRLDownloadOperation.h"
+#import "SQRLDownloader.h"
 #import "SQRLResumableDownloadManager.h"
 
 SpecBegin(SQRLUpdater)
@@ -194,7 +194,7 @@ it(@"should clean up resumable downloads after a successful download", ^{
 	NSURL *updateApplicationBundle = [self createTestApplicationUpdate];
 
 	NSURL *firstDownload = zipUpdate(updateApplicationBundle);
-	SQRLDownloadOperation *downloadOperation = [[SQRLDownloadOperation alloc] initWithRequest:[NSURLRequest requestWithURL:firstDownload] downloadManager:downloadManager];
+	SQRLDownloader *downloadOperation = [[SQRLDownloader alloc] initWithRequest:[NSURLRequest requestWithURL:firstDownload] downloadManager:downloadManager];
 	BOOL download = [[downloadOperation download] waitUntilCompleted:&error];
 	expect(download).to.beTruthy();
 	expect(error).to.beNil();

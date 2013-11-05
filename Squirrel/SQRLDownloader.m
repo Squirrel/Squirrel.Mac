@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDownloadOperation.h"
+#import "SQRLDownloader.h"
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <ReactiveCocoa/EXTScope.h>
@@ -14,7 +14,7 @@
 #import "SQRLResumableDownloadManager.h"
 #import "SQRLResumableDownload.h"
 
-@interface SQRLDownloadOperation () <NSURLConnectionDataDelegate>
+@interface SQRLDownloader () <NSURLConnectionDataDelegate>
 // Request the operation was initialised with.
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 // Download manager for resumable state.
@@ -32,7 +32,7 @@
 @property (nonatomic, strong) RACSubject *connectionSubject;
 @end
 
-@implementation SQRLDownloadOperation
+@implementation SQRLDownloader
 
 - (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLResumableDownloadManager *)downloadManager {
 	NSParameterAssert(request != nil);

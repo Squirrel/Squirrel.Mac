@@ -11,7 +11,7 @@
 @class RACSignal;
 
 // Bridges `NSURLConnection` to RAC.
-@interface SQRLURLConnectionOperation : NSObject
+@interface SQRLURLConnection : NSObject
 
 // Designated initialiser.
 //

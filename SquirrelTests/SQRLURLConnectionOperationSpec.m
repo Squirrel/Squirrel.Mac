@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLURLConnectionOperation.h"
+#import "SQRLURLConnection.h"
 
 SpecBegin(SQRLURLConnectionOperation)
 
@@ -19,7 +19,7 @@ it(@"should load file:// scheme URLs", ^{
 	expect(write).to.beTruthy();
 	expect(error).to.beNil();
 
-	RACSignal *connection = [SQRLURLConnectionOperation sqrl_sendAsynchronousRequest:[NSURLRequest requestWithURL:fileLocation]];
+	RACSignal *connection = [SQRLURLConnection sqrl_sendAsynchronousRequest:[NSURLRequest requestWithURL:fileLocation]];
 	RACTuple *response = [connection firstOrDefault:nil success:NULL error:&error];
 	expect(response).notTo.beNil();
 	expect(error).to.beNil();
