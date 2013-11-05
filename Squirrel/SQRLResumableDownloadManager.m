@@ -146,7 +146,7 @@
 
 					NSDictionary *propertyList = nil;
 
-					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:NULL];
+					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:NULL];
 					if (propertyListData == nil) {
 						propertyList = @{};
 					} else {
