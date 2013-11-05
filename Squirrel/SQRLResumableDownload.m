@@ -18,8 +18,7 @@
 	return [self initWithDictionary:@{
 		@keypath(self, response): response ?: NSNull.null,
 		@keypath(self, fileURL): fileURL,
-	}
-	error:NULL];
+	} error:NULL];
 }
 
 - (BOOL)isEqual:(id)object {

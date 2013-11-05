@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-#import "Mantle/Mantle.h"
+#import <Mantle/Mantle.h>
 
 // State required to resume a download from where it left off.
 @interface SQRLResumableDownload : MTLModel
