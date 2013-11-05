@@ -23,12 +23,12 @@
 // automatically by subsequent download operations initialised with a request of
 // equal URL.
 //
-// request            - Must be non nil, the request is issued with
-//                      NSURLConnection.
-// downloadController - Must be non nil, determines where the downloads will be
-//                      stored and resumed from. For a previously started
-//                      download to be resumed, an equivalent download
-//                      controller should be provided.
+// request         - Must be non nil, the request is issued with
+//                   NSURLConnection.
+// downloadManager - Must be non nil, determines where the downloads will be
+//                   stored and resumed from. For a previously started download
+//                   to be resumed, an equivalent download manager should be
+//                   provided.
 - (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLResumableDownloadManager *)downloadManager __attribute__((nonnull (1, 2)));
 
 // Starts downloading the resource, cancels when the the subscription is
