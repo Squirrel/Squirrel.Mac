@@ -61,14 +61,12 @@
 }
 
 + (RACSignal *)createDirectoryForURL:(RACSignal *)URLSignal {
-	return [[URLSignal flattenMap:^ RACSignal * (NSURL *directory) {
-		NSError *error = nil;
-		BOOL create = [NSFileManager.defaultManager createDirectoryAtURL:directory withIntermediateDirectories:YES attributes:nil error:&error];
-		if (!create) return [RACSignal error:error];
-
-		return [RACSignal return:directory];
-	}]
-	setNameWithFormat:@"%@ +createDirectoryForURL: %@", self, URLSignal];
+	return [[URLSignal
+		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
+			BOOL create = [NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:nil error:errorRef];
+			return (create ? directoryURL : nil);
+		}]
+		setNameWithFormat:@"%@ +createDirectoryForURL: %@", self, URLSignal];
 }
 
 - (RACSignal *)applicationSupportURLNoCreate {
