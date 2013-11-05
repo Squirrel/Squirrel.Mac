@@ -22,6 +22,16 @@
 
 // Connection to retreive the remote resource.
 @property (nonatomic, strong) NSURLConnection *connection;
+
+// Returns a signal which sends the resumable download for `request` from
+// `downloadManager` then completes, or errors.
+- (RACSignal *)resumableDownload;
+
+// Returns a signal which sends a tuple of SQRLResumableDownload and the request
+// that should be performed for that download. Either the original request or a
+// new request with the state added to resume a prior download, then completes,
+// or errors.
+- (RACSignal *)resumeRequest;
 @end
 
 @implementation SQRLDownloader
@@ -42,18 +52,12 @@
 
 #pragma mark Download
 
-// Returns a signal which sends the resumable download for `request` from
-// `downloadManager` then completes, or errors.
 - (RACSignal *)resumableDownload {
 	return [[self.downloadManager
 		downloadForRequest:self.request]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-// Returns a signal which sends a tuple of SQRLResumableDownload and the request
-// that should be performed for that download. Either the original request or a
-// new request with the state added to resume a prior download, then completes,
-// or errors.
 - (RACSignal *)resumeRequest {
 	return [[[self
 		resumableDownload]
