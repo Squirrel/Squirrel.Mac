@@ -187,12 +187,13 @@
 }
 
 - (RACSignal *)errorsSignal {
-	return [[[self
+	return [[[[self
 		rac_signalForSelector:@selector(connection:didFailWithError:)]
 		reduceEach:^(id _, NSError *error) {
 			return [RACSignal error:error];
 		}]
-		flatten];
+		flatten]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 - (RACSignal *)dataSignalWithResponse:(NSURLResponse *)response {
@@ -203,7 +204,7 @@
 				replayLast];
 		}];
 
-	return [[[[self
+	return [[[[[self
 		rac_signalForSelector:@selector(connection:didReceiveData:)]
 		takeUntil:self.connectionFinished]
 		reduceEach:^(id _, NSData *bodyData) {
@@ -215,21 +216,23 @@
 					return [self appendData:bodyData toURL:fileURL error:errorRef];
 				}];
 			}]
-		concat];
+		concat]
+		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
 }
 
 - (RACSignal *)responseSignal {
-	return [[[[self
+	return [[[[[self
 		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
 		takeUntil:self.connectionFinished]
 		reduceEach:^(id _, NSURLResponse *response) {
 			return [self dataSignalWithResponse:response];
 		}]
-		switchToLatest];
+		switchToLatest]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
-	return [RACSignal
+	return [[RACSignal
 		createSignal:^(id<RACSubscriber> subscriber) {
 			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
 
@@ -243,16 +246,16 @@
 			}]];
 
 			return disposable;
-		}];
+		}]
+		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
 }
 
 - (RACSignal *)download {
-	return [[[[self
+	return [[[self
 		requestForResumableDownload]
-		map:^(NSURLRequest *request) {
+		flattenMap:^(NSURLRequest *request) {
 			return [self connectionSignalWithRequest:request];
 		}]
-		flatten]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
