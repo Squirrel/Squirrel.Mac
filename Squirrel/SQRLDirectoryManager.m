@@ -69,8 +69,8 @@
 		setNameWithFormat:@"%@ +createDirectoryForURL: %@", self, URLSignal];
 }
 
-- (RACSignal *)applicationSupportURLNoCreate {
-	return [[RACSignal
+- (RACSignal *)applicationSupportURL {
+	RACSignal *applicationSupportURL = [[[RACSignal
 		defer:^{
 			NSError *error = nil;
 			NSURL *directoryURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
@@ -78,21 +78,24 @@
 				return [RACSignal error:error];
 			}
 
-			directoryURL = [directoryURL URLByAppendingPathComponent:[self.class fileSystemNameForIdentifier:@"com.github.Squirrel"]];
-			directoryURL = [directoryURL URLByAppendingPathComponent:[self.class fileSystemNameForIdentifier:self.applicationIdentifier]];
-
 			return [RACSignal return:directoryURL];
 		}]
-		setNameWithFormat:@"%@ -applicationSupportURL", self];
-}
+		map:^ (NSURL *directoryURL) {
+			NSArray *pathComponents = [[@[ self.applicationIdentifier, @"com.github.Squirrel" ].rac_sequence
+				map:^(NSString *name) {
+					return [self.class fileSystemNameForIdentifier:name];
+				}]
+				array];
 
-- (RACSignal *)applicationSupportURL {
-	return [self.class createDirectoryForURL:[self applicationSupportURLNoCreate]];
+			return [NSURL fileURLWithPathComponents:[directoryURL.pathComponents arrayByAddingObjectsFromArray:pathComponents]];
+		}]
+		setNameWithFormat:@"%@ -applicationSupportURL", self];
+	return [self.class createDirectoryForURL:applicationSupportURL];
 }
 
 - (RACSignal *)downloadDirectoryURL {
 	RACSignal *downloadDirectoryURL = [[[self
-		applicationSupportURLNoCreate]
+		applicationSupportURL]
 		map:^(NSURL *directoryURL) {
 			return [directoryURL URLByAppendingPathComponent:@"downloads"];
 		}]
@@ -102,10 +105,10 @@
 
 - (RACSignal *)uniqueUpdateDirectoryURL {
 	return [[[[self
-		applicationSupportURLNoCreate]
+		applicationSupportURL]
 		map:^ (NSURL *directoryURL) {
-			// noindex so that Spotlight doesn't pick up apps pending update and add
-			// them to the Launch Services database
+			// noindex so that Spotlight doesn't pick up apps pending update and
+			// add them to the Launch Services database.
 			return [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
 		}]
 		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
