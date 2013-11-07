@@ -31,6 +31,9 @@
 // `resumableDownload` - either the original request or a new request with the
 // state added to resume a prior download - then completes, or errors.
 - (RACSignal *)requestForResumableDownload;
+
+// Returns a signal which will complete when the `NSURLConnection` completes.
+@property (readonly, nonatomic, strong) RACSignal *connectionFinished;
 @end
 
 @implementation SQRLDownloader
@@ -49,6 +52,13 @@
 	_resumableDownload = [[downloadManager
 		downloadForRequest:request]
 		replayLast];
+
+	_connectionFinished = [[[self
+		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
+		flattenMap:^(id _) {
+			return RACSignal.empty;
+		}]
+		replay];
 
 	return self;
 }
@@ -176,90 +186,73 @@
 	return YES;
 }
 
-- (RACSignal *)download {
-	RACSignal *errors = [[[self
-		rac_signalForSelector:@selector(connection:didFailWithError:) fromProtocol:@protocol(NSURLConnectionDataDelegate)]
+- (RACSignal *)errorsSignal {
+	return [[[self
+		rac_signalForSelector:@selector(connection:didFailWithError:)]
 		reduceEach:^(id _, NSError *error) {
 			return [RACSignal error:error];
 		}]
 		flatten];
+}
 
-	RACSignal *finished = [self
-		rac_signalForSelector:@selector(connectionDidFinishLoading:)];
-
-	RACSignal *latestResponse = [[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
-	 	takeUntil:finished]
-		// Can't chain an operator after `-reduceEach:` because it uses `-map:`
-		// which bounces through `[RACSignal return:]` which means we subscribe
-		// to `-connection:didReceiveData:` after returning from
-		// `-connection:didReceiveResponse:` which is too late.
-		reduceEach:^(id _, NSURLResponse *response) {
-			// Only subscribe to prepareResumableDownloadForResponse: when the
-			// returned signal is subscribed to, so that the truncation happens
-			// after the new response is started.
-			RACSignal *preparedDownload = [[self
+- (RACSignal *)dataSignalWithResponse:(NSURLResponse *)response {
+	RACSignal *downloadForResponse = [RACSignal
+		defer:^{
+			return [[self
 				prepareResumableDownloadForResponse:response]
-				replayLazily];
+				replayLast];
+		}];
 
-			return [[[[[self
-				rac_signalForSelector:@selector(connection:didReceiveData:)]
-				takeUntil:finished]
-				reduceEach:^(id _, NSData *bodyData) {
-					return [[preparedDownload
-						try:^(SQRLResumableDownload *download, NSError **errorRef) {
-							return [self appendData:bodyData toURL:download.fileURL error:errorRef];
-						}]
-						ignoreValues];
+	return [[[[self
+		rac_signalForSelector:@selector(connection:didReceiveData:)]
+		takeUntil:self.connectionFinished]
+		reduceEach:^(id _, NSData *bodyData) {
+			return [[downloadForResponse
+				map:^(SQRLResumableDownload *download) {
+					return download.fileURL;
 				}]
-				flatten]
-				concat:[RACSignal
-					return:response]];
-		}]
-		switchToLatest]
-		replayLast];
+				try:^(NSURL *fileURL, NSError **errorRef) {
+					return [self appendData:bodyData toURL:fileURL error:errorRef];
+				}];
+			}]
+		concat];
+}
 
-	return [[[self
+- (RACSignal *)responseSignal {
+	return [[[[self
+		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
+		takeUntil:self.connectionFinished]
+		reduceEach:^(id _, NSURLResponse *response) {
+			return [self dataSignalWithResponse:response];
+		}]
+		switchToLatest];
+}
+
+- (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
+	return [RACSignal
+		createSignal:^(id<RACSubscriber> subscriber) {
+			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
+
+			[disposable addDisposable:[[self responseSignal] subscribe:subscriber]];
+			[disposable addDisposable:[[self errorsSignal] subscribe:subscriber]];
+
+			[self startDownloadWithRequest:request];
+
+			[disposable addDisposable:[RACDisposable disposableWithBlock:^{
+				[self.connection cancel];
+			}]];
+
+			return disposable;
+		}];
+}
+
+- (RACSignal *)download {
+	return [[[[self
 		requestForResumableDownload]
-		flattenMap:^(NSURLRequest *request) {
-			return [[RACSignal
-				createSignal:^(id<RACSubscriber> subscriber) {
-					RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
-
-					[self startDownloadWithRequest:request];
-
-					RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
-						[self.connection cancel];
-					}];
-					[disposable addDisposable:connectionDisposable];
-
-					RACDisposable *errorDisposable = [[RACSignal
-						merge:@[ errors, latestResponse ]]
-						subscribeError:^(NSError *error) {
-							[connectionDisposable dispose];
-							[subscriber sendError:error];
-						}];
-					[disposable addDisposable:errorDisposable];
-
-					RACDisposable *dataDisposable = [latestResponse subscribeCompleted:^{
-						RACSignal *downloadLocation = [[self
-							resumableDownload]
-							map:^(SQRLResumableDownload *download) {
-								return download.fileURL;
-							}];
-
-						RACSignal *result = [latestResponse
-							zipWith:downloadLocation];
-
-						[subscriber sendNext:result];
-						[subscriber sendCompleted];
-					}];
-					[disposable addDisposable:dataDisposable];
-
-					return disposable;
-				}]
-				flatten];
+		map:^(NSURLRequest *request) {
+			return [self connectionSignalWithRequest:request];
 		}]
+		flatten]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
