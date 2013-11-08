@@ -203,7 +203,7 @@
 }
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
-	return [[[RACSignal
+	return [[RACSignal
 		createSignal:^(id<RACSubscriber> subscriber) {
 			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
 			delegateQueue.maxConcurrentOperationCount = 1;
@@ -211,18 +211,42 @@
 			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
 			connection.delegateQueue = delegateQueue;
 
+			// Because signal subscription is asynchronous when not performed on
+			// a known RACScheduler (because lulz RAC implementation details),
+			// this scheduler is used to order some of the subscription logic
+			// below.
+			//
+			// As an aside, it lowers the priority of our download operation, to
+			// avoid competing with work explicitly initiated by the user.
 			RACScheduler *callbackScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground];
 
+			// A signal that will error if the connection fails for any reason.
+			//
+			// This does not use `callbackScheduler` because errors should
+			// propagate as quickly as possible, and do not result in other
+			// signal subscriptions (at least in this code).
 			RACSignal *errors = [[self
 				signalForDelegateSelector:@selector(connection:didFailWithError:) ofConnection:connection]
 				flattenMap:^(NSError *error) {
 					return [RACSignal error:error];
 				}];
 
+			// A signal of all `NSURLResponse`s received on the connection.
+			//
+			// This signal's events are delivered to `callbackScheduler` so that
+			// any bound signals are subscribed to synchronously.
 			RACSignal *responses = [[self
 				signalForDelegateSelector:@selector(connection:didReceiveResponse:) ofConnection:connection]
 				deliverOn:callbackScheduler];
 
+			// A signal of all `NSData` received on the connection.
+			//
+			// This signal's events are delivered to `callbackScheduler` so that
+			// ordering is preserved relative to `responses`.
+			//
+			// The signal is multicasted so that any subscription created _as
+			// a result of_ an event on `responses` won't miss the first
+			// `NSData` to follow.
 			RACMulticastConnection *data = [[[self
 				signalForDelegateSelector:@selector(connection:didReceiveData:) ofConnection:connection]
 				deliverOn:callbackScheduler]
@@ -230,9 +254,12 @@
 
 			RACDisposable *dataDisposable = [data connect];
 
-			RACSignal *finished = [[self
+			// Sends (or replays) RACUnit when the connection has finished
+			// loading successfully.
+			RACSignal *finished = [[[self
 				signalForDelegateSelector:@selector(connectionDidFinishLoading:) ofConnection:connection]
-				replayLast];
+				take:1]
+				replay];
 
 			RACDisposable *responsesDisposable = [[[[[RACSignal
 				merge:@[ responses, errors ]]
@@ -271,7 +298,6 @@
 				[responsesDisposable dispose];
 			}];
 		}]
-		subscribeOn:[RACScheduler scheduler]]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
 }
 
