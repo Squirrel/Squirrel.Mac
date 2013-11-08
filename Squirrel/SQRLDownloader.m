@@ -17,11 +17,15 @@
 @interface SQRLDownloader ()
 // Request the operation was initialised with.
 @property (nonatomic, copy, readonly) NSURLRequest *request;
+
 // Download manager for resumable state.
 @property (nonatomic, strong, readonly) SQRLResumableDownloadManager *downloadManager;
 
 // Connection to retreive the remote resource.
 @property (nonatomic, strong) NSURLConnection *connection;
+
+// A scheduler to invoke the connection's callbacks upon.
+@property (nonatomic, strong, readonly) RACScheduler *connectionScheduler;
 
 // Returns a signal which sends the resumable download for `request` from
 // `downloadManager` then completes, or errors.
@@ -46,15 +50,17 @@
 	if (self == nil) return nil;
 
 	_request = [request copy];
-
 	_downloadManager = downloadManager;
+
+	_connectionScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground];
 
 	_resumableDownload = [[downloadManager
 		downloadForRequest:request]
 		replayLast];
 
-	_connectionFinished = [[[self
+	_connectionFinished = [[[[self
 		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
+		deliverOn:self.connectionScheduler]
 		flattenMap:^(id _) {
 			return RACSignal.empty;
 		}]
@@ -187,8 +193,9 @@
 }
 
 - (RACSignal *)errorsSignal {
-	return [[[[self
+	return [[[[[self
 		rac_signalForSelector:@selector(connection:didFailWithError:)]
+		deliverOn:self.connectionScheduler]
 		reduceEach:^(id _, NSError *error) {
 			return [RACSignal error:error];
 		}]
@@ -204,8 +211,9 @@
 				replayLast];
 		}];
 
-	return [[[[[self
+	return [[[[[[self
 		rac_signalForSelector:@selector(connection:didReceiveData:)]
+		deliverOn:self.connectionScheduler]
 		takeUntil:self.connectionFinished]
 		reduceEach:^(id _, NSData *bodyData) {
 			return [[downloadForResponse
@@ -221,8 +229,9 @@
 }
 
 - (RACSignal *)responseSignal {
-	return [[[[[self
+	return [[[[[[self
 		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
+		deliverOn:self.connectionScheduler]
 		takeUntil:self.connectionFinished]
 		reduceEach:^(id _, NSURLResponse *response) {
 			return [self dataSignalWithResponse:response];
@@ -232,7 +241,7 @@
 }
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
-	return [[RACSignal
+	return [[[RACSignal
 		createSignal:^(id<RACSubscriber> subscriber) {
 			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
 
@@ -247,6 +256,11 @@
 
 			return disposable;
 		}]
+		// Ensures that we subscribe to the selector signals on a known
+		// scheduler. If this isn't done, there may be an asynchronous hop
+		// before a subscription is actually established, so we could miss
+		// callbacks.
+		subscribeOn:self.connectionScheduler]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
 }
 
