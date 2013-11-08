@@ -24,9 +24,6 @@
 // Connection to retreive the remote resource.
 @property (nonatomic, strong) NSURLConnection *connection;
 
-// A scheduler to invoke the connection's callbacks upon.
-@property (nonatomic, strong, readonly) RACScheduler *connectionScheduler;
-
 // Returns a signal which sends the resumable download for `request` from
 // `downloadManager` then completes, or errors.
 @property (nonatomic, readonly, strong) RACSignal *resumableDownload;
@@ -36,8 +33,16 @@
 // state added to resume a prior download - then completes, or errors.
 - (RACSignal *)requestForResumableDownload;
 
-// Returns a signal which will complete when the `NSURLConnection` completes.
-@property (readonly, nonatomic, strong) RACSignal *connectionFinished;
+// Listens for invocations of `selector` on the receiver that are triggered by
+// the given connection.
+//
+// The first argument of `selector` must be an `NSURLConnection` object.
+//
+// Returns a signal which sends the _second_ argument of `selector`, or
+// RACUnit if there is only one argument, then completes when the receiver
+// deallocates.
+- (RACSignal *)signalForDelegateSelector:(SEL)selector ofConnection:(NSURLConnection *)connection;
+
 @end
 
 @implementation SQRLDownloader
