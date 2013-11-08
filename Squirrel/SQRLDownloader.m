@@ -273,4 +273,20 @@
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
+#pragma mark NSURLConnectionDelegate
+
+// Stub delegate methods, to ensure that we don't ever invoke an unimplemented
+// selector.
+- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+}
+
 @end
