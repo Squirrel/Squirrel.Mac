@@ -51,25 +51,35 @@
 
 	_request = [request copy];
 	_downloadManager = downloadManager;
-
-	_connectionScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground];
-
-	_resumableDownload = [[downloadManager
-		downloadForRequest:request]
-		replayLast];
-
-	_connectionFinished = [[[[self
-		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
-		deliverOn:self.connectionScheduler]
-		flattenMap:^(id _) {
-			return RACSignal.empty;
-		}]
-		replay];
+	_resumableDownload = [downloadManager downloadForRequest:request];
 
 	return self;
 }
 
 #pragma mark Download
+
+- (RACSignal *)signalForDelegateSelector:(SEL)selector ofConnection:(NSURLConnection *)connection {
+	NSParameterAssert(selector != NULL);
+	NSParameterAssert(connection != nil);
+
+	return [[[self
+		rac_signalForSelector:selector]
+		filter:^ BOOL (RACTuple *args) {
+			return args.first == connection;
+		}]
+		map:^(RACTuple *args) {
+			return args.second ?: RACUnit.defaultUnit;
+		}];
+}
+
+- (RACSignal *)download {
+	return [[[self
+		requestForResumableDownload]
+		flattenMap:^(NSURLRequest *request) {
+			return [self connectionSignalWithRequest:request];
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+}
 
 - (RACSignal *)requestForResumableDownload {
 	return [[[self
@@ -192,85 +202,77 @@
 	return YES;
 }
 
-- (RACSignal *)errorsSignal {
-	return [[[[[self
-		rac_signalForSelector:@selector(connection:didFailWithError:)]
-		deliverOn:self.connectionScheduler]
-		reduceEach:^(id _, NSError *error) {
-			return [RACSignal error:error];
-		}]
-		flatten]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
-}
-
-- (RACSignal *)dataSignalWithResponse:(NSURLResponse *)response {
-	RACSignal *downloadForResponse = [RACSignal
-		defer:^{
-			return [[self
-				prepareResumableDownloadForResponse:response]
-				replayLast];
-		}];
-
-	return [[[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveData:)]
-		deliverOn:self.connectionScheduler]
-		takeUntil:self.connectionFinished]
-		reduceEach:^(id _, NSData *bodyData) {
-			return [[downloadForResponse
-				map:^(SQRLResumableDownload *download) {
-					return download.fileURL;
-				}]
-				try:^(NSURL *fileURL, NSError **errorRef) {
-					return [self appendData:bodyData toURL:fileURL error:errorRef];
-				}];
-			}]
-		concat]
-		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
-}
-
-- (RACSignal *)responseSignal {
-	return [[[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
-		deliverOn:self.connectionScheduler]
-		takeUntil:self.connectionFinished]
-		reduceEach:^(id _, NSURLResponse *response) {
-			return [self dataSignalWithResponse:response];
-		}]
-		switchToLatest]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
-}
-
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
 	return [[[RACSignal
 		createSignal:^(id<RACSubscriber> subscriber) {
-			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
+			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
+			delegateQueue.maxConcurrentOperationCount = 1;
 
-			[disposable addDisposable:[[self responseSignal] subscribe:subscriber]];
-			[disposable addDisposable:[[self errorsSignal] subscribe:subscriber]];
+			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+			connection.delegateQueue = delegateQueue;
 
-			[self startDownloadWithRequest:request];
+			RACScheduler *callbackScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground];
 
-			[disposable addDisposable:[RACDisposable disposableWithBlock:^{
-				[self.connection cancel];
-			}]];
+			RACSignal *errors = [[self
+				signalForDelegateSelector:@selector(connection:didFailWithError:) ofConnection:connection]
+				flattenMap:^(NSError *error) {
+					return [RACSignal error:error];
+				}];
 
-			return disposable;
+			RACSignal *responses = [[self
+				signalForDelegateSelector:@selector(connection:didReceiveResponse:) ofConnection:connection]
+				deliverOn:callbackScheduler];
+
+			RACMulticastConnection *data = [[[self
+				signalForDelegateSelector:@selector(connection:didReceiveData:) ofConnection:connection]
+				deliverOn:callbackScheduler]
+				publish];
+
+			RACDisposable *dataDisposable = [data connect];
+
+			RACSignal *finished = [[self
+				signalForDelegateSelector:@selector(connectionDidFinishLoading:) ofConnection:connection]
+				replayLast];
+
+			RACDisposable *responsesDisposable = [[[[[RACSignal
+				merge:@[ responses, errors ]]
+				takeUntil:finished]
+				map:^(NSURLResponse *response) {
+					RACSignal *downloadURL = [[[self
+						prepareResumableDownloadForResponse:response]
+						map:^(SQRLResumableDownload *download) {
+							return download.fileURL;
+						}]
+						replayLazily];
+
+					return [[[[data.signal
+						takeUntil:finished]
+						map:^(NSData *bodyData) {
+							return [downloadURL try:^(NSURL *fileURL, NSError **errorRef) {
+								return [self appendData:bodyData toURL:fileURL error:errorRef];
+							}];
+						}]
+						concat]
+						then:^{
+							return [RACSignal zip:@[
+								[RACSignal return:response],
+								downloadURL
+							]];
+						}];
+				}]
+				switchToLatest]
+				subscribe:subscriber];
+
+			[connection start];
+			return [RACDisposable disposableWithBlock:^{
+				[connection cancel];
+
+				[dataDisposable dispose];
+				[responsesDisposable dispose];
+			}];
 		}]
-		// Ensures that we subscribe to the selector signals on a known
-		// scheduler. If this isn't done, there may be an asynchronous hop
-		// before a subscription is actually established, so we could miss
-		// callbacks.
-		subscribeOn:self.connectionScheduler]
+		subscribeOn:[RACScheduler scheduler]]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
-}
-
-- (RACSignal *)download {
-	return [[[self
-		requestForResumableDownload]
-		flattenMap:^(NSURLRequest *request) {
-			return [self connectionSignalWithRequest:request];
-		}]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
 #pragma mark NSURLConnectionDelegate
