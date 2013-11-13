@@ -62,11 +62,6 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // flattened for convenience.
 @property (nonatomic, strong, readonly) RACSignal *updates;
 
-// Whether or not to relaunch after installing an update.
-//
-// This will be reset to NO whenever update installation fails.
-@property (atomic) BOOL shouldRelaunch;
-
 // The request that will be sent to check for updates.
 //
 // The default value is the argument that was originally passed to
@@ -103,6 +98,21 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // Returns a disposable which can be used to cancel the automatic update
 // checking.
 - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval;
+
+// Terminates the running application to install any available update, then
+// automatically relaunches the app after updating.
+//
+// This method is only useful if you want the application to automatically
+// relaunch. Otherwise, you can simply use `-[NSApplication terminate:]` or any
+// other exit mechanism.
+//
+// After invoking this method, the receiver is responsible for terminating the
+// application upon success. The app must not be terminated in any other way
+// unless an error occurs.
+//
+// Returns a signal that will error on the main scheduler if anything goes
+// wrong before termination. The signal will never complete.
+- (RACSignal *)relaunchToInstallUpdate;
 
 @end
 
