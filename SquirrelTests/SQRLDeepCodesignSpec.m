@@ -102,7 +102,7 @@ BOOL (^deepVerify)(void) = ^ BOOL {
 	return deepVerifyTask.terminationStatus == 0;
 };
 
-it(@"should deep sign the test application", ^{
+xit(@"should deep sign the test application", ^{
 	deepCodesignTestApplication();
 });
 
