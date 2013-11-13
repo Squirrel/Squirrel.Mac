@@ -493,7 +493,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[SQRLShipItState
+	return [[[[[[[[SQRLShipItState
 		readUsingURL:self.shipItStateURL]
 		flattenMap:^(SQRLShipItState *existingState) {
 			return [self validateExistingState:existingState];
@@ -511,6 +511,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		// Never allow `completed` to escape this signal chain (in case
 		// -terminate: is asynchronous or something crazy).
 		concat:[RACSignal never]]
+		replay]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
 
