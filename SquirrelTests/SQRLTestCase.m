@@ -83,17 +83,29 @@ static void SQRLSignalHandler(int sig) {
 		[[NSData data] writeToURL:URL atomically:YES];
 	}
 
-	NSArray *args = [[[URLs
+	NSPipe *outputPipe = [NSPipe pipe];
+	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
+
+	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
+		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
+		NSLog(@"\n%@", output);
+	};
+
+	NSTask *readShipIt = [[NSTask alloc] init];
+	readShipIt.launchPath = @"/usr/bin/tail";
+	readShipIt.standardOutput = outputPipe;
+	readShipIt.arguments = [[[URLs
 		map:^(NSURL *URL) {
 			return URL.path;
 		}]
 		startWith:@"-f"]
 		array];
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:args];
-	NSAssert([readShipIt isRunning], @"Could not start task %@ with arguments: %@", readShipIt, args);
+	[readShipIt launch];
+	NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
 
 	atexit_b(^{
+		[outputHandle closeFile];
 		[readShipIt terminate];
 	});
 }
