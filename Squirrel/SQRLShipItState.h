@@ -41,9 +41,6 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 //                                        update bundle.
 // SQRLInstallerStateVerifyingInPlace   - Verifying that the target bundle is
 //                                        still valid after updating.
-// SQRLInstallerStateRelaunching        - Relaunching the updated application.
-//                                        This state will be entered even if
-//                                        there's no relaunching to do.
 //
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
@@ -53,7 +50,6 @@ typedef enum : NSInteger {
 	SQRLInstallerStateBackingUp,
 	SQRLInstallerStateInstalling,
 	SQRLInstallerStateVerifyingInPlace,
-	SQRLInstallerStateRelaunching
 } SQRLInstallerState;
 
 @class RACSignal;
