@@ -39,7 +39,7 @@ Once Squirrel is added to your project, you need to configure and start it.
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://mycompany.com/myapp/latest"]]];
 
-    // Check for updates every 4 hours.
+	// Check for updates every 4 hours.
 	[self.updater startAutomaticChecksWithInterval:60 * 60 * 4];
 }
 ```
