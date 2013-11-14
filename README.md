@@ -19,6 +19,8 @@ Support](#server-support) below.
 Squirrel’s installer is also designed to be fault tolerant, and ensure that any
 updates installed are valid.
 
+![:shipit:](http://shipitsquirrel.github.io/images/ship%20it%20squirrel.png)
+
 # Adopting Squirrel
 
 1. Add the Squirrel repository as a git submodule
@@ -36,30 +38,38 @@ Once Squirrel is added to your project, you need to configure and start it.
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://mycompany.com/myapp/latest"]]];
-	[self.updater startAutomaticChecksWithInterval:/* 4 Hours */ 60 * 60 * 4];
-	[self.updater checkForUpdates];
+
+	// Check for updates every 4 hours.
+	[self.updater startAutomaticChecksWithInterval:60 * 60 * 4];
 }
 ```
 
-Squirrel will periodically request and automatically download any updates.
+Squirrel will periodically request and automatically download any updates. When
+your application terminates, any downloaded update will be automatically
+installed.
 
-Before your application terminates, it should tell Squirrel to install any
-updates that it has downloaded:
+## Update Notifications
+
+To know when an update is ready to be installed, you can subscribe to the
+`updates` signal on `SQRLUpdater`:
 
 ```objc
-- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
-	[self.updater installUpdateIfNeeded:^(BOOL success, NSError *error) {
-		if (success) {
-			NSLog(@"Successfully installed an update");
-		} else {
-			NSLog(@"Failed to update: %@", error);
-		}
+[self.updater.updates subscribeNext:^(SQRLDownloadedUpdate *downloadedUpdate) {
+    NSLog(@"An update is ready to install: %@", downloadedUpdate);
+}];
+```
 
-		[sender replyToApplicationShouldTerminate:YES];
-	}];
+If you've been notified of an available update, and don't want to wait for it to
+be installed automatically, you can terminate the app to begin the installation
+process immediately.
 
-	return NSTerminateLater;
-}
+If you want to install a downloaded update and automatically relaunch afterward,
+`SQRLUpdater` can do that:
+
+```objc
+[[self.updater relaunchToInstallUpdate] subscribeError:^(NSError *error) {
+    NSLog(@"Error preparing update: %@", error);
+}];
 ```
 
 # Update JSON Format
@@ -100,7 +110,6 @@ will check for an update again at the interval you specify.
 
 # User Interface
 
-Squirrel does not provide an updates interface, if you want to display available
-updates, subscribe to the `SQRLUpdaterUpdateAvailableNotification` notification.
-
-![:shipit:](http://shipitsquirrel.github.io/images/ship%20it%20squirrel.png)
+Squirrel does not provide any GUI components for presenting updates. If you want
+to indicate updates to the user, make sure to [listen for downloaded
+updates](#update-notifications).
