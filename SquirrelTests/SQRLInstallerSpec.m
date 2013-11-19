@@ -182,8 +182,11 @@ describe(@"signal handling", ^{
 
 	it(@"should handle SIGKILL", ^{
 		// SIGKILL is unique in that it'll always terminate ShipIt, so send it
-		// a few times to really test resumption.
-		for (int i = 0; i < 3; i++) {
+		// a couple times to really test resumption.
+		//
+		// Two SIGKILL signals means that it'll be launched three times (which
+		// matches the maximum number of attempts per state).
+		for (int i = 0; i < 2; i++) {
 			system("killall -KILL ShipIt");
 
 			// Wait at least for the launchd throttle interval.
