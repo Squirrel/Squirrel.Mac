@@ -7,6 +7,7 @@
 //
 
 #import "SQRLInstaller.h"
+#import "SQRLInstaller+Private.h"
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
@@ -31,35 +32,9 @@ const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
-// A preferences key for the URL where the target bundle has been moved before
-// installation.
-//
-// This is stored in preferences, rather than `SQRLShipItState`, to prevent an
-// attacker from rewriting the URL during the installation process.
-//
-// Note that this key must remain backwards compatible, so ShipIt doesn't fail
-// confusingly on a newer version.
-static NSString * const SQRLInstallerOwnedTargetBundleURLKey = @"OwnedTargetBundleURL";
-
-// A preferences key for the URL where the update bundle has been moved before
-// installation.
-//
-// This is stored in preferences, rather than `SQRLShipItState`, to prevent an
-// attacker from rewriting the URL during the installation process.
-//
-// Note that this key must remain backwards compatible, so ShipIt doesn't fail
-// confusingly on a newer version.
-static NSString * const SQRLInstallerOwnedUpdateBundleURLKey = @"OwnedUpdateBundleURL";
-
-// A preferences key for the code signature that the update _and_ target bundles
-// must match in order to be valid.
-//
-// This is stored in preferences, rather than `SQRLShipItState`, to prevent an
-// attacker from spoofing the validity requirements.
-//
-// Note that this key must remain backwards compatible, so ShipIt doesn't fail
-// confusingly on a newer version.
-static NSString * const SQRLInstallerCodeSignatureKey = @"CodeSignature";
+NSString * const SQRLInstallerOwnedTargetBundleURLKey = @"OwnedTargetBundleURL";
+NSString * const SQRLInstallerOwnedUpdateBundleURLKey = @"OwnedUpdateBundleURL";
+NSString * const SQRLInstallerCodeSignatureKey = @"CodeSignature";
 
 // Maps an installer state to a selector to invoke.
 typedef struct {
