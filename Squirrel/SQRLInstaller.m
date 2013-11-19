@@ -362,9 +362,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	dispatch_once(&dispatchTablePredicate, ^{
 		const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
 			{ .installerState = SQRLInstallerStateReadingCodeSignature, .selector = @selector(readCodeSignatureWithState:) },
-			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(moveUpdateBundleWithState:) },
+			{ .installerState = SQRLInstallerStateVerifyingUpdate, .selector = @selector(verifyAndMoveUpdateBundleWithState:) },
 			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpTargetWithState:) },
-			{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
 			{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
 			{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
 			{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
@@ -507,7 +506,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		setNameWithFormat:@"%@ -readCodeSignatureWithState: %@", self, state];
 }
 
-- (RACSignal *)moveUpdateBundleWithState:(SQRLShipItState *)state {
+- (RACSignal *)verifyAndMoveUpdateBundleWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
 	return [[[[self
@@ -520,23 +519,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			// the state change hasn't taken effect.
 			self.ownedUpdateBundleURL = ownedURL;
 		}]
-		setNameWithFormat:@"%@ -moveUpdateBundleWithState: %@", self, state];
-}
-
-- (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
-	return [[self
-		verifyBundleAtURL:self.ownedUpdateBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
-		setNameWithFormat:@"%@ -verifyTargetDesignatedRequirementAgainstUpdateWithState: %@", self, state];
-}
-
-- (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
-
-	return [[RACSignal
-		defer:^{
-			return [self clearQuarantineForDirectory:self.ownedUpdateBundleURL];
-		}]
-		setNameWithFormat:@"%@ -clearQuarantineWithState: %@", self, state];
+		setNameWithFormat:@"%@ -verifyAndMoveUpdateBundleWithState: %@", self, state];
 }
 
 - (RACSignal *)backUpTargetWithState:(SQRLShipItState *)state {
@@ -555,6 +538,16 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		setNameWithFormat:@"%@ -backUpTargetWithState: %@", self, state];
 }
 
+- (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[RACSignal
+		defer:^{
+			return [self clearQuarantineForDirectory:self.ownedUpdateBundleURL];
+		}]
+		setNameWithFormat:@"%@ -clearQuarantineWithState: %@", self, state];
+}
+
 - (RACSignal *)installWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
@@ -567,8 +560,10 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 				checkWhetherBundlePreviouslyAtURL:self.ownedUpdateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:signature]
 				ignore:@YES]
 				flattenMap:^(id _) {
+					// If the bundle is not in place yet, verify the update
+					// (again) and attempt to install.
 					return [[self
-						verifyBundleAtURL:self.ownedUpdateBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
+						verifyBundleAtURL:self.ownedUpdateBundleURL usingSignature:signature recoveringUsingBackupAtURL:nil]
 						then:^{
 							return [self installItemAtURL:targetBundleURL fromURL:self.ownedUpdateBundleURL];
 						}];

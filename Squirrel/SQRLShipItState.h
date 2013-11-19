@@ -31,34 +31,27 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // The current state of the installer, for persistence across relaunches and for
 // tolerance of system failures.
 //
-// SQRLInstallerStateNothingToDo                - ShipIt has not started installing
-//                                                yet.
-// SQRLInstallerStateReadingCodeSignature       - Reading the code signature
-//                                                from the target bundle, so we
-//                                                know the designated
-//                                                requirement that any update
-//                                                must satisfy.
-// SQRLInstallerStateUpdatingPermissions        - Changing the BSD permissions of the
-//                                                updateBundle so that we can safely
-//                                                check the code sign signature and
-//                                                then install, without leaving an
-//                                                opportunity for other processes to
-//                                                modify the bundle between check and
-//                                                use.
-// SQRLInstallerStateBackingUp                  - Backing up the target bundle so it
-//                                                can be restored in the event of
-//                                                failure.
-// SQRLInstallerStateVerifyingTargetRequirement - Checking that the update bundle meets
-//                                                the designated requirement of the
-//                                                target bundle. This ensures that
-//                                                the update is a suitable replacement.
-// SQRLInstallerStateClearingQuarantine         - Clearing the quarantine flag on the
-//                                                update bundle so it can used without
-//                                                issue.
-// SQRLInstallerStateInstalling                 - Replacing the target bundle with the
-//                                                update bundle.
-// SQRLInstallerStateVerifyingInPlace           - Verifying that the target bundle is
-//                                                still valid after updating.
+// SQRLInstallerStateNothingToDo          - ShipIt has not started installing
+//                                          yet.
+// SQRLInstallerStateReadingCodeSignature - Reading the code signature
+//                                          from the target bundle, so we
+//                                          know the designated
+//                                          requirement that any update
+//                                          must satisfy.
+// SQRLInstallerStateVerifyingUpdate      - Checking that the update bundle meets
+//                                          the designated requirement of the
+//                                          target bundle. This ensures that
+//                                          the update is a suitable replacement.
+// SQRLInstallerStateBackingUp            - Backing up the target bundle so it
+//                                          can be restored in the event of
+//                                          failure.
+// SQRLInstallerStateClearingQuarantine   - Clearing the quarantine flag on the
+//                                          update bundle so it can used without
+//                                          issue.
+// SQRLInstallerStateInstalling           - Replacing the target bundle with the
+//                                          update bundle.
+// SQRLInstallerStateVerifyingInPlace     - Verifying that the target bundle is
+//                                          still valid after updating.
 //
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
@@ -73,8 +66,7 @@ typedef enum : NSInteger {
 	SQRLInstallerStateInstalling,
 	SQRLInstallerStateVerifyingInPlace,
 	SQRLInstallerStateReadingCodeSignature,
-	SQRLInstallerStateUpdatingPermissions,
-	SQRLInstallerStateVerifyingTargetRequirement,
+	SQRLInstallerStateVerifyingUpdate,
 } SQRLInstallerState;
 
 @class RACSignal;
