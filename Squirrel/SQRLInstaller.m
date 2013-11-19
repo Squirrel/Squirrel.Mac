@@ -14,6 +14,7 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItState.h"
 #import "SQRLTerminationListener.h"
+#import <copyfile.h>
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -95,22 +96,39 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Returns a signal which will complete or error on an unspecified thread.
 - (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state;
 
-// Moves the specified bundle to a backup location.
+// Invokes -moveAndTakeOwnershipOfBundleAtURL: only if the bundle has not
+// already been moved into place.
 //
-// bundleURL - The URL to the bundle that should be backed up. This must not be
-//             nil.
+// bundleURL     - The original URL to the bundle. This must not be nil.
+// installedURL  - The proposed destination URL for the bundle. This may be nil,
+//                 in which case a new one will be generated.
+// codeSignature - The code signature that any item must match in order to be
+//                 considered the correct bundle. This may be nil if
+//                 `installedURL` is nil.
 //
-// Returns a signal which will send the `NSURL` to the proposed backup location
-// as soon as possible, then complete once the bundle has actually been moved.
-- (RACSignal *)backUpBundleAtURL:(NSURL *)bundleURL;
+// Returns a signal which will send the `NSURL` to the installed bundle location
+// if a new one was generated, then complete once the bundle has been copied and
+// its permissions updated. If the bundle was already in place, the signal will
+// complete without sending any values.
+- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL unlessInstalledAtURL:(NSURL *)installedURL verifiedUsingSignature:(SQRLCodeSignature *)codeSignature;
 
-// Deletes a bundle that was backed up using -backUpBundleAtURL:.
+// Moves the specified bundle to a temporary location, then ensures that the
+// bundle's permissions are such that other users and groups can't write to it.
 //
-// backupURL - The URL to the backup bundle, as sent from -backUpBundleAtURL:.
+// bundleURL - The URL to the bundle to move. This must not be nil.
+//
+// Returns a signal which will send the `NSURL` to the proposed new bundle
+// location, as soon as one has been determined, then complete once the bundle
+// has been copied and its permissions updated.
+- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL;
+
+// Deletes a bundle that was moved into place using -moveAndTakeOwnershipOfBundleAtURL:.
+//
+// bundleURL - The URL to the backup bundle, as sent from -moveAndTakeOwnershipOfBundleAtURL:.
 //             This must not be nil.
 //
 // Returns a signal which will synchronously complete or error.
-- (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL;
+- (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
 
 // Validates the code signature of a bundle, optionally restoring it upon
 // failure.
@@ -164,14 +182,14 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Returns a signal which will send completed or error on a background thread.
 - (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory;
 
-// Changes the owner and group of the given URL to that of the current process,
+// Changes the owner and group of the given directory to that of the current process,
 // then disables writing for anyone but the owner.
 //
-// location - The URL to the file or folder to take ownership of. This must not
-//            be nil.
+// directoryURL - The URL to the folder to take ownership of. This must not be
+//                nil.
 //
 // Returns a signal which will synchronously complete or error.
-- (RACSignal *)takeOwnershipOfURL:(NSURL *)location;
+- (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL;
 
 @end
 
@@ -284,10 +302,10 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 	dispatch_once(&dispatchTablePredicate, ^{
 		const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
-			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(changeUpdateBundlePermissionsWithState:) },
+			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(moveUpdateBundleWithState:) },
+			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpTargetWithState:) },
 			{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
 			{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
-			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
 			{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
 			{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
 			{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
@@ -404,38 +422,33 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	}];
 }
 
-- (RACSignal *)changeUpdateBundlePermissionsWithState:(SQRLShipItState *)state {
+- (RACSignal *)moveUpdateBundleWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[[[self
-		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
-		flattenMap:^(NSURL *updateURL) {
-			return [RACSignal createSignal:^(id<RACSubscriber> subscriber) {
-				NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:updateURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
-					[subscriber sendError:error];
-					return NO;
-				}];
-
-				return [enumerator.rac_sequence.signal subscribe:subscriber];
-			}];
+	return [[[[RACSignal
+		zip:@[
+			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+		] reduce:^(NSURL *updateURL, SQRLCodeSignature *codeSignature) {
+			return [self moveAndTakeOwnershipOfBundleAtURL:updateURL unlessInstalledAtURL:self.updateBundleURL verifiedUsingSignature:codeSignature];
 		}]
-		flattenMap:^(NSURL *currentURL) {
-			return [self takeOwnershipOfURL:currentURL];
+		flatten]
+		doNext:^(NSURL *updateBundleURL) {
+			// Save the new URL as soon as we have it, so we can resume even if
+			// the state change hasn't taken effect.
+			self.updateBundleURL = updateBundleURL;
 		}]
-		setNameWithFormat:@"%@ -changeUpdateBundlePermissionsWithState: %@", self, state];
+		setNameWithFormat:@"%@ -moveUpdateBundleWithState: %@", self, state];
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
 	return [[[RACSignal
-		zip:@[
-			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-		] reduce:^(NSURL *updateBundleURL, NSURL *targetBundleURL) {
+		defer:^{
 			NSError *error;
-			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:targetBundleURL error:&error];
+			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:self.backupBundleURL error:&error];
 			if (codeSignature == nil) return [RACSignal error:error];
 
-			return [codeSignature verifyBundleAtURL:updateBundleURL];
+			return [codeSignature verifyBundleAtURL:self.updateBundleURL];
 		}]
 		flatten]
 		setNameWithFormat:@"%@ -verifyTargetDesignatedRequirementAgainstUpdateWithState: %@", self, state];
@@ -444,48 +457,30 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[[self
-		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
-		flattenMap:^(NSURL *bundleURL) {
-			return [self clearQuarantineForDirectory:bundleURL];
+	return [[RACSignal
+		defer:^{
+			return [self clearQuarantineForDirectory:self.updateBundleURL];
 		}]
 		setNameWithFormat:@"%@ -clearQuarantineWithState: %@", self, state];
 }
 
-- (RACSignal *)backUpWithState:(SQRLShipItState *)state {
+- (RACSignal *)backUpTargetWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
 	return [[[[RACSignal
 		zip:@[
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.codeSignature) fromState:state],
-		] reduce:^(NSURL *bundleURL, SQRLCodeSignature *codeSignature) {
-			RACSignal *skipBackup = [RACSignal return:@NO];
-			NSURL *backupBundleURL = self.backupBundleURL;
-			if (backupBundleURL != nil) {
-				skipBackup = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingSignature:codeSignature];
-			}
-
-			return [skipBackup flattenMap:^(NSNumber *skip) {
-				if (skip.boolValue) {
-					return [RACSignal empty];
-				} else {
-					return [self backUpBundleAtURL:bundleURL];
-				}
-			}];
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+		] reduce:^(NSURL *targetURL, SQRLCodeSignature *codeSignature) {
+			return [self moveAndTakeOwnershipOfBundleAtURL:targetURL unlessInstalledAtURL:self.backupBundleURL verifiedUsingSignature:codeSignature];
 		}]
 		flatten]
 		doNext:^(NSURL *backupBundleURL) {
-			// Save the chosen backup URL as soon as we have it, so we
-			// can resume even if the state change hasn't taken effect.
-			//
-			// N.B. It's important that this method remain
-			// synchronous, so it finishes before returning
-			// control to -backUpBundleAtURL:. Really, the flow
-			// here should be refactored so it doesn't matter.
+			// Save the new URL as soon as we have it, so we can resume even if
+			// the state change hasn't taken effect.
 			self.backupBundleURL = backupBundleURL;
 		}]
-		setNameWithFormat:@"%@ -backUpWithState: %@", self, state];
+		setNameWithFormat:@"%@ -backUpTargetWithState: %@", self, state];
 }
 
 - (RACSignal *)installWithState:(SQRLShipItState *)state {
@@ -494,20 +489,19 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return [[[RACSignal
 		zip:@[
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
+		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[[[self
-				checkWhetherBundlePreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
+				checkWhetherBundlePreviouslyAtURL:self.updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
 				flattenMap:^(NSNumber *skip) {
 					if (skip.boolValue) {
 						return [RACSignal empty];
 					} else {
-						return [self installItemAtURL:targetBundleURL fromURL:updateBundleURL];
+						return [self installItemAtURL:targetBundleURL fromURL:self.updateBundleURL];
 					}
 				}]
 				catch:^(NSError *error) {
-					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, updateBundleURL];
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, self.updateBundleURL];
 					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorReplacingTarget toError:error]];
 				}]
 				catch:^(NSError *error) {
@@ -537,13 +531,20 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			NSURL *backupBundleURL = self.backupBundleURL;
 
 			return [[self
-				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
+				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:nil]
 				then:^{
-					self.backupBundleURL = nil;
+					NSURL *updateBundleURL = self.updateBundleURL;
 
-					return [[self
-						deleteBackupAtURL:backupBundleURL]
-						catchTo:[RACSignal empty]];
+					// Clean up our temporary locations.
+					return [[RACSignal
+						merge:@[
+							[[self deleteOwnedBundleAtURL:backupBundleURL] catchTo:[RACSignal empty]],
+							[[self deleteOwnedBundleAtURL:updateBundleURL] catchTo:[RACSignal empty]],
+						]]
+						doCompleted:^{
+							self.backupBundleURL = nil;
+							self.updateBundleURL = nil;
+						}];
 				}];
 		}]
 		flatten]
@@ -552,49 +553,81 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 #pragma mark Backing Up
 
-- (RACSignal *)backUpBundleAtURL:(NSURL *)targetBundleURL {
-	NSParameterAssert(targetBundleURL != nil);
+- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL unlessInstalledAtURL:(NSURL *)installedURL verifiedUsingSignature:(SQRLCodeSignature *)codeSignature {
+	NSParameterAssert(bundleURL != nil);
 
-	return [[[[[[self.directoryManager
-		applicationSupportURL]
-		flattenMap:^(NSURL *applicationSupportURL) {
-			NSError *error = nil;
-			NSURL *temporaryDirectoryURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:applicationSupportURL create:YES error:&error];
-			if (temporaryDirectoryURL == nil) {
-				return [RACSignal error:error];
+	return [[RACSignal
+		defer:^{
+			RACSignal *skipMove = [RACSignal return:@NO];
+			if (installedURL != nil) {
+				skipMove = [[self
+					takeOwnershipOfDirectory:installedURL]
+					then:^{
+						return [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:installedURL usingSignature:codeSignature];
+					}];
 			}
 
-			return [RACSignal return:temporaryDirectoryURL];
+			return [[skipMove
+				ignore:@YES]
+				flattenMap:^(id _) {
+					return [self moveAndTakeOwnershipOfBundleAtURL:bundleURL];
+				}];
+		}]
+		setNameWithFormat:@"%@ -moveAndTakeOwnershipOfBundleAtURL: %@ unlessInstalledAtURL: %@ verifiedUsingSignature: %@", self, bundleURL, installedURL, codeSignature];
+}
+
+- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL {
+	NSParameterAssert(bundleURL != nil);
+
+	return [[[[[RACSignal
+		defer:^{
+			NSString *tmpPath = [NSTemporaryDirectory() stringByResolvingSymlinksInPath];
+			NSString *template = [NSString stringWithFormat:@"%@.XXXXXXXX", self.directoryManager.applicationIdentifier];
+
+			char *fullTemplate = strdup([tmpPath stringByAppendingPathComponent:template].UTF8String);
+			@onExit {
+				free(fullTemplate);
+			};
+
+			if (mkdtemp(fullTemplate) == NULL) {
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+			}
+
+			NSURL *URL = [NSURL fileURLWithPath:[NSFileManager.defaultManager stringWithFileSystemRepresentation:fullTemplate length:strlen(fullTemplate)] isDirectory:YES];
+			return [RACSignal return:URL];
 		}]
 		catch:^(NSError *error) {
-			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Could not create backup folder", nil)];
+			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary folder", nil)];
 			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 		}]
 		map:^(NSURL *temporaryDirectoryURL) {
-			return [temporaryDirectoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
+			return [temporaryDirectoryURL URLByAppendingPathComponent:bundleURL.lastPathComponent];
 		}]
-		flattenMap:^(NSURL *backupBundleURL) {
-			return [[[[self
-				installItemAtURL:backupBundleURL fromURL:targetBundleURL]
+		flattenMap:^(NSURL *newBundleURL) {
+			return [[[[[self
+				installItemAtURL:newBundleURL fromURL:bundleURL]
 				catch:^(NSError *error) {
-					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to backup location %@", nil), targetBundleURL, backupBundleURL];
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to temporary location %@", nil), bundleURL, newBundleURL];
 					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 				}]
+				then:^{
+					return [self takeOwnershipOfDirectory:newBundleURL];
+				}]
 				ignoreValues]
-				// Return the backup URL before doing any work, to increase
-				// fault tolerance.
-				startWith:backupBundleURL];
+				// Return the new URL before doing any work, to increase fault
+				// tolerance.
+				startWith:newBundleURL];
 		}]
-		setNameWithFormat:@"%@ -backUpBundleAtURL: %@", self, targetBundleURL];
+		setNameWithFormat:@"%@ -moveAndTakeOwnershipOfBundleAtURL: %@", self, bundleURL];
 }
 
-- (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL {
-	NSParameterAssert(backupURL != nil);
+- (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL {
+	NSParameterAssert(bundleURL != nil);
 
 	return [[[RACSignal
 		defer:^{
 			NSError *error = nil;
-			if ([NSFileManager.defaultManager removeItemAtURL:backupURL error:&error]) {
+			if ([NSFileManager.defaultManager removeItemAtURL:bundleURL error:&error]) {
 				return [RACSignal empty];
 			} else {
 				return [RACSignal error:error];
@@ -602,7 +635,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		}]
 		then:^{
 			// Also remove the temporary directory that the backup lived in.
-			NSURL *temporaryDirectoryURL = backupURL.URLByDeletingLastPathComponent;
+			NSURL *temporaryDirectoryURL = bundleURL.URLByDeletingLastPathComponent;
 
 			// However, use rmdir() to skip it in case there are other files
 			// contained within (for whatever reason).
@@ -612,7 +645,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
 			}
 		}]
-		setNameWithFormat:@"%@ -deleteBackupAtURL: %@", self, backupURL];
+		setNameWithFormat:@"%@ -deleteOwnedBundleAtURL: %@", self, bundleURL];
 }
 
 - (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
@@ -773,28 +806,39 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		setNameWithFormat:@"%@ -writeFileSecurity: %@", self, location];
 }
 
-- (RACSignal *)takeOwnershipOfURL:(NSURL *)location {
-	NSParameterAssert(location != nil);
+- (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL {
+	NSParameterAssert(directoryURL != nil);
 
-	return [[[[self
-		readFileSecurityOfURL:location]
-		flattenMap:^(NSFileSecurity *fileSecurity) {
-			if (![self takeOwnershipOfFileSecurity:fileSecurity]) {
-				NSDictionary *errorInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Permissions Error", nil),
-					NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"Couldn’t update permissions of %@", nil), location.path],
-					NSURLErrorKey: location
-				};
+	return [[[RACSignal
+		createSignal:^(id<RACSubscriber> subscriber) {
+			NSDirectoryEnumerator *enumerator = [NSFileManager.defaultManager enumeratorAtURL:directoryURL includingPropertiesForKeys:@[ NSURLFileSecurityKey ] options:0 errorHandler:^ BOOL (NSURL *url, NSError *error) {
+				[subscriber sendError:error];
+				return NO;
+			}];
 
-				return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorChangingPermissions userInfo:errorInfo]];
-			}
-
-			return [RACSignal return:fileSecurity];
+			return [enumerator.rac_sequence.signal subscribe:subscriber];
 		}]
-		flattenMap:^(NSFileSecurity *fileSecurity) {
-			return [self writeFileSecurity:fileSecurity toURL:location];
+		flattenMap:^(NSURL *itemURL) {
+			return [[[self
+				readFileSecurityOfURL:itemURL]
+				flattenMap:^(NSFileSecurity *fileSecurity) {
+					if (![self takeOwnershipOfFileSecurity:fileSecurity]) {
+						NSDictionary *errorInfo = @{
+							NSLocalizedDescriptionKey: NSLocalizedString(@"Permissions Error", nil),
+							NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"Couldn’t update permissions of %@", nil), itemURL.path],
+							NSURLErrorKey: itemURL
+						};
+
+						return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorChangingPermissions userInfo:errorInfo]];
+					}
+
+					return [RACSignal return:fileSecurity];
+				}]
+				flattenMap:^(NSFileSecurity *fileSecurity) {
+					return [self writeFileSecurity:fileSecurity toURL:itemURL];
+				}];
 		}]
-		setNameWithFormat:@"%@ -takeOwnershipOfURL: %@", self, location];
+		setNameWithFormat:@"%@ -takeOwnershipOfDirectory: %@", self, directoryURL];
 }
 
 - (BOOL)takeOwnershipOfFileSecurity:(NSFileSecurity *)fileSecurity {

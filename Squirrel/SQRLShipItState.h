@@ -40,17 +40,16 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 //                                                opportunity for other processes to
 //                                                modify the bundle between check and
 //                                                use.
-// SQRLInstallerStateVerifyingTargetRequirement - Checking that the updateBundle meets
-//                                                the designated requirement of the
-//                                                targetBundle. This ensures that
-//                                                updateBundle is a suitable
-//                                                replacement.
-// SQRLInstallerStateClearingQuarantine         - Clearing the quarantine flag on the
-//                                                update bundle so it can used without
-//                                                issue.
 // SQRLInstallerStateBackingUp                  - Backing up the target bundle so it
 //                                                can be restored in the event of
 //                                                failure.
+// SQRLInstallerStateVerifyingTargetRequirement - Checking that the update bundle meets
+//                                                the designated requirement of the
+//                                                target bundle. This ensures that
+//                                                the update is a suitable replacement.
+// SQRLInstallerStateClearingQuarantine         - Clearing the quarantine flag on the
+//                                                update bundle so it can used without
+//                                                issue.
 // SQRLInstallerStateInstalling                 - Replacing the target bundle with the
 //                                                update bundle.
 // SQRLInstallerStateVerifyingInPlace           - Verifying that the target bundle is
@@ -59,14 +58,15 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
 typedef enum : NSInteger {
+	// These are purposely out-of-order, for compatibility with in-progress
+	// installs on older ShipIt versions.
+	//
+	// The canonical order is that of the documentation above.
 	SQRLInstallerStateNothingToDo = 0,
 	SQRLInstallerStateClearingQuarantine,
 	SQRLInstallerStateBackingUp,
 	SQRLInstallerStateInstalling,
 	SQRLInstallerStateVerifyingInPlace,
-
-	// These are purposely out-of-order, for compatibility with in-progress
-	// installs on older ShipIt versions.
 	SQRLInstallerStateUpdatingPermissions,
 	SQRLInstallerStateVerifyingTargetRequirement,
 } SQRLInstallerState;
