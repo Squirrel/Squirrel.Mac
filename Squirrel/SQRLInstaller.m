@@ -567,7 +567,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 				checkWhetherBundlePreviouslyAtURL:self.ownedUpdateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:signature]
 				ignore:@YES]
 				flattenMap:^(id _) {
-					return [self installItemAtURL:targetBundleURL fromURL:self.ownedUpdateBundleURL];
+					return [[self
+						verifyBundleAtURL:self.ownedUpdateBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
+						then:^{
+							return [self installItemAtURL:targetBundleURL fromURL:self.ownedUpdateBundleURL];
+						}];
 				}]
 				catch:^(NSError *error) {
 					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, self.ownedUpdateBundleURL];
