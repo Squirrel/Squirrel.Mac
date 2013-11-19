@@ -39,7 +39,6 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 	SecCodeRef staticCode = NULL;
 	OSStatus error = SecCodeCopySelf(kSecCSDefaultFlags, &staticCode);
 	if (error != noErr) {
-		NSLog(@"Error copying self");
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
 		return nil;
 	}
@@ -55,7 +54,6 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 	SecStaticCodeRef bundleCode = NULL;
 	OSStatus error = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &bundleCode);
 	if (error != noErr) {
-		NSLog(@"Error copying signature for %@", bundleURL);
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
 		return nil;
 	}
@@ -71,7 +69,6 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 	SecRequirementRef designatedRequirement = NULL;
 	OSStatus error = SecCodeCopyDesignatedRequirement(code, kSecCSDefaultFlags, &designatedRequirement);
 	if (error != noErr) {
-		NSLog(@"Error copying designated requirement");
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
 		return nil;
 	}
