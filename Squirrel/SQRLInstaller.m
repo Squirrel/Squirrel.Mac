@@ -30,6 +30,26 @@ const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
+// Associated with a preferences key for the URL where the target bundle has
+// been backed up to before installing the update.
+//
+// This is stored in preferences, rather than `SQRLShipItState`, to prevent an
+// attacker from rewriting the URL during the installation process.
+//
+// Note that this key must remain backwards compatible, so ShipIt doesn't fail
+// confusingly on a newer version.
+static NSString * const SQRLInstallerBackupBundleURLKey = @"BackupBundleURL";
+
+// Associated with a preferences key for the URL where the update bundle has
+// been moved before installation.
+//
+// This is stored in preferences, rather than `SQRLShipItState`, to prevent an
+// attacker from rewriting the URL during the installation process.
+//
+// Note that this key must remain backwards compatible, so ShipIt doesn't fail
+// confusingly on a newer version.
+static NSString * const SQRLInstallerUpdateBundleURLKey = @"UpdateBundleURL";
+
 // Maps an installer state to a selector to invoke.
 typedef struct {
 	// The state for which the associated method should be invoked.
@@ -50,6 +70,13 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 // Finds the state file to read and write from.
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
+
+// The URL where the target bundle has been backed up to before installing the
+// update.
+@property (atomic, copy) NSURL *backupBundleURL;
+
+// The URL where the update bundle has been moved before installation.
+@property (atomic, copy) NSURL *updateBundleURL;
 
 // Reads the given key from `state`, failing if it's not set.
 //
@@ -150,6 +177,24 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 @implementation SQRLInstaller
 
+#pragma mark Properties
+
+- (NSURL *)backupBundleURL {
+	return [self URLForPreferencesKey:SQRLInstallerBackupBundleURLKey];
+}
+
+- (void)setBackupBundleURL:(NSURL *)URL {
+	[self setURL:URL forPreferencesKey:SQRLInstallerBackupBundleURLKey];
+}
+
+- (NSURL *)updateBundleURL {
+	return [self URLForPreferencesKey:SQRLInstallerUpdateBundleURLKey];
+}
+
+- (void)setUpdateBundleURL:(NSURL *)URL {
+	[self setURL:URL forPreferencesKey:SQRLInstallerUpdateBundleURLKey];
+}
+
 #pragma mark Lifecycle
 
 - (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
@@ -195,6 +240,40 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	}];
 	
 	return self;
+}
+
+#pragma mark Preferences
+
+- (NSURL *)URLForPreferencesKey:(NSString *)key {
+	NSParameterAssert(key != nil);
+
+	CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.directoryManager.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+
+	NSString *path = CFBridgingRelease(value);
+	if (![path isKindOfClass:NSString.class]) return nil;
+
+	return [NSURL fileURLWithPath:path];
+}
+
+- (void)setURL:(NSURL *)URL forPreferencesKey:(NSString *)key {
+	NSParameterAssert(key != nil);
+
+	CFStringRef applicationID = (__bridge CFStringRef)self.directoryManager.applicationIdentifier;
+
+	CFPropertyListRef value = NULL;
+	if (URL != nil) {
+		NSURL *fileURL = URL.filePathURL;
+		NSAssert(fileURL != nil, @"URL is not a file path URL: %@", URL);
+
+		value = CFBridgingRetain(fileURL.path);
+	}
+
+	CFPreferencesSetValue((__bridge CFStringRef)key, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	if (value != NULL) CFRelease(value);
+
+	if (!CFPreferencesSynchronize(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost)) {
+		NSLog(@"Could not synchronize preferences for %@", applicationID);
+	}
 }
 
 #pragma mark Installer States
