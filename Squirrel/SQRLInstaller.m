@@ -202,7 +202,6 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpWithState:) },
 			{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
 			{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
-			{ .installerState = SQRLInstallerStateRelaunching, .selector = @selector(relaunchWithState:) },
 			{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
 		};
 
@@ -524,27 +523,6 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(void const *_) {
 		}]
 		flatten]
 		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
-}
-
-- (RACSignal *)relaunchWithState:(SQRLShipItState *)state {
-	return [[[[RACSignal
-		defer:^{
-			if (state.relaunchAfterInstallation) {
-				return [self getRequiredKey:@keypath(state.targetBundleURL) fromState:state];
-			} else {
-				return [RACSignal empty];
-			}
-		}]
-		deliverOn:RACScheduler.mainThreadScheduler]
-		flattenMap:^(NSURL *bundleURL) {
-			NSError *error = nil;
-			if ([NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-				return [RACSignal empty];
-			} else {
-				return [RACSignal error:error];
-			}
-		}]
-		setNameWithFormat:@"%@ -relaunch", self];
 }
 
 #pragma mark Backing Up

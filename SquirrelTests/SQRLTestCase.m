@@ -51,6 +51,10 @@ static void SQRLSignalHandler(int sig) {
 // all copied test data.
 @property (nonatomic, copy, readonly) NSURL *baseTemporaryDirectoryURL;
 
+// Returns an _unlaunched_ task that will follow log files at the given paths,
+// then pipe that output through this process.
++ (NSTask *)tailTaskWithPaths:(RACSequence *)paths;
+
 @end
 
 @implementation SQRLTestCase
@@ -83,15 +87,14 @@ static void SQRLSignalHandler(int sig) {
 		[[NSData data] writeToURL:URL atomically:YES];
 	}
 
-	NSArray *args = [[[URLs
-		map:^(NSURL *URL) {
-			return URL.path;
-		}]
-		startWith:@"-f"]
-		array];
+	RACSequence *paths = [URLs map:^(NSURL *URL) {
+		return URL.path;
+	}];
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:args];
-	NSAssert([readShipIt isRunning], @"Could not start task %@ with arguments: %@", readShipIt, args);
+	NSTask *readShipIt = [self tailTaskWithPaths:paths];
+	[readShipIt launch];
+
+	NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
 
 	atexit_b(^{
 		[readShipIt terminate];
@@ -129,6 +132,24 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)addCleanupBlock:(dispatch_block_t)block {
 	[self.exampleCleanupBlocks addObject:[block copy]];
+}
+
+#pragma mark Logging
+
++ (NSTask *)tailTaskWithPaths:(RACSequence *)paths {
+	NSPipe *outputPipe = [NSPipe pipe];
+	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
+
+	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
+		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
+		NSLog(@"\n%@", output);
+	};
+
+	NSTask *task = [[NSTask alloc] init];
+	task.launchPath = @"/usr/bin/tail";
+	task.standardOutput = outputPipe;
+	task.arguments = [[paths startWith:@"-f"] array];
+	return task;
 }
 
 #pragma mark Temporary Directory
@@ -176,7 +197,9 @@ static void SQRLSignalHandler(int sig) {
 		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 		[[NSData data] writeToURL:testAppLog atomically:YES];
 
-		NSTask *readTestApp = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", testAppLog.path ]];
+		NSTask *readTestApp = [self.class tailTaskWithPaths:[RACSequence return:testAppLog.path]];
+		[readTestApp launch];
+
 		STAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
 
 		[self addCleanupBlock:^{
