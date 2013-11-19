@@ -18,13 +18,12 @@ beforeEach(^{
 	directoryManager = SQRLDirectoryManager.currentApplicationManager;
 
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil];
 	expect(state).notTo.beNil();
 
 	expect(state.targetBundleURL).to.equal(self.testApplicationURL);
 	expect(state.updateBundleURL).to.equal(updateURL);
 	expect(state.bundleIdentifier).to.beNil();
-	expect(state.codeSignature).to.equal(self.testApplicationSignature);
 });
 
 afterEach(^{

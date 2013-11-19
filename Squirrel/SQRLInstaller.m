@@ -31,8 +31,8 @@ const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
-// Associated with a preferences key for the URL where the target bundle has
-// been backed up to before installing the update.
+// A preferences key for the URL where the target bundle has been backed up to
+// before installing the update.
 //
 // This is stored in preferences, rather than `SQRLShipItState`, to prevent an
 // attacker from rewriting the URL during the installation process.
@@ -41,8 +41,8 @@ const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 // confusingly on a newer version.
 static NSString * const SQRLInstallerBackupBundleURLKey = @"BackupBundleURL";
 
-// Associated with a preferences key for the URL where the update bundle has
-// been moved before installation.
+// A preferences key for the URL where the update bundle has been moved before
+// installation.
 //
 // This is stored in preferences, rather than `SQRLShipItState`, to prevent an
 // attacker from rewriting the URL during the installation process.
@@ -50,6 +50,16 @@ static NSString * const SQRLInstallerBackupBundleURLKey = @"BackupBundleURL";
 // Note that this key must remain backwards compatible, so ShipIt doesn't fail
 // confusingly on a newer version.
 static NSString * const SQRLInstallerUpdateBundleURLKey = @"UpdateBundleURL";
+
+// A preferences key for the code signature that the update _and_ target bundles
+// must match in order to be valid.
+//
+// This is stored in preferences, rather than `SQRLShipItState`, to prevent an
+// attacker from spoofing the validity requirements.
+//
+// Note that this key must remain backwards compatible, so ShipIt doesn't fail
+// confusingly on a newer version.
+static NSString * const SQRLInstallerCodeSignatureKey = @"CodeSignature";
 
 // Maps an installer state to a selector to invoke.
 typedef struct {
@@ -67,7 +77,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return sizeof(SQRLInstallerDispatchTableEntry);
 }
 
-@interface SQRLInstaller ()
+@interface SQRLInstaller () {
+	// The latest value read for `codeSignature`, cached to save time
+	// unarchiving.
+	SQRLCodeSignature *_codeSignature;
+}
 
 // Finds the state file to read and write from.
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
@@ -78,6 +92,9 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 // The URL where the update bundle has been moved before installation.
 @property (atomic, copy) NSURL *updateBundleURL;
+
+// The code signature that must be satisfied by the target and update bundles.
+@property (atomic, copy) SQRLCodeSignature *codeSignature;
 
 // Reads the given key from `state`, failing if it's not set.
 //
@@ -218,6 +235,43 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	[self setURL:URL forPreferencesKey:SQRLInstallerUpdateBundleURLKey];
 }
 
+- (SQRLCodeSignature *)codeSignature {
+	@synchronized (self) {
+		if (_codeSignature == nil) {
+			CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, (__bridge CFStringRef)self.directoryManager.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+
+			NSData *data = CFBridgingRelease(value);
+			if (![data isKindOfClass:NSData.class]) return nil;
+
+			_codeSignature = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+		}
+		
+		return _codeSignature;
+	}
+}
+
+- (void)setCodeSignature:(SQRLCodeSignature *)codeSignature {
+	@synchronized (self) {
+		_codeSignature = codeSignature;
+
+		CFPropertyListRef value = NULL;
+		if (codeSignature != nil) {
+			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:codeSignature];
+			NSAssert(data != nil, @"Could not archive code signature: %@", codeSignature);
+
+			value = CFBridgingRetain(data);
+		}
+
+		CFStringRef applicationID = (__bridge CFStringRef)self.directoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		if (value != NULL) CFRelease(value);
+
+		if (!CFPreferencesSynchronize(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost)) {
+			NSLog(@"Could not synchronize preferences for %@", applicationID);
+		}
+	}
+}
+
 #pragma mark Lifecycle
 
 - (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
@@ -251,14 +305,16 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		@strongify(self);
 		NSParameterAssert(state != nil);
 
-		return [[[RACSignal
-			zip:@[
-				[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-				[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
-				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:self.backupBundleURL];
+		// If we never saved a code signature, the bundles on disk should be
+		// untouched.
+		SQRLCodeSignature *signature = self.codeSignature;
+		if (signature == nil) return [RACSignal empty];
+
+		return [[[self
+			getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
+			flattenMap:^(NSURL *targetBundleURL) {
+				return [self verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.backupBundleURL];
 			}]
-			flatten]
 			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 	}];
 	
@@ -281,8 +337,6 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (void)setURL:(NSURL *)URL forPreferencesKey:(NSString *)key {
 	NSParameterAssert(key != nil);
 
-	CFStringRef applicationID = (__bridge CFStringRef)self.directoryManager.applicationIdentifier;
-
 	CFPropertyListRef value = NULL;
 	if (URL != nil) {
 		NSURL *fileURL = URL.filePathURL;
@@ -291,6 +345,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		value = CFBridgingRetain(fileURL.path);
 	}
 
+	CFStringRef applicationID = (__bridge CFStringRef)self.directoryManager.applicationIdentifier;
 	CFPreferencesSetValue((__bridge CFStringRef)key, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 	if (value != NULL) CFRelease(value);
 
@@ -307,6 +362,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 	dispatch_once(&dispatchTablePredicate, ^{
 		const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
+			{ .installerState = SQRLInstallerStateReadingCodeSignature, .selector = @selector(readCodeSignatureWithState:) },
 			{ .installerState = SQRLInstallerStateUpdatingPermissions, .selector = @selector(moveUpdateBundleWithState:) },
 			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpTargetWithState:) },
 			{ .installerState = SQRLInstallerStateVerifyingTargetRequirement, .selector = @selector(verifyTargetDesignatedRequirementAgainstUpdateWithState:) },
@@ -332,6 +388,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 + (SQRLInstallerState)initialInstallerState {
 	NSPointerArray *dispatchTable = self.stateDispatchTable;
 	NSParameterAssert(dispatchTable.count >= 1);
+
 	SQRLInstallerDispatchTableEntry *firstState = [dispatchTable pointerAtIndex:0];
 	return firstState->installerState;
 }
@@ -427,17 +484,38 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	}];
 }
 
+- (RACSignal *)readCodeSignatureWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+	
+	return [[[[self
+		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
+		flattenMap:^(NSURL *targetBundleURL) {
+			return [[self
+				takeOwnershipOfDirectory:targetBundleURL]
+				then:^{
+					NSError *error;
+					SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:targetBundleURL error:&error];
+					if (codeSignature == nil) {
+						return [RACSignal error:error];
+					} else {
+						return [RACSignal return:codeSignature];
+					}
+				}];
+		}]
+		doNext:^(SQRLCodeSignature *signature) {
+			self.codeSignature = signature;
+		}]
+		setNameWithFormat:@"%@ -readCodeSignatureWithState: %@", self, state];
+}
+
 - (RACSignal *)moveUpdateBundleWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[[[RACSignal
-		zip:@[
-			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *updateURL, SQRLCodeSignature *codeSignature) {
-			return [self moveAndTakeOwnershipOfBundleAtURL:updateURL unlessInstalledAtURL:self.updateBundleURL verifiedUsingSignature:codeSignature];
+	return [[[[self
+		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
+		flattenMap:^(NSURL *updateURL) {
+			return [self moveAndTakeOwnershipOfBundleAtURL:updateURL unlessInstalledAtURL:self.updateBundleURL verifiedUsingSignature:self.codeSignature];
 		}]
-		flatten]
 		doNext:^(NSURL *updateBundleURL) {
 			// Save the new URL as soon as we have it, so we can resume even if
 			// the state change hasn't taken effect.
@@ -472,14 +550,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (RACSignal *)backUpTargetWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[[[RACSignal
-		zip:@[
-			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *targetURL, SQRLCodeSignature *codeSignature) {
-			return [self moveAndTakeOwnershipOfBundleAtURL:targetURL unlessInstalledAtURL:self.backupBundleURL verifiedUsingSignature:codeSignature];
+	return [[[[self
+		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
+		flattenMap:^(NSURL *targetURL) {
+			return [self moveAndTakeOwnershipOfBundleAtURL:targetURL unlessInstalledAtURL:self.backupBundleURL verifiedUsingSignature:self.codeSignature];
 		}]
-		flatten]
 		doNext:^(NSURL *backupBundleURL) {
 			// Save the new URL as soon as we have it, so we can resume even if
 			// the state change hasn't taken effect.
@@ -491,13 +566,13 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (RACSignal *)installWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[[RACSignal
-		zip:@[
-			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+	return [[[self
+		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
+		flattenMap:^(NSURL *targetBundleURL) {
+			SQRLCodeSignature *signature = self.codeSignature;
+
 			return [[[[[self
-				checkWhetherBundlePreviouslyAtURL:self.updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
+				checkWhetherBundlePreviouslyAtURL:self.updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:signature]
 				ignore:@YES]
 				flattenMap:^(id _) {
 					return [self installItemAtURL:targetBundleURL fromURL:self.updateBundleURL];
@@ -510,7 +585,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 					// Verify that the target bundle didn't get corrupted during
 					// failure. Try recovering it if it did.
 					return [[self
-						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:self.backupBundleURL]
+						verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.backupBundleURL]
 						then:^{
 							// Recovery succeeded, but we still want to pass
 							// through the original error.
@@ -518,22 +593,19 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 						}];
 				}];
 		}]
-		flatten]
 		setNameWithFormat:@"%@ -installWithState: %@", self, state];
 }
 
 - (RACSignal *)verifyInPlaceWithState:(SQRLShipItState *)state {
 	NSParameterAssert(state != nil);
 
-	return [[[RACSignal
-		zip:@[
-			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+	return [[[self
+		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
+		flattenMap:^(NSURL *targetBundleURL) {
 			NSURL *backupBundleURL = self.backupBundleURL;
 
 			return [[self
-				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:nil]
+				verifyBundleAtURL:targetBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
 				then:^{
 					NSURL *updateBundleURL = self.updateBundleURL;
 
@@ -549,7 +621,6 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 						}];
 				}];
 		}]
-		flatten]
 		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
 }
 

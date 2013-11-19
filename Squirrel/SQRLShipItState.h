@@ -33,6 +33,11 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 //
 // SQRLInstallerStateNothingToDo                - ShipIt has not started installing
 //                                                yet.
+// SQRLInstallerStateReadingCodeSignature       - Reading the code signature
+//                                                from the target bundle, so we
+//                                                know the designated
+//                                                requirement that any update
+//                                                must satisfy.
 // SQRLInstallerStateUpdatingPermissions        - Changing the BSD permissions of the
 //                                                updateBundle so that we can safely
 //                                                check the code sign signature and
@@ -67,12 +72,12 @@ typedef enum : NSInteger {
 	SQRLInstallerStateBackingUp,
 	SQRLInstallerStateInstalling,
 	SQRLInstallerStateVerifyingInPlace,
+	SQRLInstallerStateReadingCodeSignature,
 	SQRLInstallerStateUpdatingPermissions,
 	SQRLInstallerStateVerifyingTargetRequirement,
 } SQRLInstallerState;
 
 @class RACSignal;
-@class SQRLCodeSignature;
 
 // Encapsulates all the state needed by the ShipIt process.
 @interface SQRLShipItState : MTLModel
@@ -89,7 +94,7 @@ typedef enum : NSInteger {
 
 // Initializes the receiver with the arguments that will not change during
 // installation.
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier codeSignature:(SQRLCodeSignature *)codeSignature;
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier;
 
 // Writes the receiver to disk, at the location specified by the given URL
 // signal.
@@ -105,9 +110,6 @@ typedef enum : NSInteger {
 
 // The URL to the downloaded update's app bundle.
 @property (nonatomic, copy, readonly) NSURL *updateBundleURL;
-
-// A code signature that the update bundle must match in order to be valid.
-@property (nonatomic, copy, readonly) SQRLCodeSignature *codeSignature;
 
 // The bundle identifier of the application being updated.
 //
