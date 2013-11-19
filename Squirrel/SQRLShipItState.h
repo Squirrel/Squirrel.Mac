@@ -31,30 +31,30 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // The current state of the installer, for persistence across relaunches and for
 // tolerance of system failures.
 //
-// SQRLInstallerStateNothingToDo          - ShipIt has not started installing
-//                                          yet.
-// SQRLInstallerStateUpdatingPermissions  - Changing the BSD permissions of the
-//                                          updateBundle so that we can safely
-//                                          check the code sign signature and
-//                                          then install, without leaving an
-//                                          opportunity for other processes to
-//                                          modify the bundle between check and
-//                                          use.
-// SQRLInstallerStateVerifyingRequirement - Checking that the updateBundle meets
-//                                          the designated requirement of the
-//                                          targetBundle. This ensures that
-//                                          updateBundle is a suitable
-//                                          replacement.
-// SQRLInstallerStateClearingQuarantine   - Clearing the quarantine flag on the
-//                                          update bundle so it can used without
-//                                          issue.
-// SQRLInstallerStateBackingUp            - Backing up the target bundle so it
-//                                          can be restored in the event of
-//                                          failure.
-// SQRLInstallerStateInstalling           - Replacing the target bundle with the
-//                                          update bundle.
-// SQRLInstallerStateVerifyingInPlace     - Verifying that the target bundle is
-//                                          still valid after updating.
+// SQRLInstallerStateNothingToDo                - ShipIt has not started installing
+//                                                yet.
+// SQRLInstallerStateUpdatingPermissions        - Changing the BSD permissions of the
+//                                                updateBundle so that we can safely
+//                                                check the code sign signature and
+//                                                then install, without leaving an
+//                                                opportunity for other processes to
+//                                                modify the bundle between check and
+//                                                use.
+// SQRLInstallerStateVerifyingTargetRequirement - Checking that the updateBundle meets
+//                                                the designated requirement of the
+//                                                targetBundle. This ensures that
+//                                                updateBundle is a suitable
+//                                                replacement.
+// SQRLInstallerStateClearingQuarantine         - Clearing the quarantine flag on the
+//                                                update bundle so it can used without
+//                                                issue.
+// SQRLInstallerStateBackingUp                  - Backing up the target bundle so it
+//                                                can be restored in the event of
+//                                                failure.
+// SQRLInstallerStateInstalling                 - Replacing the target bundle with the
+//                                                update bundle.
+// SQRLInstallerStateVerifyingInPlace           - Verifying that the target bundle is
+//                                                still valid after updating.
 //
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
