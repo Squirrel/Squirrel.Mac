@@ -342,7 +342,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		zip:@[
 			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-		] reduce:^ (NSURL *updateBundleURL, NSURL *targetBundleURL) {
+		] reduce:^(NSURL *updateBundleURL, NSURL *targetBundleURL) {
 			NSError *error;
 			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:targetBundleURL error:&error];
 			if (codeSignature == nil) return [RACSignal error:error];
