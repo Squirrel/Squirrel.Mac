@@ -31,15 +31,15 @@ const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
-// A preferences key for the URL where the target bundle has been backed up to
-// before installing the update.
+// A preferences key for the URL where the target bundle has been moved before
+// installation.
 //
 // This is stored in preferences, rather than `SQRLShipItState`, to prevent an
 // attacker from rewriting the URL during the installation process.
 //
 // Note that this key must remain backwards compatible, so ShipIt doesn't fail
 // confusingly on a newer version.
-static NSString * const SQRLInstallerBackupBundleURLKey = @"BackupBundleURL";
+static NSString * const SQRLInstallerOwnedTargetBundleURLKey = @"OwnedTargetBundleURL";
 
 // A preferences key for the URL where the update bundle has been moved before
 // installation.
@@ -49,7 +49,7 @@ static NSString * const SQRLInstallerBackupBundleURLKey = @"BackupBundleURL";
 //
 // Note that this key must remain backwards compatible, so ShipIt doesn't fail
 // confusingly on a newer version.
-static NSString * const SQRLInstallerUpdateBundleURLKey = @"UpdateBundleURL";
+static NSString * const SQRLInstallerOwnedUpdateBundleURLKey = @"OwnedUpdateBundleURL";
 
 // A preferences key for the code signature that the update _and_ target bundles
 // must match in order to be valid.
@@ -86,12 +86,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Finds the state file to read and write from.
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 
-// The URL where the target bundle has been backed up to before installing the
-// update.
-@property (atomic, copy) NSURL *backupBundleURL;
+// The URL where the target bundle has been moved before installation.
+@property (atomic, copy) NSURL *ownedTargetBundleURL;
 
 // The URL where the update bundle has been moved before installation.
-@property (atomic, copy) NSURL *updateBundleURL;
+@property (atomic, copy) NSURL *ownedUpdateBundleURL;
 
 // The code signature that must be satisfied by the target and update bundles.
 @property (atomic, copy) SQRLCodeSignature *codeSignature;
@@ -219,20 +218,20 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 #pragma mark Properties
 
-- (NSURL *)backupBundleURL {
-	return [self URLForPreferencesKey:SQRLInstallerBackupBundleURLKey];
+- (NSURL *)ownedTargetBundleURL {
+	return [self URLForPreferencesKey:SQRLInstallerOwnedTargetBundleURLKey];
 }
 
-- (void)setBackupBundleURL:(NSURL *)URL {
-	[self setURL:URL forPreferencesKey:SQRLInstallerBackupBundleURLKey];
+- (void)setOwnedTargetBundleURL:(NSURL *)URL {
+	[self setURL:URL forPreferencesKey:SQRLInstallerOwnedTargetBundleURLKey];
 }
 
-- (NSURL *)updateBundleURL {
-	return [self URLForPreferencesKey:SQRLInstallerUpdateBundleURLKey];
+- (NSURL *)ownedUpdateBundleURL {
+	return [self URLForPreferencesKey:SQRLInstallerOwnedUpdateBundleURLKey];
 }
 
-- (void)setUpdateBundleURL:(NSURL *)URL {
-	[self setURL:URL forPreferencesKey:SQRLInstallerUpdateBundleURLKey];
+- (void)setOwnedUpdateBundleURL:(NSURL *)URL {
+	[self setURL:URL forPreferencesKey:SQRLInstallerOwnedUpdateBundleURLKey];
 }
 
 - (SQRLCodeSignature *)codeSignature {
@@ -313,7 +312,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		return [[[self
 			getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
 			flattenMap:^(NSURL *targetBundleURL) {
-				return [self verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.backupBundleURL];
+				return [self verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.ownedTargetBundleURL];
 			}]
 			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 	}];
@@ -514,19 +513,19 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return [[[[self
 		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
 		flattenMap:^(NSURL *updateURL) {
-			return [self moveAndTakeOwnershipOfBundleAtURL:updateURL unlessInstalledAtURL:self.updateBundleURL verifiedUsingSignature:self.codeSignature];
+			return [self moveAndTakeOwnershipOfBundleAtURL:updateURL unlessInstalledAtURL:self.ownedUpdateBundleURL verifiedUsingSignature:self.codeSignature];
 		}]
-		doNext:^(NSURL *updateBundleURL) {
+		doNext:^(NSURL *ownedURL) {
 			// Save the new URL as soon as we have it, so we can resume even if
 			// the state change hasn't taken effect.
-			self.updateBundleURL = updateBundleURL;
+			self.ownedUpdateBundleURL = ownedURL;
 		}]
 		setNameWithFormat:@"%@ -moveUpdateBundleWithState: %@", self, state];
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
 	return [[self
-		verifyBundleAtURL:self.updateBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
+		verifyBundleAtURL:self.ownedUpdateBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
 		setNameWithFormat:@"%@ -verifyTargetDesignatedRequirementAgainstUpdateWithState: %@", self, state];
 }
 
@@ -535,7 +534,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 	return [[RACSignal
 		defer:^{
-			return [self clearQuarantineForDirectory:self.updateBundleURL];
+			return [self clearQuarantineForDirectory:self.ownedUpdateBundleURL];
 		}]
 		setNameWithFormat:@"%@ -clearQuarantineWithState: %@", self, state];
 }
@@ -546,12 +545,12 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return [[[[self
 		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
 		flattenMap:^(NSURL *targetURL) {
-			return [self moveAndTakeOwnershipOfBundleAtURL:targetURL unlessInstalledAtURL:self.backupBundleURL verifiedUsingSignature:self.codeSignature];
+			return [self moveAndTakeOwnershipOfBundleAtURL:targetURL unlessInstalledAtURL:self.ownedTargetBundleURL verifiedUsingSignature:self.codeSignature];
 		}]
-		doNext:^(NSURL *backupBundleURL) {
+		doNext:^(NSURL *ownedURL) {
 			// Save the new URL as soon as we have it, so we can resume even if
 			// the state change hasn't taken effect.
-			self.backupBundleURL = backupBundleURL;
+			self.ownedTargetBundleURL = ownedURL;
 		}]
 		setNameWithFormat:@"%@ -backUpTargetWithState: %@", self, state];
 }
@@ -565,20 +564,20 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			SQRLCodeSignature *signature = self.codeSignature;
 
 			return [[[[[self
-				checkWhetherBundlePreviouslyAtURL:self.updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:signature]
+				checkWhetherBundlePreviouslyAtURL:self.ownedUpdateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:signature]
 				ignore:@YES]
 				flattenMap:^(id _) {
-					return [self installItemAtURL:targetBundleURL fromURL:self.updateBundleURL];
+					return [self installItemAtURL:targetBundleURL fromURL:self.ownedUpdateBundleURL];
 				}]
 				catch:^(NSError *error) {
-					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, self.updateBundleURL];
+					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, self.ownedUpdateBundleURL];
 					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorReplacingTarget toError:error]];
 				}]
 				catch:^(NSError *error) {
 					// Verify that the target bundle didn't get corrupted during
 					// failure. Try recovering it if it did.
 					return [[self
-						verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.backupBundleURL]
+						verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.ownedTargetBundleURL]
 						then:^{
 							// Recovery succeeded, but we still want to pass
 							// through the original error.
@@ -595,12 +594,12 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return [[[self
 		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
 		flattenMap:^(NSURL *targetBundleURL) {
-			NSURL *backupBundleURL = self.backupBundleURL;
+			NSURL *backupBundleURL = self.ownedTargetBundleURL;
 
 			return [[self
 				verifyBundleAtURL:targetBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
 				then:^{
-					NSURL *updateBundleURL = self.updateBundleURL;
+					NSURL *updateBundleURL = self.ownedUpdateBundleURL;
 
 					// Clean up our temporary locations.
 					return [[RACSignal
@@ -609,8 +608,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 							[[self deleteOwnedBundleAtURL:updateBundleURL] catchTo:[RACSignal empty]],
 						]]
 						doCompleted:^{
-							self.backupBundleURL = nil;
-							self.updateBundleURL = nil;
+							self.ownedTargetBundleURL = nil;
+							self.ownedUpdateBundleURL = nil;
 						}];
 				}];
 		}]
