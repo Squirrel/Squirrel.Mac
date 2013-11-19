@@ -596,7 +596,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			NSURL *backupBundleURL = self.ownedTargetBundleURL;
 
 			return [[self
-				verifyBundleAtURL:targetBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
+				verifyBundleAtURL:targetBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:backupBundleURL]
 				then:^{
 					NSURL *updateBundleURL = self.ownedUpdateBundleURL;
 
