@@ -132,13 +132,11 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 			CFErrorRef cfError;
 			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, (__bridge AuthorizationRef)authorization, true, &cfError)) {
-				#if DEBUG
-				NSLog(@"Could not remove previous ShipIt job: %@", cfError);
-				#endif
+				NSError *error = CFBridgingRelease(cfError);
+				cfError = NULL;
 
-				if (cfError != NULL) {
-					CFRelease(cfError);
-					cfError = NULL;
+				if (![error.domain isEqual:(__bridge id)kSMErrorDomainLaunchd] || error.code != kSMErrorJobNotFound) {
+					NSLog(@"Could not remove previous ShipIt job: %@", error);
 				}
 			}
 
