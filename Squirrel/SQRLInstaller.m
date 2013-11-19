@@ -137,6 +137,15 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Returns a signal which will send completed or error on a background thread.
 - (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory;
 
+// Changes the owner and group of the given URL to that of the current process,
+// then disables writing for anyone but the owner.
+//
+// location - The URL to the file or folder to take ownership of. This must not
+//            be nil.
+//
+// Returns a signal which will synchronously complete or error.
+- (RACSignal *)takeOwnershipOfURL:(NSURL *)location;
+
 @end
 
 @implementation SQRLInstaller
@@ -332,7 +341,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			}];
 		}]
 		flattenMap:^(NSURL *currentURL) {
-			return [self updateFileSecurity:currentURL];
+			return [self takeOwnershipOfURL:currentURL];
 		}]
 		setNameWithFormat:@"%@ -changeUpdateBundlePermissionsWithState: %@", self, state];
 }
@@ -652,10 +661,10 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 #pragma mark File Security
 
-- (RACSignal *)updateFileSecurity:(NSURL *)location {
+- (RACSignal *)readFileSecurityOfURL:(NSURL *)location {
 	NSParameterAssert(location != nil);
 
-	return [[[[RACSignal
+	return [[RACSignal
 		defer:^{
 			NSError *error;
 			NSFileSecurity *fileSecurity;
@@ -665,8 +674,31 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 			return [RACSignal return:fileSecurity];
 		}]
+		setNameWithFormat:@"%@ -readFileSecurity: %@", self, location];
+}
+
+- (RACSignal *)writeFileSecurity:(NSFileSecurity *)fileSecurity toURL:(NSURL *)location {
+	NSParameterAssert(location != nil);
+
+	return [[RACSignal
+		defer:^{
+			NSError *error;
+			if (![location setResourceValue:fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
+				return [RACSignal error:error];
+			}
+
+			return [RACSignal empty];
+		}]
+		setNameWithFormat:@"%@ -writeFileSecurity: %@", self, location];
+}
+
+- (RACSignal *)takeOwnershipOfURL:(NSURL *)location {
+	NSParameterAssert(location != nil);
+
+	return [[[[self
+		readFileSecurityOfURL:location]
 		flattenMap:^(NSFileSecurity *fileSecurity) {
-			if (![self actuallyUpdateFileSecurity:fileSecurity]) {
+			if (![self takeOwnershipOfFileSecurity:fileSecurity]) {
 				NSDictionary *errorInfo = @{
 					NSLocalizedDescriptionKey: NSLocalizedString(@"Permissions Error", nil),
 					NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"Couldn’t update permissions of %@", nil), location.path],
@@ -679,17 +711,12 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			return [RACSignal return:fileSecurity];
 		}]
 		flattenMap:^(NSFileSecurity *fileSecurity) {
-			NSError *error;
-			if (![location setResourceValue:fileSecurity forKey:NSURLFileSecurityKey error:&error]) {
-				return [RACSignal error:error];
-			}
-
-			return [RACSignal empty];
+			return [self writeFileSecurity:fileSecurity toURL:location];
 		}]
-		setNameWithFormat:@"%@ -updateFileSecurity: %@", self, location];
+		setNameWithFormat:@"%@ -takeOwnershipOfURL: %@", self, location];
 }
 
-- (BOOL)actuallyUpdateFileSecurity:(NSFileSecurity *)fileSecurity {
+- (BOOL)takeOwnershipOfFileSecurity:(NSFileSecurity *)fileSecurity {
 	CFFileSecurityRef actualFileSecurity = (__bridge CFFileSecurityRef)fileSecurity;
 
 	// If ShipIt is running as root, this will change the owner to
