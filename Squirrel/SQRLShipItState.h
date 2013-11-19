@@ -126,11 +126,4 @@ typedef enum : NSInteger {
 // installed.
 @property (atomic, assign) BOOL relaunchAfterInstallation;
 
-// The URL where the target bundle has been backed up to before installing the
-// update.
-//
-// This property is set automatically during the course of installation. It
-// should not be preset.
-@property (atomic, copy) NSURL *backupBundleURL;
-
 @end

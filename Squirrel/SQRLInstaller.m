@@ -233,7 +233,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 				[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
 				[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
 			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
-				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
+				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:self.backupBundleURL];
 			}]
 			flatten]
 			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
@@ -461,8 +461,9 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			[self getRequiredKey:@keypath(state.codeSignature) fromState:state],
 		] reduce:^(NSURL *bundleURL, SQRLCodeSignature *codeSignature) {
 			RACSignal *skipBackup = [RACSignal return:@NO];
-			if (state.backupBundleURL != nil) {
-				skipBackup = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:state.backupBundleURL usingSignature:codeSignature];
+			NSURL *backupBundleURL = self.backupBundleURL;
+			if (backupBundleURL != nil) {
+				skipBackup = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:backupBundleURL usingSignature:codeSignature];
 			}
 
 			return [skipBackup flattenMap:^(NSNumber *skip) {
@@ -474,7 +475,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			}];
 		}]
 		flatten]
-		flattenMap:^(NSURL *backupBundleURL) {
+		doNext:^(NSURL *backupBundleURL) {
 			// Save the chosen backup URL as soon as we have it, so we
 			// can resume even if the state change hasn't taken effect.
 			//
@@ -482,8 +483,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			// synchronous, so it finishes before returning
 			// control to -backUpBundleAtURL:. Really, the flow
 			// here should be refactored so it doesn't matter.
-			state.backupBundleURL = backupBundleURL;
-			return [state writeUsingURL:self.directoryManager.shipItStateURL];
+			self.backupBundleURL = backupBundleURL;
 		}]
 		setNameWithFormat:@"%@ -backUpWithState: %@", self, state];
 }
@@ -495,9 +495,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		zip:@[
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.updateBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.backupBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
+		] reduce:^(NSURL *targetBundleURL, NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[[[self
 				checkWhetherBundlePreviouslyAtURL:updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
 				flattenMap:^(NSNumber *skip) {
@@ -515,7 +514,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 					// Verify that the target bundle didn't get corrupted during
 					// failure. Try recovering it if it did.
 					return [[self
-						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
+						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:self.backupBundleURL]
 						then:^{
 							// Recovery succeeded, but we still want to pass
 							// through the original error.
@@ -533,12 +532,15 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return [[[RACSignal
 		zip:@[
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-			[self getRequiredKey:@keypath(state.backupBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-		] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
+		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+			NSURL *backupBundleURL = self.backupBundleURL;
+
 			return [[self
 				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
 				then:^{
+					self.backupBundleURL = nil;
+
 					return [[self
 						deleteBackupAtURL:backupBundleURL]
 						catchTo:[RACSignal empty]];
