@@ -525,15 +525,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
-	return [[[self
-		takeOwnershipOfDirectory:self.backupBundleURL]
-		then:^{
-			NSError *error;
-			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:self.backupBundleURL error:&error];
-			if (codeSignature == nil) return [RACSignal error:error];
-
-			return [self verifyBundleAtURL:self.updateBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:nil];
-		}]
+	return [[self
+		verifyBundleAtURL:self.updateBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:nil]
 		setNameWithFormat:@"%@ -verifyTargetDesignatedRequirementAgainstUpdateWithState: %@", self, state];
 }
 
