@@ -83,7 +83,7 @@ it(@"should install an update in process", ^{
 	expect(installError).to.beNil();
 });
 
-fdescribe(@"with backup restoration", ^{
+describe(@"with backup restoration", ^{
 	__block NSURL *targetURL;
 
 	__block SQRLShipItState *state;
