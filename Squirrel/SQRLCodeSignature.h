@@ -21,7 +21,7 @@ extern const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode;
 
 @class RACSignal;
 
-// Implements the verification of Apple code sign signatures and requirements.
+// Implements the verification of Apple code signatures and requirements.
 @interface SQRLCodeSignature : MTLModel
 
 // A serialized version of the `SecRequirementRef` that the receiver was
@@ -39,20 +39,22 @@ extern const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode;
 + (instancetype)currentApplicationSignature:(NSError **)error;
 
 // Determines the designated requirement of the specified bundle. The returned
-// code signature can be used to verify that a bundle is code sign valid and
-// meets the designated requirement of the specified bundle.
+// code signature can be used to verify that an arbitrary bundle is valid and
+// meets the designated requirement of `bundle`.
 //
 // bundleURL - Must not be nil, the location of a bundle directory structure
 //             which has been code signed and includes a designated requirement.
 //             This bundle's designated requirement is used when verifying other
 //             bundles.
-// error     - May be NULL, if non null set to any error that occurs.
+// error     - If not NULL, set to any error that occurs.
 //
 // Returns a `SQRLCodeSignature`, or nil if an error occurs retrieving the
 // designated requirement of the bundle at `bundleURL`.
-+ (instancetype)signatureForBundle:(NSURL *)bundleURL error:(NSError **)error;
++ (instancetype)signatureWithBundle:(NSURL *)bundleURL error:(NSError **)error;
 
-// Designated initializer, initializes the receiver with the given requirement.
+// Initializes the receiver with the given requirement.
+//
+// This is the designated initializer for this class.
 //
 // requirement - The code requirement for tested bundles. This must not be NULL.
 - (id)initWithRequirement:(SecRequirementRef)requirement;

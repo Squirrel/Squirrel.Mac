@@ -50,8 +50,10 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 @interface SQRLInstaller : NSObject
 
 // The first state that `SQRLInstaller` wants to perform for fresh state
-// objects, an `SQRLShipItState` that hasn't been read from disk should be given
-// this state.
+// objects.
+//
+// A `SQRLShipItState` that hasn't been read from disk should be given this
+// state.
 + (SQRLInstallerState)initialInstallerState;
 
 // When executed with a `SQRLShipItState`, attempts to install the update or
