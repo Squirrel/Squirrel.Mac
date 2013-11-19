@@ -133,6 +133,9 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Validates the code signature of a bundle, optionally restoring it upon
 // failure.
 //
+// This will automatically take ownership of `bundleURL` and `backupBundleURL`
+// as necessary.
+//
 // bundleURL       - The URL of the bundle whose code signature should be
 //                   verified. This must not be nil.
 // signature       - The code signature that the bundle must match. This must
@@ -146,6 +149,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL;
 
 // Attempts to determine whether a bundle has already been moved on disk.
+//
+// This will automatically take ownership of `targetURL` if it exists.
 //
 // sourceURL - The original URL to the bundle. This must not be nil.
 // targetURL - The proposed destination URL for the bundle. This must not be
@@ -442,15 +447,15 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 }
 
 - (RACSignal *)verifyTargetDesignatedRequirementAgainstUpdateWithState:(SQRLShipItState *)state {
-	return [[[RACSignal
-		defer:^{
+	return [[[self
+		takeOwnershipOfDirectory:self.backupBundleURL]
+		then:^{
 			NSError *error;
 			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:self.backupBundleURL error:&error];
 			if (codeSignature == nil) return [RACSignal error:error];
 
-			return [codeSignature verifyBundleAtURL:self.updateBundleURL];
+			return [self verifyBundleAtURL:self.updateBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:nil];
 		}]
-		flatten]
 		setNameWithFormat:@"%@ -verifyTargetDesignatedRequirementAgainstUpdateWithState: %@", self, state];
 }
 
@@ -491,14 +496,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
 			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
 		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
-			return [[[[self
+			return [[[[[self
 				checkWhetherBundlePreviouslyAtURL:self.updateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:codeSignature]
-				flattenMap:^(NSNumber *skip) {
-					if (skip.boolValue) {
-						return [RACSignal empty];
-					} else {
-						return [self installItemAtURL:targetBundleURL fromURL:self.updateBundleURL];
-					}
+				ignore:@YES]
+				flattenMap:^(id _) {
+					return [self installItemAtURL:targetBundleURL fromURL:self.updateBundleURL];
 				}]
 				catch:^(NSError *error) {
 					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, self.updateBundleURL];
@@ -551,7 +553,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
 }
 
-#pragma mark Backing Up
+#pragma mark Bundle Ownership
 
 - (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL unlessInstalledAtURL:(NSURL *)installedURL verifiedUsingSignature:(SQRLCodeSignature *)codeSignature {
 	NSParameterAssert(bundleURL != nil);
@@ -560,11 +562,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		defer:^{
 			RACSignal *skipMove = [RACSignal return:@NO];
 			if (installedURL != nil) {
-				skipMove = [[self
-					takeOwnershipOfDirectory:installedURL]
-					then:^{
-						return [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:installedURL usingSignature:codeSignature];
-					}];
+				skipMove = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:installedURL usingSignature:codeSignature];
 			}
 
 			return [[skipMove
@@ -648,17 +646,26 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		setNameWithFormat:@"%@ -deleteOwnedBundleAtURL: %@", self, bundleURL];
 }
 
+#pragma mark Verification
+
 - (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
 	NSParameterAssert(bundleURL != nil);
 	NSParameterAssert(signature != nil);
 
-	return [[[signature
-		verifyBundleAtURL:bundleURL]
+	return [[[[self
+		takeOwnershipOfDirectory:bundleURL]
+		then:^{
+			return [signature verifyBundleAtURL:bundleURL];
+		}]
 		catch:^(NSError *error) {
 			if (backupBundleURL == nil) return [RACSignal error:error];
 
-			return [[[[self
-				installItemAtURL:bundleURL fromURL:backupBundleURL]
+			return [[[[[self
+				// Verify that the backup itself is valid.
+				verifyBundleAtURL:backupBundleURL usingSignature:signature recoveringUsingBackupAtURL:nil]
+				then:^{
+					return [self installItemAtURL:bundleURL fromURL:backupBundleURL];
+				}]
 				initially:^{
 					[NSFileManager.defaultManager removeItemAtURL:bundleURL error:NULL];
 				}]
