@@ -122,15 +122,6 @@
 		head];
 }
 
-- (void)startDownloadWithRequest:(NSURLRequest *)request {
-	NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
-	delegateQueue.maxConcurrentOperationCount = 1;
-
-	self.connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
-	self.connection.delegateQueue = delegateQueue;
-	[self.connection start];
-}
-
 - (RACSignal *)truncateDownload:(SQRLResumableDownload *)download {
 	return [[[[RACSignal
 		defer:^{
