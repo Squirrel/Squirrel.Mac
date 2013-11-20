@@ -177,8 +177,8 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Returns a signal which will send completed or error on a background thread.
 - (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory;
 
-// Changes the owner and group of the given directory to that of the current process,
-// then disables writing for anyone but the owner.
+// Recursively changes the owner and group of the given directory tree to that
+// of the current process, then disables writing for anyone but the owner.
 //
 // directoryURL - The URL to the folder to take ownership of. This must not be
 //                nil.
