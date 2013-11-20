@@ -15,7 +15,6 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItState.h"
 #import "SQRLTerminationListener.h"
-#import <copyfile.h>
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
