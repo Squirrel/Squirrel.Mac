@@ -7,7 +7,7 @@
 //
 
 #import "SQRLDownloader.h"
-#import "SQRLResumableDownloadManager.h"
+#import "SQRLDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import <sys/socket.h>
 #import <netinet/in.h>
@@ -16,10 +16,10 @@
 
 SpecBegin(SQRLDownload);
 
-__block SQRLResumableDownloadManager *downloadManager;
+__block SQRLDownloadManager *downloadManager;
 
 beforeAll(^{
-	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
+	downloadManager = SQRLDownloadManager.defaultDownloadManager;
 
 	NSError *removeError = nil;
 	BOOL remove = [[downloadManager

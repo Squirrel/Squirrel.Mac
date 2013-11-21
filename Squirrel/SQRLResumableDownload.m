@@ -12,12 +12,14 @@
 
 @implementation SQRLResumableDownload
 
-- (instancetype)initWithResponse:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL {
+- (instancetype)initWithRequest:(NSURLRequest *)request response:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL {
+	NSParameterAssert(response != nil);
 	NSParameterAssert(fileURL != nil);
 
 	return [self initWithDictionary:@{
-		@keypath(self, response): response ?: NSNull.null,
-		@keypath(self, fileURL): fileURL,
+		@keypath(self.request): request,
+		@keypath(self.response): response,
+		@keypath(self.fileURL): fileURL,
 	} error:NULL];
 }
 
@@ -36,6 +38,38 @@
 	if (response.statusCode != self.response.statusCode) return NO;
 	if (![response.allHeaderFields isEqual:self.response.allHeaderFields]) return NO;
 	return YES;
+}
+
+- (RACSignal *)resumableRequest {
+	return [[[super
+		resumableRequest]
+		map:^ NSURLRequest * (NSURLRequest *request) {
+			NSHTTPURLResponse *response = self.response;
+			NSString *ETag = [self.class ETagFromResponse:response];
+			if (ETag == nil) return request;
+
+			NSNumber *alreadyDownloadedSize = nil;
+			NSError *alreadyDownloadedSizeError = nil;
+			BOOL getAlreadyDownloadedSize = [self.fileURL getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
+			if (!getAlreadyDownloadedSize) return request;
+
+			NSMutableURLRequest *newRequest = [request mutableCopy];
+			[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
+			[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forHTTPHeaderField:@"Range"];
+			return newRequest;
+		}]
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+}
+
++ (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
+	return [[[response.allHeaderFields.rac_sequence
+		filter:^ BOOL (RACTuple *keyValuePair) {
+			return [keyValuePair.first caseInsensitiveCompare:@"ETag"] == NSOrderedSame;
+		}]
+		reduceEach:^(NSString *key, NSString *value) {
+			return value;
+		}]
+		head];
 }
 
 @end

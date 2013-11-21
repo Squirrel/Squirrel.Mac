@@ -8,20 +8,21 @@
 
 #import <Foundation/Foundation.h>
 
+@class SQRLDownload;
 @class SQRLResumableDownload;
 @class RACSignal;
 @class SQRLDirectoryManager;
 
 // Stores metadata for download resumption, and manages the disk locations for
 // where they're stored.
-@interface SQRLResumableDownloadManager : NSObject
+@interface SQRLDownloadManager : NSObject
 
 // Default download manager, initializes a download manager with the current
 // application directory manager. Stores downloads in
 // `directoryManager.downloadDirectoryURL`.
 + (instancetype)defaultDownloadManager;
 
-// Designated initialiser
+// Designated initialiser.
 //
 // directoryManager - Must not be nil.
 //
@@ -36,26 +37,22 @@
 // attempted.
 - (RACSignal *)removeAllResumableDownloads;
 
-// Retrieve a previously started download, or initialise a new download, callers
-// don't need to know whether a download has been previously started or not.
+// Retrieve a previously started download, or initialise a new download.
 //
-// When a previous download cannot be found, a new download is returned. Callers
-// should write downloaded data to the fileURL. If a new download cannot be
-// started, the error parameter (if non `NULL`) will be populated.
+// Previously started downloads may have been removed and require
+// reinitialising.
 //
-// request  - Must not be nil, pass the request whose response body will be
-//            saved to disk.
-// errorRef - May be `NULL`, populated if there is an error preparing a new
-//            resumable download.
+// request - Must not be nil, pass the request you are performing and require a
+//           disk location to save the response body to.
 //
-// Returns a signal which sends a SQRLResumableDownload then completes, or
+// Returns a signal which sends an `SQRLDownload` object then completes, or
 // errors.
 - (RACSignal *)downloadForRequest:(NSURLRequest *)request;
 
 // Store metadata for a download so that it can be resumed later.
 //
-// download - Must have a response, this is asserted.
-// request  - Must not be nil.
+// download - The download being stored for future resumption, must not be nil.
+// request  - The request for which the download can be resumed.
 //
 // Returns a signal which completes or errors.
 - (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request;
