@@ -11,7 +11,7 @@
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownloader.h"
-#import "SQRLResumableDownloadManager.h"
+#import "SQRLDownloadManager.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -184,7 +184,7 @@ describe(@"response handling", ^{
 
 it(@"should clean up resumable downloads after a successful download", ^{
 	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication"];
-	SQRLResumableDownloadManager *downloadManager = [[SQRLResumableDownloadManager alloc] initWithDirectoryManager:directoryManager];
+	SQRLDownloadManager *downloadManager = [[SQRLDownloadManager alloc] initWithDirectoryManager:directoryManager];
 
 	NSError *error = nil;
 	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&error];

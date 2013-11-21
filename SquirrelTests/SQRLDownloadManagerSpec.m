@@ -6,17 +6,17 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLResumableDownloadManager.h"
+#import "SQRLDownloadManager.h"
 #import "SQRLResumableDownload.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
-SpecBegin(SQRLResumableDownloadManager)
+SpecBegin(SQRLDownloadManager)
 
-__block SQRLResumableDownloadManager *downloadManager = nil;
+__block SQRLDownloadManager *downloadManager = nil;
 
 beforeAll(^{
-	downloadManager = SQRLResumableDownloadManager.defaultDownloadManager;
+	downloadManager = SQRLDownloadManager.defaultDownloadManager;
 
 	NSError *removeError = nil;
 	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&removeError];
@@ -60,8 +60,8 @@ it(@"should return a path in a writable directory for new URLs", ^{
 it(@"should return the same path for the same URL", ^{
 	NSURL *testURL = newTestURL();
 
-	SQRLResumableDownload *download1 = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL]] first];
-	SQRLResumableDownload *download2 = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL]] first];
+	SQRLDownload *download1 = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL]] first];
+	SQRLDownload *download2 = [[downloadManager downloadForRequest:[NSURLRequest requestWithURL:testURL]] first];
 	expect(download1).notTo.beNil();
 	expect(download1).to.equal(download2);
 });
@@ -70,10 +70,10 @@ it(@"should remember a response", ^{
 	NSURLRequest *request = [NSURLRequest requestWithURL:newTestURL()];
 	NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc] initWithURL:request.URL statusCode:200 HTTPVersion:(__bridge NSString *)kCFHTTPVersion1_1 headerFields:@{ @"ETag": NSProcessInfo.processInfo.globallyUniqueString }];
 
-	SQRLResumableDownload *initialDownload = [[downloadManager downloadForRequest:request] first];
+	SQRLDownload *initialDownload = [[downloadManager downloadForRequest:request] first];
 
-	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:response fileURL:initialDownload.fileURL];
-	expect(initialDownload).notTo.equal(newDownload);
+	SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithRequest:request response:response fileURL:initialDownload.fileURL];
+	expect(newDownload).notTo.equal(initialDownload);
 
 	NSError *error = nil;
 	BOOL setNewDownload = [[downloadManager setDownload:newDownload forRequest:request] waitUntilCompleted:&error];
@@ -81,7 +81,7 @@ it(@"should remember a response", ^{
 	expect(error).to.beNil();
 
 	SQRLResumableDownload *resumedDownload = [[downloadManager downloadForRequest:request] first];
-	expect(resumedDownload).to.equal(newDownload);
+	expect(newDownload).to.equal(resumedDownload);
 });
 
 SpecEnd

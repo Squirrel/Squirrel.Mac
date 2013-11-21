@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
-@class SQRLResumableDownloadManager;
+@class SQRLDownloadManager;
 @class RACSignal;
 
 // Resumably download a remote resource.
@@ -29,7 +29,7 @@
 //                   stored and resumed from. For a previously started download
 //                   to be resumed, an equivalent download manager should be
 //                   provided.
-- (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLResumableDownloadManager *)downloadManager __attribute__((nonnull (1, 2)));
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLDownloadManager *)downloadManager __attribute__((nonnull (1, 2)));
 
 // Starts downloading the resource, cancels when the the subscription is
 // disposed.
