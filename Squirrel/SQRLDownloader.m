@@ -32,8 +32,24 @@
 // state added to resume a prior download - then completes, or errors.
 - (RACSignal *)requestForResumableDownload;
 
-// Returns a signal which will complete when the `NSURLConnection` completes.
-@property (readonly, nonatomic, strong) RACSignal *connectionFinished;
+// A signal which forwards any errors received from the
+//`NSURLConnection`.
+@property (readonly, nonatomic, strong) RACSignal *connectionErrors;
+
+// A signal which sends the latest response received from the connection then
+// completes.
+@property (readonly, nonatomic, strong) RACSubject *latestResponse;
+
+// A signal which sends the latest prepared download then completes.
+@property (readonly, nonatomic, strong) RACSubject *preparedDownload;
+
+// Aggregate subject for all errors, from the connection proper or dependent
+// operations.
+@property (readonly, nonatomic, strong) RACSubject *allErrors;
+
+// A signal which completes when the `NSURLConnection` completes.
+@property (readonly, nonatomic, strong) RACSignal *completionSignal;
+
 @end
 
 @implementation SQRLDownloader
@@ -53,12 +69,41 @@
 		downloadForRequest:request]
 		replayLast];
 
-	_connectionFinished = [[[self
-		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
-		flattenMap:^(id _) {
-			return RACSignal.empty;
+	_allErrors = [RACSubject subject];
+
+	_connectionErrors = [[[[self
+		rac_signalForSelector:@selector(connection:didFailWithError:)]
+		reduceEach:^(id _, NSError *error) {
+			return [RACSignal error:error];
 		}]
-		replay];
+		flatten]
+		setNameWithFormat:@"%@ connection errors", self];
+
+	[_connectionErrors subscribe:_allErrors];
+
+	_latestResponse = [[RACReplaySubject
+		replaySubjectWithCapacity:1]
+		setNameWithFormat:@"%@ latest response", self];
+
+	_preparedDownload = [[RACReplaySubject
+		replaySubjectWithCapacity:1]
+		setNameWithFormat:@"%@ prepared download", self];
+
+	@weakify(self);
+	_completionSignal = [[[[self
+		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
+		reduceEach:^(id _) {
+			@strongify(self);
+
+			RACSignal *locationSignal = [self.resumableDownload
+				map:^(SQRLResumableDownload *download) {
+					return download.fileURL;
+				}];
+
+			return [RACSignal zip:@[ self.latestResponse, locationSignal ]];
+		}]
+		flatten]
+		setNameWithFormat:@"%@ completion", self];
 
 	return self;
 }
@@ -186,49 +231,38 @@
 	return YES;
 }
 
-- (RACSignal *)errorsSignal {
-	return [[[[self
-		rac_signalForSelector:@selector(connection:didFailWithError:)]
-		reduceEach:^(id _, NSError *error) {
-			return [RACSignal error:error];
-		}]
-		flatten]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+/*
+	These methods fully evaluate their side effects before returning.
+ 
+	This ensures strong ordering of response and data handling, and that no more
+	than one `data` is held in memory at any one time.
+ */
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+	[self.latestResponse sendNext:response];
+
+	RACSignal *prepareDownload = [self
+		prepareResumableDownloadForResponse:response];
+	[self waitForSignal:prepareDownload forwardErrors:self.allErrors];
 }
 
-- (RACSignal *)dataSignalWithResponse:(NSURLResponse *)response {
-	RACSignal *downloadForResponse = [RACSignal
-		defer:^{
-			return [[self
-				prepareResumableDownloadForResponse:response]
-				replayLast];
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+	RACSignal *saveData = [[self.preparedDownload
+		map:^(SQRLResumableDownload *download) {
+			return download.fileURL;
+		}]
+		try:^(NSURL *fileURL, NSError **errorRef) {
+			return [self appendData:data toURL:fileURL error:errorRef];
 		}];
-
-	return [[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveData:)]
-		takeUntil:self.connectionFinished]
-		reduceEach:^(id _, NSData *bodyData) {
-			return [[downloadForResponse
-				map:^(SQRLResumableDownload *download) {
-					return download.fileURL;
-				}]
-				try:^(NSURL *fileURL, NSError **errorRef) {
-					return [self appendData:bodyData toURL:fileURL error:errorRef];
-				}];
-			}]
-		concat]
-		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
+	[self waitForSignal:saveData forwardErrors:self.allErrors];
 }
 
-- (RACSignal *)responseSignal {
-	return [[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
-		takeUntil:self.connectionFinished]
-		reduceEach:^(id _, NSURLResponse *response) {
-			return [self dataSignalWithResponse:response];
-		}]
-		switchToLatest]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+- (void)waitForSignal:(RACSignal *)signal forwardErrors:(RACSubject *)subject {
+	NSError *error = nil;
+	BOOL complete = [signal waitUntilCompleted:&error];
+	if (!complete) {
+		[subject sendError:error];
+	}
 }
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
@@ -236,14 +270,24 @@
 		createSignal:^(id<RACSubscriber> subscriber) {
 			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
 
-			[disposable addDisposable:[[self responseSignal] subscribe:subscriber]];
-			[disposable addDisposable:[[self errorsSignal] subscribe:subscriber]];
+			RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
+				[self.connection cancel];
+			}];
+			[disposable addDisposable:connectionDisposable];
+
+			// Sends errors
+			RACDisposable *errorDisposable = [[self.allErrors
+				doError:^(NSError *error) {
+					[connectionDisposable dispose];
+				}]
+				subscribe:subscriber];
+			[disposable addDisposable:errorDisposable];
+
+			// Sends result and completion
+			RACDisposable *completionDisposable = [self.completionSignal subscribe:subscriber];
+			[disposable addDisposable:completionDisposable];
 
 			[self startDownloadWithRequest:request];
-
-			[disposable addDisposable:[RACDisposable disposableWithBlock:^{
-				[self.connection cancel];
-			}]];
 
 			return disposable;
 		}]
