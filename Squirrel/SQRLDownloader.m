@@ -243,7 +243,9 @@
 
 	RACSignal *prepareDownload = [self
 		prepareResumableDownloadForResponse:response];
-	[self waitForSignal:prepareDownload forwardErrors:self.allErrors];
+	SQRLResumableDownload *preparedDownload = [self waitForSignal:prepareDownload forwardErrors:self.allErrors];
+
+	[self.preparedDownload sendNext:preparedDownload];
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
@@ -257,12 +259,16 @@
 	[self waitForSignal:saveData forwardErrors:self.allErrors];
 }
 
-- (void)waitForSignal:(RACSignal *)signal forwardErrors:(RACSubject *)subject {
+- (id)waitForSignal:(RACSignal *)signal forwardErrors:(RACSubject *)subject {
 	NSError *error = nil;
-	BOOL complete = [signal waitUntilCompleted:&error];
-	if (!complete) {
+	BOOL success = NO;
+	id result = [signal firstOrDefault:nil success:&success error:&error];
+	if (!success) {
 		[subject sendError:error];
+		return nil;
 	}
+
+	return result;
 }
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
