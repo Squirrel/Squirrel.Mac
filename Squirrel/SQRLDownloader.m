@@ -33,7 +33,7 @@
 - (RACSignal *)requestForResumableDownload;
 
 // A signal which forwards any errors received from the
-//`NSURLConnection`.
+// `NSURLConnection`.
 @property (readonly, nonatomic, strong) RACSignal *connectionErrors;
 
 // A signal which sends the latest response received from the connection then
