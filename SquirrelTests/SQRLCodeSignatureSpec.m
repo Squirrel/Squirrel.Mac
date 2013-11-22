@@ -30,11 +30,11 @@ it(@"should verify a valid bundle", ^{
 
 it(@"should fail to verify with different code signing requirements", ^{
 	NSError *error = nil;
-	SQRLCodeSignature *verifier = [SQRLCodeSignature currentApplicationSignature:&error];
-	expect(verifier).notTo.beNil();
+	SQRLCodeSignature *signature = [SQRLCodeSignature currentApplicationSignature:&error];
+	expect(signature).notTo.beNil();
 	expect(error).to.beNil();
 
-	BOOL success = [[verifier verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
+	BOOL success = [[signature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
 	expect(success).to.beFalsy();
 	expect(error).notTo.beNil();
 });
