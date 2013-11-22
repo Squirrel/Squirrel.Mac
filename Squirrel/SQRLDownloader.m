@@ -25,7 +25,7 @@
 
 // Returns a signal which sends the download for `request` from
 // `downloadManager` then completes, or errors.
-@property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
+@property (nonatomic, readonly, strong) RACSignal *initializedDownload;
 
 // The latest response received from the connection.
 @property (nonatomic, strong) NSURLResponse *latestResponse;
@@ -55,7 +55,7 @@
 
 	_downloadManager = downloadManager;
 
-	_initialisedDownload = [[downloadManager
+	_initializedDownload = [[downloadManager
 		downloadForRequest:request]
 		replayLast];
 
@@ -120,7 +120,7 @@
 
 - (RACSignal *)prepareDownloadForResponse:(NSURLResponse *)response {
 	return [[[self
-		initialisedDownload]
+		initializedDownload]
 		flattenMap:^(SQRLDownload *download) {
 			if (![response isKindOfClass:NSHTTPURLResponse.class]) {
 				return [self truncateDownload:download];
@@ -241,7 +241,7 @@
 
 - (RACSignal *)download {
 	return [[[[self
-		initialisedDownload]
+		initializedDownload]
 		flattenMap:^(SQRLDownload *download) {
 			return [download resumableRequest];
 		}]
