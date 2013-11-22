@@ -27,10 +27,6 @@
 // `downloadManager` then completes, or errors.
 @property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
 
-// A signal which forwards any errors received from the
-// `NSURLConnection`.
-@property (readonly, nonatomic, strong) RACSignal *connectionErrors;
-
 // A signal which sends the latest response received from the connection then
 // completes.
 @property (readonly, nonatomic, strong) RACSubject *latestResponse;
@@ -66,7 +62,7 @@
 
 	_allErrors = [RACSubject subject];
 
-	_connectionErrors = [[[[self
+	RACSignal *connectionErrors = [[[[self
 		rac_signalForSelector:@selector(connection:didFailWithError:)]
 		reduceEach:^(id _, NSError *error) {
 			return [RACSignal error:error];
@@ -74,7 +70,7 @@
 		flatten]
 		setNameWithFormat:@"%@ connection errors", self];
 
-	[_connectionErrors subscribe:_allErrors];
+	[connectionErrors subscribe:_allErrors];
 
 	_latestResponse = [[RACReplaySubject
 		replaySubjectWithCapacity:1]
