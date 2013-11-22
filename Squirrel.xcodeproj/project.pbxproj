@@ -88,7 +88,7 @@
 		D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0D97E4417B58FC400301C72 /* ResourceRules.plist */; };
 		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
-		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */; };
+		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */; };
 		D0F3F03617E83928003AFA6B /* libExpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F01F17E83918003AFA6B /* libExpecta.a */; };
 		D0F3F03717E83928003AFA6B /* libSpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F02B17E83918003AFA6B /* libSpecta.a */; };
 		D0F3F06317E83B03003AFA6B /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
@@ -508,7 +508,7 @@
 		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = SOURCE_ROOT; };
 		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
 		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
-		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerifierSpec.m; sourceTree = "<group>"; };
+		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureSpec.m; sourceTree = "<group>"; };
 		D0F3F01417E83918003AFA6B /* Expecta.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Expecta.xcodeproj; path = External/ReactiveCocoa/external/expecta/Expecta.xcodeproj; sourceTree = "<group>"; };
 		D0F3F01717E83918003AFA6B /* Specta.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Specta.xcodeproj; path = External/ReactiveCocoa/external/specta/Specta.xcodeproj; sourceTree = "<group>"; };
 		D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = ReactiveCocoa.xcodeproj; path = External/ReactiveCocoa/ReactiveCocoaFramework/ReactiveCocoa.xcodeproj; sourceTree = "<group>"; };
@@ -946,7 +946,7 @@
 			isa = PBXGroup;
 			children = (
 				D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */,
-				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
+				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */,
 				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
 				D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */,
 				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
@@ -1456,7 +1456,7 @@
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
-				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
+				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,

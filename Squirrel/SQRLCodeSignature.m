@@ -21,6 +21,13 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 // A `SecRequirementRef` that tested bundles must satisfy.
 @property (atomic, strong) id requirement;
 
+// Initializes the receiver with the given requirement.
+//
+// This is the designated initializer for this class.
+//
+// requirement - The code requirement for tested bundles. This must not be NULL.
+- (id)initWithRequirement:(SecRequirementRef)requirement;
+
 @end
 
 @implementation SQRLCodeSignature

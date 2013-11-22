@@ -295,19 +295,14 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (SQRLCodeSignature *)testApplicationSignature {
-	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		return [[SQRLCodeSignature alloc] initWithRequirement:requirement];
-	}];
-}
+	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
-- (NSData *)testApplicationCodeSigningRequirementData {
-	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		CFDataRef data = NULL;
-		OSStatus status = SecRequirementCopyData(requirement, kSecCSDefaultFlags, &data);
-		STAssertTrue(status == noErr, @"Error copying data for requirement %@", requirement);
+	NSError *error = nil;
+	SQRLCodeSignature *signature = [SQRLCodeSignature signatureWithBundle:bundleURL error:&error];
+	STAssertNotNil(signature, @"Error getting signature for bundle at %@: %@", bundleURL, error);
 
-		return CFBridgingRelease(data);
-	}];
+	return signature;
 }
 
 - (SQRLDirectoryManager *)shipItDirectoryManager {
