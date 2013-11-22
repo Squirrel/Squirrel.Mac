@@ -27,12 +27,11 @@
 // `downloadManager` then completes, or errors.
 @property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
 
-// A signal which sends the latest response received from the connection then
-// completes.
-@property (readonly, nonatomic, strong) RACSubject *latestResponse;
+// The latest response received from the connection.
+@property (nonatomic, strong) NSURLResponse *latestResponse;
 
-// A signal which sends the latest prepared download then completes.
-@property (readonly, nonatomic, strong) RACSubject *preparedDownload;
+// The latest download, as a function of the latest response, to append data to.
+@property (nonatomic, strong) SQRLDownload *preparedDownload;
 
 // Aggregate subject for all errors, from the connection proper or dependent
 // operations.
@@ -72,26 +71,13 @@
 
 	[connectionErrors subscribe:_allErrors];
 
-	_latestResponse = [[RACReplaySubject
-		replaySubjectWithCapacity:1]
-		setNameWithFormat:@"%@ latest response", self];
-
-	_preparedDownload = [[RACReplaySubject
-		replaySubjectWithCapacity:1]
-		setNameWithFormat:@"%@ prepared download", self];
-
 	@weakify(self);
 	_completionSignal = [[[[self
 		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
 		reduceEach:^(id _) {
 			@strongify(self);
 
-			RACSignal *locationSignal = [self.initialisedDownload
-				map:^(SQRLResumableDownload *download) {
-					return download.fileURL;
-				}];
-
-			return [RACSignal zip:@[ self.latestResponse, locationSignal ]];
+			return [RACSignal return:RACTuplePack(self.latestResponse, self.preparedDownload.fileURL)];
 		}]
 		flatten]
 		setNameWithFormat:@"%@ completion", self];
@@ -194,20 +180,18 @@
  */
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	[self.latestResponse sendNext:response];
+	self.latestResponse = response;
 
 	RACSignal *prepareDownload = [self
 		prepareDownloadForResponse:response];
 	SQRLResumableDownload *preparedDownload = [self waitForSignal:prepareDownload forwardErrors:self.allErrors];
 
-	[self.preparedDownload sendNext:preparedDownload];
+	self.preparedDownload = preparedDownload;
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-	RACSignal *saveData = [[self.preparedDownload
-		map:^(SQRLResumableDownload *download) {
-			return download.fileURL;
-		}]
+	RACSignal *saveData = [[RACSignal
+		return:self.preparedDownload.fileURL]
 		try:^(NSURL *fileURL, NSError **errorRef) {
 			return [self appendData:data toURL:fileURL error:errorRef];
 		}];
