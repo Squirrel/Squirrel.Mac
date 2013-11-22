@@ -52,13 +52,6 @@ extern const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode;
 // designated requirement of the bundle at `bundleURL`.
 + (instancetype)signatureWithBundle:(NSURL *)bundleURL error:(NSError **)error;
 
-// Initializes the receiver with the given requirement.
-//
-// This is the designated initializer for this class.
-//
-// requirement - The code requirement for tested bundles. This must not be NULL.
-- (id)initWithRequirement:(SecRequirementRef)requirement;
-
 // Verifies the code signature of the specified bundle and verifies that the
 // bundle meets the receiver's requirement.
 //

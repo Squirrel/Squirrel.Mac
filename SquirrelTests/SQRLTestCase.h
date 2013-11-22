@@ -45,10 +45,6 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // A code signature with requirements from TestApplication.app.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *testApplicationSignature;
 
-// A serialized `SecRequirementRef` representing the requirements from
-// TestApplication.app.
-@property (nonatomic, copy, readonly) NSData *testApplicationCodeSigningRequirementData;
-
 // A directory manager for finding URLs that apply to ShipIt.
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *shipItDirectoryManager;
 
