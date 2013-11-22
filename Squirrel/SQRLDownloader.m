@@ -25,10 +25,21 @@
 
 // Returns a signal which sends the download for `request` from
 // `downloadManager` then completes, or errors.
-@property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
+@property (nonatomic, readonly, strong) RACSignal *initializedDownload;
 
-// Returns a signal which will complete when the `NSURLConnection` completes.
-@property (readonly, nonatomic, strong) RACSignal *connectionFinished;
+// The latest response received from the connection.
+@property (nonatomic, strong) NSURLResponse *latestResponse;
+
+// The latest download, as a function of the latest response, to append data to.
+@property (nonatomic, strong) SQRLDownload *preparedDownload;
+
+// Aggregate subject for all errors, from the connection proper or dependent
+// operations.
+@property (readonly, nonatomic, strong) RACSubject *allErrors;
+
+// A signal which completes when the `NSURLConnection` completes.
+@property (readonly, nonatomic, strong) RACSignal *connectionCompleted;
+
 @end
 
 @implementation SQRLDownloader
@@ -44,16 +55,33 @@
 
 	_downloadManager = downloadManager;
 
-	_initialisedDownload = [[downloadManager
+	_initializedDownload = [[downloadManager
 		downloadForRequest:request]
 		replayLast];
 
-	_connectionFinished = [[[self
-		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
-		flattenMap:^(id _) {
-			return RACSignal.empty;
+	_allErrors = [RACSubject subject];
+
+	RACSignal *connectionErrors = [[[[self
+		rac_signalForSelector:@selector(connection:didFailWithError:)]
+		reduceEach:^(id _, NSError *error) {
+			return [RACSignal error:error];
 		}]
-		replay];
+		flatten]
+		setNameWithFormat:@"%@ connection errors", self];
+
+	[connectionErrors subscribe:_allErrors];
+
+	@weakify(self);
+	_connectionCompleted = [[[[[self
+		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
+		reduceEach:^(id _) {
+			@strongify(self);
+
+			return [RACSignal return:RACTuplePack(self.latestResponse, self.preparedDownload.fileURL)];
+		}]
+		flatten]
+		take:1]
+		setNameWithFormat:@"%@ completion", self];
 
 	return self;
 }
@@ -93,7 +121,7 @@
 
 - (RACSignal *)prepareDownloadForResponse:(NSURLResponse *)response {
 	return [[[self
-		initialisedDownload]
+		initializedDownload]
 		flattenMap:^(SQRLDownload *download) {
 			if (![response isKindOfClass:NSHTTPURLResponse.class]) {
 				return [self truncateDownload:download];
@@ -145,49 +173,42 @@
 	return YES;
 }
 
-- (RACSignal *)errorsSignal {
-	return [[[[self
-		rac_signalForSelector:@selector(connection:didFailWithError:)]
-		reduceEach:^(id _, NSError *error) {
-			return [RACSignal error:error];
-		}]
-		flatten]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+/*
+	These methods fully evaluate their side effects before returning.
+ 
+	This ensures strong ordering of response and data handling, and that no more
+	than one `data` is held in memory at any one time.
+ */
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+	self.latestResponse = response;
+
+	RACSignal *prepareDownload = [self
+		prepareDownloadForResponse:response];
+	SQRLResumableDownload *preparedDownload = [self waitForSignal:prepareDownload forwardErrors:self.allErrors];
+
+	self.preparedDownload = preparedDownload;
 }
 
-- (RACSignal *)dataSignalWithResponse:(NSURLResponse *)response {
-	RACSignal *downloadForResponse = [RACSignal
-		defer:^{
-			return [[self
-				prepareDownloadForResponse:response]
-				replayLast];
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+	RACSignal *saveData = [[RACSignal
+		return:self.preparedDownload.fileURL]
+		try:^(NSURL *fileURL, NSError **errorRef) {
+			return [self appendData:data toURL:fileURL error:errorRef];
 		}];
-
-	return [[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveData:)]
-		takeUntil:self.connectionFinished]
-		reduceEach:^(id _, NSData *bodyData) {
-			return [[downloadForResponse
-				map:^(SQRLDownload *download) {
-					return download.fileURL;
-				}]
-				try:^(NSURL *fileURL, NSError **errorRef) {
-					return [self appendData:bodyData toURL:fileURL error:errorRef];
-				}];
-			}]
-		concat]
-		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
+	[self waitForSignal:saveData forwardErrors:self.allErrors];
 }
 
-- (RACSignal *)responseSignal {
-	return [[[[[self
-		rac_signalForSelector:@selector(connection:didReceiveResponse:)]
-		takeUntil:self.connectionFinished]
-		reduceEach:^(id _, NSURLResponse *response) {
-			return [self dataSignalWithResponse:response];
-		}]
-		switchToLatest]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+- (id)waitForSignal:(RACSignal *)signal forwardErrors:(RACSubject *)subject {
+	NSError *error = nil;
+	BOOL success = NO;
+	id result = [signal firstOrDefault:nil success:&success error:&error];
+	if (!success) {
+		[subject sendError:error];
+		return nil;
+	}
+
+	return result;
 }
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
@@ -195,14 +216,22 @@
 		createSignal:^(id<RACSubscriber> subscriber) {
 			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
 
-			[disposable addDisposable:[[self responseSignal] subscribe:subscriber]];
-			[disposable addDisposable:[[self errorsSignal] subscribe:subscriber]];
+			// Sends errors
+			RACDisposable *errorDisposable = [self.allErrors
+				subscribe:subscriber];
+			[disposable addDisposable:errorDisposable];
+
+			// Sends result and completion
+			RACDisposable *completionDisposable = [self.connectionCompleted
+				subscribe:subscriber];
+			[disposable addDisposable:completionDisposable];
 
 			[self startDownloadWithRequest:request];
 
-			[disposable addDisposable:[RACDisposable disposableWithBlock:^{
+			RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
 				[self.connection cancel];
-			}]];
+			}];
+			[disposable addDisposable:connectionDisposable];
 
 			return disposable;
 		}]
@@ -211,7 +240,7 @@
 
 - (RACSignal *)download {
 	return [[[[self
-		initialisedDownload]
+		initializedDownload]
 		flattenMap:^(SQRLDownload *download) {
 			return [download resumableRequest];
 		}]
