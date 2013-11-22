@@ -14,6 +14,18 @@
 
 SpecBegin(SQRLInstaller)
 
+mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
+	NSFileSecurity *fileSecurity = nil;
+	BOOL success = [fileURL getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:NULL];
+	expect(success).to.beTruthy();
+	expect(fileSecurity).notTo.beNil();
+
+	__block mode_t mode;
+	expect(CFFileSecurityGetMode((__bridge CFFileSecurityRef)fileSecurity, &mode)).to.beTruthy();
+
+	return mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+};
+
 __block NSURL *updateURL;
 
 beforeEach(^{
@@ -124,6 +136,24 @@ it(@"should relaunch even after failing to install an update", ^{
 
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).will.equal(1);
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+});
+
+it(@"should disallow writing the updated application except by the owner", ^{
+	NSString *command = [NSString stringWithFormat:@"chmod -R 0777 '%@'", updateURL.path];
+	expect(system(command.UTF8String)).to.equal(0);
+
+	expect(modeOfURL(updateURL)).to.equal(0777);
+	expect(modeOfURL([updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0777);
+
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+
+	[self launchShipIt];
+
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+
+	expect(modeOfURL(self.testApplicationURL)).to.equal(0755);
+	expect(modeOfURL([self.testApplicationURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0755);
 });
 
 describe(@"signal handling", ^{
