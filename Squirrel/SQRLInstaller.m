@@ -89,17 +89,19 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // Invokes -moveAndTakeOwnershipOfBundleAtURL: only if the bundle has not
 // already been moved into place.
 //
+// After moving the bundle (if necessary), it will be verified using the given
+// code signature.
+//
 // bundleURL     - The original URL to the bundle. This must not be nil.
 // installedURL  - The proposed destination URL for the bundle. This may be nil,
 //                 in which case a new one will be generated.
 // codeSignature - The code signature that any item must match in order to be
-//                 considered the correct bundle. This may be nil if
-//                 `installedURL` is nil.
+//                 considered the correct bundle. This must not be nil.
 //
 // Returns a signal which will send the `NSURL` to the installed bundle location
-// if a new one was generated, then complete once the bundle has been copied and
-// its permissions updated. If the bundle was already in place, the signal will
-// complete without sending any values.
+// if a new one was generated, then complete once the bundle has been copied,
+// its permissions updated, and verification completed. If the bundle was
+// already in place, the signal will complete without sending any values.
 - (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL unlessInstalledAtURL:(NSURL *)installedURL verifiedUsingSignature:(SQRLCodeSignature *)codeSignature;
 
 // Moves the specified bundle to a temporary location, then ensures that the
@@ -591,11 +593,30 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 				skipMove = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:installedURL usingSignature:codeSignature];
 			}
 
-			return [[skipMove
+			return [[[[[skipMove
 				ignore:@YES]
 				flattenMap:^(id _) {
-					return [self moveAndTakeOwnershipOfBundleAtURL:bundleURL];
-				}];
+					return [[self
+						moveAndTakeOwnershipOfBundleAtURL:bundleURL]
+						materialize];
+				}]
+				// When moving completes, verify the destination bundle using
+				// the URL that was sent in the previous event.
+				//
+				// This ensures that we still pass the URL back to the caller
+				// immediately, but can use it for verification after moving
+				// completes.
+				combinePreviousWithStart:nil reduce:^(RACEvent *previous, RACEvent *current) {
+					if (previous == nil) return [RACSignal return:current];
+					if (current.eventType != RACEventTypeCompleted) return [RACSignal return:current];
+
+					NSURL *installedURL = previous.value;
+					return [[codeSignature
+						verifyBundleAtURL:installedURL]
+						materialize];
+				}]
+				flatten]
+				dematerialize];
 		}]
 		setNameWithFormat:@"%@ -moveAndTakeOwnershipOfBundleAtURL: %@ unlessInstalledAtURL: %@ verifiedUsingSignature: %@", self, bundleURL, installedURL, codeSignature];
 }
