@@ -216,24 +216,22 @@
 		createSignal:^(id<RACSubscriber> subscriber) {
 			RACCompoundDisposable *disposable = [[RACCompoundDisposable alloc] init];
 
-			RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
-				[self.connection cancel];
-			}];
-			[disposable addDisposable:connectionDisposable];
-
 			// Sends errors
-			RACDisposable *errorDisposable = [[self.allErrors
-				doError:^(NSError *error) {
-					[connectionDisposable dispose];
-				}]
+			RACDisposable *errorDisposable = [self.allErrors
 				subscribe:subscriber];
 			[disposable addDisposable:errorDisposable];
 
 			// Sends result and completion
-			RACDisposable *completionDisposable = [self.connectionCompleted subscribe:subscriber];
+			RACDisposable *completionDisposable = [self.connectionCompleted
+				subscribe:subscriber];
 			[disposable addDisposable:completionDisposable];
 
 			[self startDownloadWithRequest:request];
+
+			RACDisposable *connectionDisposable = [RACDisposable disposableWithBlock:^{
+				[self.connection cancel];
+			}];
+			[disposable addDisposable:connectionDisposable];
 
 			return disposable;
 		}]
