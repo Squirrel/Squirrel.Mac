@@ -38,7 +38,7 @@
 @property (readonly, nonatomic, strong) RACSubject *allErrors;
 
 // A signal which completes when the `NSURLConnection` completes.
-@property (readonly, nonatomic, strong) RACSignal *completionSignal;
+@property (readonly, nonatomic, strong) RACSignal *connectionCompleted;
 
 @end
 
@@ -72,7 +72,7 @@
 	[connectionErrors subscribe:_allErrors];
 
 	@weakify(self);
-	_completionSignal = [[[[self
+	_connectionCompleted = [[[[[self
 		rac_signalForSelector:@selector(connectionDidFinishLoading:)]
 		reduceEach:^(id _) {
 			@strongify(self);
@@ -80,6 +80,7 @@
 			return [RACSignal return:RACTuplePack(self.latestResponse, self.preparedDownload.fileURL)];
 		}]
 		flatten]
+		take:1]
 		setNameWithFormat:@"%@ completion", self];
 
 	return self;
@@ -229,7 +230,7 @@
 			[disposable addDisposable:errorDisposable];
 
 			// Sends result and completion
-			RACDisposable *completionDisposable = [self.completionSignal subscribe:subscriber];
+			RACDisposable *completionDisposable = [self.connectionCompleted subscribe:subscriber];
 			[disposable addDisposable:completionDisposable];
 
 			[self startDownloadWithRequest:request];
