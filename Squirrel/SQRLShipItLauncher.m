@@ -71,7 +71,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 + (RACSignal *)shipItAuthorization {
 	return [[RACSignal
-		createSignal:^(id<RACSubscriber> subscriber) {
+		create:^(id<RACSubscriber> subscriber) {
 			AuthorizationItem rightItems[] = {
 				{
 					.name = kSMRightModifySystemDaemons,
@@ -115,9 +115,9 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 				[subscriber sendError:[NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil]];
 			}
 
-			return [RACDisposable disposableWithBlock:^{
+			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
 				if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
-			}];
+			}]];
 		}]
 		setNameWithFormat:@"+shipItAuthorization"];
 }
