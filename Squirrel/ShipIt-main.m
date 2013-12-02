@@ -79,10 +79,11 @@ int main(int argc, const char * argv[]) {
 				RACSignal *action;
 
 				if (attempt > SQRLShipItMaximumInstallationAttempts) {
-					action = [[[installer
-						abortInstallationWithState:state]
-						initially:^{
+					action = [[RACSignal
+						defer:^{
 							NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
+
+							return [installer abortInstallationWithState:state];
 						}]
 						catch:^(NSError *error) {
 							NSLog(@"Error aborting installation: %@", error);
@@ -91,9 +92,8 @@ int main(int argc, const char * argv[]) {
 							return [RACSignal empty];
 						}];
 				} else {
-					action = [[[[[state
-						writeUsingURL:stateLocation]
-						initially:^{
+					action = [[[[RACSignal
+						defer:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");
 								state.installerState = SQRLInstallerStateClearingQuarantine;
@@ -102,6 +102,8 @@ int main(int argc, const char * argv[]) {
 							}
 
 							state.installationStateAttempt = attempt;
+
+							return [state writeUsingURL:stateLocation];
 						}]
 						then:^{
 							return [installer installUpdateWithState:state];

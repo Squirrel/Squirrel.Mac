@@ -461,10 +461,11 @@ typedef struct {
 		catch:^(NSError *error) {
 			if (backupBundleURL == nil) return [RACSignal error:error];
 
-			return [[[[self
-				installItemAtURL:bundleURL fromURL:backupBundleURL]
-				initially:^{
+			return [[[RACSignal
+				defer:^{
 					[NSFileManager.defaultManager removeItemAtURL:bundleURL error:NULL];
+
+					return [self installItemAtURL:bundleURL fromURL:backupBundleURL];
 				}]
 				doCompleted:^{
 					NSLog(@"Restored backup bundle to %@", bundleURL);
