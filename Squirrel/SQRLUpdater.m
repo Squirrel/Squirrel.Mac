@@ -195,7 +195,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
 
-	_shipItLauncher = [[[RACSignal
+	_shipItLauncher = [[[[RACSignal
 		defer:^{
 			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
@@ -207,7 +207,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			// wait for another, more canonical error.
 			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
 		}]
-		replayLazily]
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		deferred]
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
@@ -230,8 +231,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				}];
 		}]
 		takeUntil:self.rac_willDeallocSignal]
-		publish]
-		connect];
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		start];
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
@@ -388,25 +389,28 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
 				return YES;
 			}];
-			
-			NSURL *updateBundleURL = [enumerator.rac_sequence objectPassingTest:^(NSURL *URL) {
-				NSString *type = nil;
-				NSError *error = nil;
-				if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
-					NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
-					return NO;
-				}
 
-				if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
+			NSURL *updateBundleURL = [[[enumerator.rac_promise
+				start]
+				filter:^(NSURL *URL) {
+					NSString *type = nil;
+					NSError *error = nil;
+					if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
+						NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
+						return NO;
+					}
 
-				NSBundle *bundle = [NSBundle bundleWithURL:URL];
-				if (bundle == nil) {
-					NSLog(@"Could not open application bundle at %@", URL);
-					return NO;
-				}
+					if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
 
-				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
-			}];
+					NSBundle *bundle = [NSBundle bundleWithURL:URL];
+					if (bundle == nil) {
+						NSLog(@"Could not open application bundle at %@", URL);
+						return NO;
+					}
+
+					return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
+				}]
+				first];
 
 			if (updateBundleURL != nil) {
 				return [RACSignal return:updateBundleURL];
@@ -493,7 +497,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[[SQRLShipItState
+	return [[[[[[[[[SQRLShipItState
 		readUsingURL:self.shipItStateURL]
 		flattenMap:^(SQRLShipItState *existingState) {
 			return [self validateExistingState:existingState];
@@ -511,7 +515,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		// Never allow `completed` to escape this signal chain (in case
 		// -terminate: is asynchronous or something crazy).
 		concat:[RACSignal never]]
-		replay]
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		start]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
 
