@@ -117,7 +117,7 @@ int main(int argc, const char * argv[]) {
 					// fails.
 					action = [[action
 						deliverOn:RACScheduler.mainThreadScheduler]
-						finally:^{
+						doFinished:^{
 							NSURL *bundleURL = state.targetBundleURL;
 							if (bundleURL == nil) {
 								NSLog(@"Missing target bundle URL, cannot relaunch application");
