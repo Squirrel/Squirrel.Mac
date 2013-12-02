@@ -79,8 +79,8 @@ int main(int argc, const char * argv[]) {
 				RACSignal *action;
 
 				if (attempt > SQRLShipItMaximumInstallationAttempts) {
-					action = [[[installer.abortInstallationCommand
-						execute:state]
+					action = [[[installer
+						abortInstallationWithState:state]
 						initially:^{
 							NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
 						}]
@@ -104,7 +104,7 @@ int main(int argc, const char * argv[]) {
 							state.installationStateAttempt = attempt;
 						}]
 						then:^{
-							return [installer.installUpdateCommand execute:state];
+							return [installer installUpdateWithState:state];
 						}]
 						doCompleted:^{
 							NSLog(@"Installation completed successfully");

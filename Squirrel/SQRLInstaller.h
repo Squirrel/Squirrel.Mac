@@ -34,7 +34,9 @@ extern const NSInteger SQRLInstallerErrorInvalidState;
 // There was an error moving a bundle across volumes.
 extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 
-@class RACCommand;
+@class RACSignal;
+@class RACAction;
+@class SQRLShipItState;
 @class SQRLDirectoryManager;
 
 // Performs the installation of an update, using the `SQRLShipItState` on disk,
@@ -44,21 +46,20 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 // terminated.
 @interface SQRLInstaller : NSObject
 
-// When executed with a `SQRLShipItState`, attempts to install the update or
-// resume an in-progress installation.
+// Attempts to install the update or resume an in-progress installation.
 //
-// Each execution will complete or error on an unspecified scheduler when
+// Returns a signal which completes or errors on an unspecified scheduler when
 // installation has completed or failed.
-@property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
+- (RACSignal *)installUpdateWithState:(SQRLShipItState *)state;
 
-// When executed with a `SQRLShipItState`, aborts an installation, and attempts
-// to restore the old version of the application if necessary.
+// Aborts an installation, and attempts to restore the old version of the
+// application if necessary.
 //
-// This must not be executed while `installUpdateCommand` is executing.
+// This must not be executed while `installUpdateWithState:` is executing.
 //
-// Each execution will complete or error on an unspecified scheduler once
+// Returns a signal while completes or errors on an unspecified scheduler once
 // aborting/recovery has finished.
-@property (nonatomic, strong, readonly) RACCommand *abortInstallationCommand;
+- (RACSignal *)abortInstallationWithState:(SQRLShipItState *)state;
 
 // Initializes an installer using the given directory manager to read and write the
 // state of the installation.
