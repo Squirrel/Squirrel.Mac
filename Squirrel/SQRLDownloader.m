@@ -200,7 +200,7 @@
 
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
 	return [[RACSignal
-		createSignal:^(id<RACSubscriber> subscriber) {
+		create:^(id<RACSubscriber> subscriber) {
 			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
 			delegateQueue.maxConcurrentOperationCount = 1;
 
@@ -287,12 +287,13 @@
 				subscribe:subscriber];
 
 			[connection start];
-			return [RACDisposable disposableWithBlock:^{
+
+			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
 				[connection cancel];
 
 				[dataDisposable dispose];
 				[responsesDisposable dispose];
-			}];
+			}]];
 		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
 }

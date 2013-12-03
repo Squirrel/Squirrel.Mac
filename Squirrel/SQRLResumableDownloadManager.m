@@ -89,11 +89,9 @@
 		downloadStoreIndexFileLocation]
 		flattenMap:^(NSURL *location) {
 			return [[RACSignal
-				createSignal:^(id<RACSubscriber> subscriber) {
-					RACDisposable *disposable = [[RACDisposable alloc] init];
-
+				create:^(id<RACSubscriber> subscriber) {
 					dispatch_async(self.queue, ^{
-						if (disposable.disposed) return;
+						if (subscriber.disposable.disposed) return;
 
 						NSError *error = nil;
 						NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
@@ -105,8 +103,6 @@
 						[subscriber sendNext:propertyListData];
 						[subscriber sendCompleted];
 					});
-
-					return disposable;
 				}]
 				tryMap:^ NSDictionary * (NSData *propertyListData, NSError **errorRef) {
 					NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
@@ -138,11 +134,9 @@
 	return [[[self
 		downloadStoreIndexFileLocation]
 		flattenMap:^(NSURL *location) {
-			return [RACSignal createSignal:^(id<RACSubscriber> subscriber) {
-				RACDisposable *disposable = [[RACDisposable alloc] init];
-
+			return [RACSignal create:^(id<RACSubscriber> subscriber) {
 				dispatch_barrier_async(self.queue, ^{
-					if (disposable.disposed) return;
+					if (subscriber.disposable.disposed) return;
 
 					NSDictionary *propertyList = nil;
 
@@ -180,8 +174,6 @@
 
 					[subscriber sendCompleted];
 				});
-
-				return disposable;
 			}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
