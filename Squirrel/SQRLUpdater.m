@@ -17,6 +17,7 @@
 #import "SQRLShipItLauncher.h"
 #import "SQRLShipItState.h"
 #import "SQRLUpdate.h"
+#import "SQRLDownloadedUpdate.h"
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -166,7 +167,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 			[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-			return [[[[[[[SQRLURLConnection
+			return [[[[[[SQRLURLConnection
 				sqrl_sendAsynchronousRequest:request]
 				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
