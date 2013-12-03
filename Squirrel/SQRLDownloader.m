@@ -188,28 +188,24 @@
 			NSURLConnection *connection = nil;
 
 			// A signal that will error if the connection fails for any reason.
-			RACSignal *errors = [[[self
+			RACSignal *errors = [[self
 				signalForDelegateSelector:@selector(connection:didFailWithError:)]
-				logNext]
 				flattenMap:^(NSError *error) {
 					return [RACSignal error:error];
 				}];
 
 			// A signal of all `NSURLResponse`s received on the connection.
-			RACSignal *responses = [[self
-				signalForDelegateSelector:@selector(connection:didReceiveResponse:)]
-				logNext];
+			RACSignal *responses = [self
+				signalForDelegateSelector:@selector(connection:didReceiveResponse:)];
 
 			// A signal of all `NSData` received on the connection.
-			RACSignal *data = [[self
-				signalForDelegateSelector:@selector(connection:didReceiveData:)]
-				logNext];
+			RACSignal *data = [self
+				signalForDelegateSelector:@selector(connection:didReceiveData:)];
 
 			// Sends (or replays) RACUnit when the connection has finished
 			// loading successfully.
-			RACSignal *finished = [[[[[self
+			RACSignal *finished = [[[[self
 				signalForDelegateSelector:@selector(connectionDidFinishLoading:)]
-				logNext]
 				take:1]
 				promiseOnScheduler:RACScheduler.immediateScheduler]
 				start];
