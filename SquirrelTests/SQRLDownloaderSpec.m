@@ -24,7 +24,8 @@ beforeAll(^{
 	BOOL remove = [[downloadManager
 		removeAllResumableDownloads]
 		waitUntilCompleted:&removeError];
-	if (!remove) NSLog(@"Couldn’t remove resumable downloads %@", removeError.sqrl_verboseDescription);
+	expect(remove).to.beTruthy();
+	expect(removeError).to.beNil();
 });
 
 beforeEach(^{
