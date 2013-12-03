@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLResumableDownloadManager.h"
+#import "SQRLDownloadManager.h"
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <CommonCrypto/CommonCrypto.h>
@@ -14,15 +14,15 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLResumableDownload.h"
 
-@interface SQRLResumableDownloadManager ()
+@interface SQRLDownloadManager ()
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 @property (nonatomic, assign, readonly) dispatch_queue_t queue;
 @end
 
-@implementation SQRLResumableDownloadManager
+@implementation SQRLDownloadManager
 
 + (instancetype)defaultDownloadManager {
-	static SQRLResumableDownloadManager *defaultDownloadManager;
+	static SQRLDownloadManager *defaultDownloadManager;
 	static dispatch_once_t defaultDownloadManagerPredicate;
 
 	dispatch_once(&defaultDownloadManagerPredicate, ^{
@@ -225,7 +225,7 @@
 					return [downloadDirectory URLByAppendingPathComponent:[self.class fileNameForURL:request.URL]];
 				}]
 				map:^(NSURL *location) {
-					return [[SQRLResumableDownload alloc] initWithResponse:nil fileURL:location];
+					return [[SQRLDownload alloc] initWithRequest:request fileURL:location];
 				}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];

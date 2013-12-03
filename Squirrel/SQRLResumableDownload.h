@@ -8,22 +8,20 @@
 
 #import <Foundation/Foundation.h>
 
-#import <Mantle/Mantle.h>
+#import "SQRLDownload.h"
 
-// State required to resume a download from where it left off.
-@interface SQRLResumableDownload : MTLModel
+// A download which has already been started and already has partial data.
+@interface SQRLResumableDownload : SQRLDownload
 
 // Designated initialiser.
 //
-// response - HTTP response whose body is being downloaded, may be nil.
-// fileURL  - Local file system location where the download is being saved to,
-//            must not be nil.
-- (instancetype)initWithResponse:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL;
+// request  - See `SQRLDownload`.
+// response - HTTP response whose body is being downloaded to `fileURL`.
+//            Must not be nil.
+// fileURL  - See `SQRLDownload`.
+- (instancetype)initWithRequest:(NSURLRequest *)request response:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL;
 
 // The `response` the receiver was initialised with.
 @property (readonly, copy, nonatomic) NSHTTPURLResponse *response;
-
-// The `fileURL` the receiver was initialised with.
-@property (readonly, copy, nonatomic) NSURL *fileURL;
 
 @end

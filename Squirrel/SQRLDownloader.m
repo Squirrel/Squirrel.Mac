@@ -11,7 +11,7 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <ReactiveCocoa/EXTScope.h>
 
-#import "SQRLResumableDownloadManager.h"
+#import "SQRLDownloadManager.h"
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloader ()
@@ -19,19 +19,14 @@
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 
 // Download manager for resumable state.
-@property (nonatomic, strong, readonly) SQRLResumableDownloadManager *downloadManager;
+@property (nonatomic, strong, readonly) SQRLDownloadManager *downloadManager;
 
 // Connection to retreive the remote resource.
 @property (nonatomic, strong) NSURLConnection *connection;
 
-// Returns a signal which sends the resumable download for `request` from
+// Returns a signal which sends the download for `request` from
 // `downloadManager` then completes, or errors.
-@property (nonatomic, readonly, strong) RACSignal *resumableDownload;
-
-// Returns a signal which sends the request that should be performed for the
-// `resumableDownload` - either the original request or a new request with the
-// state added to resume a prior download - then completes, or errors.
-- (RACSignal *)requestForResumableDownload;
+@property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
 
 // Listens for invocations of `selector` on the receiver that are triggered by
 // the given connection.
@@ -47,7 +42,7 @@
 
 @implementation SQRLDownloader
 
-- (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLResumableDownloadManager *)downloadManager {
+- (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLDownloadManager *)downloadManager {
 	NSParameterAssert(request != nil);
 	NSParameterAssert(downloadManager != nil);
 
@@ -57,7 +52,7 @@
 	_request = [request copy];
 	_downloadManager = downloadManager;
 
-	_resumableDownload = [[[downloadManager
+	_initialisedDownload = [[[downloadManager
 		downloadForRequest:request]
 		promiseOnScheduler:RACScheduler.immediateScheduler]
 		deferred];
@@ -92,7 +87,7 @@
 
 - (RACSignal *)requestForResumableDownload {
 	return [[[self
-		resumableDownload]
+		initialisedDownload]
 		map:^ NSURLRequest * (SQRLResumableDownload *resumableDownload) {
 			NSURLRequest *originalRequest = self.request;
 
@@ -126,7 +121,7 @@
 		first];
 }
 
-- (RACSignal *)truncateDownload:(SQRLResumableDownload *)download {
+- (RACSignal *)truncateDownload:(SQRLDownload *)download {
 	return [[[[RACSignal
 		defer:^{
 			NSError *error = nil;
@@ -148,10 +143,10 @@
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
-- (RACSignal *)prepareResumableDownloadForResponse:(NSURLResponse *)response {
+- (RACSignal *)prepareDownloadForResponse:(NSURLResponse *)response {
 	return [[[self
-		resumableDownload]
-		flattenMap:^(SQRLResumableDownload *download) {
+		initialisedDownload]
+		flattenMap:^(SQRLDownload *download) {
 			if (![response isKindOfClass:NSHTTPURLResponse.class]) {
 				return [self truncateDownload:download];
 			}
@@ -165,7 +160,7 @@
 				downloadSignal = RACSignal.empty;
 			}
 
-			SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithResponse:httpResponse fileURL:download.fileURL];
+			SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithRequest:self.request response:httpResponse fileURL:download.fileURL];
 
 			return [downloadSignal
 				concat:[self recordDownload:newDownload]];
@@ -249,8 +244,8 @@
 				takeUntil:finished]
 				map:^(NSURLResponse *response) {
 					RACSignal *downloadURL = [[[[self
-						prepareResumableDownloadForResponse:response]
-						map:^(SQRLResumableDownload *download) {
+						prepareDownloadForResponse:response]
+						map:^(SQRLDownload *download) {
 							return download.fileURL;
 						}]
 						promiseOnScheduler:RACScheduler.immediateScheduler]

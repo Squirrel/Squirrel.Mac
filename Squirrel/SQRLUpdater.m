@@ -23,7 +23,7 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "SQRLDownloader.h"
 #import "SQRLURLConnection.h"
-#import "SQRLResumableDownloadManager.h"
+#import "SQRLDownloadManager.h"
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
@@ -316,7 +316,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
-			SQRLResumableDownloadManager *downloadManager = [[SQRLResumableDownloadManager alloc] initWithDirectoryManager:self.directoryManager];
+			SQRLDownloadManager *downloadManager = [[SQRLDownloadManager alloc] initWithDirectoryManager:self.directoryManager];
 
 			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:zipDownloadRequest downloadManager:downloadManager];
 			return [[[[[downloader
