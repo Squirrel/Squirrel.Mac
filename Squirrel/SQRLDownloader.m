@@ -56,7 +56,11 @@
 
 	_request = [request copy];
 	_downloadManager = downloadManager;
-	_resumableDownload = [downloadManager downloadForRequest:request];
+
+	_resumableDownload = [[[downloadManager
+		downloadForRequest:request]
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		deferred];
 
 	return self;
 }
