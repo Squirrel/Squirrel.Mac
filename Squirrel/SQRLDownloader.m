@@ -207,15 +207,6 @@
 			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
 			connection.delegateQueue = delegateQueue;
 
-			// Because signal subscription is asynchronous when not performed on
-			// a known RACScheduler (because lulz RAC implementation details),
-			// this scheduler is used to order some of the subscription logic
-			// below.
-			//
-			// As an aside, it lowers the priority of our download operation, to
-			// avoid competing with work explicitly initiated by the user.
-			RACScheduler *callbackScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground];
-
 			// A signal that will error if the connection fails for any reason.
 			//
 			// This does not use `callbackScheduler` because errors should
@@ -231,44 +222,37 @@
 			//
 			// This signal's events are delivered to `callbackScheduler` so that
 			// any bound signals are subscribed to synchronously.
-			RACSignal *responses = [[self
-				signalForDelegateSelector:@selector(connection:didReceiveResponse:) ofConnection:connection]
-				deliverOn:callbackScheduler];
+			RACSignal *responses = [self
+				signalForDelegateSelector:@selector(connection:didReceiveResponse:) ofConnection:connection];
 
 			// A signal of all `NSData` received on the connection.
 			//
 			// This signal's events are delivered to `callbackScheduler` so that
 			// ordering is preserved relative to `responses`.
-			//
-			// The signal is multicasted so that any subscription created _as
-			// a result of_ an event on `responses` won't miss the first
-			// `NSData` to follow.
-			RACMulticastConnection *data = [[[self
-				signalForDelegateSelector:@selector(connection:didReceiveData:) ofConnection:connection]
-				deliverOn:callbackScheduler]
-				publish];
-
-			RACDisposable *dataDisposable = [data connect];
+			RACSignal *data = [self
+				signalForDelegateSelector:@selector(connection:didReceiveData:) ofConnection:connection];
 
 			// Sends (or replays) RACUnit when the connection has finished
 			// loading successfully.
-			RACSignal *finished = [[[self
+			RACSignal *finished = [[[[self
 				signalForDelegateSelector:@selector(connectionDidFinishLoading:) ofConnection:connection]
 				take:1]
-				replay];
+				promiseOnScheduler:RACScheduler.immediateScheduler]
+				start];
 
 			RACDisposable *responsesDisposable = [[[[[RACSignal
 				merge:@[ responses, errors ]]
 				takeUntil:finished]
 				map:^(NSURLResponse *response) {
-					RACSignal *downloadURL = [[[self
+					RACSignal *downloadURL = [[[[self
 						prepareResumableDownloadForResponse:response]
 						map:^(SQRLResumableDownload *download) {
 							return download.fileURL;
 						}]
-						replayLazily];
+						promiseOnScheduler:RACScheduler.immediateScheduler]
+						deferred];
 
-					return [[[[data.signal
+					return [[[[data
 						takeUntil:finished]
 						map:^(NSData *bodyData) {
 							return [downloadURL try:^(NSURL *fileURL, NSError **errorRef) {
@@ -291,7 +275,6 @@
 			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
 				[connection cancel];
 
-				[dataDisposable dispose];
 				[responsesDisposable dispose];
 			}]];
 		}]
