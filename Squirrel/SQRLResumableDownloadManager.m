@@ -90,7 +90,7 @@
 		flattenMap:^(NSURL *location) {
 			return [[RACSignal
 				create:^(id<RACSubscriber> subscriber) {
-					dispatch_async(self.queue, ^{
+					dispatch_sync(self.queue, ^{
 						if (subscriber.disposable.disposed) return;
 
 						NSError *error = nil;
@@ -135,7 +135,7 @@
 		downloadStoreIndexFileLocation]
 		flattenMap:^(NSURL *location) {
 			return [RACSignal create:^(id<RACSubscriber> subscriber) {
-				dispatch_barrier_async(self.queue, ^{
+				dispatch_barrier_sync(self.queue, ^{
 					if (subscriber.disposable.disposed) return;
 
 					NSDictionary *propertyList = nil;
