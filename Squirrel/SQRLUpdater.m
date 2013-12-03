@@ -122,14 +122,15 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 @end
 
-@implementation SQRLUpdater
+@implementation SQRLUpdater {
+	RACSubject *_updates;
+}
 
 #pragma mark Properties
 
 - (RACSignal *)updates {
-	return [[self.checkForUpdatesCommand.executionSignals
-		concat]
-		setNameWithFormat:@"%@ -updates", self];
+	return [_updates
+		deliverOn:RACScheduler.mainThreadScheduler];
 }
 
 #pragma mark Lifecycle
@@ -152,20 +153,22 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
 	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
 
-	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
-
 	@weakify(self);
-	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
-		@strongify(self);
-		NSParameterAssert(self.updateRequest != nil);
+	RACSignal *checkForUpdates = [RACSignal
+		defer:^ RACSignal * {
+			@strongify(self);
+			NSParameterAssert(self.updateRequest != nil);
 
-		// TODO: Maybe allow this to be an argument to the command?
-		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
-		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+			BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
+			if (updatesDisabled) return nil;
 
-		return [[[[[[NSURLConnection
-			rac_sendAsynchronousRequest:request]
-			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
+			// TODO: Maybe allow this to be an argument to the command?
+			NSMutableURLRequest *request = [self.updateRequest mutableCopy];
+			[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
+			return [[[[[[NSURLConnection
+				rac_sendAsynchronousRequest:request]
+				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
 					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
@@ -192,8 +195,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			flattenMap:^(SQRLUpdate *update) {
 				return [self downloadAndPrepareUpdate:update];
 			}]
-			deliverOn:RACScheduler.mainThreadScheduler];
-	}];
+			doNext:^(SQRLDownloadedUpdate *update) {
+				[_updates sendNext:update];
+			}];
+		}];
+
+	_checkForUpdatesAction = [checkForUpdates action];
+
+	_updates = [RACSubject subject];
 
 	_shipItLauncher = [[[[RACSignal
 		defer:^{
