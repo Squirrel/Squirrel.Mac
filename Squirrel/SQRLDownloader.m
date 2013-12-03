@@ -28,15 +28,14 @@
 // `downloadManager` then completes, or errors.
 @property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
 
-// Listens for invocations of `selector` on the receiver that are triggered by
-// the given connection.
+// Listens for invocations of `selector` on the receiver.
 //
 // The first argument of `selector` must be an `NSURLConnection` object.
 //
 // Returns a signal which sends the _second_ argument of `selector`, or
 // RACUnit if there is only one argument, then completes when the receiver
 // deallocates.
-- (RACSignal *)signalForDelegateSelector:(SEL)selector ofConnection:(NSURLConnection *)connection;
+- (RACSignal *)signalForDelegateSelector:(SEL)selector;
 
 @end
 
@@ -62,15 +61,11 @@
 
 #pragma mark Download
 
-- (RACSignal *)signalForDelegateSelector:(SEL)selector ofConnection:(NSURLConnection *)connection {
+- (RACSignal *)signalForDelegateSelector:(SEL)selector {
 	NSParameterAssert(selector != NULL);
-	NSParameterAssert(connection != nil);
 
-	return [[[self
+	return [[self
 		rac_signalForSelector:selector]
-		filter:^ BOOL (RACTuple *args) {
-			return args.first == connection;
-		}]
 		map:^(RACTuple *args) {
 			return args.second ?: RACUnit.defaultUnit;
 		}];
@@ -190,31 +185,31 @@
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
 	return [[RACSignal
 		create:^(id<RACSubscriber> subscriber) {
-			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
-			delegateQueue.maxConcurrentOperationCount = 1;
-
-			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
-			connection.delegateQueue = delegateQueue;
+			NSURLConnection *connection = nil;
 
 			// A signal that will error if the connection fails for any reason.
-			RACSignal *errors = [[self
-				signalForDelegateSelector:@selector(connection:didFailWithError:) ofConnection:connection]
+			RACSignal *errors = [[[self
+				signalForDelegateSelector:@selector(connection:didFailWithError:)]
+				logNext]
 				flattenMap:^(NSError *error) {
 					return [RACSignal error:error];
 				}];
 
 			// A signal of all `NSURLResponse`s received on the connection.
-			RACSignal *responses = [self
-				signalForDelegateSelector:@selector(connection:didReceiveResponse:) ofConnection:connection];
+			RACSignal *responses = [[self
+				signalForDelegateSelector:@selector(connection:didReceiveResponse:)]
+				logNext];
 
 			// A signal of all `NSData` received on the connection.
-			RACSignal *data = [self
-				signalForDelegateSelector:@selector(connection:didReceiveData:) ofConnection:connection];
+			RACSignal *data = [[self
+				signalForDelegateSelector:@selector(connection:didReceiveData:)]
+				logNext];
 
 			// Sends (or replays) RACUnit when the connection has finished
 			// loading successfully.
-			RACSignal *finished = [[[[self
-				signalForDelegateSelector:@selector(connectionDidFinishLoading:) ofConnection:connection]
+			RACSignal *finished = [[[[[self
+				signalForDelegateSelector:@selector(connectionDidFinishLoading:)]
+				logNext]
 				take:1]
 				promiseOnScheduler:RACScheduler.immediateScheduler]
 				start];
@@ -251,6 +246,12 @@
 				switchToLatest]
 				subscribe:subscriber];
 
+			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
+			delegateQueue.maxConcurrentOperationCount = 1;
+
+			connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+			connection.delegateQueue = delegateQueue;
+
 			[connection start];
 
 			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
@@ -260,22 +261,6 @@
 			}]];
 		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
-}
-
-#pragma mark NSURLConnectionDelegate
-
-// Stub delegate methods, to ensure that we don't ever invoke an unimplemented
-// selector.
-- (void)connection:(NSURLConnection *)connection didFailWithError:(NSError *)error {
-}
-
-- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-}
-
-- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-}
-
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
 }
 
 @end
