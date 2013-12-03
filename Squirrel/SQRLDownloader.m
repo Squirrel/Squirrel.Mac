@@ -89,17 +89,6 @@
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-+ (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
-	return [[[response.allHeaderFields.rac_signal
-		filter:^ BOOL (RACTuple *keyValuePair) {
-			return [keyValuePair.first caseInsensitiveCompare:@"ETag"] == NSOrderedSame;
-		}]
-		reduceEach:^(NSString *key, NSString *value) {
-			return value;
-		}]
-		first];
-}
-
 - (RACSignal *)truncateDownload:(SQRLDownload *)download {
 	return [[[[RACSignal
 		defer:^{
