@@ -88,24 +88,8 @@
 - (RACSignal *)requestForResumableDownload {
 	return [[[self
 		initialisedDownload]
-		map:^ NSURLRequest * (SQRLResumableDownload *resumableDownload) {
-			NSURLRequest *originalRequest = self.request;
-
-			NSHTTPURLResponse *response = resumableDownload.response;
-			NSString *ETag = [self.class ETagFromResponse:response];
-			if (ETag == nil) return originalRequest;
-
-			NSURL *downloadLocation = resumableDownload.fileURL;
-
-			NSNumber *alreadyDownloadedSize = nil;
-			NSError *alreadyDownloadedSizeError = nil;
-			BOOL getAlreadyDownloadedSize = [downloadLocation getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
-			if (!getAlreadyDownloadedSize) return originalRequest;
-
-			NSMutableURLRequest *newRequest = [originalRequest mutableCopy];
-			[newRequest setValue:ETag forHTTPHeaderField:@"If-Range"];
-			[newRequest setValue:[NSString stringWithFormat:@"%llu-", alreadyDownloadedSize.unsignedLongLongValue] forHTTPHeaderField:@"Range"];
-			return newRequest;
+		flattenMap:^(SQRLDownload *download) {
+			return [download resumableRequest];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
