@@ -28,8 +28,25 @@ updates installed are valid.
 1. Add Squirrel.framework as a target dependency
 1. Link Squirrel.framework and add it to a Copy Files build phase which copies
 it into your Frameworks directory
-1. Ensure your Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`) includes the
-Frameworks directory Squirrel.framework is copied into
+1. Ensure your application's Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`)
+includes the Frameworks directory Squirrel.framework is copied into
+
+# Dependencies
+
+Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
+and [Mantle](https://github.com/github/Mantle).
+
+If your application is already using ReactiveCocoa, ensure it is embedding
+version 3.0.
+
+Otherwise, add a target dependency and Copy Files build phase entry for the
+ReactiveCocoa.framework target included in Squirrel's repository, in
+External/ReactiveCocoa.
+
+Similarly, ensure your application includes Mantle, or copies in the Squirrel
+version.
+
+# Configuration
 
 Once Squirrel is added to your project, you need to configure and start it.
 
