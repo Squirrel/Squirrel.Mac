@@ -20,6 +20,7 @@
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
+		53B0360B184E5C860079FB77 /* SQRLHTTPServer.m in Sources */ = {isa = PBXBuildFile; fileRef = 53B0360A184E5C860079FB77 /* SQRLHTTPServer.m */; };
 		53B70030181E9460000FFBD0 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53B70025181E944F000FFBD0 /* OHHTTPStubs.framework */; };
 		53C3186F1816C38A0074B481 /* SQRLDownloadManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 53C318691816C38A0074B481 /* SQRLDownloadManager.h */; };
 		53C318701816C38A0074B481 /* SQRLDownloadManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3186A1816C38A0074B481 /* SQRLDownloadManager.m */; };
@@ -437,6 +438,8 @@
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
+		53B03609184E5C860079FB77 /* SQRLHTTPServer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLHTTPServer.h; sourceTree = "<group>"; };
+		53B0360A184E5C860079FB77 /* SQRLHTTPServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLHTTPServer.m; sourceTree = "<group>"; };
 		53C318691816C38A0074B481 /* SQRLDownloadManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloadManager.h; sourceTree = "<group>"; };
 		53C3186A1816C38A0074B481 /* SQRLDownloadManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadManager.m; sourceTree = "<group>"; };
 		53C3186B1816C38A0074B481 /* SQRLDownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloader.h; sourceTree = "<group>"; };
@@ -903,6 +906,8 @@
 			children = (
 				D049059E180558B7004E683E /* SQRLTestUpdate.h */,
 				D049059F180558B7004E683E /* SQRLTestUpdate.m */,
+				53B03609184E5C860079FB77 /* SQRLHTTPServer.h */,
+				53B0360A184E5C860079FB77 /* SQRLHTTPServer.m */,
 				D000219617BAD34D0050109A /* TestApplication.app.zip */,
 				D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */,
 				D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */,
@@ -1519,6 +1524,7 @@
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
+				53B0360B184E5C860079FB77 /* SQRLHTTPServer.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				53C3187D1816CCD70074B481 /* SQRLDownloaderSpec.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
