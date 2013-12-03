@@ -228,20 +228,21 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
 	@weakify(self);
 
-	return [[[[[RACSignal
+	return [[[[RACSignal
 		interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 		flattenMap:^(id _) {
 			@strongify(self);
-			return [[self.checkForUpdatesCommand
-				execute:RACUnit.defaultUnit]
+
+			[self.checkForUpdatesAction execute:nil];
+
+			return [self.checkForUpdatesAction.errors
 				catch:^(NSError *error) {
 					NSLog(@"Error checking for updates: %@", error);
 					return [RACSignal empty];
 				}];
 		}]
 		takeUntil:self.rac_willDeallocSignal]
-		promiseOnScheduler:RACScheduler.immediateScheduler]
-		start];
+		subscribeCompleted:^{}];
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
