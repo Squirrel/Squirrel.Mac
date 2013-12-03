@@ -15,10 +15,10 @@
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloader ()
-// Request the operation was initialised with.
+// The request the downloader was initialised with.
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 
-// Download manager for resumable state.
+// The download manager the downloader was initialised with.
 @property (nonatomic, strong, readonly) SQRLDownloadManager *downloadManager;
 
 // Connection to retreive the remote resource.
