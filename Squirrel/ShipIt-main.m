@@ -76,11 +76,14 @@ int main(int argc, const char * argv[]) {
 				SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
 
 				NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
+				RACSignal *action;
+
 				if (attempt > SQRLShipItMaximumInstallationAttempts) {
-					return [[[installer.abortInstallationCommand
-						execute:state]
-						initially:^{
+					action = [[RACSignal
+						defer:^{
 							NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
+
+							return [installer abortInstallationWithState:state];
 						}]
 						catch:^(NSError *error) {
 							NSLog(@"Error aborting installation: %@", error);
@@ -89,9 +92,8 @@ int main(int argc, const char * argv[]) {
 							return [RACSignal empty];
 						}];
 				} else {
-					return [[[[[state
-						writeUsingURL:stateLocation]
-						initially:^{
+					action = [[[[RACSignal
+						defer:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");
 								state.installerState = SQRLInstallerStateClearingQuarantine;
@@ -100,15 +102,41 @@ int main(int argc, const char * argv[]) {
 							}
 
 							state.installationStateAttempt = attempt;
+
+							return [state writeUsingURL:stateLocation];
 						}]
 						then:^{
-							return [installer.installUpdateCommand execute:state];
+							return [installer installUpdateWithState:state];
 						}]
 						doCompleted:^{
 							NSLog(@"Installation completed successfully");
 						}]
 						sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 				}
+
+				if (state.relaunchAfterInstallation) {
+					// Relaunch regardless of whether installation succeeds or
+					// fails.
+					action = [[action
+						deliverOn:RACScheduler.mainThreadScheduler]
+						doFinished:^{
+							NSURL *bundleURL = state.targetBundleURL;
+							if (bundleURL == nil) {
+								NSLog(@"Missing target bundle URL, cannot relaunch application");
+								return;
+							}
+
+							NSError *error = nil;
+							if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+								NSLog(@"Could not relaunch application at %@: %@", bundleURL, error);
+								return;
+							}
+
+							NSLog(@"Application relaunched at %@", bundleURL);
+						}];
+				}
+
+				return action;
 			}]
 			subscribeError:^(NSError *error) {
 				NSLog(@"Installation error: %@", error);

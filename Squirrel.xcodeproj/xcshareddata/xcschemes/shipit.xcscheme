@@ -20,6 +20,20 @@
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D0C22BEE179CC00E00158214"
+               BuildableName = "SquirrelTests.octest"
+               BlueprintName = "SquirrelTests"
+               ReferencedContainer = "container:Squirrel.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction

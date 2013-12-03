@@ -40,7 +40,8 @@ it(@"should wait until one instance terminates", ^{
 	expect(observedApp).will.equal(app);
 	expect(completed).to.beFalsy();
 
-	expect([app terminate]).to.beTruthy();
+	[app forceTerminate];
+	expect(app.terminated).will.beTruthy();
 	expect(completed).will.beTruthy();
 });
 
@@ -55,10 +56,12 @@ it(@"should wait until multiple instances terminate", ^{
 
 	expect(completed).to.beFalsy();
 
-	expect([app1 terminate]).to.beTruthy();
+	[app1 forceTerminate];
+	expect(app1.terminated).will.beTruthy();
 	expect(completed).to.beFalsy();
 
-	expect([app2 terminate]).to.beTruthy();
+	[app2 forceTerminate];
+	expect(app2.terminated).will.beTruthy();
 	expect(completed).will.beTruthy();
 });
 

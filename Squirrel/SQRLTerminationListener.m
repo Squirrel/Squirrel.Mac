@@ -45,7 +45,7 @@
 	return [[[[RACSignal
 		defer:^{
 			NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:self.bundleIdentifier];
-			return [apps.rac_sequence signalWithScheduler:RACScheduler.immediateScheduler];
+			return apps.rac_signal;
 		}]
 		filter:^(NSRunningApplication *application) {
 			return [application.bundleURL.URLByStandardizingPath isEqual:self.bundleURL];
@@ -60,7 +60,7 @@
 
 - (RACSignal *)waitForTerminationOfProcessIdentifier:(pid_t)processIdentifier {
 	return [[RACSignal
-		createSignal:^(id<RACSubscriber> subscriber) {
+		create:^(id<RACSubscriber> subscriber) {
 			dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_PROC, processIdentifier, DISPATCH_PROC_EXIT, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_HIGH, 0));
 
 			dispatch_source_set_registration_handler(source, ^{
@@ -72,10 +72,10 @@
 			});
 
 			dispatch_resume(source);
-			return [RACDisposable disposableWithBlock:^{
+			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
 				dispatch_source_cancel(source);
 				dispatch_release(source);
-			}];
+			}]];
 		}]
 		setNameWithFormat:@"%@ -waitForTerminationOfProcessIdentifier: %i", self, (int)processIdentifier];
 }

@@ -158,7 +158,7 @@ describe(@"response handling", ^{
 		}];
 
 		NSError *error = nil;
-		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		BOOL result = [updater.checkForUpdatesAction.deferred asynchronouslyWaitUntilCompleted:&error];
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerResponse);
@@ -175,7 +175,7 @@ describe(@"response handling", ^{
 		}];
 
 		NSError *error = nil;
-		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		BOOL result = [updater.checkForUpdatesAction.deferred asynchronouslyWaitUntilCompleted:&error];
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
