@@ -77,7 +77,7 @@ it(@"should install an update in process", ^{
 	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
-	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
+	BOOL install = [[installer installUpdateWithState:state] asynchronouslyWaitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });
