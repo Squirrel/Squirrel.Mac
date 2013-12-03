@@ -174,8 +174,6 @@
 - (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
 	return [[RACSignal
 		create:^(id<RACSubscriber> subscriber) {
-			NSURLConnection *connection = nil;
-
 			// A signal that will error if the connection fails for any reason.
 			RACSignal *errors = [[self
 				signalForDelegateSelector:@selector(connection:didFailWithError:)]
@@ -234,7 +232,7 @@
 			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
 			delegateQueue.maxConcurrentOperationCount = 1;
 
-			connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
 			connection.delegateQueue = delegateQueue;
 
 			[connection start];
