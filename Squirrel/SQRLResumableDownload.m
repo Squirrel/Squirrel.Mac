@@ -62,14 +62,14 @@
 }
 
 + (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
-	return [[[response.allHeaderFields.rac_sequence
+	return [[[response.allHeaderFields.rac_signal
 		filter:^ BOOL (RACTuple *keyValuePair) {
 			return [keyValuePair.first caseInsensitiveCompare:@"ETag"] == NSOrderedSame;
 		}]
 		reduceEach:^(NSString *key, NSString *value) {
 			return value;
 		}]
-		head];
+		first];
 }
 
 @end

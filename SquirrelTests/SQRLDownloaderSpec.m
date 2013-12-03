@@ -52,7 +52,8 @@ it(@"should download file:// scheme URLs", ^{
 
 	RACTupleUnpack(__unused NSURLResponse *response, NSURL *location) = result;
 	NSData *downloadContents = [NSData dataWithContentsOfURL:location options:0 error:&error];
-	expect(downloadContents).notTo.beNil();
+	expect(downloadContents.length).to.equal(testContents.length);
+	expect(downloadContents).to.equal(testContents);
 	expect(error).to.beNil();
 
 	expect(downloadContents).to.equal(testContents);
@@ -224,6 +225,7 @@ fit(@"should resume a download", ^{
 	expect(error).to.beNil();
 
 	NSData *downloadedData = [NSData dataWithContentsOfURL:download.fileURL options:0 error:&error];
+	expect(downloadedData.length).to.equal(firstHalf.length);
 	expect(downloadedData).to.equal(firstHalf);
 	expect(error).to.beNil();
 
@@ -265,6 +267,7 @@ fit(@"should resume a download", ^{
 	[fullBody appendData:secondHalf];
 
 	downloadedData = [NSData dataWithContentsOfURL:location options:0 error:&error];
+	expect(downloadedData.length).to.equal(fullBody.length);
 	expect(downloadedData).to.equal(fullBody);
 	expect(error).to.beNil();
 });
@@ -325,6 +328,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 	expect(error).to.beNil();
 
 	NSData *downloadedData = [NSData dataWithContentsOfURL:download.fileURL options:0 error:&error];
+	expect(downloadedData.length).to.equal(firstBody.length);
 	expect(downloadedData).to.equal(firstBody);
 	expect(error).to.beNil();
 
@@ -365,6 +369,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 	RACTupleUnpack(__unused NSURLResponse *response, NSURL *location) = result;
 
 	downloadedData = [NSData dataWithContentsOfURL:location options:0 error:&error];
+	expect(downloadedData.length).to.equal(secondBody.length);
 	expect(downloadedData).to.equal(secondBody);
 	expect(error).to.beNil();
 });

@@ -124,7 +124,7 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 #pragma mark Task Launching
 
 - (RACSignal *)launchWithArguments:(NSArray *)arguments {
-	RACSignal *signal = [[[[[[RACSignal
+	RACSignal *signal = [[[[[RACSignal
 		// Ensures that `self` remains alive while this signal exists.
 		//
 		// This is important because the signals on `self` complete upon
@@ -148,7 +148,6 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 		}]
 		take:1]
 		flatten]
-		replay]
 		setNameWithFormat:@"-launchWithArguments: %@", arguments];
 
 	self.dittoTask.arguments = arguments;

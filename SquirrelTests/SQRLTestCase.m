@@ -51,6 +51,10 @@ static void SQRLSignalHandler(int sig) {
 // all copied test data.
 @property (nonatomic, copy, readonly) NSURL *baseTemporaryDirectoryURL;
 
+// Returns an _unlaunched_ task that will follow log files at the given paths,
+// then pipe that output through this process.
++ (NSTask *)tailTaskWithPaths:(RACSignal *)paths;
+
 @end
 
 @implementation SQRLTestCase
@@ -71,27 +75,27 @@ static void SQRLSignalHandler(int sig) {
 		@"otest-x86_64.ShipIt",
 	];
 
-	RACSequence *URLs = [folders.rac_sequence flattenMap:^(NSString *folder) {
-		NSURL *baseURL = [appSupportURL URLByAppendingPathComponent:folder];
-		return @[
-			[baseURL URLByAppendingPathComponent:@"ShipIt_stdout.log"],
-			[baseURL URLByAppendingPathComponent:@"ShipIt_stderr.log"]
-		].rac_sequence;
-	}];
-
-	for (NSURL *URL in URLs) {
-		[[NSData data] writeToURL:URL atomically:YES];
-	}
-
-	NSArray *args = [[[URLs
-		map:^(NSURL *URL) {
-			return URL.path;
+	RACSignal *logLocations = [[[[folders.rac_signal
+		flattenMap:^(NSString *folder) {
+			return [folder stringsByAppendingPaths:@[
+				@"ShipIt_stdout.log",
+				@"ShipIt_stderr.log",
+			]].rac_signal;
 		}]
-		startWith:@"-f"]
-		array];
+		map:^(NSString *path) {
+			return [appSupportURL URLByAppendingPathComponent:path];
+		}]
+		doNext:^(NSURL *location) {
+			[[NSData data] writeToURL:location atomically:YES];
+		}]
+		map:^(NSURL *location) {
+			return location.path;
+		}];
 
-	NSTask *readShipIt = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:args];
-	NSAssert([readShipIt isRunning], @"Could not start task %@ with arguments: %@", readShipIt, args);
+	NSTask *readShipIt = [self tailTaskWithPaths:logLocations];
+	[readShipIt launch];
+
+	NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
 
 	atexit_b(^{
 		[readShipIt terminate];
@@ -129,6 +133,24 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)addCleanupBlock:(dispatch_block_t)block {
 	[self.exampleCleanupBlocks addObject:[block copy]];
+}
+
+#pragma mark Logging
+
++ (NSTask *)tailTaskWithPaths:(RACSignal *)paths {
+	NSPipe *outputPipe = [NSPipe pipe];
+	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
+
+	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
+		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
+		NSLog(@"\n%@", output);
+	};
+
+	NSTask *task = [[NSTask alloc] init];
+	task.launchPath = @"/usr/bin/tail";
+	task.standardOutput = outputPipe;
+	task.arguments = [[paths startWith:@"-f"] array];
+	return task;
 }
 
 #pragma mark Temporary Directory
@@ -176,7 +198,9 @@ static void SQRLSignalHandler(int sig) {
 		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 		[[NSData data] writeToURL:testAppLog atomically:YES];
 
-		NSTask *readTestApp = [NSTask launchedTaskWithLaunchPath:@"/usr/bin/tail" arguments:@[ @"-f", testAppLog.path ]];
+		NSTask *readTestApp = [self.class tailTaskWithPaths:[RACSignal return:testAppLog.path]];
+		[readTestApp launch];
+
 		STAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
 
 		[self addCleanupBlock:^{
@@ -301,11 +325,7 @@ static void SQRLSignalHandler(int sig) {
 
 	[self addCleanupBlock:^{
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		CFErrorRef removeError = NULL;
-		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &removeError)) {
-			NSLog(@"Could not remove ShipIt job after tests: %@", removeError);
-			if (removeError != NULL) CFRelease(removeError);
-		}
+		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
 
 		NSError *lookupError = nil;
 		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];

@@ -81,7 +81,7 @@
 			return [RACSignal return:directoryURL];
 		}]
 		map:^ (NSURL *directoryURL) {
-			NSArray *pathComponents = [[@[ self.applicationIdentifier, @"com.github.Squirrel" ].rac_sequence
+			NSArray *pathComponents = [[@[ self.applicationIdentifier, @"com.github.Squirrel" ].rac_signal
 				map:^(NSString *name) {
 					return [self.class fileSystemNameForIdentifier:name];
 				}]

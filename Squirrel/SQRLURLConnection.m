@@ -48,7 +48,7 @@
 // Returns a signal which sends a tuple of NSURLResponse, NSData then completes,
 // or errors.
 - (RACSignal *)result {
-	return [RACSignal createSignal:^(id<RACSubscriber> subscriber) {
+	return [RACSignal create:^(id<RACSubscriber> subscriber) {
 		self.connectionSubject = [RACSubject subject];
 		RACDisposable *subscriptionDisposable = [self.connectionSubject subscribe:subscriber];
 
@@ -60,7 +60,7 @@
 			[self.connection cancel];
 		}];
 
-		return [RACCompoundDisposable compoundDisposableWithDisposables:@[ subscriptionDisposable, connectionDisposable ]];
+		[subscriber.disposable addDisposable:[RACCompoundDisposable compoundDisposableWithDisposables:@[ subscriptionDisposable, connectionDisposable ]]];
 	}];
 }
 

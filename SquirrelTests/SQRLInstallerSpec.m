@@ -77,7 +77,7 @@ it(@"should install an update in process", ^{
 	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
-	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
+	BOOL install = [[installer installUpdateWithState:state] asynchronouslyWaitUntilCompleted:&installError];
 	expect(install).to.beTruthy();
 	expect(installError).to.beNil();
 });
@@ -104,6 +104,28 @@ it(@"should not install an update after too many attempts", ^{
 	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
 });
 
+it(@"should relaunch even after failing to install an update", ^{
+	NSURL *targetURL = self.testApplicationURL;
+	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
+	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
+
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	state.backupBundleURL = backupURL;
+	state.installerState = SQRLInstallerStateInstalling;
+	state.installationStateAttempt = 4;
+	state.relaunchAfterInstallation = YES;
+	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+
+	[self launchShipIt];
+
+	__block NSError *error = nil;
+	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
+	expect(error).to.beNil();
+
+	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).will.equal(1);
+	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+});
+
 describe(@"signal handling", ^{
 	__block NSURL *targetURL;
 
@@ -116,6 +138,9 @@ describe(@"signal handling", ^{
 		expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 		[self launchShipIt];
+
+		// Wait until ShipIt has transitioned by at least one state.
+		expect([[[SQRLShipItState readUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronousFirstOrDefault:nil success:NULL error:NULL] installerState]).willNot.equal(SQRLInstallerStateNothingToDo);
 
 		// Apply a random delay before sending the termination signal, to
 		// fuzz out race conditions.
@@ -136,26 +161,26 @@ describe(@"signal handling", ^{
 	});
 
 	it(@"should handle SIGHUP", ^{
-		system("killall -v -HUP ShipIt");
+		system("killall -HUP ShipIt");
 	});
 
 	it(@"should handle SIGTERM", ^{
-		system("killall -v -TERM ShipIt");
+		system("killall -TERM ShipIt");
 	});
 
 	it(@"should handle SIGINT", ^{
-		system("killall -v -INT ShipIt");
+		system("killall -INT ShipIt");
 	});
 
 	it(@"should handle SIGQUIT", ^{
-		system("killall -v -QUIT ShipIt");
+		system("killall -QUIT ShipIt");
 	});
 
 	it(@"should handle SIGKILL", ^{
 		// SIGKILL is unique in that it'll always terminate ShipIt, so send it
 		// a few times to really test resumption.
 		for (int i = 0; i < 3; i++) {
-			system("killall -v -KILL ShipIt");
+			system("killall -KILL ShipIt");
 
 			// Wait at least for the launchd throttle interval.
 			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);
