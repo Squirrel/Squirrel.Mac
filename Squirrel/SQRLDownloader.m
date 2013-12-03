@@ -197,10 +197,6 @@
 			connection.delegateQueue = delegateQueue;
 
 			// A signal that will error if the connection fails for any reason.
-			//
-			// This does not use `callbackScheduler` because errors should
-			// propagate as quickly as possible, and do not result in other
-			// signal subscriptions (at least in this code).
 			RACSignal *errors = [[self
 				signalForDelegateSelector:@selector(connection:didFailWithError:) ofConnection:connection]
 				flattenMap:^(NSError *error) {
