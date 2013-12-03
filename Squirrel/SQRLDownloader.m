@@ -116,14 +116,18 @@
 			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return RACSignal.empty;
 			return [RACSignal error:error];
 		}]
-		concat:[RACSignal return:download]]
+		then:^{
+			return [RACSignal return:download];
+		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
 - (RACSignal *)recordDownload:(SQRLResumableDownload *)download {
 	return [[[self.downloadManager
 		setDownload:download forRequest:self.request]
-		concat:[RACSignal return:download]]
+		then:^{
+			return [RACSignal return:download];
+		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
@@ -147,7 +151,9 @@
 			SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithRequest:self.request response:httpResponse fileURL:download.fileURL];
 
 			return [downloadSignal
-				concat:[self recordDownload:newDownload]];
+				then:^{
+					return [self recordDownload:newDownload];
+				}];
 		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
 }
@@ -202,16 +208,10 @@
 				}];
 
 			// A signal of all `NSURLResponse`s received on the connection.
-			//
-			// This signal's events are delivered to `callbackScheduler` so that
-			// any bound signals are subscribed to synchronously.
 			RACSignal *responses = [self
 				signalForDelegateSelector:@selector(connection:didReceiveResponse:) ofConnection:connection];
 
 			// A signal of all `NSData` received on the connection.
-			//
-			// This signal's events are delivered to `callbackScheduler` so that
-			// ordering is preserved relative to `responses`.
 			RACSignal *data = [self
 				signalForDelegateSelector:@selector(connection:didReceiveData:) ofConnection:connection];
 
@@ -238,9 +238,11 @@
 					return [[[[data
 						takeUntil:finished]
 						map:^(NSData *bodyData) {
-							return [downloadURL try:^(NSURL *fileURL, NSError **errorRef) {
-								return [self appendData:bodyData toURL:fileURL error:errorRef];
-							}];
+							return [[downloadURL
+								try:^(NSURL *fileURL, NSError **errorRef) {
+									return [self appendData:bodyData toURL:fileURL error:errorRef];
+								}]
+								ignoreValues];
 						}]
 						concat]
 						then:^{
