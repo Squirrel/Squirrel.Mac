@@ -36,45 +36,49 @@ afterAll(^{
 	Expecta.asynchronousTestTimeout = 1.;
 });
 
-it(@"should retrieve file:// scheme URLs", ^{
+describe(@"file scheme URLs", ^{
 	NSURL *fileLocation = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"test"];
 	NSData *testContents = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
 
-	NSError *error = nil;
+	NSError *error;
 	BOOL write = [testContents writeToURL:fileLocation options:0 error:&error];
 	expect(write).to.beTruthy();
 	expect(error).to.beNil();
 
-	SQRLURLConnection *connection = [[SQRLURLConnection alloc] initWithRequest:[NSURLRequest requestWithURL:fileLocation]];
+	NSURLRequest *request = [NSURLRequest requestWithURL:fileLocation];
 
-	RACTuple *response = [[connection retrieve] firstOrDefault:nil success:NULL error:&error];
-	expect(response).notTo.beNil();
-	expect(error).to.beNil();
+	__block SQRLURLConnection *connection;
 
-	expect(response[1]).to.equal(testContents);
-});
+	beforeEach(^{
+		connection = [[SQRLURLConnection alloc] initWithRequest:request];
+	});
 
-it(@"should download file:// scheme URLs", ^{
-	NSURL *fileLocation = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"test"];
-	NSData *testContents = [@"test" dataUsingEncoding:NSUTF8StringEncoding];
+	void (^testBodyEqualTestContents)(NSData *) = ^ (NSData *body) {
+		expect(body.length).to.equal(testContents.length);
+		expect(body).to.equal(testContents);
+	};
 
-	NSError *error = nil;
-	BOOL write = [testContents writeToURL:fileLocation options:0 error:&error];
-	expect(write).to.beTruthy();
-	expect(error).to.beNil();
+	it(@"should retrieve file:// scheme URLs", ^{
+		NSError *error;
+		RACTuple *result = [[connection retrieve] firstOrDefault:nil success:NULL error:&error];
+		expect(result).notTo.beNil();
+		expect(error).to.beNil();
 
-	SQRLURLConnection *connection = [[SQRLURLConnection alloc] initWithRequest:[NSURLRequest requestWithURL:fileLocation]];
-	RACTuple *result = [[connection download:downloadManager] firstOrDefault:nil success:NULL error:&error];
-	expect(result).notTo.beNil();
-	expect(error).to.beNil();
+		testBodyEqualTestContents(result.second);
+	});
 
-	RACTupleUnpack(__unused NSURLResponse *response, NSURL *location) = result;
-	NSData *downloadContents = [NSData dataWithContentsOfURL:location options:0 error:&error];
-	expect(downloadContents.length).to.equal(testContents.length);
-	expect(downloadContents).to.equal(testContents);
-	expect(error).to.beNil();
+	it(@"should download file:// scheme URLs", ^{
+		NSError *error;
+		RACTuple *result = [[connection download:downloadManager] firstOrDefault:nil success:NULL error:&error];
+		expect(result).notTo.beNil();
+		expect(error).to.beNil();
 
-	expect(downloadContents).to.equal(testContents);
+		NSURL *location = result.second;
+
+		NSData *body = [NSData dataWithContentsOfURL:location options:0 error:&error];
+		expect(error).to.beNil();
+		testBodyEqualTestContents(body);
+	});
 });
 
 static NSData * (^stringTimes)(NSString *, NSUInteger) = ^ (NSString *string, NSUInteger times) {
