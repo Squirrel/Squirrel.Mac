@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
+		53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */; };
+		53390937184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */; };
+		5339094A184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53390949184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m */; };
 		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		534FF36117D8E90A0020A51A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
@@ -420,6 +423,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSHTTPURLResponse+SQRLExtensions.h"; sourceTree = "<group>"; };
+		53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSHTTPURLResponse+SQRLExtensions.m"; sourceTree = "<group>"; };
+		53390949184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSHTTPURLResponseExtensionsSpec.m; sourceTree = "<group>"; };
 		534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestApplication.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		534FF36417D8E90A0020A51A /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -717,6 +723,8 @@
 				D0964B3B17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m */,
 				D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */,
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
+				53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */,
+				53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */,
 			);
 			name = Extensions;
 			sourceTree = "<group>";
@@ -996,6 +1004,7 @@
 			isa = PBXGroup;
 			children = (
 				D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */,
+				53390949184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m */,
 				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
 				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
 				D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */,
@@ -1073,6 +1082,7 @@
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
+				53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */,
 				D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
 				53C318771816C3C70074B481 /* SQRLURLConnection.h in Headers */,
@@ -1505,6 +1515,7 @@
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				536CD4E3183E5D7F000C0FD1 /* SQRLDownload.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
+				53390937184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1518,6 +1529,7 @@
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
+				5339094A184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m in Sources */,
 				53C3187C1816CCD70074B481 /* SQRLDownloadManagerSpec.m in Sources */,
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
 				53C3187E1816CCD70074B481 /* SQRLURLConnectionSpec.m in Sources */,

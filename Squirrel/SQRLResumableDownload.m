@@ -10,6 +10,8 @@
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
+#import "NSHTTPURLResponse+SQRLExtensions.h"
+
 @implementation SQRLResumableDownload
 
 - (instancetype)initWithRequest:(NSURLRequest *)request response:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL {
@@ -45,7 +47,7 @@
 		resumableRequest]
 		map:^ NSURLRequest * (NSURLRequest *request) {
 			NSHTTPURLResponse *response = self.response;
-			NSString *ETag = [self.class ETagFromResponse:response];
+			NSString *ETag = [response sqrl_valueForHTTPHeaderField:@"ETag"];
 			if (ETag == nil) return request;
 
 			NSNumber *alreadyDownloadedSize = nil;
@@ -59,17 +61,6 @@
 			return newRequest;
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
-}
-
-+ (NSString *)ETagFromResponse:(NSHTTPURLResponse *)response {
-	return [[[response.allHeaderFields.rac_signal
-		filter:^ BOOL (RACTuple *keyValuePair) {
-			return [keyValuePair.first caseInsensitiveCompare:@"ETag"] == NSOrderedSame;
-		}]
-		reduceEach:^(NSString *key, NSString *value) {
-			return value;
-		}]
-		first];
 }
 
 @end
