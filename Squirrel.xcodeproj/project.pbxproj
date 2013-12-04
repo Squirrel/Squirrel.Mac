@@ -16,6 +16,10 @@
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
 		534FF36A17D8E90A0020A51A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 534FF36917D8E90A0020A51A /* main.m */; };
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
+		53542FC0184F86EC003A6AFD /* Mantle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
+		53542FCE184F86F1003A6AFD /* ReactiveCocoa.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
+		53542FCF184F870C003A6AFD /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
+		53542FD2184F8736003A6AFD /* SQRLDownloadedUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53542FD1184F8736003A6AFD /* SQRLDownloadedUpdateSpec.m */; };
 		536CD4E2183E5D7F000C0FD1 /* SQRLDownload.h in Headers */ = {isa = PBXBuildFile; fileRef = 536CD4E0183E5D7F000C0FD1 /* SQRLDownload.h */; };
 		536CD4E3183E5D7F000C0FD1 /* SQRLDownload.m in Sources */ = {isa = PBXBuildFile; fileRef = 536CD4E1183E5D7F000C0FD1 /* SQRLDownload.m */; };
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
@@ -404,6 +408,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				53542FCE184F86F1003A6AFD /* ReactiveCocoa.framework in Copy Frameworks */,
+				53542FC0184F86EC003A6AFD /* Mantle.framework in Copy Frameworks */,
 				D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
@@ -431,6 +437,7 @@
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		534FF36817D8E90A0020A51A /* TestService-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestService-Prefix.pch"; sourceTree = "<group>"; };
 		534FF36917D8E90A0020A51A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		53542FD1184F8736003A6AFD /* SQRLDownloadedUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadedUpdateSpec.m; sourceTree = "<group>"; };
 		536CD4E0183E5D7F000C0FD1 /* SQRLDownload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownload.h; sourceTree = "<group>"; };
 		536CD4E1183E5D7F000C0FD1 /* SQRLDownload.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownload.m; sourceTree = "<group>"; };
 		53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDeepCodesignSpec.m; sourceTree = "<group>"; };
@@ -581,6 +588,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53542FCF184F870C003A6AFD /* Mantle.framework in Frameworks */,
 				D0F3F06417E83B0B003AFA6B /* ReactiveCocoa.framework in Frameworks */,
 				D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */,
 				D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */,
@@ -1019,6 +1027,7 @@
 				53C318791816CCD70074B481 /* SQRLDownloadManagerSpec.m */,
 				53C3187A1816CCD70074B481 /* SQRLDownloaderSpec.m */,
 				53C3187B1816CCD70074B481 /* SQRLURLConnectionSpec.m */,
+				53542FD1184F8736003A6AFD /* SQRLDownloadedUpdateSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -1525,6 +1534,7 @@
 			files = (
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
+				53542FD2184F8736003A6AFD /* SQRLDownloadedUpdateSpec.m in Sources */,
 				D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
