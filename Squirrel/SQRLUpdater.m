@@ -69,15 +69,25 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 // errors, on a background thread.
 - (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update;
 
-// Downloads the archived bundle associated with the given update.
+// Downloads the update archive for the given update.
 //
 // update            - Describes the update to install. This must not be nil.
-// downloadDirectory - A directory in which to create a temporary directory for this
-//                     download. This must not be nil.
+// downloadDirectory - A directory in which to create a temporary directory for
+//                     this download. This must not be nil.
 //
-// Returns a signal which sends an unarchived `NSBundle` then completes, or
-// errors, on a background thread.
-- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
+// Returns a signal which sends an NSURL of the downloaded update archive then
+// completes, or errors, on a background thread.
+- (RACSignal *)downloadArchiveForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
+
+// Unpacks an update archive.
+//
+// archiveURL   - The location of the update archive, currently only ZIP
+//                archives are supported. Must not be nil.
+// directoryURL - A directory in which to place the unpacked contents of the
+//                archive. Must not be nil.
+//
+// Returns a signal which completes or errors.
+- (RACSignal *)unpackArchiveAtURL:(NSURL *)archiveURL intoDirectory:(NSURL *)directoryURL;
 
 // Recursively searches the given directory for an application bundle that has
 // the same identifier as the running application.
@@ -285,14 +295,22 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		setNameWithFormat:@"%@ -updateFromJSONData:", self];
 }
 
+#pragma Download
+
 - (RACSignal *)downloadAndPrepareUpdate:(SQRLUpdate *)update {
 	NSParameterAssert(update != nil);
 
 	return [[[self.directoryManager
 		uniqueUpdateDirectoryURL]
 		flattenMap:^(NSURL *downloadDirectory) {
-			return [[[self
-				downloadBundleForUpdate:update intoDirectory:downloadDirectory]
+			return [[[[[self
+				downloadArchiveForUpdate:update intoDirectory:downloadDirectory]
+				flattenMap:^(NSURL *updateArchiveURL) {
+					return [self unpackArchiveAtURL:updateArchiveURL intoDirectory:downloadDirectory];
+				}]
+				then:^{
+					return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
+				}]
 				flattenMap:^(NSBundle *updateBundle) {
 					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
 				}]
@@ -306,11 +324,11 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
 }
 
-- (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
+- (RACSignal *)downloadArchiveForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
 	NSParameterAssert(update != nil);
 	NSParameterAssert(downloadDirectory != nil);
 
-	return [[[[[RACSignal
+	return [[[RACSignal
 		defer:^{
 			NSURL *zipDownloadURL = update.updateURL;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
@@ -350,16 +368,21 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		doNext:^(NSURL *zipOutputURL) {
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
-		flattenMap:^(NSURL *zipOutputURL) {
-			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
-		}]
-		then:^{
-			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
-		}]
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
 
 #pragma mark File Management
+
+- (RACSignal *)unpackArchiveAtURL:(NSURL *)archiveURL intoDirectory:(NSURL *)directoryURL {
+	NSParameterAssert(archiveURL != nil);
+	NSParameterAssert(directoryURL != nil);
+
+	return [[RACSignal
+		defer:^{
+			return [SQRLZipArchiver unzipArchiveAtURL:archiveURL intoDirectoryAtURL:directoryURL];
+		}]
+		setNameWithFormat:@"%@ unpackArchiveAtURL: %@ intoDirectory: %@", self, archiveURL, directoryURL];
+}
 
 - (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory {
 	NSParameterAssert(directory != nil);
