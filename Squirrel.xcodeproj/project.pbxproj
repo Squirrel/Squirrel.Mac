@@ -31,15 +31,12 @@
 		53B70030181E9460000FFBD0 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53B70025181E944F000FFBD0 /* OHHTTPStubs.framework */; };
 		53C3186F1816C38A0074B481 /* SQRLDownloadManager.h in Headers */ = {isa = PBXBuildFile; fileRef = 53C318691816C38A0074B481 /* SQRLDownloadManager.h */; };
 		53C318701816C38A0074B481 /* SQRLDownloadManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3186A1816C38A0074B481 /* SQRLDownloadManager.m */; };
-		53C318711816C38A0074B481 /* SQRLDownloader.h in Headers */ = {isa = PBXBuildFile; fileRef = 53C3186B1816C38A0074B481 /* SQRLDownloader.h */; };
-		53C318721816C38A0074B481 /* SQRLDownloader.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3186C1816C38A0074B481 /* SQRLDownloader.m */; };
+		53C318711816C38A0074B481 /* SQRLURLConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = 53C3186B1816C38A0074B481 /* SQRLURLConnection.h */; };
+		53C318721816C38A0074B481 /* SQRLURLConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3186C1816C38A0074B481 /* SQRLURLConnection.m */; };
 		53C318731816C38A0074B481 /* SQRLResumableDownload.h in Headers */ = {isa = PBXBuildFile; fileRef = 53C3186D1816C38A0074B481 /* SQRLResumableDownload.h */; };
 		53C318741816C38A0074B481 /* SQRLResumableDownload.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3186E1816C38A0074B481 /* SQRLResumableDownload.m */; };
-		53C318771816C3C70074B481 /* SQRLURLConnection.h in Headers */ = {isa = PBXBuildFile; fileRef = 53C318751816C3C70074B481 /* SQRLURLConnection.h */; };
-		53C318781816C3C70074B481 /* SQRLURLConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C318761816C3C70074B481 /* SQRLURLConnection.m */; };
 		53C3187C1816CCD70074B481 /* SQRLDownloadManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C318791816CCD70074B481 /* SQRLDownloadManagerSpec.m */; };
-		53C3187D1816CCD70074B481 /* SQRLDownloaderSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3187A1816CCD70074B481 /* SQRLDownloaderSpec.m */; };
-		53C3187E1816CCD70074B481 /* SQRLURLConnectionSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3187B1816CCD70074B481 /* SQRLURLConnectionSpec.m */; };
+		53C3187D1816CCD70074B481 /* SQRLURLConnectionSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C3187A1816CCD70074B481 /* SQRLURLConnectionSpec.m */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -455,15 +452,12 @@
 		53B0360A184E5C860079FB77 /* SQRLHTTPServer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLHTTPServer.m; sourceTree = "<group>"; };
 		53C318691816C38A0074B481 /* SQRLDownloadManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloadManager.h; sourceTree = "<group>"; };
 		53C3186A1816C38A0074B481 /* SQRLDownloadManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadManager.m; sourceTree = "<group>"; };
-		53C3186B1816C38A0074B481 /* SQRLDownloader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDownloader.h; sourceTree = "<group>"; };
-		53C3186C1816C38A0074B481 /* SQRLDownloader.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloader.m; sourceTree = "<group>"; };
+		53C3186B1816C38A0074B481 /* SQRLURLConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLURLConnection.h; sourceTree = "<group>"; };
+		53C3186C1816C38A0074B481 /* SQRLURLConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnection.m; sourceTree = "<group>"; };
 		53C3186D1816C38A0074B481 /* SQRLResumableDownload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLResumableDownload.h; sourceTree = "<group>"; };
 		53C3186E1816C38A0074B481 /* SQRLResumableDownload.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLResumableDownload.m; sourceTree = "<group>"; };
-		53C318751816C3C70074B481 /* SQRLURLConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLURLConnection.h; sourceTree = "<group>"; };
-		53C318761816C3C70074B481 /* SQRLURLConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnection.m; sourceTree = "<group>"; };
 		53C318791816CCD70074B481 /* SQRLDownloadManagerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloadManagerSpec.m; sourceTree = "<group>"; };
-		53C3187A1816CCD70074B481 /* SQRLDownloaderSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloaderSpec.m; sourceTree = "<group>"; };
-		53C3187B1816CCD70074B481 /* SQRLURLConnectionSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnectionSpec.m; sourceTree = "<group>"; };
+		53C3187A1816CCD70074B481 /* SQRLURLConnectionSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLURLConnectionSpec.m; sourceTree = "<group>"; };
 		53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OHHTTPStubs.xcodeproj; path = External/ReactiveCocoa/external/specta/../../../OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.xcodeproj; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
@@ -684,10 +678,8 @@
 				536CD4E1183E5D7F000C0FD1 /* SQRLDownload.m */,
 				53C3186D1816C38A0074B481 /* SQRLResumableDownload.h */,
 				53C3186E1816C38A0074B481 /* SQRLResumableDownload.m */,
-				53C3186B1816C38A0074B481 /* SQRLDownloader.h */,
-				53C3186C1816C38A0074B481 /* SQRLDownloader.m */,
-				53C318751816C3C70074B481 /* SQRLURLConnection.h */,
-				53C318761816C3C70074B481 /* SQRLURLConnection.m */,
+				53C3186B1816C38A0074B481 /* SQRLURLConnection.h */,
+				53C3186C1816C38A0074B481 /* SQRLURLConnection.m */,
 			);
 			name = Downloads;
 			sourceTree = "<group>";
@@ -1025,8 +1017,7 @@
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
 				53C318791816CCD70074B481 /* SQRLDownloadManagerSpec.m */,
-				53C3187A1816CCD70074B481 /* SQRLDownloaderSpec.m */,
-				53C3187B1816CCD70074B481 /* SQRLURLConnectionSpec.m */,
+				53C3187A1816CCD70074B481 /* SQRLURLConnectionSpec.m */,
 				53542FD1184F8736003A6AFD /* SQRLDownloadedUpdateSpec.m */,
 			);
 			name = Specs;
@@ -1087,14 +1078,13 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				53C318711816C38A0074B481 /* SQRLDownloader.h in Headers */,
+				53C318711816C38A0074B481 /* SQRLURLConnection.h in Headers */,
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */,
 				D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
-				53C318771816C3C70074B481 /* SQRLURLConnection.h in Headers */,
 				53C318731816C38A0074B481 /* SQRLResumableDownload.h in Headers */,
 				536CD4E2183E5D7F000C0FD1 /* SQRLDownload.h in Headers */,
 				53C3186F1816C38A0074B481 /* SQRLDownloadManager.h in Headers */,
@@ -1513,14 +1503,13 @@
 				53C318741816C38A0074B481 /* SQRLResumableDownload.m in Sources */,
 				D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
-				53C318721816C38A0074B481 /* SQRLDownloader.m in Sources */,
+				53C318721816C38A0074B481 /* SQRLURLConnection.m in Sources */,
 				D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
 				53C318701816C38A0074B481 /* SQRLDownloadManager.m in Sources */,
-				53C318781816C3C70074B481 /* SQRLURLConnection.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				536CD4E3183E5D7F000C0FD1 /* SQRLDownload.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
@@ -1542,13 +1531,12 @@
 				5339094A184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m in Sources */,
 				53C3187C1816CCD70074B481 /* SQRLDownloadManagerSpec.m in Sources */,
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
-				53C3187E1816CCD70074B481 /* SQRLURLConnectionSpec.m in Sources */,
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				53B0360B184E5C860079FB77 /* SQRLHTTPServer.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
-				53C3187D1816CCD70074B481 /* SQRLDownloaderSpec.m in Sources */,
+				53C3187D1816CCD70074B481 /* SQRLURLConnectionSpec.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
 				D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */,
 				D049059D18055671004E683E /* SQRLShipItStateSpec.m in Sources */,

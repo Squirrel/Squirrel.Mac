@@ -21,7 +21,7 @@
 #import "SQRLZipArchiver.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
-#import "SQRLDownloader.h"
+#import "SQRLURLConnection.h"
 #import "SQRLURLConnection.h"
 #import "SQRLDownloadManager.h"
 
@@ -177,8 +177,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 			[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-			return [[[[[[SQRLURLConnection
-				sqrl_sendAsynchronousRequest:request]
+			SQRLURLConnection *connection = [[SQRLURLConnection alloc] initWithRequest:request];
+
+			return [[[[[[connection
+				retrieve]
 				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (id)response;
@@ -334,11 +336,12 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 
+			SQRLURLConnection *connection = [[SQRLURLConnection alloc] initWithRequest:zipDownloadRequest];
+
 			SQRLDownloadManager *downloadManager = [[SQRLDownloadManager alloc] initWithDirectoryManager:self.directoryManager];
 
-			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:zipDownloadRequest downloadManager:downloadManager];
-			return [[[[downloader
-				download]
+			return [[[[connection
+				download:downloadManager]
 				reduceEach:^(NSURLResponse *response, NSURL *bodyLocation) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (id)response;
