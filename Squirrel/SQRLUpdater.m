@@ -368,7 +368,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		doNext:^(NSURL *zipOutputURL) {
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
-		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
+		setNameWithFormat:@"%@ -downloadArchiveForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
 
 #pragma mark File Management
