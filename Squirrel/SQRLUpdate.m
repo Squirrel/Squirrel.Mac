@@ -63,10 +63,10 @@ NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
 	return @{
-		@keypath(SQRLUpdate.new, releaseNotes): @"notes",
-		@keypath(SQRLUpdate.new, releaseName): @"name",
-		@keypath(SQRLUpdate.new, releaseDate): @"pub_date",
-		@keypath(SQRLUpdate.new, updateURL): @"url",
+		@keypath(SQRLUpdate.new, releaseNotes): SQRLUpdateJSONReleaseNotesKey,
+		@keypath(SQRLUpdate.new, releaseName): SQRLUpdateJSONNameKey,
+		@keypath(SQRLUpdate.new, releaseDate): SQRLUpdateJSONPublicationDateKey,
+		@keypath(SQRLUpdate.new, updateURL): SQRLUpdateJSONURLKey,
 	};
 }
 
