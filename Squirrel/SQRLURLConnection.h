@@ -43,6 +43,6 @@
 // Returns a signal which sends a tuple of `NSURLResponse` and a file
 // scheme `NSURL` where the resource has been stored on disk, then completes, or
 // errors.
-- (RACSignal *)download:(SQRLDownloadManager *)downloadManager;
+- (RACSignal *)download:(SQRLDownloadManager *)downloadManager __attribute__((nonnull (1)));
 
 @end

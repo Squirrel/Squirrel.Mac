@@ -18,15 +18,8 @@
 // The request the downloader was initialised with.
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 
-// The download manager the downloader was initialised with.
-@property (nonatomic, strong, readonly) SQRLDownloadManager *downloadManager;
-
 // Connection to retreive the remote resource.
 @property (nonatomic, strong) NSURLConnection *connection;
-
-// Returns a signal which sends the download for `request` from
-// `downloadManager` then completes, or errors.
-@property (nonatomic, readonly, strong) RACSignal *initialisedDownload;
 
 // Listens for invocations of `selector` on the receiver.
 //
@@ -37,29 +30,31 @@
 // deallocates.
 - (RACSignal *)signalForDelegateSelector:(SEL)selector;
 
+// Subscribes to the connection delegate selectors and starts a connection for
+// `request`.
+//
+// request - The request to perform, must not be nil.
+// mapData - For each response, map the data received for that response to a
+//           result.
+//
+// Returns a signal which sends a tuple of the last response, and the first
+// value from the last `mapData`, then completes, or errors.
+- (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request mapData:(RACSignal * (^)(NSURLResponse *, RACSignal *))mapData;
+
 @end
 
 @implementation SQRLURLConnection
 
-- (instancetype)initWithRequest:(NSURLRequest *)request downloadManager:(SQRLDownloadManager *)downloadManager {
+- (instancetype)initWithRequest:(NSURLRequest *)request {
 	NSParameterAssert(request != nil);
-	NSParameterAssert(downloadManager != nil);
 
 	self = [self init];
 	if (self == nil) return nil;
 
 	_request = [request copy];
-	_downloadManager = downloadManager;
-
-	_initialisedDownload = [[[downloadManager
-		downloadForRequest:request]
-		promiseOnScheduler:RACScheduler.immediateScheduler]
-		deferred];
 
 	return self;
 }
-
-#pragma mark Download
 
 - (RACSignal *)signalForDelegateSelector:(SEL)selector {
 	NSParameterAssert(selector != NULL);
@@ -71,23 +66,65 @@
 		}];
 }
 
-- (RACSignal *)download {
-	return [[[self
-		requestForResumableDownload]
-		flattenMap:^(NSURLRequest *request) {
-			return [self connectionSignalWithRequest:request];
+- (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request mapData:(RACSignal * (^)(NSURLResponse *, RACSignal *))mapData {
+	return [[RACSignal
+		create:^(id<RACSubscriber> subscriber) {
+			// A signal that will error if the connection fails for any reason.
+			RACSignal *errors = [[self
+				signalForDelegateSelector:@selector(connection:didFailWithError:)]
+				flattenMap:^(NSError *error) {
+					return [RACSignal error:error];
+				}];
+
+			// Sends (or replays) RACUnit when the connection has finished
+			// loading successfully.
+			RACSignal *finished = [[[[self
+				signalForDelegateSelector:@selector(connectionDidFinishLoading:)]
+				take:1]
+				promiseOnScheduler:RACScheduler.immediateScheduler]
+				start];
+
+			// A signal of all `NSURLResponse`s received on the connection.
+			RACSignal *responses = [[self
+				signalForDelegateSelector:@selector(connection:didReceiveResponse:)]
+				takeUntil:finished];
+
+			// A signal of all `NSData` received on the connection.
+			RACSignal *data = [[self
+				signalForDelegateSelector:@selector(connection:didReceiveData:)]
+				takeUntil:finished];
+
+			RACDisposable *responsesDisposable = [[[[[RACSignal
+				merge:@[ responses, errors ]]
+				takeUntil:finished]
+				map:^(NSURLResponse *response) {
+					return [RACSignal
+						zip:@[
+							[RACSignal return:response],
+							mapData(response, data),
+						]];
+				}]
+				switchToLatest]
+				subscribe:subscriber];
+
+			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
+			delegateQueue.maxConcurrentOperationCount = 1;
+
+			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+			connection.delegateQueue = delegateQueue;
+
+			[connection start];
+
+			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
+				[connection cancel];
+
+				[responsesDisposable dispose];
+			}]];
 		}]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
 }
 
-- (RACSignal *)requestForResumableDownload {
-	return [[[self
-		initialisedDownload]
-		flattenMap:^(SQRLDownload *download) {
-			return [download resumableRequest];
-		}]
-		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
-}
+#pragma mark Download
 
 - (RACSignal *)truncateDownload:(SQRLDownload *)download {
 	return [[[[RACSignal
@@ -106,8 +143,8 @@
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
-- (RACSignal *)recordDownload:(SQRLResumableDownload *)download {
-	return [[[self.downloadManager
+- (RACSignal *)recordDownload:(SQRLResumableDownload *)download downloadManager:(SQRLDownloadManager *)downloadManager {
+	return [[[downloadManager
 		setDownload:download forRequest:self.request]
 		then:^{
 			return [RACSignal return:download];
@@ -115,10 +152,9 @@
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
-- (RACSignal *)prepareDownloadForResponse:(NSURLResponse *)response {
-	return [[[self
-		initialisedDownload]
-		flattenMap:^(SQRLDownload *download) {
+- (RACSignal *)prepareDownload:(SQRLDownload *)download downloadManager:(SQRLDownloadManager *)downloadManager forResponse:(NSURLResponse *)response {
+	return [[RACSignal
+		defer:^{
 			if (![response isKindOfClass:NSHTTPURLResponse.class]) {
 				return [self truncateDownload:download];
 			}
@@ -136,7 +172,7 @@
 
 			return [downloadSignal
 				then:^{
-					return [self recordDownload:newDownload];
+					return [self recordDownload:newDownload downloadManager:downloadManager];
 				}];
 		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
@@ -171,79 +207,65 @@
 	return YES;
 }
 
-- (RACSignal *)connectionSignalWithRequest:(NSURLRequest *)request {
-	return [[RACSignal
-		create:^(id<RACSubscriber> subscriber) {
-			// A signal that will error if the connection fails for any reason.
-			RACSignal *errors = [[self
-				signalForDelegateSelector:@selector(connection:didFailWithError:)]
-				flattenMap:^(NSError *error) {
-					return [RACSignal error:error];
-				}];
+#pragma mark Start
 
-			// A signal of all `NSURLResponse`s received on the connection.
-			RACSignal *responses = [self
-				signalForDelegateSelector:@selector(connection:didReceiveResponse:)];
+- (RACSignal *)retrieve {
+	return [[self
+		connectionSignalWithRequest:self.request mapData:^(id _, RACSignal *data) {
+			NSMutableData *accumulatedData = [NSMutableData data];
 
-			// A signal of all `NSData` received on the connection.
-			RACSignal *data = [self
-				signalForDelegateSelector:@selector(connection:didReceiveData:)];
-
-			// Sends (or replays) RACUnit when the connection has finished
-			// loading successfully.
-			RACSignal *finished = [[[[self
-				signalForDelegateSelector:@selector(connectionDidFinishLoading:)]
-				take:1]
-				promiseOnScheduler:RACScheduler.immediateScheduler]
-				start];
-
-			RACDisposable *responsesDisposable = [[[[[RACSignal
-				merge:@[ responses, errors ]]
-				takeUntil:finished]
-				map:^(NSURLResponse *response) {
-					RACSignal *downloadURL = [[[[self
-						prepareDownloadForResponse:response]
-						map:^(SQRLDownload *download) {
-							return download.fileURL;
-						}]
-						promiseOnScheduler:RACScheduler.immediateScheduler]
-						deferred];
-
-					return [[[[data
-						takeUntil:finished]
-						map:^(NSData *bodyData) {
-							return [[downloadURL
-								try:^(NSURL *fileURL, NSError **errorRef) {
-									return [self appendData:bodyData toURL:fileURL error:errorRef];
-								}]
-								ignoreValues];
-						}]
-						concat]
-						then:^{
-							return [RACSignal zip:@[
-								[RACSignal return:response],
-								downloadURL
-							]];
-						}];
+			return [[data
+				doNext:^(NSData *data) {
+					[accumulatedData appendData:data];
 				}]
-				switchToLatest]
-				subscribe:subscriber];
-
-			NSOperationQueue *delegateQueue = [[NSOperationQueue alloc] init];
-			delegateQueue.maxConcurrentOperationCount = 1;
-
-			NSURLConnection *connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
-			connection.delegateQueue = delegateQueue;
-
-			[connection start];
-
-			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
-				[connection cancel];
-
-				[responsesDisposable dispose];
-			}]];
+				then:^{
+					return [RACSignal return:accumulatedData];
+				}];
 		}]
-		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
+		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+}
+
+- (RACSignal *)download:(SQRLDownloadManager *)downloadManager {
+	NSParameterAssert(downloadManager != nil);
+
+	RACSignal *download = [[[downloadManager
+		downloadForRequest:self.request]
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		deferred];
+
+	RACSignal *request = [download
+		flattenMap:^(SQRLDownload *download) {
+			return [download resumableRequest];
+		}];
+
+	return [[request
+		flattenMap:^(NSURLRequest *request) {
+			return [self connectionSignalWithRequest:request mapData:^(NSURLResponse *response, RACSignal *data) {
+				RACSignal *downloadURL = [[[[download
+					flattenMap:^(SQRLDownload *download) {
+						return [self prepareDownload:download downloadManager:downloadManager forResponse:response];
+					}]
+					map:^(SQRLDownload *download) {
+						return download.fileURL;
+					}]
+					promiseOnScheduler:RACScheduler.immediateScheduler]
+					deferred];
+
+				return [[[data
+					map:^(NSData *bodyData) {
+						return [[downloadURL
+							try:^(NSURL *fileURL, NSError **errorRef) {
+								return [self appendData:bodyData toURL:fileURL error:errorRef];
+							}]
+							ignoreValues];
+					}]
+					concat]
+					then:^{
+						return downloadURL;
+					}];
+			}];
+		}]
+		setNameWithFormat:@"%@ download: %@", self, downloadManager];
 }
 
 @end
