@@ -187,7 +187,7 @@ it(@"should clean up resumable downloads after a successful download", ^{
 	SQRLDownloadManager *downloadManager = [[SQRLDownloadManager alloc] initWithDirectoryManager:directoryManager];
 
 	NSError *error = nil;
-	BOOL remove = [[downloadManager removeAllResumableDownloads] waitUntilCompleted:&error];
+	BOOL remove = [[downloadManager removeAllResumableDownloads] asynchronouslyWaitUntilCompleted:&error];
 	expect(remove).to.beTruthy();
 	expect(error).to.beNil();
 
@@ -195,7 +195,7 @@ it(@"should clean up resumable downloads after a successful download", ^{
 
 	NSURL *firstDownload = zipUpdate(updateApplicationBundle);
 	SQRLURLConnection *connection = [[SQRLURLConnection alloc] initWithRequest:[NSURLRequest requestWithURL:firstDownload]];
-	BOOL download = [[connection download:downloadManager] waitUntilCompleted:&error];
+	BOOL download = [[connection download:downloadManager] asynchronouslyWaitUntilCompleted:&error];
 	expect(download).to.beTruthy();
 	expect(error).to.beNil();
 
