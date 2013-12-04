@@ -321,21 +321,20 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:zipDownloadRequest downloadManager:downloadManager];
 			return [[[[[downloader
 				download]
-				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
+				reduceEach:^(NSURLResponse *response, NSURL *bodyLocation) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (id)response;
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
 								NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-								SQRLUpdaterServerDataErrorKey: bodyData,
 							};
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
 						}
 					}
 
-					return [RACSignal return:bodyData];
+					return [RACSignal return:bodyLocation];
 				}]
 				flatten]
 				tryMap:^ NSURL * (NSURL *downloadLocation, NSError **errorRef) {
