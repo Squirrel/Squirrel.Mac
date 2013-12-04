@@ -319,7 +319,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			SQRLDownloadManager *downloadManager = [[SQRLDownloadManager alloc] initWithDirectoryManager:self.directoryManager];
 
 			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:zipDownloadRequest downloadManager:downloadManager];
-			return [[[[[downloader
+			return [[[[downloader
 				download]
 				reduceEach:^(NSURLResponse *response, NSURL *bodyLocation) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
@@ -334,14 +334,15 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 						}
 					}
 
-					return [RACSignal return:bodyLocation];
+					return [[RACSignal
+						return:bodyLocation]
+						tryMap:^ NSURL * (NSURL *bodyLocation, NSError **errorRef) {
+							NSURL *updateLocation = [downloadDirectory URLByAppendingPathComponent:response.suggestedFilename];
+							if (![NSFileManager.defaultManager moveItemAtURL:bodyLocation toURL:updateLocation error:errorRef]) return nil;
+							return updateLocation;
+						}];
 				}]
 				flatten]
-				tryMap:^ NSURL * (NSURL *downloadLocation, NSError **errorRef) {
-					NSURL *updateLocation = [downloadDirectory URLByAppendingPathComponent:downloadLocation.lastPathComponent];
-					if (![NSFileManager.defaultManager moveItemAtURL:downloadLocation toURL:updateLocation error:errorRef]) return nil;
-					return updateLocation;
-				}]
 				concat:[[downloadManager
 					removeAllResumableDownloads]
 					catchTo:RACSignal.empty]];
