@@ -226,4 +226,39 @@ it(@"should clean up resumable downloads after a successful download", ^{
 	}
 });
 
+it(@"should unpack update archives into a .noindex directory", ^{
+	NSURL *zippedUpdateLocation = zipUpdate([self createTestApplicationUpdate]);
+
+	SQRLTestUpdate *update = [[SQRLTestUpdate alloc] initWithDictionary:@{
+		@keypath(update.updateURL): zippedUpdateLocation,
+	} error:NULL];
+
+	writeUpdate(update);
+
+	__block SQRLDownloadedUpdate *downloadedUpdate;
+
+	[[[[[NSDistributedNotificationCenter.defaultCenter
+		rac_addObserverForName:@"com.github.Squirrel.TestApplication.updateReceived" object:nil]
+		map:^(NSNotification *notification) {
+			return notification.userInfo[@"update"];
+		}]
+		tryMap:^(NSString *serialisedUpdate, NSError **errorRef) {
+			NSData *JSONData = [serialisedUpdate dataUsingEncoding:NSUTF8StringEncoding];
+			return [NSJSONSerialization JSONObjectWithData:JSONData options:0 error:errorRef];
+		}]
+		tryMap:^(NSDictionary *JSONDictionary, NSError **errorRef) {
+			return [MTLJSONAdapter modelOfClass:SQRLDownloadedUpdate.class fromJSONDictionary:JSONDictionary error:errorRef];
+		}]
+		subscribeNext:^(SQRLDownloadedUpdate *update) {
+			downloadedUpdate = update;
+		}];
+
+	launchWithEnvironment(nil);
+
+	expect(downloadedUpdate).willNot.beNil();
+
+	NSURL *bundleURL = downloadedUpdate.bundle.bundleURL;
+	expect([bundleURL.path rangeOfString:@".noindex"].location).notTo.equal(NSNotFound);
+});
+
 SpecEnd
