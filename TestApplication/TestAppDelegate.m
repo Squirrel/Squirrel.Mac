@@ -10,6 +10,7 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLTestUpdate.h"
+#import "SQRLDownloadedUpdate.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -74,6 +75,10 @@
 		}]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Got a candidate update: %@", update);
+
+			NSString *serialisedUpdate = [[NSString alloc] initWithData:[NSJSONSerialization dataWithJSONObject:[MTLJSONAdapter JSONDictionaryFromModel:update] options:0 error:NULL] encoding:NSUTF8StringEncoding];
+
+			[NSDistributedNotificationCenter.defaultCenter postNotificationName:@"com.github.Squirrel.TestApplication.updateReceived" object:nil userInfo:@{ @"update": serialisedUpdate }];
 		}]
 		// Retry until we get the expected release.
 		repeat]
