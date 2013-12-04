@@ -8,6 +8,7 @@
 
 #import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveCocoa/EXTScope.h>
 
 @interface SQRLDirectoryManager ()
 
@@ -53,23 +54,74 @@
 
 #pragma mark Folder URLs
 
++ (NSString *)fileSystemNameForIdentifier:(NSString *)identifier {
+	// Periods are problematic in the filesystem because they denote file type.
+	// A directory can become a package which can be undesirable.
+	return [identifier stringByReplacingOccurrencesOfString:@"." withString:@"~"];
+}
+
++ (RACSignal *)createDirectoryForURL:(RACSignal *)URLSignal {
+	return [[URLSignal
+		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
+			BOOL create = [NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:nil error:errorRef];
+			return (create ? directoryURL : nil);
+		}]
+		setNameWithFormat:@"%@ +createDirectoryForURL: %@", self, URLSignal];
+}
+
 - (RACSignal *)applicationSupportURL {
-	return [[RACSignal
+	RACSignal *applicationSupportURL = [[[RACSignal
 		defer:^{
 			NSError *error = nil;
-			NSURL *folderURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
-			if (folderURL == nil) {
+			NSURL *directoryURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
+			if (directoryURL == nil) {
 				return [RACSignal error:error];
 			}
 
-			folderURL = [folderURL URLByAppendingPathComponent:self.applicationIdentifier];
-			if (![NSFileManager.defaultManager createDirectoryAtURL:folderURL withIntermediateDirectories:YES attributes:nil error:&error]) {
-				return [RACSignal error:error];
-			}
+			return [RACSignal return:directoryURL];
+		}]
+		map:^ (NSURL *directoryURL) {
+			NSArray *pathComponents = [[@[ self.applicationIdentifier, @"com.github.Squirrel" ].rac_signal
+				map:^(NSString *name) {
+					return [self.class fileSystemNameForIdentifier:name];
+				}]
+				array];
 
-			return [RACSignal return:folderURL];
+			return [NSURL fileURLWithPathComponents:[directoryURL.pathComponents arrayByAddingObjectsFromArray:pathComponents]];
 		}]
 		setNameWithFormat:@"%@ -applicationSupportURL", self];
+	return [self.class createDirectoryForURL:applicationSupportURL];
+}
+
+- (RACSignal *)downloadDirectoryURL {
+	RACSignal *downloadDirectoryURL = [[[self
+		applicationSupportURL]
+		map:^(NSURL *directoryURL) {
+			return [directoryURL URLByAppendingPathComponent:@"downloads"];
+		}]
+		setNameWithFormat:@"%@ -downloadDirectoryURL", self];
+	return [self.class createDirectoryForURL:downloadDirectoryURL];
+}
+
+- (RACSignal *)uniqueUpdateDirectoryURL {
+	return [[[[self
+		applicationSupportURL]
+		map:^ (NSURL *directoryURL) {
+			// noindex so that Spotlight doesn't pick up apps pending update and
+			// add them to the Launch Services database.
+			return [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
+		}]
+		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
+			// Explicitly just provide the owner with permission, discarding the
+			// current umask. This matches the `mkdtemp` behaviour.
+			NSDictionary *directoryAttributes = @{
+				NSFilePosixPermissions: @(S_IRWXU),
+			};
+			if (![NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:directoryAttributes error:errorRef]) return nil;
+
+			return directoryURL;
+		}]
+		setNameWithFormat:@"%@ -uniqueUpdateDirectoryURL", self];
 }
 
 - (RACSignal *)shipItStateURL {

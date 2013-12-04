@@ -11,7 +11,7 @@
 @class SQRLUpdate;
 
 // A SQRLUpdate that has been successfully downloaded to disk.
-@interface SQRLDownloadedUpdate : MTLModel
+@interface SQRLDownloadedUpdate : MTLModel <MTLJSONSerializing>
 
 // The application bundle representing the downloaded and unarchived update.
 @property (nonatomic, strong, readonly) NSBundle *bundle;

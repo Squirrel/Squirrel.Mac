@@ -97,15 +97,12 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 		va_end(args);
 	}
 
-	return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
-		RACDisposable *transactionDisposable = SQRLCreateTransaction(name, description);
-		RACDisposable *subscriptionDisposable = [self subscribe:subscriber];
-
-		return [RACDisposable disposableWithBlock:^{
-			[subscriptionDisposable dispose];
-			[transactionDisposable dispose];
-		}];
-	}] setNameWithFormat:@"[%@] -sqrl_addTransactionWithName: %@ description: %@", self.name, name, description];
+	return [[RACSignal
+		create:^(id<RACSubscriber> subscriber) {
+			[subscriber.disposable addDisposable:SQRLCreateTransaction(name, description)];
+			[self subscribe:subscriber];
+		}]
+		setNameWithFormat:@"[%@] -sqrl_addTransactionWithName: %@ description: %@", self.name, name, description];
 }
 
 - (RACSignal *)sqrl_addSubscriptionTransactionWithName:(NSString *)name description:(NSString *)descriptionFormat, ... {
@@ -117,13 +114,13 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 		va_end(args);
 	}
 
-	return [[RACSignal createSignal:^(id<RACSubscriber> subscriber) {
-		RACDisposable *transactionDisposable = SQRLCreateTransaction(name, description);
-		RACDisposable *subscriptionDisposable = [self subscribe:subscriber];
-		[transactionDisposable dispose];
-
-		return subscriptionDisposable;
-	}] setNameWithFormat:@"[%@] -sqrl_addSubscriptionTransactionWithName: %@ description: %@", self.name, name, description];
+	return [[RACSignal
+		create:^(id<RACSubscriber> subscriber) {
+			RACDisposable *transactionDisposable = SQRLCreateTransaction(name, description);
+			[self subscribe:subscriber];
+			[transactionDisposable dispose];
+		}]
+		setNameWithFormat:@"[%@] -sqrl_addSubscriptionTransactionWithName: %@ description: %@", self.name, name, description];
 }
 
 @end
