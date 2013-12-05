@@ -156,48 +156,13 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 	@weakify(self);
 	RACSignal *checkForUpdates = [RACSignal
-		defer:^ RACSignal * {
+		defer:^{
 			@strongify(self);
-			NSParameterAssert(self.updateRequest != nil);
 
-			BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
-			if (updatesDisabled) return nil;
+			NSURLRequest *updateRequest = self.updateRequest;
+			NSParameterAssert(updateRequest != nil);
 
-			NSMutableURLRequest *request = [self.updateRequest mutableCopy];
-			[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
-
-			return [[[[[[NSURLConnection
-				rac_sendAsynchronousRequest:request]
-				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
-				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
-					NSHTTPURLResponse *httpResponse = (id)response;
-					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-						NSDictionary *errorInfo = @{
-							NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-							NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-							SQRLUpdaterServerDataErrorKey: bodyData,
-						};
-						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
-						return [RACSignal error:error];
-					}
-
-					if (httpResponse.statusCode == 204 /* No Content */) {
-						return [RACSignal empty];
-					}
-				}
-
-				return [RACSignal return:bodyData];
-			}]
-			flatten]
-			flattenMap:^(NSData *data) {
-				return [self updateFromJSONData:data];
-			}]
-			flattenMap:^(SQRLUpdate *update) {
-				return [self downloadAndPrepareUpdate:update];
-			}]
-			doNext:^(SQRLDownloadedUpdate *update) {
-				[self->_updates sendNext:update];
-			}];
+			return [self checkForUpdates:updateRequest];
 		}];
 
 	_checkForUpdatesAction = [checkForUpdates action];
@@ -243,6 +208,47 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		}]
 		takeUntil:self.rac_willDeallocSignal]
 		subscribeCompleted:^{}];
+}
+
+- (RACSignal *)checkForUpdates:(NSURLRequest *)request {
+	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
+	if (updatesDisabled) return [RACSignal empty];
+
+	NSMutableURLRequest *newRequest = [request mutableCopy];
+	[newRequest setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
+	return [[[[[[NSURLConnection
+		rac_sendAsynchronousRequest:newRequest]
+		reduceEach:^(NSURLResponse *response, NSData *bodyData) {
+		if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+			NSHTTPURLResponse *httpResponse = (id)response;
+			if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+				NSDictionary *errorInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+					SQRLUpdaterServerDataErrorKey: bodyData,
+				};
+				NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+				return [RACSignal error:error];
+			}
+
+			if (httpResponse.statusCode == 204 /* No Content */) {
+				return [RACSignal empty];
+			}
+		}
+
+		return [RACSignal return:bodyData];
+	}]
+	flatten]
+	flattenMap:^(NSData *data) {
+		return [self updateFromJSONData:data];
+	}]
+	flattenMap:^(SQRLUpdate *update) {
+		return [self downloadAndPrepareUpdate:update];
+	}]
+	doNext:^(SQRLDownloadedUpdate *update) {
+		[self->_updates sendNext:update];
+	}];
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
