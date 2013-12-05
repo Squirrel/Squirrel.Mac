@@ -52,8 +52,8 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 
 // Kicks off a check for updates.
 //
-// If an update is available, it will be sent `checkForUpdatesAction.deferred`
-// and `updates` once downloaded.
+// If an update is available, it will be sent on
+// `[checkForUpdatesAction deferred]` and `updates` once downloaded.
 @property (nonatomic, strong, readonly) RACAction *checkForUpdatesAction;
 
 // Sends an `SQRLDownloadedUpdate` object on the main thread whenever a new
