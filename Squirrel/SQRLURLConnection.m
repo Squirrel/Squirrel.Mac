@@ -212,14 +212,10 @@
 - (RACSignal *)retrieve {
 	return [[self
 		connectionSignalWithRequest:self.request mapData:^(id _, RACSignal *data) {
-			NSMutableData *accumulatedData = [NSMutableData data];
-
-			return [[data
-				doNext:^(NSData *data) {
-					[accumulatedData appendData:data];
-				}]
-				then:^{
-					return [RACSignal return:accumulatedData];
+			return [data
+				aggregateWithStart:[NSMutableData data] reduce:^(NSMutableData *running, NSData *data) {
+					[running appendData:data];
+					return running;
 				}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
