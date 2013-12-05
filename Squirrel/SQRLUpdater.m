@@ -533,7 +533,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		// -terminate: is asynchronous or something crazy).
 		concat:[RACSignal never]]
 		promiseOnScheduler:RACScheduler.immediateScheduler]
-		start]
+		deferred]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
 
