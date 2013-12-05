@@ -37,7 +37,7 @@ Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCoco
 and [Mantle](https://github.com/github/Mantle).
 
 If your application is already using ReactiveCocoa, ensure it is using
-version 3.0.
+version 2.0.
 
 Otherwise, add a target dependency and Copy Files build phase entry for the
 ReactiveCocoa.framework target included in Squirrel's repository, in
