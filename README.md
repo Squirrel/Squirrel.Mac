@@ -28,8 +28,8 @@ updates installed are valid.
 1. Add Squirrel.framework as a target dependency
 1. Link Squirrel.framework and add it to a Copy Files build phase which copies
 it into your Frameworks directory
-1. Ensure your application includes the [dependencies](#dependencies), Squirrel
-does not embed them.
+1. Ensure your application includes the [dependencies](#dependencies). Squirrel
+does not embed them itself.
 
 # Dependencies
 
