@@ -56,7 +56,7 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 @property (nonatomic, strong, readonly) RACAction *checkForUpdatesAction;
 
 // Sends an `SQRLDownloadedUpdate` object on the main thread whenever a new
-// update is available. Does not complete.
+// update is available. Completes when the receiver deallocates.
 @property (nonatomic, strong, readonly) RACSignal *updates;
 
 // The request that will be sent to check for updates.
