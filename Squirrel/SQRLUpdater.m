@@ -166,7 +166,9 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		}]
 		action];
 
-	_updates = [RACSubject subject];
+	_updates = [[RACSubject
+		subject]
+		setNameWithFormat:@"%@ updates", self];
 
 	_shipItLauncher = [[[[RACSignal
 		defer:^{
