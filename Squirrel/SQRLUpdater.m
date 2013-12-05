@@ -199,9 +199,9 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		flattenMap:^(id _) {
 			@strongify(self);
 
-			[self.checkForUpdatesAction execute:nil];
-
-			return [self.checkForUpdatesAction.errors
+			return [[[self.checkForUpdatesAction
+				deferred]
+				ignoreValues]
 				catch:^(NSError *error) {
 					NSLog(@"Error checking for updates: %@", error);
 					return [RACSignal empty];
