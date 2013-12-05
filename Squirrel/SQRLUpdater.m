@@ -196,7 +196,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				return [self downloadAndPrepareUpdate:update];
 			}]
 			doNext:^(SQRLDownloadedUpdate *update) {
-				[_updates sendNext:update];
+				[self->_updates sendNext:update];
 			}];
 		}];
 
