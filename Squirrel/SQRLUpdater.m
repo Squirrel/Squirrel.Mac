@@ -163,7 +163,6 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 			if (updatesDisabled) return nil;
 
-			// TODO: Maybe allow this to be an argument to the command?
 			NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 			[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
