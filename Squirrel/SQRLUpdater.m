@@ -122,14 +122,15 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 @end
 
-@implementation SQRLUpdater
+@implementation SQRLUpdater {
+	RACSubject *_updates;
+}
 
 #pragma mark Properties
 
 - (RACSignal *)updates {
-	return [[self.checkForUpdatesCommand.executionSignals
-		concat]
-		setNameWithFormat:@"%@ -updates", self];
+	return [_updates
+		deliverOn:RACScheduler.mainThreadScheduler];
 }
 
 #pragma mark Lifecycle
@@ -152,50 +153,23 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
 	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
 
-	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
-
 	@weakify(self);
-	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
-		@strongify(self);
-		NSParameterAssert(self.updateRequest != nil);
+	_checkForUpdatesAction = [[[RACSignal
+		defer:^{
+			@strongify(self);
 
-		// TODO: Maybe allow this to be an argument to the command?
-		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
-		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+			return [RACSignal return:self.updateRequest];
+		}]
+		flattenMap:^(NSURLRequest *request) {
+			return [self checkForUpdates:request];
+		}]
+		action];
 
-		return [[[[[[NSURLConnection
-			rac_sendAsynchronousRequest:request]
-			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
-				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
-					NSHTTPURLResponse *httpResponse = (id)response;
-					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-						NSDictionary *errorInfo = @{
-							NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-							NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-							SQRLUpdaterServerDataErrorKey: bodyData,
-						};
-						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
-						return [RACSignal error:error];
-					}
+	_updates = [[RACSubject
+		subject]
+		setNameWithFormat:@"%@ updates", self];
 
-					if (httpResponse.statusCode == 204 /* No Content */) {
-						return [RACSignal empty];
-					}
-				}
-
-				return [RACSignal return:bodyData];
-			}]
-			flatten]
-			flattenMap:^(NSData *data) {
-				return [self updateFromJSONData:data];
-			}]
-			flattenMap:^(SQRLUpdate *update) {
-				return [self downloadAndPrepareUpdate:update];
-			}]
-			deliverOn:RACScheduler.mainThreadScheduler];
-	}];
-
-	_shipItLauncher = [[[RACSignal
+	_shipItLauncher = [[[[RACSignal
 		defer:^{
 			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
@@ -207,10 +181,15 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			// wait for another, more canonical error.
 			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
 		}]
-		replayLazily]
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		deferred]
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
+}
+
+- (void)dealloc {
+	[_updates sendCompleted];
 }
 
 #pragma mark Checking for Updates
@@ -218,20 +197,64 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
 	@weakify(self);
 
-	return [[[[[RACSignal
+	return [[[[RACSignal
 		interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 		flattenMap:^(id _) {
 			@strongify(self);
-			return [[self.checkForUpdatesCommand
-				execute:RACUnit.defaultUnit]
+
+			return [[[self.checkForUpdatesAction
+				deferred]
+				ignoreValues]
 				catch:^(NSError *error) {
 					NSLog(@"Error checking for updates: %@", error);
 					return [RACSignal empty];
 				}];
 		}]
 		takeUntil:self.rac_willDeallocSignal]
-		publish]
-		connect];
+		subscribeCompleted:^{}];
+}
+
+- (RACSignal *)checkForUpdates:(NSURLRequest *)request {
+	NSParameterAssert(request != nil);
+
+	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
+	if (updatesDisabled) return [RACSignal empty];
+
+	NSMutableURLRequest *newRequest = [request mutableCopy];
+	[newRequest setValue:@"application/json" forHTTPHeaderField:@"Accept"];
+
+	return [[[[[[NSURLConnection
+		rac_sendAsynchronousRequest:newRequest]
+		reduceEach:^(NSURLResponse *response, NSData *bodyData) {
+		if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+			NSHTTPURLResponse *httpResponse = (id)response;
+			if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+				NSDictionary *errorInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+					SQRLUpdaterServerDataErrorKey: bodyData,
+				};
+				NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+				return [RACSignal error:error];
+			}
+
+			if (httpResponse.statusCode == 204 /* No Content */) {
+				return [RACSignal empty];
+			}
+		}
+
+		return [RACSignal return:bodyData];
+	}]
+	flatten]
+	flattenMap:^(NSData *data) {
+		return [self updateFromJSONData:data];
+	}]
+	flattenMap:^(SQRLUpdate *update) {
+		return [self downloadAndPrepareUpdate:update];
+	}]
+	doNext:^(SQRLDownloadedUpdate *update) {
+		[self->_updates sendNext:update];
+	}];
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
@@ -388,25 +411,28 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, directory, error);
 				return YES;
 			}];
-			
-			NSURL *updateBundleURL = [enumerator.rac_sequence objectPassingTest:^(NSURL *URL) {
-				NSString *type = nil;
-				NSError *error = nil;
-				if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
-					NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
-					return NO;
-				}
 
-				if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
+			NSURL *updateBundleURL = [[[enumerator.rac_promise
+				start]
+				filter:^(NSURL *URL) {
+					NSString *type = nil;
+					NSError *error = nil;
+					if (![URL getResourceValue:&type forKey:NSURLTypeIdentifierKey error:&error]) {
+						NSLog(@"Error retrieving UTI for item at %@: %@", URL, error);
+						return NO;
+					}
 
-				NSBundle *bundle = [NSBundle bundleWithURL:URL];
-				if (bundle == nil) {
-					NSLog(@"Could not open application bundle at %@", URL);
-					return NO;
-				}
+					if (!UTTypeConformsTo((__bridge CFStringRef)type, kUTTypeApplicationBundle)) return NO;
 
-				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
-			}];
+					NSBundle *bundle = [NSBundle bundleWithURL:URL];
+					if (bundle == nil) {
+						NSLog(@"Could not open application bundle at %@", URL);
+						return NO;
+					}
+
+					return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
+				}]
+				first];
 
 			if (updateBundleURL != nil) {
 				return [RACSignal return:updateBundleURL];
@@ -493,7 +519,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[[SQRLShipItState
+	return [[[[[[[[[SQRLShipItState
 		readUsingURL:self.shipItStateURL]
 		flattenMap:^(SQRLShipItState *existingState) {
 			return [self validateExistingState:existingState];
@@ -511,7 +537,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		// Never allow `completed` to escape this signal chain (in case
 		// -terminate: is asynchronous or something crazy).
 		concat:[RACSignal never]]
-		replay]
+		promiseOnScheduler:RACScheduler.immediateScheduler]
+		deferred]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
 

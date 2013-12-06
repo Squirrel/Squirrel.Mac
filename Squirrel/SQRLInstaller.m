@@ -145,42 +145,32 @@ typedef struct {
 	if (self == nil) return nil;
 
 	_directoryManager = directoryManager;
-
-	@weakify(self);
-
-	RACSignal *aborting = [[[[RACObserve(self, abortInstallationCommand)
-		ignore:nil]
-		map:^(RACCommand *command) {
-			return command.executing;
-		}]
-		switchToLatest]
-		setNameWithFormat:@"aborting"];
-
-	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItState *state) {
-		@strongify(self);
-		NSParameterAssert(state != nil);
-
-		return [[self
-			resumeInstallationFromState:state]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
-	}];
-
-	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItState *state) {
-		@strongify(self);
-		NSParameterAssert(state != nil);
-
-		return [[[RACSignal
-			zip:@[
-				[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-				[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
-				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
-			}]
-			flatten]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
-	}];
 	
 	return self;
+}
+
+#pragma mark Actions
+
+- (RACSignal *)installUpdateWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[self
+		resumeInstallationFromState:state]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+}
+
+- (RACSignal *)abortInstallationWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[[RACSignal
+		zip:@[
+			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+			return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
+		}]
+		flatten]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 }
 
 #pragma mark Installer State
@@ -471,10 +461,11 @@ typedef struct {
 		catch:^(NSError *error) {
 			if (backupBundleURL == nil) return [RACSignal error:error];
 
-			return [[[[self
-				installItemAtURL:bundleURL fromURL:backupBundleURL]
-				initially:^{
+			return [[[RACSignal
+				defer:^{
 					[NSFileManager.defaultManager removeItemAtURL:bundleURL error:NULL];
+
+					return [self installItemAtURL:bundleURL fromURL:backupBundleURL];
 				}]
 				doCompleted:^{
 					NSLog(@"Restored backup bundle to %@", bundleURL);
@@ -563,7 +554,7 @@ typedef struct {
 				return YES;
 			}];
 
-			return enumerator.rac_sequence.signal;
+			return [enumerator.rac_promise start];
 		}]
 		flattenMap:^(NSURL *URL) {
 			const char *path = URL.path.fileSystemRepresentation;
