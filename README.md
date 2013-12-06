@@ -36,8 +36,8 @@ does not embed them itself.
 Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
 and [Mantle](https://github.com/github/Mantle).
 
-If your application is already using ReactiveCocoa, ensure it is using
-version 2.0.
+If your application is already using ReactiveCocoa, ensure it is using the same
+version as Squirrel.
 
 Otherwise, add a target dependency and Copy Files build phase entry for the
 ReactiveCocoa.framework target included in Squirrel's repository, in
