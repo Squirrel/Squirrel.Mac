@@ -129,8 +129,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 #pragma mark Properties
 
 - (RACSignal *)updates {
-	return [[_updates
-		takeUntil:self.rac_willDeallocSignal]
+	return [_updates
 		deliverOn:RACScheduler.mainThreadScheduler];
 }
 
@@ -187,6 +186,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
+}
+
+- (void)dealloc {
+	[_updates sendCompleted];
 }
 
 #pragma mark Checking for Updates
