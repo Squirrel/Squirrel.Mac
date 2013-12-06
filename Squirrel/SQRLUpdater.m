@@ -154,14 +154,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
 
 	@weakify(self);
-	_checkForUpdatesAction = [[RACSignal
+	_checkForUpdatesAction = [[[RACSignal
 		defer:^{
 			@strongify(self);
 
-			NSURLRequest *updateRequest = self.updateRequest;
-			NSParameterAssert(updateRequest != nil);
-
-			return [self checkForUpdates:updateRequest];
+			return [RACSignal return:self.updateRequest];
+		}]
+		flattenMap:^(NSURLRequest *request) {
+			return [self checkForUpdates:request];
 		}]
 		action];
 
@@ -215,6 +215,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)checkForUpdates:(NSURLRequest *)request {
+	NSParameterAssert(request != nil);
+
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 	if (updatesDisabled) return [RACSignal empty];
 
