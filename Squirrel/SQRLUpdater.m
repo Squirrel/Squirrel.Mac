@@ -363,9 +363,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		flattenMap:^(NSURL *zipOutputURL) {
 			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
 		}]
-		then:^{
-			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
-		}]
+		concat:[self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory]]
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
 
@@ -467,14 +465,11 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 	return [[[[self.signature
 		verifyBundleAtURL:updateBundle.bundleURL]
-		then:^{
-			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
-			return [RACSignal return:downloadedUpdate];
-		}]
+		concat:[RACSignal return:[[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle]]]
 		flattenMap:^(SQRLDownloadedUpdate *downloadedUpdate) {
-			return [[self prepareUpdateForInstallation:downloadedUpdate] then:^{
-				return [RACSignal return:downloadedUpdate];
-			}];
+			return [[self
+				prepareUpdateForInstallation:downloadedUpdate]
+				concat:[RACSignal return:downloadedUpdate]];
 		}]
 		setNameWithFormat:@"%@ -verifyAndPrepareUpdate: %@ fromBundle: %@", self, update, updateBundle];
 }
@@ -501,19 +496,18 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[[[[SQRLShipItState
+	return [[[[[[[[SQRLShipItState
 		readUsingURL:self.shipItStateURL]
 		catchTo:[RACSignal empty]]
 		flattenMap:^(SQRLShipItState *existingState) {
 			return [self validateExistingState:existingState];
 		}]
-		then:^{
+		ignoreValues]
+		concat:[RACSignal defer:^{
 			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
 			return [state writeUsingURL:self.shipItStateURL];
-		}]
-		then:^{
-			return self.shipItLauncher;
-		}]
+		}]]
+		concat:self.shipItLauncher]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
 }

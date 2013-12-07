@@ -252,13 +252,12 @@ typedef struct {
 			nextState = dispatchTable[tableIndex + 1].installerState;
 		}
 
-		return [[step
+		return [[[step
 			doCompleted:^{
 				NSLog(@"Completed state %i", (int)installerState);
 			}]
-			then:^{
-				return [RACSignal return:@(nextState)];
-			}];
+			ignoreValues]
+			concat:[RACSignal return:@(nextState)]];
 	}];
 
 	return [[self
@@ -355,11 +354,9 @@ typedef struct {
 					// failure. Try recovering it if it did.
 					return [[self
 						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
-						then:^{
-							// Recovery succeeded, but we still want to pass
-							// through the original error.
-							return [RACSignal error:error];
-						}];
+						// Recovery succeeded, but we still want to pass
+						// through the original error.
+						concat:[RACSignal error:error]];
 				}];
 		}]
 		flatten]
@@ -377,11 +374,9 @@ typedef struct {
 		] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[self
 				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
-				then:^{
-					return [[self
-						deleteBackupAtURL:backupBundleURL]
-						catchTo:[RACSignal empty]];
-				}];
+				concat:[[self
+					deleteBackupAtURL:backupBundleURL]
+					catchTo:[RACSignal empty]]];
 		}]
 		flatten]
 		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
@@ -428,26 +423,23 @@ typedef struct {
 - (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL {
 	NSParameterAssert(backupURL != nil);
 
-	return [[[RACSignal
+	return [[RACSignal
 		defer:^{
 			NSError *error = nil;
-			if ([NSFileManager.defaultManager removeItemAtURL:backupURL error:&error]) {
-				return [RACSignal empty];
-			} else {
+			if (![NSFileManager.defaultManager removeItemAtURL:backupURL error:&error]) {
 				return [RACSignal error:error];
 			}
-		}]
-		then:^{
+
 			// Also remove the temporary directory that the backup lived in.
 			NSURL *temporaryDirectoryURL = backupURL.URLByDeletingLastPathComponent;
 
 			// However, use rmdir() to skip it in case there are other files
 			// contained within (for whatever reason).
-			if (rmdir(temporaryDirectoryURL.path.fileSystemRepresentation) == 0) {
-				return [RACSignal empty];
-			} else {
+			if (rmdir(temporaryDirectoryURL.path.fileSystemRepresentation) != 0) {
 				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
 			}
+
+			return [RACSignal empty];
 		}]
 		setNameWithFormat:@"%@ -deleteBackupAtURL: %@", self, backupURL];
 }
@@ -486,9 +478,7 @@ typedef struct {
 
 	return [[[[self
 		verifyBundleAtURL:targetURL usingSignature:signature recoveringUsingBackupAtURL:nil]
-		then:^{
-			return [RACSignal return:@YES];
-		}]
+		concat:[RACSignal return:@YES]]
 		catch:^(NSError *error) {
 			BOOL directory;
 			if ([NSFileManager.defaultManager fileExistsAtPath:sourceURL.path isDirectory:&directory]) {
