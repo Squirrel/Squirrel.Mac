@@ -34,7 +34,7 @@ does not embed them itself.
 # Dependencies
 
 Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
-and [Mantle](https://github.com/github/Mantle).
+and [Mantle](https://github.com/MantleFramework/Mantle).
 
 If your application is already using ReactiveCocoa, ensure it is using the same
 version as Squirrel.
