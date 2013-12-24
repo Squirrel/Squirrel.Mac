@@ -77,11 +77,11 @@
 		}]
 		// Retry until we get the expected release.
 		repeat]
-		skipUntilBlock:^(SQRLDownloadedUpdate *download) {
+		skipWhile:^ BOOL (SQRLDownloadedUpdate *download) {
 			SQRLTestUpdate *testUpdate = (id)download.update;
 			NSAssert([testUpdate isKindOfClass:SQRLTestUpdate.class], @"Unexpected update type: %@", testUpdate);
 
-			return testUpdate.final;
+			return !testUpdate.final;
 		}]
 		take:1]
 		doNext:^(id _) {
@@ -92,12 +92,12 @@
 			NSLog(@"Error in updater: %@", error);
 			return [RACSignal empty];
 		}]
-		then:^{
+		concat:[RACSignal defer:^{
 			NSString *delayString = NSProcessInfo.processInfo.environment[@"SQRLUpdateDelay"];
 			if (delayString == nil) return [RACSignal empty];
 
 			return [[RACSignal interval:delayString.doubleValue onScheduler:RACScheduler.mainThreadScheduler] take:1];
-		}]
+		}]]
 		subscribeCompleted:^{
 			[NSApp terminate:self];
 		}];
