@@ -109,7 +109,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			AuthorizationRef authorization = NULL;
 			OSStatus authorizationError = AuthorizationCreate(&rights, &environment, kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights, &authorization);
 			if (authorizationError == noErr) {
-				[subscriber sendNext:(__bridge id)authorization];
+				[subscriber sendNext:[NSValue valueWithPointer:authorization]];
 				[subscriber sendCompleted];
 			} else {
 				[subscriber sendError:[NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil]];
@@ -127,11 +127,13 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		zip:@[
 			self.shipItJobDictionary,
 			(privileged ? self.shipItAuthorization : [RACSignal return:nil])
-		] reduce:^(NSDictionary *jobDictionary, id authorization) {
+		] reduce:^(NSDictionary *jobDictionary, NSValue *authorizationValue) {
 			CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
+			AuthorizationRef authorization = [authorizationValue pointerValue];
+
 			CFErrorRef cfError;
-			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, (__bridge AuthorizationRef)authorization, true, &cfError)) {
+			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, authorization, true, &cfError)) {
 				#if DEBUG
 				NSLog(@"Could not remove previous ShipIt job: %@", cfError);
 				#endif
@@ -142,7 +144,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 				}
 			}
 
-			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, (__bridge AuthorizationRef)authorization, &cfError)) {
+			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, authorization, &cfError)) {
 				return [RACSignal error:CFBridgingRelease(cfError)];
 			}
 
