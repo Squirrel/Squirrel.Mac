@@ -13,6 +13,7 @@
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
+#import "SQRLAuthorization.h"
 
 NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
 
@@ -108,16 +109,15 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 			AuthorizationRef authorization = NULL;
 			OSStatus authorizationError = AuthorizationCreate(&rights, &environment, kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights, &authorization);
+
 			if (authorizationError == noErr) {
-				[subscriber sendNext:[NSValue valueWithPointer:authorization]];
+				[subscriber sendNext:[[SQRLAuthorization alloc] initWithAuthorization:authorization]];
 				[subscriber sendCompleted];
 			} else {
 				[subscriber sendError:[NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil]];
 			}
 
-			return [RACDisposable disposableWithBlock:^{
-				if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
-			}];
+			return nil;
 		}]
 		setNameWithFormat:@"+shipItAuthorization"];
 }
@@ -127,10 +127,10 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		zip:@[
 			self.shipItJobDictionary,
 			(privileged ? self.shipItAuthorization : [RACSignal return:nil])
-		] reduce:^(NSDictionary *jobDictionary, NSValue *authorizationValue) {
+		] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
 			CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
-			AuthorizationRef authorization = [authorizationValue pointerValue];
+			AuthorizationRef authorization = authorizationValue.authorization;
 
 			CFErrorRef cfError;
 			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, authorization, true, &cfError)) {
