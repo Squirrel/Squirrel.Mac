@@ -64,7 +64,7 @@ describe(@"file scheme URLs", ^{
 		expect(result).notTo.beNil();
 		expect(error).to.beNil();
 
-		testBodyEqualTestContents(result.second);
+		testBodyEqualTestContents(result[1]);
 	});
 
 	it(@"should download file:// scheme URLs", ^{
@@ -73,7 +73,7 @@ describe(@"file scheme URLs", ^{
 		expect(result).notTo.beNil();
 		expect(error).to.beNil();
 
-		NSURL *location = result.second;
+		NSURL *location = result[1];
 
 		NSData *body = [NSData dataWithContentsOfURL:location options:0 error:&error];
 		expect(error).to.beNil();
@@ -194,7 +194,7 @@ it(@"should resume a download", ^{
 	expect(result).notTo.beNil();
 	expect(error).to.beNil();
 
-	NSURL *location = result.second;
+	NSURL *location = result[1];
 
 	NSMutableData *fullBody = [firstHalf mutableCopy];
 	[fullBody appendData:secondHalf];
@@ -300,7 +300,7 @@ it(@"should not resume downloads for a response with a different ETag", ^{
 	expect(result).notTo.beNil();
 	expect(error).to.beNil();
 
-	NSURL *location = result.second;
+	NSURL *location = result[1];
 
 	downloadedData = [NSData dataWithContentsOfURL:location options:0 error:&error];
 	expect(downloadedData.length).to.equal(secondBody.length);

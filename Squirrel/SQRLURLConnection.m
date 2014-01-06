@@ -62,7 +62,7 @@
 	return [[self
 		rac_signalForSelector:selector]
 		map:^(RACTuple *args) {
-			return args.second ?: RACUnit.defaultUnit;
+			return args[1] ?: RACUnit.defaultUnit;
 		}];
 }
 
@@ -127,7 +127,7 @@
 #pragma mark Download
 
 - (RACSignal *)truncateDownload:(SQRLDownload *)download {
-	return [[[[RACSignal
+	return [[[[[RACSignal
 		defer:^{
 			NSError *error = nil;
 			BOOL remove = [NSFileManager.defaultManager removeItemAtURL:download.fileURL error:&error];
@@ -137,18 +137,16 @@
 			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return RACSignal.empty;
 			return [RACSignal error:error];
 		}]
-		then:^{
-			return [RACSignal return:download];
-		}]
+		ignoreValues]
+		concat:[RACSignal return:download]]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
 - (RACSignal *)recordDownload:(SQRLResumableDownload *)download downloadManager:(SQRLDownloadManager *)downloadManager {
-	return [[[downloadManager
+	return [[[[downloadManager
 		setDownload:download forRequest:self.request]
-		then:^{
-			return [RACSignal return:download];
-		}]
+		ignoreValues]
+		concat:[RACSignal return:download]]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
 
@@ -170,10 +168,9 @@
 
 			SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithRequest:self.request response:httpResponse fileURL:download.fileURL];
 
-			return [downloadSignal
-				then:^{
-					return [self recordDownload:newDownload downloadManager:downloadManager];
-				}];
+			return [[downloadSignal
+				ignoreValues]
+				concat:[self recordDownload:newDownload downloadManager:downloadManager]];
 		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), response];
 }
@@ -247,7 +244,7 @@
 					promiseOnScheduler:RACScheduler.immediateScheduler]
 					deferred];
 
-				return [[[data
+				return [[[[data
 					map:^(NSData *bodyData) {
 						return [[downloadURL
 							try:^(NSURL *fileURL, NSError **errorRef) {
@@ -256,9 +253,8 @@
 							ignoreValues];
 					}]
 					concat]
-					then:^{
-						return downloadURL;
-					}];
+					ignoreValues]
+					concat:downloadURL];
 			}];
 		}]
 		setNameWithFormat:@"%@ download: %@", self, downloadManager];

@@ -15,7 +15,7 @@
 - (NSString *)sqrl_valueForHTTPHeaderField:(NSString *)field {
 	return [[[self.allHeaderFields.rac_signal
 		filter:^ BOOL (RACTuple *keyValuePair) {
-			return [keyValuePair.first caseInsensitiveCompare:field] == NSOrderedSame;
+			return [keyValuePair[0] caseInsensitiveCompare:field] == NSOrderedSame;
 		}]
 		reduceEach:^(NSString *key, NSString *value) {
 			return value;

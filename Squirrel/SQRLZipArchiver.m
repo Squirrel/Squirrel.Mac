@@ -124,28 +124,27 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 #pragma mark Task Launching
 
 - (RACSignal *)launchWithArguments:(NSArray *)arguments {
-	RACSignal *signal = [[[[[RACSignal
+	RACSignal *signal = [[[[[[RACSignal
 		// Ensures that `self` remains alive while this signal exists.
 		//
 		// This is important because the signals on `self` complete upon
 		// dealloc.
 		return:self]
-		then:^{
-			return [RACSignal
-				zip:@[ self.taskTerminated, self.standardErrorData ]
-				reduce:^(NSNumber *exitStatus, NSData *errorData) {
-					if (exitStatus.intValue == 0) return [RACSignal empty];
+		ignoreValues]
+		concat:[RACSignal
+			zip:@[ self.taskTerminated, self.standardErrorData ]
+			reduce:^(NSNumber *exitStatus, NSData *errorData) {
+				if (exitStatus.intValue == 0) return [RACSignal empty];
 
-					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-					userInfo[SQRLZipArchiverExitCodeErrorKey] = exitStatus;
+				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+				userInfo[SQRLZipArchiverExitCodeErrorKey] = exitStatus;
 
-					NSString *errorString = [[NSString alloc] initWithData:errorData encoding:NSUTF8StringEncoding];
-					errorString = [errorString stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
-					if (errorString.length > 0) userInfo[NSLocalizedDescriptionKey] = errorString;
+				NSString *errorString = [[NSString alloc] initWithData:errorData encoding:NSUTF8StringEncoding];
+				errorString = [errorString stringByTrimmingCharactersInSet:NSCharacterSet.whitespaceAndNewlineCharacterSet];
+				if (errorString.length > 0) userInfo[NSLocalizedDescriptionKey] = errorString;
 
-					return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
-				}];
-		}]
+				return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
+			}]]
 		take:1]
 		flatten]
 		setNameWithFormat:@"-launchWithArguments: %@", arguments];
