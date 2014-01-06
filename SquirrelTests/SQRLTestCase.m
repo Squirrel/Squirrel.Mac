@@ -324,11 +324,7 @@ static void SQRLSignalHandler(int sig) {
 
 	[self addCleanupBlock:^{
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		CFErrorRef removeError = NULL;
-		if (!SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, &removeError)) {
-			NSLog(@"Could not remove ShipIt job after tests: %@", removeError);
-			if (removeError != NULL) CFRelease(removeError);
-		}
+		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
 
 		NSError *lookupError = nil;
 		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
