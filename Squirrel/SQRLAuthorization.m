@@ -22,7 +22,7 @@
 }
 
 - (void)dealloc {
-	AuthorizationFree(_authorization, kAuthorizationFlagDestroyRights);
+	if (_authorization != NULL) AuthorizationFree(_authorization, kAuthorizationFlagDestroyRights);
 }
 
 @end
