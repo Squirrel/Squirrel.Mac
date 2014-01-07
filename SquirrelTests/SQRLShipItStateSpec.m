@@ -60,14 +60,15 @@ it(@"should write and read state to disk", ^{
 });
 
 it(@"should write and read state to defaults", ^{
-	NSString *defaultsKey = @"SQRLShipItStateSpecTestKey";
+	NSString *domain = @"com.github.Squirrel.Tests";
+	NSString *defaultsKey = @"SQRLShipItStateSpecStateKey";
 
 	NSError *error = nil;
-	BOOL success = [[state writeToDefaults:defaultsKey] waitUntilCompleted:&error];
+	BOOL success = [[state writeToDefaultsDomain:domain key:defaultsKey] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
-	SQRLShipItState *readState = [[SQRLShipItState readFromDefaults:defaultsKey] firstOrDefault:nil success:&success error:&error];
+	SQRLShipItState *readState = [[SQRLShipItState readFromDefaultsDomain:domain key:defaultsKey] firstOrDefault:nil success:&success error:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 

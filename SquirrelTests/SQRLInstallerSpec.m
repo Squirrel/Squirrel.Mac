@@ -86,7 +86,7 @@ it(@"should install an update in process", ^{
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil];
 	state.installerState = SQRLInstaller.initialInstallerState;
 
-	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:SQRLDirectoryManager.currentApplicationManager.applicationIdentifier stateDefaultsKey:@"SQRLInstallerSpecStateKey"];
 	expect(installer).notTo.beNil();
 
 	NSError *installError = nil;
