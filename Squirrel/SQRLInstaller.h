@@ -42,8 +42,8 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 @class RACCommand;
 @class SQRLDirectoryManager;
 
-// Performs the installation of an update, using the `SQRLShipItState` on disk,
-// as located by `SQRLDirectoryManager`.
+// Performs the installation of an update, using the `SQRLShipItState` from
+// user defaults, as located by defaultsKey.
 //
 // This class is meant to be used only after the app that will be updated has
 // terminated.
@@ -72,8 +72,13 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 // aborting/recovery has finished.
 @property (nonatomic, strong, readonly) RACCommand *abortInstallationCommand;
 
-// Initializes an installer using the given directory manager to read and write the
-// state of the installation.
-- (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager;
+// Initializes an installer using the given application identifier, which is
+// used to scope resumable state stored to user defaults.
+//
+// applicationIdentifier - The defaults domain in which to store resumable
+//                         state. Must not be nil.
+// stateDefaultsKey      - The defaults key in which to read/write the
+//                         `SQRLShipItState`. Must not be nil.
+- (id)initWithApplicationIdentifier:(NSString *)applicationIdentifier stateDefaultsKey:(NSString *)stateDefaultsKey;
 
 @end

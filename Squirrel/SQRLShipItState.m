@@ -74,13 +74,15 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		setNameWithFormat:@"+readUsingURL: %@", URL];
 }
 
-+ (RACSignal *)readFromDefaults:(NSString *)defaultsKey {
-	NSParameterAssert(defaultsKey != nil);
++ (RACSignal *)readFromDefaultsDomain:(NSString *)domain key:(NSString *)key {
+	NSParameterAssert(domain != nil);
+	NSParameterAssert(key != nil);
 
 	return [[[[[RACSignal
-		return:defaultsKey]
-		map:^(NSString *key) {
-			return [NSUserDefaults.standardUserDefaults dataForKey:key];
+		return:RACTuplePack(domain, key)]
+		reduceEach:^(NSString *domain, NSString *key) {
+			id propertyList = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+			return ([propertyList isKindOfClass:NSData.class] ? propertyList : nil);
 		}]
 		tryMap:^ NSData * (NSData *data, NSError **errorRef) {
 			if (data == nil) {
@@ -99,7 +101,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		flattenMap:^(NSData *data) {
 			return [self readFromData:data];
 		}]
-		setNameWithFormat:@"+readFromDefaults: %@", defaultsKey];
+		setNameWithFormat:@"+readFromDefaultsDomain: %@ key: %@", domain, key];
 }
 
 + (RACSignal *)readFromData:(NSData *)data {
@@ -142,15 +144,18 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
 }
 
-- (RACSignal *)writeToDefaults:(NSString *)defaultsKey {
+- (RACSignal *)writeToDefaultsDomain:(NSString *)domain key:(NSString *)key {
+	NSParameterAssert(domain != nil);
+	NSParameterAssert(key != nil);
+
 	return [[[self
 		serialization]
 		flattenMap:^(NSData *data) {
-			[NSUserDefaults.standardUserDefaults setObject:data forKey:defaultsKey];
+			CFPreferencesSetValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)data, (__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 
 			return [RACSignal empty];
 		}]
-		setNameWithFormat:@"%@ writeToDefaults: %@", self, defaultsKey];
+		setNameWithFormat:@"%@ writeToDefaultsDomain: %@ key: %@", self, domain, key];
 }
 
 - (RACSignal *)serialization {

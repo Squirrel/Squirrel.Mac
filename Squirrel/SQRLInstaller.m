@@ -58,8 +58,11 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	SQRLCodeSignature *_codeSignature;
 }
 
-// Finds the state file to read and write from.
-@property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
+// The defaults domain to store all resumable state in.
+@property (nonatomic, copy, readonly) NSString *applicationIdentifier;
+
+// The defaults key to read/write the `SQRLShipItState` from/to.
+@property (nonatomic, copy, readonly) NSString *stateDefaultsKey;
 
 // The URL where the target bundle has been moved before installation.
 @property (atomic, copy) NSURL *ownedTargetBundleURL;
@@ -214,7 +217,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (SQRLCodeSignature *)codeSignature {
 	@synchronized (self) {
 		if (_codeSignature == nil) {
-			CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, (__bridge CFStringRef)self.directoryManager.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+			CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 
 			NSData *data = CFBridgingRelease(value);
 			if (![data isKindOfClass:NSData.class]) return nil;
@@ -238,7 +241,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			value = CFBridgingRetain(data);
 		}
 
-		CFStringRef applicationID = (__bridge CFStringRef)self.directoryManager.applicationIdentifier;
+		CFStringRef applicationID = (__bridge CFStringRef)self.applicationIdentifier;
 		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 		if (value != NULL) CFRelease(value);
 
@@ -250,13 +253,15 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 #pragma mark Lifecycle
 
-- (id)initWithDirectoryManager:(SQRLDirectoryManager *)directoryManager {
-	NSParameterAssert(directoryManager != nil);
+- (id)initWithApplicationIdentifier:(NSString *)applicationIdentifier stateDefaultsKey:(NSString *)stateDefaultsKey {
+	NSParameterAssert(applicationIdentifier != nil);
+	NSParameterAssert(stateDefaultsKey != nil);
 
 	self = [super init];
 	if (self == nil) return nil;
 
-	_directoryManager = directoryManager;
+	_applicationIdentifier = [applicationIdentifier copy];
+	_stateDefaultsKey = [stateDefaultsKey copy];
 
 	@weakify(self);
 
@@ -302,7 +307,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 - (NSURL *)URLForPreferencesKey:(NSString *)key {
 	NSParameterAssert(key != nil);
 
-	CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.directoryManager.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 
 	NSString *path = CFBridgingRelease(value);
 	if (![path isKindOfClass:NSString.class]) return nil;
@@ -321,7 +326,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		value = CFBridgingRetain(fileURL.path);
 	}
 
-	CFStringRef applicationID = (__bridge CFStringRef)self.directoryManager.applicationIdentifier;
+	CFStringRef applicationID = (__bridge CFStringRef)self.applicationIdentifier;
 	CFPreferencesSetValue((__bridge CFStringRef)key, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 	if (value != NULL) CFRelease(value);
 
@@ -453,7 +458,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		state.installerState = nextState.integerValue;
 		state.installationStateAttempt = 1;
 		return [[state
-			writeUsingURL:self.directoryManager.shipItStateURL]
+			writeToDefaults:self.stateDefaultsKey]
 			// Automatically begin the next step.
 			concat:[self stepRepeatedly:step withState:state]];
 	}];
@@ -628,7 +633,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 	return [[[[[RACSignal
 		defer:^{
 			NSString *tmpPath = [NSTemporaryDirectory() stringByResolvingSymlinksInPath];
-			NSString *template = [NSString stringWithFormat:@"%@.XXXXXXXX", self.directoryManager.applicationIdentifier];
+			NSString *template = [NSString stringWithFormat:@"%@.XXXXXXXX", self.applicationIdentifier];
 
 			char *fullTemplate = strdup([tmpPath stringByAppendingPathComponent:template].UTF8String);
 			@onExit {
