@@ -31,7 +31,6 @@ const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
-
 NSString * const SQRLInstallerOwnedTargetBundleURLKey = @"OwnedTargetBundleURL";
 NSString * const SQRLInstallerOwnedUpdateBundleURLKey = @"OwnedUpdateBundleURL";
 NSString * const SQRLInstallerCodeSignatureKey = @"CodeSignature";
