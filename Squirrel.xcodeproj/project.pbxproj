@@ -441,6 +441,7 @@
 		D0366C0117B18FEE0086ED44 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
+		D03B4D5A183C248D00F9CAFF /* SQRLInstaller+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLInstaller+Private.h"; sourceTree = "<group>"; };
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
 		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
@@ -646,6 +647,7 @@
 			children = (
 				D014AC0417B97885007D79D0 /* ShipIt-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
+				D03B4D5A183C248D00F9CAFF /* SQRLInstaller+Private.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
 				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
 				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
@@ -779,9 +781,9 @@
 			children = (
 				D0EDBE9F17B0C6930058BC3C /* Shared */,
 				D0C22BE0179CC00E00158214 /* Squirrel */,
+				D014AC0317B97885007D79D0 /* ShipIt */,
 				D0C22BF6179CC00E00158214 /* SquirrelTests */,
 				D08D4E0E17B451500012B22D /* TestApplication */,
-				D014AC0317B97885007D79D0 /* ShipIt */,
 				D0C22BD9179CC00E00158214 /* Frameworks */,
 				53710D7C17D8F5C300A992DE /* Scripts */,
 				D0C22C07179CC02E00158214 /* Configuration */,

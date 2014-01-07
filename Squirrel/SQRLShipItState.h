@@ -31,48 +31,45 @@ extern NSString * const SQRLShipItStatePropertyErrorKey;
 // The current state of the installer, for persistence across relaunches and for
 // tolerance of system failures.
 //
-// SQRLInstallerStateNothingToDo                - ShipIt has not started installing
-//                                                yet.
-// SQRLInstallerStateUpdatingPermissions        - Changing the BSD permissions of the
-//                                                updateBundle so that we can safely
-//                                                check the code sign signature and
-//                                                then install, without leaving an
-//                                                opportunity for other processes to
-//                                                modify the bundle between check and
-//                                                use.
-// SQRLInstallerStateVerifyingTargetRequirement - Checking that the updateBundle meets
-//                                                the designated requirement of the
-//                                                targetBundle. This ensures that
-//                                                updateBundle is a suitable
-//                                                replacement.
-// SQRLInstallerStateClearingQuarantine         - Clearing the quarantine flag on the
-//                                                update bundle so it can used without
-//                                                issue.
-// SQRLInstallerStateBackingUp                  - Backing up the target bundle so it
-//                                                can be restored in the event of
-//                                                failure.
-// SQRLInstallerStateInstalling                 - Replacing the target bundle with the
-//                                                update bundle.
-// SQRLInstallerStateVerifyingInPlace           - Verifying that the target bundle is
-//                                                still valid after updating.
+// SQRLInstallerStateNothingToDo          - ShipIt has not started installing
+//                                          yet.
+// SQRLInstallerStateReadingCodeSignature - Reading the code signature
+//                                          from the target bundle, so we
+//                                          know the designated
+//                                          requirement that any update
+//                                          must satisfy.
+// SQRLInstallerStateVerifyingUpdate      - Checking that the update bundle meets
+//                                          the designated requirement of the
+//                                          target bundle. This ensures that
+//                                          the update is a suitable replacement.
+// SQRLInstallerStateBackingUp            - Backing up the target bundle so it
+//                                          can be restored in the event of
+//                                          failure.
+// SQRLInstallerStateClearingQuarantine   - Clearing the quarantine flag on the
+//                                          update bundle so it can used without
+//                                          issue.
+// SQRLInstallerStateInstalling           - Replacing the target bundle with the
+//                                          update bundle.
+// SQRLInstallerStateVerifyingInPlace     - Verifying that the target bundle is
+//                                          still valid after updating.
 //
 // Note that these values must remain backwards compatible, so ShipIt doesn't
 // start up in a weird mode on a newer version.
 typedef enum : NSInteger {
+	// These are purposely out-of-order, for compatibility with in-progress
+	// installs on older ShipIt versions.
+	//
+	// The canonical order is that of the documentation above.
 	SQRLInstallerStateNothingToDo = 0,
 	SQRLInstallerStateClearingQuarantine,
 	SQRLInstallerStateBackingUp,
 	SQRLInstallerStateInstalling,
 	SQRLInstallerStateVerifyingInPlace,
-
-	// These are purposely out-of-order, for compatibility with in-progress
-	// installs on older ShipIt versions.
-	SQRLInstallerStateUpdatingPermissions,
-	SQRLInstallerStateVerifyingTargetRequirement,
+	SQRLInstallerStateReadingCodeSignature,
+	SQRLInstallerStateVerifyingUpdate,
 } SQRLInstallerState;
 
 @class RACSignal;
-@class SQRLCodeSignature;
 
 // Encapsulates all the state needed by the ShipIt process.
 @interface SQRLShipItState : MTLModel
@@ -89,7 +86,7 @@ typedef enum : NSInteger {
 
 // Initializes the receiver with the arguments that will not change during
 // installation.
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier codeSignature:(SQRLCodeSignature *)codeSignature;
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier;
 
 // Writes the receiver to disk, at the location specified by the given URL
 // signal.
@@ -105,9 +102,6 @@ typedef enum : NSInteger {
 
 // The URL to the downloaded update's app bundle.
 @property (nonatomic, copy, readonly) NSURL *updateBundleURL;
-
-// A code signature that the update bundle must match in order to be valid.
-@property (nonatomic, copy, readonly) SQRLCodeSignature *codeSignature;
 
 // The bundle identifier of the application being updated.
 //
@@ -125,12 +119,5 @@ typedef enum : NSInteger {
 // Whether to relaunch the application after an update is successfully
 // installed.
 @property (atomic, assign) BOOL relaunchAfterInstallation;
-
-// The URL where the target bundle has been backed up to before installing the
-// update.
-//
-// This property is set automatically during the course of installation. It
-// should not be preset.
-@property (atomic, copy) NSURL *backupBundleURL;
 
 @end

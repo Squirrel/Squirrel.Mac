@@ -41,17 +41,15 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 	if (!validateKey(@keypath(self.targetBundleURL))) return nil;
 	if (!validateKey(@keypath(self.updateBundleURL))) return nil;
-	if (!validateKey(@keypath(self.codeSignature))) return nil;
 
 	return self;
 }
 
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier codeSignature:(SQRLCodeSignature *)codeSignature {
+- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier {
 	return [self initWithDictionary:@{
 		@keypath(self.targetBundleURL): targetBundleURL,
 		@keypath(self.updateBundleURL): updateBundleURL,
 		@keypath(self.bundleIdentifier): bundleIdentifier ?: NSNull.null,
-		@keypath(self.codeSignature): codeSignature,
 	} error:NULL];
 }
 

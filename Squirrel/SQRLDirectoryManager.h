@@ -13,6 +13,9 @@
 // Provides the file locations that Squirrel/ShipIt use.
 @interface SQRLDirectoryManager : NSObject
 
+// The application identifier to use in file locations.
+@property (nonatomic, copy, readonly) NSString *applicationIdentifier;
+
 // Returns the shared `SQRLDirectoryManager` for the running application, based
 // on the bundle identifier or application name.
 + (instancetype)currentApplicationManager;

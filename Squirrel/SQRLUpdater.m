@@ -482,7 +482,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			return [self validateExistingState:existingState];
 		}]
 		then:^{
-			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
+			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier];
 			return [state writeUsingURL:self.shipItStateURL];
 		}]
 		then:^{
