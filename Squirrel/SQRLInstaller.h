@@ -56,15 +56,14 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 // state.
 + (SQRLInstallerState)initialInstallerState;
 
-// When executed with a `SQRLShipItState`, attempts to install the update or
-// resume an in-progress installation.
+// Attempts to install the update or resume an in-progress installation.
 //
 // Each execution will complete or error on an unspecified scheduler when
 // installation has completed or failed.
 @property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
 
-// When executed with a `SQRLShipItState`, aborts an installation, and attempts
-// to restore the old version of the application if necessary.
+// Aborts an installation, and attempts to restore the old version of the
+// application if necessary.
 //
 // This must not be executed while `installUpdateCommand` is executing.
 //

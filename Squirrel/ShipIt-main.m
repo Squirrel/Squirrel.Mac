@@ -26,6 +26,10 @@ static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 
+// Defaults key to store `SQRLShipItState` in while attempting a single install
+// request.
+static NSString * const SQRLShipItStateDefaultsKey = @"SQRLShipItStateDefaults";
+
 // Waits for all instances of the target application (as described in the
 // `state`) to exit, then sends completed.
 static RACSignal *waitForTerminationIfNecessary(SQRLShipItState *state) {
@@ -54,6 +58,8 @@ int main(int argc, const char * argv[]) {
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
 		RACSignal *stateLocation = directoryManager.shipItStateURL;
 
+
+
 		[[[[[[SQRLShipItState
 			readUsingURL:stateLocation]
 			flattenMap:^(SQRLShipItState *state) {
@@ -71,8 +77,11 @@ int main(int argc, const char * argv[]) {
 				return [RACSignal empty];
 			}]
 			flattenMap:^(SQRLShipItState *state) {
+				NSString *applicationIdentifier = directoryManager.applicationIdentifier;
+				NSString *stateDefaultsKey = SQRLShipItStateDefaultsKey;
+
 				BOOL freshInstall = (state.installerState == SQRLInstallerStateNothingToDo);
-				SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
+				SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier stateDefaultsKey:stateDefaultsKey];
 
 				NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
 				RACSignal *action;
@@ -91,7 +100,7 @@ int main(int argc, const char * argv[]) {
 						}];
 				} else {
 					action = [[[[[state
-						writeUsingURL:stateLocation]
+						writeToDefaultsDomain:directoryManager.applicationIdentifier key:stateDefaultsKey]
 						initially:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");

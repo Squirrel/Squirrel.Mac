@@ -458,7 +458,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		state.installerState = nextState.integerValue;
 		state.installationStateAttempt = 1;
 		return [[state
-			writeToDefaults:self.stateDefaultsKey]
+			writeToDefaultsDomain:self.applicationIdentifier key:self.stateDefaultsKey]
 			// Automatically begin the next step.
 			concat:[self stepRepeatedly:step withState:state]];
 	}];
