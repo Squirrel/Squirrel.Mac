@@ -46,13 +46,28 @@ it(@"should fail to read state when no file exists yet", ^{
 	expect(error).notTo.beNil();
 });
 
-it(@"should write and read state", ^{
+it(@"should write and read state to disk", ^{
 	NSError *error = nil;
 	BOOL success = [[state writeUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
 	SQRLShipItState *readState = [[SQRLShipItState readUsingURL:directoryManager.shipItStateURL] firstOrDefault:nil success:&success error:&error];
+	expect(success).to.beTruthy();
+	expect(error).to.beNil();
+
+	expect(readState).to.equal(state);
+});
+
+it(@"should write and read state to defaults", ^{
+	NSString *defaultsKey = @"SQRLShipItStateSpecTestKey";
+
+	NSError *error = nil;
+	BOOL success = [[state writeToDefaults:defaultsKey] waitUntilCompleted:&error];
+	expect(success).to.beTruthy();
+	expect(error).to.beNil();
+
+	SQRLShipItState *readState = [[SQRLShipItState readFromDefaults:defaultsKey] firstOrDefault:nil success:&success error:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
