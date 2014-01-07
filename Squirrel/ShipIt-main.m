@@ -15,6 +15,7 @@
 #import "SQRLInstaller.h"
 #import "SQRLShipItState.h"
 #import "SQRLTerminationListener.h"
+#import "ShipIt-Constants.h"
 
 // The maximum number of times ShipIt should run the same installation state, in
 // an attempt to update.
@@ -25,10 +26,6 @@ static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
-
-// Defaults key to store `SQRLShipItState` in while attempting a single install
-// request.
-static NSString * const SQRLShipItStateDefaultsKey = @"SQRLShipItStateDefaults";
 
 // Waits for all instances of the target application (as described in the
 // `state`) to exit, then sends completed.

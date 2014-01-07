@@ -12,6 +12,7 @@
 #import "SQRLInstaller+Private.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLShipItState.h"
+#import "ShipIt-Constants.h"
 
 SpecBegin(SQRLInstaller)
 
@@ -184,7 +185,7 @@ describe(@"signal handling", ^{
 		[self launchShipIt];
 
 		// Wait until ShipIt has transitioned by at least one state.
-		expect([[[SQRLShipItState readUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronousFirstOrDefault:nil success:NULL error:NULL] installerState]).willNot.equal(SQRLInstallerStateNothingToDo);
+		expect([[[SQRLShipItState readFromDefaultsDomain:self.shipItDirectoryManager.applicationIdentifier key:SQRLShipItStateDefaultsKey] asynchronousFirstOrDefault:nil success:NULL error:NULL] installerState]).willNot.equal(SQRLInstallerStateNothingToDo);
 
 		// Apply a random delay before sending the termination signal, to
 		// fuzz out race conditions.

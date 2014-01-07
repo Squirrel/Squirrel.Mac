@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
+		5343E898187CADBC00C0D3FE /* ShipIt-Constants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5343E897187CADBC00C0D3FE /* ShipIt-Constants.m */; };
+		5343E899187CADBC00C0D3FE /* ShipIt-Constants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5343E897187CADBC00C0D3FE /* ShipIt-Constants.m */; };
 		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		534FF36117D8E90A0020A51A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
@@ -410,6 +412,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5343E896187CADBC00C0D3FE /* ShipIt-Constants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "ShipIt-Constants.h"; sourceTree = "<group>"; };
+		5343E897187CADBC00C0D3FE /* ShipIt-Constants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "ShipIt-Constants.m"; sourceTree = "<group>"; };
 		534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestApplication.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		534FF36417D8E90A0020A51A /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -655,6 +659,8 @@
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
 				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
 				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
+				5343E896187CADBC00C0D3FE /* ShipIt-Constants.h */,
+				5343E897187CADBC00C0D3FE /* ShipIt-Constants.m */,
 			);
 			name = ShipIt;
 			path = Squirrel;
@@ -1414,6 +1420,7 @@
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
+				5343E899187CADBC00C0D3FE /* ShipIt-Constants.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */,
 				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
@@ -1464,6 +1471,7 @@
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
+				5343E898187CADBC00C0D3FE /* ShipIt-Constants.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
