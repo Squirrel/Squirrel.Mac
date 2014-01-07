@@ -84,6 +84,14 @@ typedef enum : NSInteger {
 // complete, or error.
 + (RACSignal *)readUsingURL:(RACSignal *)URL;
 
+// Reads a `SQRLShipItState` from user defaults, using the given key.
+//
+// key - Determins the user defaults key to read from.
+//
+// Returns a signal which sends an `SQRLShipItState` object then complete, or
+// error if no state is present in the defaults.
++ (RACSignal *)readFromDefaults:(NSString *)defaultsKey;
+
 // Initializes the receiver with the arguments that will not change during
 // installation.
 - (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier;
@@ -96,6 +104,13 @@ typedef enum : NSInteger {
 //
 // Returns a signal which will synchronously complete or error.
 - (RACSignal *)writeUsingURL:(RACSignal *)URL;
+
+// Writes the receiver to user defaults under the given key.
+//
+// key - Determines the user defaults key to write to.
+//
+// Returns a signal which completes, or errors.
+- (RACSignal *)writeToDefaults:(NSString *)defaultsKey;
 
 // The URL to the app bundle that should be replaced with an update.
 @property (nonatomic, copy, readonly) NSURL *targetBundleURL;
