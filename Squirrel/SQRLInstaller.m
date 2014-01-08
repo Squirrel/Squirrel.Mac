@@ -7,18 +7,18 @@
 //
 
 #import "SQRLInstaller.h"
-#import "SQRLInstaller+Private.h"
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
 #import "SQRLTerminationListener.h"
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <sys/xattr.h>
+#import "SQRLInstallerOwnedBundle.h"
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
 
@@ -31,91 +31,42 @@ const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
 
-NSString * const SQRLInstallerOwnedTargetBundleURLKey = @"OwnedTargetBundleURL";
-NSString * const SQRLInstallerOwnedUpdateBundleURLKey = @"OwnedUpdateBundleURL";
-NSString * const SQRLInstallerCodeSignatureKey = @"CodeSignature";
+NSString * const SQRLShipItInstallationAttemptsKey = @"SQRLShipItInstallationAttempts";
+NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
-// Maps an installer state to a selector to invoke.
-typedef struct {
-	// The state for which the associated method should be invoked.
-	SQRLInstallerState installerState;
-
-	// A method accepting a `SQRLShipItState` argument and returning a cold
-	// signal.
-	//
-	// If NULL, installation should complete.
-	SEL selector;
-} SQRLInstallerDispatchTableEntry;
-
-static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
-	return sizeof(SQRLInstallerDispatchTableEntry);
-}
-
-@interface SQRLInstaller () {
-	// The latest value read for `codeSignature`, cached to save time
-	// unarchiving.
-	SQRLCodeSignature *_codeSignature;
-}
+@interface SQRLInstaller ()
 
 // The defaults domain to store all resumable state in.
 @property (nonatomic, copy, readonly) NSString *applicationIdentifier;
 
-// The defaults key to read/write the `SQRLShipItState` from/to.
-@property (nonatomic, copy, readonly) NSString *stateDefaultsKey;
-
-// The URL where the target bundle has been moved before installation.
-@property (atomic, copy) NSURL *ownedTargetBundleURL;
-
-// The URL where the update bundle has been moved before installation.
-@property (atomic, copy) NSURL *ownedUpdateBundleURL;
-
-// The code signature that must be satisfied by the target and update bundles.
-@property (atomic, copy) SQRLCodeSignature *codeSignature;
-
-// Reads the given key from `state`, failing if it's not set.
+// Reads the given key from `request`, failing if it's not set.
 //
-// key   - The property key to read from `state`. This must not be nil, and
-//         should refer to a property of object type.
-// state - The state object to read. This must not be nil.
+// key     - The property key to read from `request`. This must not be nil, and
+//           should refer to a property of object type.
+// request - The request object to read. This must not be nil.
 //
 // Returns a signal which synchronously sends the non-nil read value then
 // completes, or errors.
-- (RACSignal *)getRequiredKey:(NSString *)key fromState:(SQRLShipItState *)state;
+- (RACSignal *)getRequiredKey:(NSString *)key fromRequest:(SQRLShipItRequest *)request;
 
-// Performs the remaining stages of installation, as specified by `state`.
+// Moves the updateBundleURL to an owned directory to prevent symlink attack,
+// takes user:group ownership of the bundle, then verifies that it meets the
+// designated requirement of the targetBundleURL.
 //
-// state - The installation state. This must not be nil.
+// request - The request whose update should be prepared and validated.
 //
-// Returns a signal which will complete or error on an unspecified thread.
-- (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state;
+// Returns a signal which sends the owned & validated bundle URL then completes,
+// or errors.
+- (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request;
 
-// Invokes -moveAndTakeOwnershipOfBundleAtURL: only if the bundle has not
-// already been moved into place.
+// Saves the details of the targetBundleURL in the preferences, so that the
+// install can be aborted, then moves the targetBundleURL to an owned directory.
 //
-// After moving the bundle (if necessary), it will be verified using the given
-// code signature.
+// request - The request whose target should be removed in preparation of an
+//           update being installed.
 //
-// bundleURL     - The original URL to the bundle. This must not be nil.
-// installedURL  - The proposed destination URL for the bundle. This may be nil,
-//                 in which case a new one will be generated.
-// codeSignature - The code signature that any item must match in order to be
-//                 considered the correct bundle. This must not be nil.
-//
-// Returns a signal which will send the `NSURL` to the installed bundle location
-// if a new one was generated, then complete once the bundle has been copied,
-// its permissions updated, and verification completed. If the bundle was
-// already in place, the signal will complete without sending any values.
-- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL unlessInstalledAtURL:(NSURL *)installedURL verifiedUsingSignature:(SQRLCodeSignature *)codeSignature;
-
-// Moves the specified bundle to a temporary location, then ensures that the
-// bundle's permissions are such that other users and groups can't write to it.
-//
-// bundleURL - The URL to the bundle to move. This must not be nil.
-//
-// Returns a signal which will send the `NSURL` to the proposed new bundle
-// location, as soon as one has been determined, then complete once the bundle
-// has been copied and its permissions updated.
-- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL;
+// Returns a signal which completes, or errors.
+- (RACSignal *)acquireTargetBundleURLForRequest:(SQRLShipItRequest *)request;
 
 // Deletes a bundle that was moved into place using -moveAndTakeOwnershipOfBundleAtURL:.
 //
@@ -124,39 +75,6 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 //
 // Returns a signal which will synchronously complete or error.
 - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
-
-// Validates the code signature of a bundle, optionally restoring it upon
-// failure.
-//
-// This will automatically take ownership of `bundleURL` and `backupBundleURL`
-// as necessary.
-//
-// bundleURL       - The URL of the bundle whose code signature should be
-//                   verified. This must not be nil.
-// signature       - The code signature that the bundle must match. This must
-//                   not be nil.
-// backupBundleURL - If not nil, the URL to a bundle that should replace
-//                   `bundleURL` if the code signature does not pass validation.
-//
-// Returns a signal which will synchronously complete if `bundleURL` passes
-// validation, or if the bundle was recovered from `backupBundleURL`. If
-// validation or recovery fails, an error will be sent.
-- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL;
-
-// Attempts to determine whether a bundle has already been moved on disk.
-//
-// This will automatically take ownership of `targetURL` if it exists.
-//
-// sourceURL - The original URL to the bundle. This must not be nil.
-// targetURL - The proposed destination URL for the bundle. This must not be
-//             nil.
-// signature - The code signature that any item must match in order to be
-//             considered the correct bundle. This must not be nil.
-//
-// Returns a signal which will synchronously send YES if `targetURL` points to
-// a bundle matching the code signature, NO if it doesn't and `sourceURL` still
-// exists, or an error otherwise.
-- (RACSignal *)checkWhetherBundlePreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingSignature:(SQRLCodeSignature *)signature;
 
 // Moves `sourceURL` to `targetURL`.
 //
@@ -168,7 +86,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 // sourceURL - The URL to move from. This must not be nil.
 //
 // Retruns a signal which will synchronously complete or error.
-- (RACSignal *)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL;
+- (RACSignal *)installItemToURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL;
 
 // Recursively clears the quarantine extended attribute from the given
 // directory.
@@ -195,72 +113,15 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 @implementation SQRLInstaller
 
-#pragma mark Properties
-
-- (NSURL *)ownedTargetBundleURL {
-	return [self URLForPreferencesKey:SQRLInstallerOwnedTargetBundleURLKey];
-}
-
-- (void)setOwnedTargetBundleURL:(NSURL *)URL {
-	[self setURL:URL forPreferencesKey:SQRLInstallerOwnedTargetBundleURLKey];
-}
-
-- (NSURL *)ownedUpdateBundleURL {
-	return [self URLForPreferencesKey:SQRLInstallerOwnedUpdateBundleURLKey];
-}
-
-- (void)setOwnedUpdateBundleURL:(NSURL *)URL {
-	[self setURL:URL forPreferencesKey:SQRLInstallerOwnedUpdateBundleURLKey];
-}
-
-- (SQRLCodeSignature *)codeSignature {
-	@synchronized (self) {
-		if (_codeSignature == nil) {
-			CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-
-			NSData *data = CFBridgingRelease(value);
-			if (![data isKindOfClass:NSData.class]) return nil;
-
-			_codeSignature = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-		}
-		
-		return _codeSignature;
-	}
-}
-
-- (void)setCodeSignature:(SQRLCodeSignature *)codeSignature {
-	@synchronized (self) {
-		_codeSignature = codeSignature;
-
-		CFPropertyListRef value = NULL;
-		if (codeSignature != nil) {
-			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:codeSignature];
-			NSAssert(data != nil, @"Could not archive code signature: %@", codeSignature);
-
-			value = CFBridgingRetain(data);
-		}
-
-		CFStringRef applicationID = (__bridge CFStringRef)self.applicationIdentifier;
-		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerCodeSignatureKey, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-		if (value != NULL) CFRelease(value);
-
-		if (!CFPreferencesSynchronize(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost)) {
-			NSLog(@"Could not synchronize preferences for %@", applicationID);
-		}
-	}
-}
-
 #pragma mark Lifecycle
 
-- (id)initWithApplicationIdentifier:(NSString *)applicationIdentifier stateDefaultsKey:(NSString *)stateDefaultsKey {
+- (id)initWithApplicationIdentifier:(NSString *)applicationIdentifier {
 	NSParameterAssert(applicationIdentifier != nil);
-	NSParameterAssert(stateDefaultsKey != nil);
 
 	self = [super init];
 	if (self == nil) return nil;
 
 	_applicationIdentifier = [applicationIdentifier copy];
-	_stateDefaultsKey = [stateDefaultsKey copy];
 
 	@weakify(self);
 
@@ -272,30 +133,29 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 		switchToLatest]
 		setNameWithFormat:@"aborting"];
 
-	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItState *state) {
+	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItRequest *request) {
 		@strongify(self);
-		NSParameterAssert(state != nil);
+		NSParameterAssert(request != nil);
 
-		return [[self
-			resumeInstallationFromState:state]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
-	}];
-
-	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItState *state) {
-		@strongify(self);
-		NSParameterAssert(state != nil);
-
-		// If we never saved a code signature, the bundles on disk should be
-		// untouched.
-		SQRLCodeSignature *signature = self.codeSignature;
-		if (signature == nil) return [RACSignal empty];
+		// Request can be changed between launches, the installer may have
+		// already have an owned bundle, for a previous targetURL.
+		//
+		// If that's the case, we need to abort the previous owned bundle, and
+		// then handle the new install request.
 
 		return [[[self
-			getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
-			flattenMap:^(NSURL *targetBundleURL) {
-				return [self verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.ownedTargetBundleURL];
-			}]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+			abortInstall]
+			catchTo:[RACSignal empty]]
+			then:^{
+				return [self installRequest:request];
+			}];
+	}];
+
+	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItRequest *request) {
+		@strongify(self);
+
+		return [self
+			abortInstall];
 	}];
 	
 	return self;
@@ -303,82 +163,31 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 #pragma mark Preferences
 
-- (NSURL *)URLForPreferencesKey:(NSString *)key {
+- (SQRLInstallerOwnedBundle *)ownedBundle {
+	id archiveData = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+	if (![archiveData isKindOfClass:NSData.class]) return nil;
+
+	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchiveObjectWithData:archiveData];
+	if (![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) return nil;
+
+	return ownedBundle;
+}
+
+- (void)setOwnedBundle:(SQRLInstallerOwnedBundle *)ownedBundle {
+	NSData *archiveData = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle];
+	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFPropertyListRef)archiveData, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+}
+
+#pragma mark Properties
+
+- (RACSignal *)getRequiredKey:(NSString *)key fromRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(key != nil);
-
-	CFPropertyListRef value = CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-
-	NSString *path = CFBridgingRelease(value);
-	if (![path isKindOfClass:NSString.class]) return nil;
-
-	return [NSURL fileURLWithPath:path];
-}
-
-- (void)setURL:(NSURL *)URL forPreferencesKey:(NSString *)key {
-	NSParameterAssert(key != nil);
-
-	CFPropertyListRef value = NULL;
-	if (URL != nil) {
-		NSURL *fileURL = URL.filePathURL;
-		NSAssert(fileURL != nil, @"URL is not a file path URL: %@", URL);
-
-		value = CFBridgingRetain(fileURL.path);
-	}
-
-	CFStringRef applicationID = (__bridge CFStringRef)self.applicationIdentifier;
-	CFPreferencesSetValue((__bridge CFStringRef)key, value, applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	if (value != NULL) CFRelease(value);
-
-	if (!CFPreferencesSynchronize(applicationID, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost)) {
-		NSLog(@"Could not synchronize preferences for %@", applicationID);
-	}
-}
-
-#pragma mark Installer States
-
-+ (NSPointerArray *)stateDispatchTable {
-	static NSPointerArray *dispatchTable = nil;
-	static dispatch_once_t dispatchTablePredicate = 0;
-
-	dispatch_once(&dispatchTablePredicate, ^{
-		const SQRLInstallerDispatchTableEntry dispatchTablePrototype[] = {
-			{ .installerState = SQRLInstallerStateReadingCodeSignature, .selector = @selector(readCodeSignatureWithState:) },
-			{ .installerState = SQRLInstallerStateVerifyingUpdate, .selector = @selector(verifyAndMoveUpdateBundleWithState:) },
-			{ .installerState = SQRLInstallerStateBackingUp, .selector = @selector(backUpTargetWithState:) },
-			{ .installerState = SQRLInstallerStateClearingQuarantine, .selector = @selector(clearQuarantineWithState:) },
-			{ .installerState = SQRLInstallerStateInstalling, .selector = @selector(installWithState:) },
-			{ .installerState = SQRLInstallerStateVerifyingInPlace, .selector = @selector(verifyInPlaceWithState:) },
-			{ .installerState = SQRLInstallerStateNothingToDo, .selector = NULL },
-		};
-
-		NSPointerFunctions *pointerFunctions = [[NSPointerFunctions alloc] initWithOptions:NSPointerFunctionsMallocMemory | NSPointerFunctionsStructPersonality | NSPointerFunctionsCopyIn];
-		pointerFunctions.sizeFunction = SQRLInstallerDispatchTableEntrySize;
-		dispatchTable = [[NSPointerArray alloc] initWithPointerFunctions:pointerFunctions];
-
-		for (NSUInteger idx = 0; idx < sizeof(dispatchTablePrototype) / sizeof(*dispatchTablePrototype); idx++) {
-			SQRLInstallerDispatchTableEntry const *entry = &dispatchTablePrototype[idx];
-			[dispatchTable addPointer:(void *)entry];
-		}
-	});
-
-	return dispatchTable;
-}
-
-+ (SQRLInstallerState)initialInstallerState {
-	NSPointerArray *dispatchTable = self.stateDispatchTable;
-	NSParameterAssert(dispatchTable.count >= 1);
-
-	SQRLInstallerDispatchTableEntry *firstState = [dispatchTable pointerAtIndex:0];
-	return firstState->installerState;
-}
-
-- (RACSignal *)getRequiredKey:(NSString *)key fromState:(SQRLShipItState *)state {
-	NSParameterAssert(key != nil);
-	NSParameterAssert(state != nil);
+	NSParameterAssert(request != nil);
 
 	return [[RACSignal
 		defer:^{
-			id value = [state valueForKey:key];
+			id value = [request valueForKey:key];
 			if (value == nil) {
 				NSString *errorDescription = [NSString stringWithFormat:NSLocalizedString(@"Missing %@", nil), key];
 				return [RACSignal error:[self missingDataErrorWithDescription:errorDescription]];
@@ -386,250 +195,129 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 				return [RACSignal return:value];
 			}
 		}]
-		setNameWithFormat:@"%@ -getRequiredKey: %@ fromState: %@", self, key, state];
+		setNameWithFormat:@"%@ -getRequiredKey: %@ fromRequest: %@", self, key, request];
 }
 
-- (RACSignal *)resumeInstallationFromState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
+#pragma mark Installer States
 
-	RACSignal *step = [RACSignal defer:^{
-		NSPointerArray *dispatchTable = self.class.stateDispatchTable;
+- (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request {
+	NSParameterAssert(request != nil);
 
-		SQRLInstallerState installerState = state.installerState;
-
-		size_t tableIndex;
-		for (tableIndex = 0; tableIndex < dispatchTable.count; tableIndex++) {
-			SQRLInstallerDispatchTableEntry *currentEntry = [dispatchTable pointerAtIndex:tableIndex];
-			if (currentEntry->installerState == installerState) {
-				break;
-			}
-		}
-
-		if (tableIndex >= dispatchTable.count) {
-			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Invalid installer state %i", nil), (int)installerState],
-				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"Try installing the update again.", nil)
-			};
-
-			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:userInfo]];
-		}
-
-		SQRLInstallerDispatchTableEntry *dispatch = [dispatchTable pointerAtIndex:tableIndex];
-		SEL selector = dispatch->selector;
-		if (selector == NULL) {
-			// Nothing to do.
-			return [RACSignal empty];
-		}
-
-		NSInvocation *invocation = [NSInvocation invocationWithMethodSignature:[self methodSignatureForSelector:selector]];
-		invocation.target = self;
-		invocation.selector = selector;
-		
-		SQRLShipItState *stateArg = state;
-		[invocation setArgument:&stateArg atIndex:2];
-		[invocation invoke];
-
-		__unsafe_unretained RACSignal *step = nil;
-		[invocation getReturnValue:&step];
-
-		SQRLInstallerDispatchTableEntry *nextDispatch = [dispatchTable pointerAtIndex:tableIndex + 1];
-		SQRLInstallerState nextState = nextDispatch->installerState;
-
-		return [[step
-			doCompleted:^{
-				NSLog(@"Completed state %i", (int)installerState);
-			}]
-			then:^{
-				return [RACSignal return:@(nextState)];
-			}];
-	}];
-
-	return [[self
-		stepRepeatedly:step withState:state]
-		setNameWithFormat:@"%@ -resumeInstallationFromState: %@", self, state];
-}
-
-- (RACSignal *)stepRepeatedly:(RACSignal *)step withState:(SQRLShipItState *)state {
-	NSParameterAssert(step != nil);
-	NSParameterAssert(state != nil);
-
-	return [step flattenMap:^(NSNumber *nextState) {
-		state.installerState = nextState.integerValue;
-		state.installationStateAttempt = 1;
-		return [[state
-			writeToDefaultsDomain:self.applicationIdentifier key:self.stateDefaultsKey]
-			// Automatically begin the next step.
-			concat:[self stepRepeatedly:step withState:state]];
-	}];
-}
-
-- (RACSignal *)readCodeSignatureWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
-	
-	return [[[[self
-		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
-		tryMap:^(NSURL *targetBundleURL, NSError **error) {
-			return [SQRLCodeSignature signatureWithBundle:targetBundleURL error:error];
+	RACSignal *preparedBundleURLSignal = [[[self
+		ownedTemporaryDirectoryURL]
+		flattenMap:^(NSURL *directoryURL) {
+			return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
 		}]
-		doNext:^(SQRLCodeSignature *signature) {
-			self.codeSignature = signature;
+		flattenMap:^(NSURL *bundleURL) {
+			return [[[self
+				clearQuarantineForDirectory:bundleURL]
+				ignoreValues]
+				concat:[RACSignal return:bundleURL]];
+		}];
+
+	RACSignal *codeSignatureSignal = [self
+		codeSignatureForURL:request.targetBundleURL];
+
+	// There's a race condition between checking the code signature _now_ and
+	// before actually doing the swap. We'll need to check the code signature
+	// again later.
+
+	return [[[RACSignal
+		zip:@[
+			preparedBundleURLSignal,
+			codeSignatureSignal,
+		]
+		reduce:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
+			return [[[self
+				verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
+				ignoreValues]
+				concat:[RACSignal return:updateBundleURL]];
 		}]
-		setNameWithFormat:@"%@ -readCodeSignatureWithState: %@", self, state];
+		flatten]
+		setNameWithFormat:@"%@ -prepareAndValidateUpdateBundleURLForRequest: %@", self, request];
 }
 
-- (RACSignal *)verifyAndMoveUpdateBundleWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
+- (RACSignal *)acquireTargetBundleURLForRequest:(SQRLShipItRequest *)request {
+	NSParameterAssert(request != nil);
+
+	return [[[[RACSignal
+		zip:@[
+			[self ownedTemporaryDirectoryURL],
+			[self codeSignatureForURL:request.targetBundleURL],
+		]
+		reduce:^(NSURL *directoryURL, SQRLCodeSignature *codeSignature) {
+			NSURL *targetBundleURL = request.targetBundleURL;
+			NSURL *newBundleURL = [directoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
+
+			return [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:request.targetBundleURL temporaryURL:newBundleURL codeSignature:codeSignature];
+		}]
+		doNext:^(SQRLInstallerOwnedBundle *ownedBundle) {
+			self.ownedBundle = ownedBundle;
+		}]
+		flattenMap:^(SQRLInstallerOwnedBundle *ownedBundle) {
+			return [self
+				installItemToURL:ownedBundle.temporaryURL fromURL:ownedBundle.originalURL];
+		}]
+		setNameWithFormat:@"%@ -acquireTargetBundleURLForRequest: %@", self, request];
+}
+
+- (RACSignal *)installRequest:(SQRLShipItRequest *)request {
+	NSParameterAssert(request != nil);
 
 	return [[[[self
-		getRequiredKey:@keypath(state.updateBundleURL) fromState:state]
-		flattenMap:^(NSURL *updateURL) {
-			return [self moveAndTakeOwnershipOfBundleAtURL:updateURL unlessInstalledAtURL:self.ownedUpdateBundleURL verifiedUsingSignature:self.codeSignature];
-		}]
-		doNext:^(NSURL *ownedURL) {
-			// Save the new URL as soon as we have it, so we can resume even if
-			// the state change hasn't taken effect.
-			self.ownedUpdateBundleURL = ownedURL;
-		}]
-		setNameWithFormat:@"%@ -verifyAndMoveUpdateBundleWithState: %@", self, state];
-}
-
-- (RACSignal *)backUpTargetWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
-
-	return [[[[self
-		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
-		flattenMap:^(NSURL *targetURL) {
-			return [self moveAndTakeOwnershipOfBundleAtURL:targetURL unlessInstalledAtURL:self.ownedTargetBundleURL verifiedUsingSignature:self.codeSignature];
-		}]
-		doNext:^(NSURL *ownedURL) {
-			// Save the new URL as soon as we have it, so we can resume even if
-			// the state change hasn't taken effect.
-			self.ownedTargetBundleURL = ownedURL;
-		}]
-		setNameWithFormat:@"%@ -backUpTargetWithState: %@", self, state];
-}
-
-- (RACSignal *)clearQuarantineWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
-
-	return [[RACSignal
-		defer:^{
-			return [self clearQuarantineForDirectory:self.ownedUpdateBundleURL];
-		}]
-		setNameWithFormat:@"%@ -clearQuarantineWithState: %@", self, state];
-}
-
-- (RACSignal *)installWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
-
-	return [[[self
-		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
-		flattenMap:^(NSURL *targetBundleURL) {
-			SQRLCodeSignature *signature = self.codeSignature;
-
-			return [[[[[self
-				checkWhetherBundlePreviouslyAtURL:self.ownedUpdateBundleURL wasInstalledAtURL:targetBundleURL usingSignature:signature]
-				ignore:@YES]
-				flattenMap:^(id _) {
-					// If the bundle is not in place yet, verify the update
-					// (again) and attempt to install.
-					return [[self
-						verifyBundleAtURL:self.ownedUpdateBundleURL usingSignature:signature recoveringUsingBackupAtURL:nil]
-						then:^{
-							return [self installItemAtURL:targetBundleURL fromURL:self.ownedUpdateBundleURL];
-						}];
-				}]
-				catch:^(NSError *error) {
-					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to replace bundle %@ with update %@", nil), targetBundleURL, self.ownedUpdateBundleURL];
-					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorReplacingTarget toError:error]];
-				}]
-				catch:^(NSError *error) {
-					// Verify that the target bundle didn't get corrupted during
-					// failure. Try recovering it if it did.
-					return [[self
-						verifyBundleAtURL:targetBundleURL usingSignature:signature recoveringUsingBackupAtURL:self.ownedTargetBundleURL]
-						then:^{
-							// Recovery succeeded, but we still want to pass
-							// through the original error.
-							return [RACSignal error:error];
-						}];
-				}];
-		}]
-		setNameWithFormat:@"%@ -installWithState: %@", self, state];
-}
-
-- (RACSignal *)verifyInPlaceWithState:(SQRLShipItState *)state {
-	NSParameterAssert(state != nil);
-
-	return [[[self
-		getRequiredKey:@keypath(state.targetBundleURL) fromState:state]
-		flattenMap:^(NSURL *targetBundleURL) {
-			NSURL *backupBundleURL = self.ownedTargetBundleURL;
-
-			return [[self
-				verifyBundleAtURL:targetBundleURL usingSignature:self.codeSignature recoveringUsingBackupAtURL:backupBundleURL]
+		prepareAndValidateUpdateBundleURLForRequest:request]
+		flattenMap:^(NSURL *updateBundleURL) {
+			return [[[self
+				acquireTargetBundleURLForRequest:request]
 				then:^{
-					NSURL *updateBundleURL = self.ownedUpdateBundleURL;
+					return [self
+						installItemToURL:request.targetBundleURL fromURL:updateBundleURL];
+				}]
+				then:^{
+					NSArray *ownedLocations = @[
+						updateBundleURL,
+						self.ownedBundle.temporaryURL,
+					];
 
-					// Clean up our temporary locations.
-					return [[RACSignal
-						merge:@[
-							[[self deleteOwnedBundleAtURL:backupBundleURL] catchTo:[RACSignal empty]],
-							[[self deleteOwnedBundleAtURL:updateBundleURL] catchTo:[RACSignal empty]],
-						]]
+					return [[[ownedLocations.rac_sequence.signal
+						map:^(NSURL *location) {
+							return [[[self
+								deleteOwnedBundleAtURL:location]
+								ignoreValues]
+								catchTo:[RACSignal empty]];
+						}]
+						concat]
 						doCompleted:^{
-							self.ownedTargetBundleURL = nil;
-							self.ownedUpdateBundleURL = nil;
+							self.ownedBundle = nil;
 						}];
 				}];
 		}]
-		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
+		sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path]
+		setNameWithFormat:@"%@ -installRequest: %@", self, request];
+}
+
+- (RACSignal *)abortInstall {
+	// The request may have been tampered with to select a new targetURL to
+	// which the moved bundles should be restored.
+	//
+	// Discard the request parameters and restore the owned bundle to its
+	// original location.
+
+	SQRLInstallerOwnedBundle *ownedBundle = self.ownedBundle;
+	if (ownedBundle == nil) return [RACSignal empty];
+
+	return [[[self
+		installItemToURL:ownedBundle.originalURL fromURL:ownedBundle.temporaryURL]
+		doCompleted:^{
+			self.ownedBundle = nil;
+		}]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), ownedBundle.originalURL.path];
 }
 
 #pragma mark Bundle Ownership
 
-- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL unlessInstalledAtURL:(NSURL *)installedURL verifiedUsingSignature:(SQRLCodeSignature *)codeSignature {
-	NSParameterAssert(bundleURL != nil);
-
-	return [[RACSignal
-		defer:^{
-			RACSignal *skipMove = [RACSignal return:@NO];
-			if (installedURL != nil) {
-				skipMove = [self checkWhetherBundlePreviouslyAtURL:bundleURL wasInstalledAtURL:installedURL usingSignature:codeSignature];
-			}
-
-			return [[[[[skipMove
-				ignore:@YES]
-				flattenMap:^(id _) {
-					return [[self
-						moveAndTakeOwnershipOfBundleAtURL:bundleURL]
-						materialize];
-				}]
-				// When moving completes, verify the destination bundle using
-				// the URL that was sent in the previous event.
-				//
-				// This ensures that we still pass the URL back to the caller
-				// immediately, but can use it for verification after moving
-				// completes.
-				combinePreviousWithStart:nil reduce:^(RACEvent *previous, RACEvent *current) {
-					if (previous == nil) return [RACSignal return:current];
-					if (current.eventType != RACEventTypeCompleted) return [RACSignal return:current];
-
-					NSURL *installedURL = previous.value;
-					return [[codeSignature
-						verifyBundleAtURL:installedURL]
-						materialize];
-				}]
-				flatten]
-				dematerialize];
-		}]
-		setNameWithFormat:@"%@ -moveAndTakeOwnershipOfBundleAtURL: %@ unlessInstalledAtURL: %@ verifiedUsingSignature: %@", self, bundleURL, installedURL, codeSignature];
-}
-
-- (RACSignal *)moveAndTakeOwnershipOfBundleAtURL:(NSURL *)bundleURL {
-	NSParameterAssert(bundleURL != nil);
-
-	return [[[[[RACSignal
+- (RACSignal *)ownedTemporaryDirectoryURL {
+	return [[[RACSignal
 		defer:^{
 			NSString *tmpPath = [NSTemporaryDirectory() stringByResolvingSymlinksInPath];
 			NSString *template = [NSString stringWithFormat:@"%@.XXXXXXXX", self.applicationIdentifier];
@@ -650,25 +338,27 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Could not create temporary folder", nil)];
 			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 		}]
-		map:^(NSURL *temporaryDirectoryURL) {
-			return [temporaryDirectoryURL URLByAppendingPathComponent:bundleURL.lastPathComponent];
+		setNameWithFormat:@"%@ -ownedDirectoryURL", self];
+}
+
+- (RACSignal *)copyBundleAtURL:(NSURL *)bundleURL toDirectory:(NSURL *)directoryURL {
+	NSParameterAssert(bundleURL != nil);
+
+	NSURL *newBundleURL = [directoryURL URLByAppendingPathComponent:bundleURL.lastPathComponent];
+
+	return [[[RACSignal
+		defer:^{
+			NSError *error;
+			BOOL copy = [NSFileManager.defaultManager copyItemAtURL:bundleURL toURL:newBundleURL error:&error];
+			if (!copy) return [RACSignal error:error];
+
+			return [RACSignal return:newBundleURL];
 		}]
-		flattenMap:^(NSURL *newBundleURL) {
-			return [[[[[self
-				installItemAtURL:newBundleURL fromURL:bundleURL]
-				catch:^(NSError *error) {
-					NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to move bundle %@ to temporary location %@", nil), bundleURL, newBundleURL];
-					return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
-				}]
-				then:^{
-					return [self takeOwnershipOfDirectory:newBundleURL];
-				}]
-				ignoreValues]
-				// Return the new URL before doing any work, to increase fault
-				// tolerance.
-				startWith:newBundleURL];
+		catch:^(NSError *error) {
+			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to copy bundle %@ to temporary location %@", nil), bundleURL, newBundleURL];
+			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 		}]
-		setNameWithFormat:@"%@ -moveAndTakeOwnershipOfBundleAtURL: %@", self, bundleURL];
+		setNameWithFormat:@"%@ -moveBundleAtURL: %@ toDirectory: %@", self, bundleURL, directoryURL];
 }
 
 - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL {
@@ -676,7 +366,7 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 	return [[[RACSignal
 		defer:^{
-			NSError *error = nil;
+			NSError *error;
 			if ([NSFileManager.defaultManager removeItemAtURL:bundleURL error:&error]) {
 				return [RACSignal empty];
 			} else {
@@ -700,62 +390,32 @@ static NSUInteger SQRLInstallerDispatchTableEntrySize(const void *_) {
 
 #pragma mark Verification
 
-- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature recoveringUsingBackupAtURL:(NSURL *)backupBundleURL {
+- (RACSignal *)codeSignatureForURL:(NSURL *)URL {
+	return [[RACSignal
+		defer:^{
+			NSError *error;
+			SQRLCodeSignature *codeSignature = [SQRLCodeSignature signatureWithBundle:URL error:&error];
+			if (codeSignature == nil) return [RACSignal error:error];
+			return [RACSignal return:codeSignature];
+		}]
+		setNameWithFormat:@"%@ -codeSignatureForURL: %@", self, URL];
+}
+
+- (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature {
 	NSParameterAssert(bundleURL != nil);
 	NSParameterAssert(signature != nil);
 
-	return [[[[self
+	return [[[self
 		takeOwnershipOfDirectory:bundleURL]
 		then:^{
 			return [signature verifyBundleAtURL:bundleURL];
 		}]
-		catch:^(NSError *error) {
-			if (backupBundleURL == nil) return [RACSignal error:error];
-
-			return [[[[[self
-				// Verify that the backup itself is valid.
-				verifyBundleAtURL:backupBundleURL usingSignature:signature recoveringUsingBackupAtURL:nil]
-				then:^{
-					return [self installItemAtURL:bundleURL fromURL:backupBundleURL];
-				}]
-				initially:^{
-					[NSFileManager.defaultManager removeItemAtURL:bundleURL error:NULL];
-				}]
-				doCompleted:^{
-					NSLog(@"Restored backup bundle to %@", bundleURL);
-				}]
-				doError:^(NSError *recoveryError) {
-					NSLog(@"Could not restore backup bundle %@ to %@: %@", backupBundleURL, bundleURL, recoveryError.sqrl_verboseDescription);
-				}];
-		}]
-		setNameWithFormat:@"%@ -verifyBundleAtURL: %@ usingSignature: %@ recoveringUsingBackupAtURL: %@", self, bundleURL, signature, backupBundleURL];
+		setNameWithFormat:@"%@ -verifyBundleAtURL: %@ usingSignature: %@", self, bundleURL, signature];
 }
 
 #pragma mark Installation
 
-- (RACSignal *)checkWhetherBundlePreviouslyAtURL:(NSURL *)sourceURL wasInstalledAtURL:(NSURL *)targetURL usingSignature:(SQRLCodeSignature *)signature {
-	NSParameterAssert(targetURL != nil);
-	NSParameterAssert(sourceURL != nil);
-	NSParameterAssert(signature != nil);
-
-	return [[[[self
-		verifyBundleAtURL:targetURL usingSignature:signature recoveringUsingBackupAtURL:nil]
-		then:^{
-			return [RACSignal return:@YES];
-		}]
-		catch:^(NSError *error) {
-			BOOL directory;
-			if ([NSFileManager.defaultManager fileExistsAtPath:sourceURL.path isDirectory:&directory]) {
-				// If the source still exists, this isn't an error.
-				return [RACSignal return:@NO];
-			} else {
-				return [RACSignal error:error];
-			}
-		}]
-		setNameWithFormat:@"%@ -checkWhetherBundlePreviouslyAtURL: %@ wasInstalledAtURL: %@", self, sourceURL, targetURL];
-}
-
-- (RACSignal *)installItemAtURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
+- (RACSignal *)installItemToURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 

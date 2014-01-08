@@ -8,8 +8,6 @@
 
 #import <Foundation/Foundation.h>
 
-#import "SQRLShipItState.h"
-
 // The domain for errors originating within SQRLInstaller.
 extern NSString * const SQRLInstallerErrorDomain;
 
@@ -40,44 +38,35 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 extern const NSInteger SQRLInstallerErrorChangingPermissions;
 
 @class RACCommand;
-@class SQRLDirectoryManager;
 
 // Performs the installation of an update, saving its intermediate state to user
-// defaults using `stateDefaultsKey`.
+// defaults.
 //
 // This class is meant to be used only after the app that will be updated has
 // terminated.
 @interface SQRLInstaller : NSObject
-
-// The first state that `SQRLInstaller` wants to perform for fresh state
-// objects.
-//
-// A `SQRLShipItState` that hasn't been read from disk should be given this
-// state.
-+ (SQRLInstallerState)initialInstallerState;
-
-// Attempts to install the update or resume an in-progress installation.
-//
-// Each execution will complete or error on an unspecified scheduler when
-// installation has completed or failed.
-@property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
-
-// Aborts an installation, and attempts to restore the old version of the
-// application if necessary.
-//
-// This must not be executed while `installUpdateCommand` is executing.
-//
-// Each execution will complete or error on an unspecified scheduler once
-// aborting/recovery has finished.
-@property (nonatomic, strong, readonly) RACCommand *abortInstallationCommand;
 
 // Initializes an installer using the given application identifier, which is
 // used to scope resumable state stored to user defaults.
 //
 // applicationIdentifier - The defaults domain in which to store resumable
 //                         state. Must not be nil.
-// stateDefaultsKey      - The defaults key in which to read/write the
-//                         `SQRLShipItState`. Must not be nil.
-- (id)initWithApplicationIdentifier:(NSString *)applicationIdentifier stateDefaultsKey:(NSString *)stateDefaultsKey;
+- (instancetype)initWithApplicationIdentifier:(NSString *)applicationIdentifier;
+
+// When executed with an `SQRLShipItRequest`, attempts to install the update or
+// resume an in-progress installation.
+//
+// Each execution will complete or error on an unspecified scheduler when
+// installation has completed or failed.
+@property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
+
+// When executed with an `SQRLShipItRequest`, aborts an installation, and
+// attempts to restore the old version of the application if necessary.
+//
+// This must not be executed while `installUpdateCommand` is executing.
+//
+// Each execution will complete or error on an unspecified scheduler once
+// aborting/recovery has finished.
+@property (nonatomic, strong, readonly) RACCommand *abortInstallationCommand;
 
 @end

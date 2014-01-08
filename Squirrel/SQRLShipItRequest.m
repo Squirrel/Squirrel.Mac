@@ -59,14 +59,8 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 
 	return [[[URL
 		flattenMap:^(NSURL *stateURL) {
-			__block NSError *error = nil;
-			__block NSData *data = nil;
-
-			NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-			[coordinator coordinateReadingItemAtURL:stateURL options:NSFileCoordinatorReadingWithoutChanges error:&error byAccessor:^(NSURL *newURL) {
-				data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingUncached error:&error];
-			}];
-
+			NSError *error;
+			NSData *data = [self readFromURL:stateURL error:&error];
 			if (data == nil) {
 				return [RACSignal error:error];
 			}
@@ -77,6 +71,17 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 			return [self readFromData:data];
 		}]
 		setNameWithFormat:@"+readUsingURL: %@", URL];
+}
+
++ (NSData *)readFromURL:(NSURL *)URL error:(NSError **)errorRef {
+	__block NSData *data = nil;
+
+	NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+	[coordinator coordinateReadingItemAtURL:URL options:NSFileCoordinatorReadingWithoutChanges error:errorRef byAccessor:^(NSURL *newURL) {
+		data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingUncached error:errorRef];
+	}];
+
+	return data;
 }
 
 + (RACSignal *)readFromData:(NSData *)data {
@@ -108,15 +113,9 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 			URL,
 			[self serialization]
 		] reduce:^(NSURL *stateURL, NSData *data) {
-			__block NSError *error = nil;
-			__block BOOL success = NO;
-
-			NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
-			[coordinator coordinateWritingItemAtURL:stateURL options:0 error:&error byAccessor:^(NSURL *newURL) {
-				success = [data writeToURL:newURL options:NSDataWritingAtomic error:&error];
-			}];
-
-			if (!success) {
+			NSError *error;
+			BOOL write = [self writeData:data toURL:stateURL error:&error];
+			if (!write) {
 				return [RACSignal error:error];
 			}
 
@@ -124,6 +123,17 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		}]
 		flatten]
 		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
+}
+
+- (BOOL)writeData:(NSData *)data toURL:(NSURL *)URL error:(NSError **)errorRef {
+	__block BOOL success = NO;
+
+	NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+	[coordinator coordinateWritingItemAtURL:URL options:0 error:errorRef byAccessor:^(NSURL *newURL) {
+		success = [data writeToURL:newURL options:NSDataWritingAtomic error:errorRef];
+	}];
+
+	return success;
 }
 
 - (RACSignal *)serialization {

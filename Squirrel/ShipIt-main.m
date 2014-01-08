@@ -13,6 +13,7 @@
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
+#import "SQRLInstaller+Private.h"
 #import "SQRLTerminationListener.h"
 #import "SQRLShipItRequest.h"
 
@@ -22,10 +23,6 @@
 // If ShipIt is launched in the same state more than this number of times,
 // updating will abort.
 static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
-
-// The defaults key to store the number of installation attempts that have been
-// made under.
-static NSString * const SQRLShipItInstallationAttemptsKey = @"SQRLShipItInstallationAttempts";
 
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
@@ -118,7 +115,7 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 							return;
 						}
 
-						NSError *error = nil;
+						NSError *error;
 						// TODO: needs special affordance when we're running as root, we shouldn't be linking AppKit at all
 						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
 							NSLog(@"Could not launch application at %@: %@", bundleURL, error);

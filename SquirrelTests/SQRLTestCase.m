@@ -10,6 +10,8 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLInstaller.h"
+#import "SQRLShipItRequest.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -313,20 +315,32 @@ static void SQRLSignalHandler(int sig) {
 	return manager;
 }
 
-- (void)launchShipIt {
-	NSError *error = nil;
-	STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
+- (void)performInstall:(SQRLShipItRequest *)request remote:(BOOL)remote {
+	if (remote) {
+		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
-	[self addCleanupBlock:^{
-		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+		NSError *error = nil;
+		STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
 
-		NSError *lookupError = nil;
-		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
-		STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, lookupError);
-		
-		[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
-	}];
+		[self addCleanupBlock:^{
+			// Remove ShipIt's launchd job so it doesn't relaunch itself.
+			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+
+			NSError *lookupError = nil;
+			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
+			STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, lookupError);
+
+			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+		}];
+	} else {
+		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:SQRLDirectoryManager.currentApplicationManager.applicationIdentifier];
+		expect(installer).notTo.beNil();
+
+		NSError *installError = nil;
+		BOOL install = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installError];
+		expect(install).to.beTruthy();
+		expect(installError).to.beNil();
+	}
 }
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {

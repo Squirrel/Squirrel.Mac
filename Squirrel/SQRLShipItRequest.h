@@ -68,7 +68,7 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // The URL to the downloaded update's app bundle.
 @property (nonatomic, copy, readonly) NSURL *updateBundleURL;
 
-// The URL to the app bundle that should be replaced with an update.
+// The URL to the app bundle that should be replaced with the update.
 @property (nonatomic, copy, readonly) NSURL *targetBundleURL;
 
 // The bundle identifier of the application being updated.
@@ -77,8 +77,7 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // (and `targetBundleURL`) to terminate before continuing.
 @property (nonatomic, copy, readonly) NSString *bundleIdentifier;
 
-// Whether to relaunch the application after an update is successfully
-// installed.
+// Whether to launch the application after an update is successfully installed.
 @property (nonatomic, assign, readonly) BOOL launchAfterInstallation;
 
 @end
