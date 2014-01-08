@@ -60,8 +60,14 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 	return [[[URL
 		flattenMap:^(NSURL *stateURL) {
-			NSError *error = nil;
-			NSData *data = [NSData dataWithContentsOfURL:stateURL options:NSDataReadingUncached error:&error];
+			__block NSError *error = nil;
+			__block NSData *data = nil;
+
+			NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+			[coordinator coordinateReadingItemAtURL:stateURL options:NSFileCoordinatorReadingWithoutChanges error:&error byAccessor:^(NSURL *newURL) {
+				data = [NSData dataWithContentsOfURL:newURL options:NSDataReadingUncached error:&error];
+			}];
+
 			if (data == nil) {
 				return [RACSignal error:error];
 			}
@@ -133,8 +139,15 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 			URL,
 			[self serialization]
 		] reduce:^(NSURL *stateURL, NSData *data) {
-			NSError *error = nil;
-			if (![data writeToURL:stateURL options:NSDataWritingAtomic error:&error]) {
+			__block NSError *error = nil;
+			__block BOOL success = NO;
+
+			NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+			[coordinator coordinateWritingItemAtURL:stateURL options:0 error:&error byAccessor:^(NSURL *newURL) {
+				success = [data writeToURL:newURL options:NSDataWritingAtomic error:&error];
+			}];
+
+			if (!success) {
 				return [RACSignal error:error];
 			}
 
