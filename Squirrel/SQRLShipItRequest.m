@@ -1,22 +1,20 @@
 //
-//  SQRLShipItState.m
+//  SQRLShipItRequest.m
 //  Squirrel
 //
-//  Created by Justin Spahr-Summers on 2013-10-08.
-//  Copyright (c) 2013 GitHub. All rights reserved.
+//  Created by Keith Duncan on 08/01/2014.
+//  Copyright (c) 2014 GitHub. All rights reserved.
 //
 
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
+
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
-NSString * const SQRLShipItStateErrorDomain = @"SQRLShipItStateErrorDomain";
-NSString * const SQRLShipItStatePropertyErrorKey = @"SQRLShipItStatePropertyErrorKey";
+NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
 
-const NSInteger SQRLShipItStateErrorMissingRequiredProperty = 1;
-const NSInteger SQRLShipItStateErrorUnarchiving = 2;
-const NSInteger SQRLShipItStateErrorArchiving = 3;
+NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestPropertyErrorKey";
 
-@implementation SQRLShipItState
+@implementation SQRLShipItRequest
 
 #pragma mark Lifecycle
 
@@ -33,7 +31,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 				NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"\"%@\" must not be set to nil.", nil), key]
 			};
 
-			*error = [NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorMissingRequiredProperty userInfo:userInfo];
+			*error = [NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorMissingRequiredProperty userInfo:userInfo];
 		}
 
 		return NO;
@@ -45,11 +43,12 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 	return self;
 }
 
-- (id)initWithTargetBundleURL:(NSURL *)targetBundleURL updateBundleURL:(NSURL *)updateBundleURL bundleIdentifier:(NSString *)bundleIdentifier {
+- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation {
 	return [self initWithDictionary:@{
-		@keypath(self.targetBundleURL): targetBundleURL,
 		@keypath(self.updateBundleURL): updateBundleURL,
+		@keypath(self.targetBundleURL): targetBundleURL,
 		@keypath(self.bundleIdentifier): bundleIdentifier ?: NSNull.null,
+		@keypath(self.launchAfterInstallation): @(launchAfterInstallation),
 	} error:NULL];
 }
 
@@ -80,48 +79,18 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		setNameWithFormat:@"+readUsingURL: %@", URL];
 }
 
-+ (RACSignal *)readFromDefaultsDomain:(NSString *)domain key:(NSString *)key {
-	NSParameterAssert(domain != nil);
-	NSParameterAssert(key != nil);
-
-	return [[[[[RACSignal
-		return:RACTuplePack(domain, key)]
-		reduceEach:^(NSString *domain, NSString *key) {
-			id propertyList = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)key, (__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
-			return ([propertyList isKindOfClass:NSData.class] ? propertyList : nil);
-		}]
-		tryMap:^ NSData * (NSData *data, NSError **errorRef) {
-			if (data == nil) {
-				if (errorRef != NULL) {
-					NSDictionary *errorInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Couldn’t read saved state", @"SQRLShipItState read from defaults error description"),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"", @"SQRLShipItState read from defaults error recovery suggestion"),
-					};
-					*errorRef = [NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorUnarchiving userInfo:errorInfo];
-				}
-				return nil;
-			}
-
-			return data;
-		}]
-		flattenMap:^(NSData *data) {
-			return [self readFromData:data];
-		}]
-		setNameWithFormat:@"+readFromDefaultsDomain: %@ key: %@", domain, key];
-}
-
 + (RACSignal *)readFromData:(NSData *)data {
 	return [[[RACSignal
 		return:data]
-		tryMap:^ SQRLShipItState * (NSData *data, NSError **errorRef) {
-			SQRLShipItState *state = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-			if (![state isKindOfClass:SQRLShipItState.class]) {
+		tryMap:^ SQRLShipItRequest * (NSData *data, NSError **errorRef) {
+			SQRLShipItRequest *state = [NSKeyedUnarchiver unarchiveObjectWithData:data];
+			if (![state isKindOfClass:SQRLShipItRequest.class]) {
 				if (errorRef != NULL) {
 					NSDictionary *userInfo = @{
 						NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read saved state", nil),
 						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
 					};
-					*errorRef = [NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorUnarchiving userInfo:userInfo];
+					*errorRef = [NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo];
 				}
 				return nil;
 			}
@@ -157,33 +126,18 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
 }
 
-- (RACSignal *)writeToDefaultsDomain:(NSString *)domain key:(NSString *)key {
-	NSParameterAssert(domain != nil);
-	NSParameterAssert(key != nil);
-
-	return [[[self
-		serialization]
-		flattenMap:^(NSData *data) {
-			CFPreferencesSetValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)data, (__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-			CFPreferencesSynchronize((__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-
-			return [RACSignal empty];
-		}]
-		setNameWithFormat:@"%@ writeToDefaultsDomain: %@ key: %@", self, domain, key];
-}
-
 - (RACSignal *)serialization {
 	return [[[RACSignal
 		return:self]
-		tryMap:^ NSData * (SQRLShipItState *state, NSError **errorRef) {
-			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:state];
+		tryMap:^ NSData * (SQRLShipItRequest *request, NSError **errorRef) {
+			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:request];
 			if (data == nil) {
 				if (errorRef != NULL) {
 					NSDictionary *userInfo = @{
 						NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
 						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
 					};
-					*errorRef = [NSError errorWithDomain:SQRLShipItStateErrorDomain code:SQRLShipItStateErrorArchiving userInfo:userInfo];
+					*errorRef = [NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo];
 				}
 				return nil;
 			}
