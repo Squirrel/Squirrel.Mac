@@ -152,6 +152,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		serialization]
 		flattenMap:^(NSData *data) {
 			CFPreferencesSetValue((__bridge CFStringRef)key, (__bridge CFPropertyListRef)data, (__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+			CFPreferencesSynchronize((__bridge CFStringRef)domain, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 
 			return [RACSignal empty];
 		}]
@@ -162,7 +163,7 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 	return [[[RACSignal
 		return:self]
 		tryMap:^ NSData * (SQRLShipItState *state, NSError **errorRef) {
-			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
+			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:state];
 			if (data == nil) {
 				if (errorRef != NULL) {
 					NSDictionary *userInfo = @{
