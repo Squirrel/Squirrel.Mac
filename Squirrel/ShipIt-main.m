@@ -13,9 +13,8 @@
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
-#import "SQRLShipItState.h"
 #import "SQRLTerminationListener.h"
-#import "ShipIt-Constants.h"
+#import "SQRLShipItRequest.h"
 
 // The maximum number of times ShipIt should run the same installation state, in
 // an attempt to update.
@@ -24,95 +23,109 @@
 // updating will abort.
 static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 
+// The defaults key to store the number of installation attempts that have been
+// made under.
+static NSString * const SQRLShipItInstallationAttemptsKey = @"SQRLShipItInstallationAttempts";
+
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 
+static NSUInteger installationAttempts(NSString *applicationIdentifier) {
+	return CFPreferencesGetAppIntegerValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFStringRef)applicationIdentifier, NULL);
+}
+
+static BOOL setInstallationAttempts(NSString *applicationIdentifier, NSUInteger attempts) {
+	CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(attempts), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+}
+
+static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
+	CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+}
+
 // Waits for all instances of the target application (as described in the
-// `state`) to exit, then sends completed.
-static RACSignal *waitForTerminationIfNecessary(SQRLShipItState *state) {
+// `request`) to exit, then sends completed.
+static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
 	return [[RACSignal
 		defer:^{
-			if (state.bundleIdentifier == nil) return [RACSignal empty];
+			if (request.bundleIdentifier == nil) return [RACSignal empty];
 
-			SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:state.targetBundleURL bundleIdentifier:state.bundleIdentifier];
+			SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier];
 			return [listener waitForTermination];
 		}]
 		setNameWithFormat:@"waitForTerminationIfNecessary"];
 }
 
-static void installForState(SQRLDirectoryManager *directoryManager, RACSignal *state) {
-	[[[state
-		flattenMap:^(SQRLShipItState *state) {
-			return [[waitForTerminationIfNecessary(state)
+static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
+	[[[readRequestSignal
+		flattenMap:^(SQRLShipItRequest *request) {
+			return [[waitForTerminationIfNecessary(request)
 				ignoreValues]
-				concat:[RACSignal return:state]];
+				concat:readRequestSignal];
 		}]
-		flattenMap:^(SQRLShipItState *state) {
-			BOOL freshInstall = (state.installerState == SQRLInstallerStateNothingToDo);
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:directoryManager.applicationIdentifier stateDefaultsKey:SQRLShipItStateDefaultsKey];
+		flattenMap:^(SQRLShipItRequest *request) {
+			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
 
-			NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
+			NSUInteger attempt = (installationAttempts(applicationIdentifier) + 1);
+			setInstallationAttempts(applicationIdentifier, attempt);
+
 			RACSignal *action;
-
 			if (attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[installer.abortInstallationCommand
-					execute:state]
+					execute:request]
 					initially:^{
-						NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
+						NSLog(@"Too many attempts to install, aborting update");
 					}]
 					catch:^(NSError *error) {
 						NSLog(@"Error aborting installation: %@", error);
 
-						// Exit successfully so launchd doesn't restart us again.
+						// Exit successfully so launchd doesn't restart us
+						// again.
 						return [RACSignal empty];
 					}];
 			} else {
-				action = [[[[[state
-					writeToDefaultsDomain:directoryManager.applicationIdentifier key:SQRLShipItStateDefaultsKey]
+				action = [[[[installer.installUpdateCommand
+					execute:request]
 					initially:^{
+						BOOL freshInstall = (attempt == 1);
 						if (freshInstall) {
 							NSLog(@"Beginning installation");
 						} else {
-							NSLog(@"Resuming installation from state %i", (int)state.installerState);
+							NSLog(@"Resuming installation attempt %i", (int)attempt);
 						}
-
-						state.installationStateAttempt = attempt;
-					}]
-					then:^{
-						return [installer.installUpdateCommand execute:state];
 					}]
 					doCompleted:^{
 						NSLog(@"Installation completed successfully");
 					}]
-					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path];
 			}
 
-			// Remove the saved state after successfull install or abort.
-			action = [action
-				doNext:^(id _) {
-					CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItStateDefaultsKey, NULL, (__bridge CFStringRef)directoryManager.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-					CFPreferencesSynchronize((__bridge CFStringRef)directoryManager.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-				}];
+			// Clear the installation attempts for a successful abort or
+			// install.
+			action = [action doNext:^(id _) {
+				clearInstallationAttempts(applicationIdentifier);
+			}];
 
-			if (state.relaunchAfterInstallation) {
-				// Relaunch regardless of whether installation succeeds or
-				// fails.
+			if (request.launchAfterInstallation) {
+				// Launch regardless of whether installation succeeds or fails.
 				action = [[action
 					deliverOn:RACScheduler.mainThreadScheduler]
 					finally:^{
-						NSURL *bundleURL = state.targetBundleURL;
+						NSURL *bundleURL = request.targetBundleURL;
 						if (bundleURL == nil) {
-							NSLog(@"Missing target bundle URL, cannot relaunch application");
+							NSLog(@"Missing target bundle URL, cannot launch application");
 							return;
 						}
 
 						NSError *error = nil;
+						// TODO: needs special affordance when we're running as root, we shouldn't be linking AppKit at all
 						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-							NSLog(@"Could not relaunch application at %@: %@", bundleURL, error);
+							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
 							return;
 						}
 
-						NSLog(@"Application relaunched at %@", bundleURL);
+						NSLog(@"Application launched at %@", bundleURL);
 					}];
 			}
 
@@ -137,49 +150,15 @@ int main(int argc, const char * argv[]) {
 			return EXIT_FAILURE;
 		}
 
-		const char *jobLabel = argv[1];
+		char const *jobLabel = argv[1];
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
 
 		NSString *applicationIdentifier = directoryManager.applicationIdentifier;
 
-		RACSignal *inProgressUpdateState = [SQRLShipItState
-			readFromDefaultsDomain:applicationIdentifier key:SQRLShipItStateDefaultsKey];
-
-		RACSignal *updateRequest = [[[SQRLShipItState
-			readUsingURL:directoryManager.shipItStateURL]
-			map:^(SQRLShipItState *state) {
-				// Update requests from clients cannot select the state they
-				// want to start from. Only preference read states can have a
-				// non-initial installer state.
-				SQRLShipItState *newState = [state copy];
-				newState.installerState = SQRLInstaller.initialInstallerState;
-				return newState;
-			}]
-			flattenMap:^(SQRLShipItState *state) {
-				// Remove the update request from disk and duplicate to
-				// preferences.
-				return [[directoryManager.shipItStateURL
-					tryMap:^(NSURL *location, NSError **errorRef) {
-						return [NSFileManager.defaultManager removeItemAtURL:location error:errorRef] ? state : nil;
-					}]
-					doNext:^(SQRLShipItState *state) {
-						[state writeToDefaultsDomain:applicationIdentifier key:SQRLShipItStateDefaultsKey];
-					}];
-			}];
-
-		// Prefer to read from preferences, if no such state exists, read the
-		// client request from disk into preferences.
-		RACSignal *stateToStart = [inProgressUpdateState
-			catch:^(NSError *error) {
-				if (!([error.domain isEqualToString:SQRLShipItStateErrorDomain] && error.code == SQRLShipItStateErrorUnarchiving)) return [RACSignal error:error];
-				return updateRequest;
-			}];
-
-		installForState(directoryManager, stateToStart);
+		installRequest([SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL], applicationIdentifier);
 
 		dispatch_main();
 	}
 
 	return EXIT_SUCCESS;
 }
-
