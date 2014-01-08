@@ -42,8 +42,8 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 @class RACCommand;
 @class SQRLDirectoryManager;
 
-// Performs the installation of an update, using the `SQRLShipItState` from
-// user defaults, as located by defaultsKey.
+// Performs the installation of an update, saving its intermediate state to user
+// defaults using `stateDefaultsKey`.
 //
 // This class is meant to be used only after the app that will be updated has
 // terminated.
