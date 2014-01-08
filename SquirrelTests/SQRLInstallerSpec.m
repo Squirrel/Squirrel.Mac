@@ -159,7 +159,7 @@ it(@"should disallow writing the updated application except by the owner", ^{
 	expect(modeOfURL(updateURL)).to.equal(0777);
 	expect(modeOfURL([updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0777);
 
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
+	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil];
 	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
 	[self launchShipIt];
