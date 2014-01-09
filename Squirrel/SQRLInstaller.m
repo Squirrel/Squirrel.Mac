@@ -266,7 +266,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
-			return [[[self
+			return [[[[self
 				acquireTargetBundleURLForRequest:request]
 				then:^{
 					return [self installItemToURL:request.targetBundleURL fromURL:updateBundleURL];
@@ -277,17 +277,17 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 						self.ownedBundle.temporaryURL,
 					];
 
-					return [[[ownedLocations.rac_sequence.signal
+					return [[ownedLocations.rac_sequence.signal
 						map:^(NSURL *location) {
 							return [[[self
 								deleteOwnedBundleAtURL:location]
 								catchTo:[RACSignal empty]]
 								ignoreValues];
 						}]
-						concat]
-						doCompleted:^{
-							self.ownedBundle = nil;
-						}];
+						concat];
+				}]
+				doCompleted:^{
+					self.ownedBundle = nil;
 				}];
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path]
