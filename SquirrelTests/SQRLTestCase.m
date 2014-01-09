@@ -333,7 +333,7 @@ static void SQRLSignalHandler(int sig) {
 			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 		}];
 	} else {
-		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:SQRLDirectoryManager.currentApplicationManager.applicationIdentifier];
+		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
 		expect(installer).notTo.beNil();
 
 		NSError *installError = nil;
