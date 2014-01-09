@@ -255,8 +255,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			self.ownedBundle = ownedBundle;
 		}]
 		flattenMap:^(SQRLInstallerOwnedBundle *ownedBundle) {
-			return [self
-				installItemToURL:ownedBundle.temporaryURL fromURL:ownedBundle.originalURL];
+			return [self installItemToURL:ownedBundle.temporaryURL fromURL:ownedBundle.originalURL];
 		}]
 		setNameWithFormat:@"%@ -acquireTargetBundleURLForRequest: %@", self, request];
 }
@@ -270,8 +269,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [[[self
 				acquireTargetBundleURLForRequest:request]
 				then:^{
-					return [self
-						installItemToURL:request.targetBundleURL fromURL:updateBundleURL];
+					return [self installItemToURL:request.targetBundleURL fromURL:updateBundleURL];
 				}]
 				then:^{
 					NSArray *ownedLocations = @[
@@ -283,8 +281,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 						map:^(NSURL *location) {
 							return [[[self
 								deleteOwnedBundleAtURL:location]
-								ignoreValues]
-								catchTo:[RACSignal empty]];
+								catchTo:[RACSignal empty]]
+								ignoreValues];
 						}]
 						concat]
 						doCompleted:^{
