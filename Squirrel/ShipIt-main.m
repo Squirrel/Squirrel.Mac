@@ -100,7 +100,7 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 
 			// Clear the installation attempts for a successful abort or
 			// install.
-			action = [action doNext:^(id _) {
+			action = [action doCompleted:^{
 				clearInstallationAttempts(applicationIdentifier);
 			}];
 
