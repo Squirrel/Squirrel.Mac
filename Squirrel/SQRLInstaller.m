@@ -304,12 +304,13 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	SQRLInstallerOwnedBundle *ownedBundle = self.ownedBundle;
 	if (ownedBundle == nil) return [RACSignal empty];
 
-	return [[[self
+	return [[[[self
 		installItemToURL:ownedBundle.originalURL fromURL:ownedBundle.temporaryURL]
 		doCompleted:^{
 			self.ownedBundle = nil;
 		}]
-		sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), ownedBundle.originalURL.path];
+		sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), ownedBundle.originalURL.path]
+		setNameWithFormat:@"%@ -abortInstall", self];
 }
 
 #pragma mark Bundle Ownership
