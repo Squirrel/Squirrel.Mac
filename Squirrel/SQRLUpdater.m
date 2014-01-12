@@ -203,9 +203,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSError *targetWritableError = nil;
 			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
 
-			// If we can't determine whether it can be written, assume nonprivileged and
-			// wait for another, more canonical error.
-			return [SQRLShipItConnection launchPrivileged:(gotWritable && !targetWritable.boolValue)];
+			// If we can't determine whether it can be written, assume
+			// nonprivileged and wait for another, more canonical error.
+			SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:(gotWritable && !targetWritable.boolValue)];
+			return [connection startAndLaunchTarget:NO];
 		}]
 		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];

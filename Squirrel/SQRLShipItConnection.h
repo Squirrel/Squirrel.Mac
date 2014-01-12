@@ -22,13 +22,20 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 // Returns the label for the ShipIt launchd job.
 + (NSString *)shipItJobLabel;
 
-// Attempts to launch ShipIt.
+// Designated initialiser.
 //
 // privileged - Determines which launchd domain to launch the job in.
 //              If YES, ShipIt is launched in the root domain, otherwise it is
 //              launched in the current user’s domain.
 //
+// Returns an initialised connection which can be used to start an install.
+- (instancetype)initForPrivileged:(BOOL)privileged;
+
+// Attempts to launch ShipIt.
+//
+// launchTarget - Whether to launch the target of the installation post-install.
+//
 // Returns a signal which will complete, or error, on a background scheduler.
-+ (RACSignal *)launchPrivileged:(BOOL)privileged;
+- (RACSignal *)startAndLaunchTarget:(BOOL)launchTarget;
 
 @end

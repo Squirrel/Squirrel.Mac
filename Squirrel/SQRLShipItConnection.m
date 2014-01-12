@@ -19,6 +19,10 @@ NSString * const SQRLShipItConnectionErrorDomain = @"SQRLShipItConnectionErrorDo
 
 const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 
+@interface SQRLShipItConnection ()
+@property (readonly, nonatomic, assign) BOOL privileged;
+@end
+
 @implementation SQRLShipItConnection
 
 + (NSString *)shipItJobLabel {
@@ -122,18 +126,27 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 		setNameWithFormat:@"+shipItAuthorization"];
 }
 
-+ (RACSignal *)launchPrivileged:(BOOL)privileged {
+- (instancetype)initForPrivileged:(BOOL)privileged {
+	self = [self init];
+	if (self == nil) return nil;
+
+	_privileged = privileged;
+
+	return self;
+}
+
+- (RACSignal *)startAndLaunchTarget:(BOOL)launchTarget {
 	return [[[RACSignal
 		zip:@[
-			self.shipItJobDictionary,
-			(privileged ? self.shipItAuthorization : [RACSignal return:nil])
+			self.class.shipItJobDictionary,
+			(self.privileged ? self.class.shipItAuthorization : [RACSignal return:nil])
 		] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
-			CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
+			CFStringRef domain = (self.privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
 			AuthorizationRef authorization = authorizationValue.authorization;
 
 			CFErrorRef cfError;
-			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, authorization, true, &cfError)) {
+			if (!SMJobRemove(domain, (__bridge CFStringRef)self.class.shipItJobLabel, authorization, true, &cfError)) {
 				NSError *error = CFBridgingRelease(cfError);
 				cfError = NULL;
 
@@ -149,7 +162,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			return [RACSignal empty];
 		}]
 		flatten]
-		setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];
+		setNameWithFormat:@"%@ -startAndLaunchTarget: %i", self, (int)self.privileged];
 }
 
 @end
