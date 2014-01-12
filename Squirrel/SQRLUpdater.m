@@ -422,12 +422,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)shipItStateURL {
-	return [[RACSignal
-		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
-			return directoryManager.shipItStateURL;
-		}]
-		setNameWithFormat:@"%@ -shipItStateURL", self];
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
+	return directoryManager.shipItStateURL;
 }
 
 #pragma mark Installing Updates
