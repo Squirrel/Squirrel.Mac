@@ -78,7 +78,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // Submits ShipIt's launchd job to start it up.
 //
 // request - The install to send to ShipIt.
-- (void)launchShipIt:(SQRLShipItState *)request;
+- (void)launchShipItWithRequest:(SQRLShipItState *)request;
 
 // Creates a disk image, then mounts it.
 //

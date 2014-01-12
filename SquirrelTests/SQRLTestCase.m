@@ -318,7 +318,7 @@ static void SQRLSignalHandler(int sig) {
 	return manager;
 }
 
-- (void)launchShipIt:(SQRLShipItState *)state {
+- (void)launchShipItWithRequest:(SQRLShipItState *)state {
 	NSError *error = nil;
 	SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:NO];
 	STAssertTrue([[connection sendRequest:state] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);

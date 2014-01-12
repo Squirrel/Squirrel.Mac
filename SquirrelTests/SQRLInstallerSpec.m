@@ -23,7 +23,7 @@ beforeEach(^{
 it(@"should install an update", ^{
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 
-	[self launchShipIt:state];
+	[self launchShipItWithRequest:state];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -36,7 +36,7 @@ it(@"should install an update and relaunch", ^{
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 	state.relaunchAfterInstallation = YES;
 
-	[self launchShipIt:state];
+	[self launchShipItWithRequest:state];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
@@ -48,7 +48,7 @@ it(@"should install an update from another volume", ^{
 
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 
-	[self launchShipIt:state];
+	[self launchShipItWithRequest:state];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -59,7 +59,7 @@ it(@"should install an update to another volume", ^{
 
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 
-	[self launchShipIt:state];
+	[self launchShipItWithRequest:state];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
@@ -88,7 +88,7 @@ it(@"should not install an update after too many attempts", ^{
 	state.installerState = SQRLInstallerStateInstalling;
 	state.installationStateAttempt = 4;
 
-	[self launchShipIt:state];
+	[self launchShipItWithRequest:state];
 
 	// No update should've been installed, and the application should be
 	// restored from the backup.
@@ -110,7 +110,7 @@ it(@"should relaunch even after failing to install an update", ^{
 	state.installationStateAttempt = 4;
 	state.relaunchAfterInstallation = YES;
 
-	[self launchShipIt:state];
+	[self launchShipItWithRequest:state];
 
 	__block NSError *error = nil;
 	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
@@ -130,7 +130,7 @@ describe(@"signal handling", ^{
 
 		SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
 
-		[self launchShipIt:state];
+		[self launchShipItWithRequest:state];
 
 		// Wait until ShipIt has transitioned by at least one state.
 		expect([[[SQRLShipItState readUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronousFirstOrDefault:nil success:NULL error:NULL] installerState]).willNot.equal(SQRLInstallerStateNothingToDo);
