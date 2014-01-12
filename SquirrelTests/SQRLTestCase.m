@@ -9,7 +9,7 @@
 #import "SQRLTestCase.h"
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -311,7 +311,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (SQRLDirectoryManager *)shipItDirectoryManager {
-	NSString *identifier = SQRLShipItLauncher.shipItJobLabel;
+	NSString *identifier = SQRLShipItConnection.shipItJobLabel;
 	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:identifier];
 	STAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
 
@@ -320,11 +320,11 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)launchShipIt {
 	NSError *error = nil;
-	STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
+	STAssertTrue([[SQRLShipItConnection launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
 
 	[self addCleanupBlock:^{
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItConnection.shipItJobLabel, NULL, true, NULL);
 
 		NSError *lookupError = nil;
 		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];

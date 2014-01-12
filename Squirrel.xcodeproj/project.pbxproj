@@ -27,7 +27,7 @@
 		D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D00F5B8A17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m */; };
 		D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */; };
-		D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */ = {isa = PBXBuildFile; fileRef = D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */; };
+		D014ABB817B96CB3007D79D0 /* SQRLShipItConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = D014ABB617B96CB3007D79D0 /* SQRLShipItConnection.m */; };
 		D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC0417B97885007D79D0 /* ShipIt-main.m */; };
 		D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
@@ -434,8 +434,8 @@
 		D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSProcessInfo+SQRLVersionExtensions.h"; sourceTree = "<group>"; };
 		D00F5B8A17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSProcessInfo+SQRLVersionExtensions.m"; sourceTree = "<group>"; };
 		D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSProcessInfoExtensionsSpec.m; sourceTree = "<group>"; };
-		D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItLauncher.h; sourceTree = "<group>"; };
-		D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItLauncher.m; sourceTree = "<group>"; };
+		D014ABB517B96CB3007D79D0 /* SQRLShipItConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItConnection.h; sourceTree = "<group>"; };
+		D014ABB617B96CB3007D79D0 /* SQRLShipItConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItConnection.m; sourceTree = "<group>"; };
 		D014ABB917B97403007D79D0 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
 		D014AC0117B97885007D79D0 /* ShipIt */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ShipIt; sourceTree = BUILT_PRODUCTS_DIR; };
 		D014AC0417B97885007D79D0 /* ShipIt-main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "ShipIt-main.m"; path = "Squirrel/ShipIt-main.m"; sourceTree = SOURCE_ROOT; };
@@ -749,8 +749,8 @@
 		D0964B3517F2DF3100D88BF7 /* IPC */ = {
 			isa = PBXGroup;
 			children = (
-				D014ABB517B96CB3007D79D0 /* SQRLShipItLauncher.h */,
-				D014ABB617B96CB3007D79D0 /* SQRLShipItLauncher.m */,
+				D014ABB517B96CB3007D79D0 /* SQRLShipItConnection.h */,
+				D014ABB617B96CB3007D79D0 /* SQRLShipItConnection.m */,
 			);
 			name = IPC;
 			sourceTree = "<group>";
@@ -1449,7 +1449,7 @@
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */,
 				D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
 				D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */,
-				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
+				D014ABB817B96CB3007D79D0 /* SQRLShipItConnection.m in Sources */,
 				D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,

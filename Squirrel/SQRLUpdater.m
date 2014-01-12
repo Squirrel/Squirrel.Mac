@@ -14,7 +14,7 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownloadedUpdate.h"
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
 #import "SQRLShipItState.h"
 #import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
@@ -205,7 +205,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 			// If we can't determine whether it can be written, assume nonprivileged and
 			// wait for another, more canonical error.
-			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
+			return [SQRLShipItConnection launchPrivileged:(gotWritable && !targetWritable.boolValue)];
 		}]
 		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];
@@ -351,7 +351,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
 	return [[[RACSignal
 		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
 			return [directoryManager applicationSupportURL];
 		}]
 		flattenMap:^(NSURL *appSupportURL) {
@@ -427,7 +427,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACSignal *)shipItStateURL {
 	return [[RACSignal
 		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
 			return directoryManager.shipItStateURL;
 		}]
 		setNameWithFormat:@"%@ -shipItStateURL", self];

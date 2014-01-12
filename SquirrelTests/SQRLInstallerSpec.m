@@ -9,7 +9,7 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
 #import "SQRLShipItState.h"
 
 SpecBegin(SQRLInstaller)

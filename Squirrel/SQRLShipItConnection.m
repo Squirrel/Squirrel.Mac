@@ -1,12 +1,12 @@
 //
-//  SQRLShipItLauncher.m
+//  SQRLShipItConnection.m
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-08-12.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
 #import "EXTScope.h"
 #import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -15,11 +15,11 @@
 #import <launch.h>
 #import "SQRLAuthorization.h"
 
-NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
+NSString * const SQRLShipItConnectionErrorDomain = @"SQRLShipItConnectionErrorDomain";
 
-const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
+const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 
-@implementation SQRLShipItLauncher
+@implementation SQRLShipItConnection
 
 + (NSString *)shipItJobLabel {
 	NSString *currentAppIdentifier = NSBundle.mainBundle.bundleIdentifier ?: [NSString stringWithFormat:@"%@:%d", NSProcessInfo.processInfo.processName, NSProcessInfo.processInfo.processIdentifier];
@@ -84,7 +84,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 				.items = rightItems,
 			};
 
-			NSString *prompt = NSLocalizedString(@"An update is ready to install.", @"SQRLShipItLauncher, launch shipit, authorization prompt");
+			NSString *prompt = NSLocalizedString(@"An update is ready to install.", @"SQRLShipItConnection, launch shipit, authorization prompt");
 
 			NSString *iconName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
 			NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle.resourceURL URLByAppendingPathComponent:iconName].path);
