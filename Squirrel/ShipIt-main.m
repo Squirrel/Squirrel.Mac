@@ -112,28 +112,6 @@ int main(int argc, const char * argv[]) {
 						sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 				}
 
-				if (state.relaunchAfterInstallation) {
-					// Relaunch regardless of whether installation succeeds or
-					// fails.
-					action = [[action
-						deliverOn:RACScheduler.mainThreadScheduler]
-						finally:^{
-							NSURL *bundleURL = state.targetBundleURL;
-							if (bundleURL == nil) {
-								NSLog(@"Missing target bundle URL, cannot relaunch application");
-								return;
-							}
-
-							NSError *error = nil;
-							if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-								NSLog(@"Could not relaunch application at %@: %@", bundleURL, error);
-								return;
-							}
-
-							NSLog(@"Application relaunched at %@", bundleURL);
-						}];
-				}
-
 				return action;
 			}]
 			subscribeError:^(NSError *error) {
