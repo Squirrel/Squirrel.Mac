@@ -318,10 +318,10 @@ static void SQRLSignalHandler(int sig) {
 	return manager;
 }
 
-- (void)launchShipIt {
+- (void)launchShipIt:(SQRLShipItState *)state {
 	NSError *error = nil;
 	SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:NO];
-	STAssertTrue([[connection startAndLaunchTarget:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
+	STAssertTrue([[connection sendRequest:state] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
 
 	[self addCleanupBlock:^{
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.

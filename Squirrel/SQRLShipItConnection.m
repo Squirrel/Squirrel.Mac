@@ -14,6 +14,7 @@
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
 #import "SQRLAuthorization.h"
+#import "SQRLShipItState.h"
 
 NSString * const SQRLShipItConnectionErrorDomain = @"SQRLShipItConnectionErrorDomain";
 
@@ -135,34 +136,40 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return self;
 }
 
-- (RACSignal *)startAndLaunchTarget:(BOOL)launchTarget {
-	return [[[RACSignal
-		zip:@[
-			self.class.shipItJobDictionary,
-			(self.privileged ? self.class.shipItAuthorization : [RACSignal return:nil])
-		] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
-			CFStringRef domain = (self.privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
+- (RACSignal *)sendRequest:(SQRLShipItState *)request {
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.class.shipItJobLabel];
 
-			AuthorizationRef authorization = authorizationValue.authorization;
+	return [[[request
+		writeUsingURL:directoryManager.shipItStateURL]
+		then:^{
+			return [[RACSignal
+				zip:@[
+					self.class.shipItJobDictionary,
+					(self.privileged ? self.class.shipItAuthorization : [RACSignal return:nil])
+				] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
+					CFStringRef domain = (self.privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
-			CFErrorRef cfError;
-			if (!SMJobRemove(domain, (__bridge CFStringRef)self.class.shipItJobLabel, authorization, true, &cfError)) {
-				NSError *error = CFBridgingRelease(cfError);
-				cfError = NULL;
+					AuthorizationRef authorization = authorizationValue.authorization;
 
-				if (![error.domain isEqual:(__bridge id)kSMErrorDomainLaunchd] || error.code != kSMErrorJobNotFound) {
-					NSLog(@"Could not remove previous ShipIt job: %@", error);
-				}
-			}
+					CFErrorRef cfError;
+					if (!SMJobRemove(domain, (__bridge CFStringRef)self.class.shipItJobLabel, authorization, true, &cfError)) {
+						NSError *error = CFBridgingRelease(cfError);
+						cfError = NULL;
 
-			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, authorization, &cfError)) {
-				return [RACSignal error:CFBridgingRelease(cfError)];
-			}
+						if (![error.domain isEqual:(__bridge id)kSMErrorDomainLaunchd] || error.code != kSMErrorJobNotFound) {
+							NSLog(@"Could not remove previous ShipIt job: %@", error);
+						}
+					}
 
-			return [RACSignal empty];
+					if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, authorization, &cfError)) {
+						return [RACSignal error:CFBridgingRelease(cfError)];
+					}
+
+					return [RACSignal empty];
+				}]
+				flatten];
 		}]
-		flatten]
-		setNameWithFormat:@"%@ -startAndLaunchTarget: %i", self, (int)self.privileged];
+		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
 }
 
 @end

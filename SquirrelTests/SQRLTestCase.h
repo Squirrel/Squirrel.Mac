@@ -18,6 +18,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 
 @class SQRLCodeSignature;
 @class SQRLDirectoryManager;
+@class SQRLShipItState;
 
 @interface SQRLTestCase : SPTSenTestCase
 
@@ -75,7 +76,9 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 - (NSURL *)createTestApplicationUpdate;
 
 // Submits ShipIt's launchd job to start it up.
-- (void)launchShipIt;
+//
+// request - The install to send to ShipIt.
+- (void)launchShipIt:(SQRLShipItState *)request;
 
 // Creates a disk image, then mounts it.
 //

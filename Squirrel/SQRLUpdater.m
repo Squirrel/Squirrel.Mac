@@ -38,10 +38,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 // sending them to ShipIt.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
 
-// Lazily launches ShipIt upon first subscription.
-//
-// Sends completed or error.
-@property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+// When executed with an `SQRLShipItState`, launches ShipIt.
+@property (nonatomic, strong, readonly) RACCommand *shipItLauncher;
 
 // Parses an update model from downloaded data.
 //
@@ -195,21 +193,19 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
 
-	_shipItLauncher = [[[RACSignal
-		defer:^{
-			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+	_shipItLauncher = [[RACCommand alloc] initWithSignalBlock:^(SQRLShipItState *request) {
+		NSURL *targetURL = request.targetBundleURL;
 
-			NSNumber *targetWritable = nil;
-			NSError *targetWritableError = nil;
-			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
+		NSNumber *targetWritable = nil;
+		NSError *targetWritableError = nil;
+		BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
 
-			// If we can't determine whether it can be written, assume
-			// nonprivileged and wait for another, more canonical error.
-			SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:(gotWritable && !targetWritable.boolValue)];
-			return [connection startAndLaunchTarget:NO];
-		}]
-		replayLazily]
-		setNameWithFormat:@"shipItLauncher"];
+		// If we can't determine whether it can be written, assume
+		// nonprivileged and wait for another, more canonical error.
+		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:(gotWritable && !targetWritable.boolValue)];
+
+		return [connection sendRequest:request];
+	}];
 	
 	return self;
 }
@@ -476,7 +472,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[[[[SQRLShipItState
+	return [[[[[[SQRLShipItState
 		readUsingURL:self.shipItStateURL]
 		catchTo:[RACSignal empty]]
 		flattenMap:^(SQRLShipItState *existingState) {
@@ -484,10 +480,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		}]
 		then:^{
 			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
-			return [state writeUsingURL:self.shipItStateURL];
-		}]
-		then:^{
-			return self.shipItLauncher;
+			return [self.shipItLauncher execute:state];
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
