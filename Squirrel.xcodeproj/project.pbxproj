@@ -19,6 +19,16 @@
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
 		5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */ = {isa = PBXBuildFile; fileRef = 5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */; };
 		5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */ = {isa = PBXBuildFile; fileRef = 5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */; };
+		537648F718871792008FB816 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
+		537648FA18871EDA008FB816 /* SQTLShipItWatcherSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 537648F918871EDA008FB816 /* SQTLShipItWatcherSpec.m */; };
+		537648FD18872C43008FB816 /* shipit-watcher in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = 5349B3F4188709C300FE1E55 /* shipit-watcher */; };
+		537648FE18873592008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
+		5376490318873638008FB816 /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BAC1804B1FD00A84EDC /* libMantle-Mac.a */; };
+		5376490418873638008FB816 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */; };
+		537649051887364E008FB816 /* SQRLShipItState.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */; };
+		5376490618873659008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
+		53764907188737B4008FB816 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
+		53764908188737D3008FB816 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
@@ -34,13 +44,12 @@
 		D014ABBA17B97403007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D014AC0517B97885007D79D0 /* ShipItInstaller-main.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC0417B97885007D79D0 /* ShipItInstaller-main.m */; };
 		D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
-		D014AC1817B97945007D79D0 /* ShipIt in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = D014AC0117B97885007D79D0 /* ShipIt */; };
+		D014AC1817B97945007D79D0 /* shipit-installer in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = D014AC0117B97885007D79D0 /* shipit-installer */; };
 		D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
 		D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D014AC1D17B979B7007D79D0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D014AC1E17B979BD007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
-		D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */; };
 		D049059D18055671004E683E /* SQRLShipItStateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059C18055671004E683E /* SQRLShipItStateSpec.m */; };
@@ -110,6 +119,27 @@
 			proxyType = 1;
 			remoteGlobalIDString = 534FF35F17D8E90A0020A51A;
 			remoteInfo = TestService;
+		};
+		537648FB18872C27008FB816 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5349B3F3188709C300FE1E55;
+			remoteInfo = "ShipIt Watcher";
+		};
+		537648FF18873628008FB816 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = D05AD39317F2D56F0080895B;
+			remoteInfo = "ReactiveCocoa-Mac";
+		};
+		5376490118873630008FB816 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D0A56B961804B1FD00A84EDC /* Mantle.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = D0A56B451804B04900A84EDC;
+			remoteInfo = "Mantle-Mac";
 		};
 		53B70020181E944F000FFBD0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -389,7 +419,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 7;
 			files = (
-				D014AC1817B97945007D79D0 /* ShipIt in Copy ShipIt */,
+				537648FD18872C43008FB816 /* shipit-watcher in Copy ShipIt */,
+				D014AC1817B97945007D79D0 /* shipit-installer in Copy ShipIt */,
 			);
 			name = "Copy ShipIt";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -419,7 +450,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		5349B3F4188709C300FE1E55 /* ShipIt Watcher */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "ShipIt Watcher"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5349B3F4188709C300FE1E55 /* shipit-watcher */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "shipit-watcher"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5349B3F7188709C300FE1E55 /* ShipItWatcher-main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "ShipItWatcher-main.m"; sourceTree = "<group>"; };
 		534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestApplication.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		534FF36417D8E90A0020A51A /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
@@ -436,6 +467,7 @@
 		53710D8317D8F5C300A992DE /* xcodebuild.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = xcodebuild.awk; sourceTree = "<group>"; };
 		5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLAuthorization.h; sourceTree = "<group>"; };
 		5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLAuthorization.m; sourceTree = "<group>"; };
+		537648F918871EDA008FB816 /* SQTLShipItWatcherSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQTLShipItWatcherSpec.m; sourceTree = "<group>"; };
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
@@ -450,7 +482,7 @@
 		D014ABB517B96CB3007D79D0 /* SQRLShipItConnection.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItConnection.h; sourceTree = "<group>"; };
 		D014ABB617B96CB3007D79D0 /* SQRLShipItConnection.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItConnection.m; sourceTree = "<group>"; };
 		D014ABB917B97403007D79D0 /* ServiceManagement.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ServiceManagement.framework; path = System/Library/Frameworks/ServiceManagement.framework; sourceTree = SDKROOT; };
-		D014AC0117B97885007D79D0 /* ShipIt */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = ShipIt; sourceTree = BUILT_PRODUCTS_DIR; };
+		D014AC0117B97885007D79D0 /* shipit-installer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "shipit-installer"; sourceTree = BUILT_PRODUCTS_DIR; };
 		D014AC0417B97885007D79D0 /* ShipItInstaller-main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = "ShipItInstaller-main.m"; path = "Squirrel/ShipItInstaller-main.m"; sourceTree = SOURCE_ROOT; };
 		D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLInstaller.h; path = Squirrel/SQRLInstaller.h; sourceTree = SOURCE_ROOT; };
 		D014AC1017B9789C007D79D0 /* SQRLInstaller.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLInstaller.m; path = Squirrel/SQRLInstaller.m; sourceTree = SOURCE_ROOT; };
@@ -459,8 +491,8 @@
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
-		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
-		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
+		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLTerminationListener.h; path = ../Squirrel/SQRLTerminationListener.h; sourceTree = "<group>"; };
+		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLTerminationListener.m; path = ../Squirrel/SQRLTerminationListener.m; sourceTree = "<group>"; };
 		D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManagerSpec.m; sourceTree = "<group>"; };
 		D049059C18055671004E683E /* SQRLShipItStateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItStateSpec.m; sourceTree = "<group>"; };
 		D049059E180558B7004E683E /* SQRLTestUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestUpdate.h; sourceTree = "<group>"; };
@@ -542,6 +574,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				53764908188737D3008FB816 /* Security.framework in Frameworks */,
+				5376490618873659008FB816 /* AppKit.framework in Frameworks */,
+				5376490318873638008FB816 /* libMantle-Mac.a in Frameworks */,
+				5376490418873638008FB816 /* libReactiveCocoa-Mac.a in Frameworks */,
 				5349B3F5188709C300FE1E55 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -558,6 +594,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				537648FE18873592008FB816 /* AppKit.framework in Frameworks */,
 				53CE752D188330590085C0EB /* Foundation.framework in Frameworks */,
 				D0A56BBA1804B21700A84EDC /* libMantle-Mac.a in Frameworks */,
 				D0964B2217F2DD4D00D88BF7 /* libReactiveCocoa-Mac.a in Frameworks */,
@@ -616,6 +653,8 @@
 			isa = PBXGroup;
 			children = (
 				5349B3F7188709C300FE1E55 /* ShipItWatcher-main.m */,
+				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
+				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
 			);
 			path = "ShipIt Watcher";
 			sourceTree = "<group>";
@@ -689,8 +728,6 @@
 				D014AC0417B97885007D79D0 /* ShipItInstaller-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
-				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
-				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
 			);
 			name = "ShipIt Installer";
 			path = Squirrel;
@@ -839,9 +876,9 @@
 				D0C22BD7179CC00E00158214 /* Squirrel.framework */,
 				D0C22BEF179CC00E00158214 /* SquirrelTests.octest */,
 				D08D4E0C17B451500012B22D /* TestApplication.app */,
-				D014AC0117B97885007D79D0 /* ShipIt */,
+				D014AC0117B97885007D79D0 /* shipit-installer */,
 				534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */,
-				5349B3F4188709C300FE1E55 /* ShipIt Watcher */,
+				5349B3F4188709C300FE1E55 /* shipit-watcher */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1001,6 +1038,7 @@
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
+				537648F918871EDA008FB816 /* SQTLShipItWatcherSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -1085,10 +1123,12 @@
 			buildRules = (
 			);
 			dependencies = (
+				5376490218873630008FB816 /* PBXTargetDependency */,
+				5376490018873628008FB816 /* PBXTargetDependency */,
 			);
 			name = "ShipIt Watcher";
 			productName = "ShipIt Watcher";
-			productReference = 5349B3F4188709C300FE1E55 /* ShipIt Watcher */;
+			productReference = 5349B3F4188709C300FE1E55 /* shipit-watcher */;
 			productType = "com.apple.product-type.tool";
 		};
 		534FF35F17D8E90A0020A51A /* TestService */ = {
@@ -1123,7 +1163,7 @@
 			);
 			name = "ShipIt Installer";
 			productName = ShipIt;
-			productReference = D014AC0117B97885007D79D0 /* ShipIt */;
+			productReference = D014AC0117B97885007D79D0 /* shipit-installer */;
 			productType = "com.apple.product-type.tool";
 		};
 		D08D4E0B17B451500012B22D /* TestApplication */ = {
@@ -1164,6 +1204,7 @@
 			dependencies = (
 				D0A56BB61804B20800A84EDC /* PBXTargetDependency */,
 				D0F3F06217E83AFF003AFA6B /* PBXTargetDependency */,
+				537648FC18872C27008FB816 /* PBXTargetDependency */,
 				D014AC1717B9793A007D79D0 /* PBXTargetDependency */,
 			);
 			name = Squirrel;
@@ -1460,6 +1501,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				537649051887364E008FB816 /* SQRLShipItState.m in Sources */,
+				53764907188737B4008FB816 /* SQRLCodeSignature.m in Sources */,
+				537648F718871792008FB816 /* SQRLTerminationListener.m in Sources */,
 				5349B3F8188709C300FE1E55 /* ShipItWatcher-main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1478,7 +1522,6 @@
 			files = (
 				D0A56BEC1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
-				D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipItInstaller-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */,
 				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
@@ -1532,6 +1575,7 @@
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
+				537648FA18871EDA008FB816 /* SQTLShipItWatcherSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
 				D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */,
@@ -1546,6 +1590,21 @@
 			isa = PBXTargetDependency;
 			target = 534FF35F17D8E90A0020A51A /* TestService */;
 			targetProxy = 534FF37017D8E9170020A51A /* PBXContainerItemProxy */;
+		};
+		537648FC18872C27008FB816 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5349B3F3188709C300FE1E55 /* ShipIt Watcher */;
+			targetProxy = 537648FB18872C27008FB816 /* PBXContainerItemProxy */;
+		};
+		5376490018873628008FB816 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "ReactiveCocoa-Mac";
+			targetProxy = 537648FF18873628008FB816 /* PBXContainerItemProxy */;
+		};
+		5376490218873630008FB816 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = "Mantle-Mac";
+			targetProxy = 5376490118873630008FB816 /* PBXContainerItemProxy */;
 		};
 		53B7002F181E9456000FFBD0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1652,34 +1711,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				ONLY_ACTIVE_ARCH = YES;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_NAME = "shipit-watcher";
 			};
 			name = Debug;
 		};
@@ -1687,28 +1721,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_NAME = "shipit-watcher";
 			};
 			name = Release;
 		};
@@ -1716,28 +1731,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_NAME = "shipit-watcher";
 			};
 			name = Test;
 		};
@@ -1745,28 +1741,9 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				CLANG_WARN_BOOL_CONVERSION = YES;
-				CLANG_WARN_CONSTANT_CONVERSION = YES;
-				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
-				CLANG_WARN_EMPTY_BODY = YES;
-				CLANG_WARN_ENUM_CONVERSION = YES;
-				CLANG_WARN_INT_CONVERSION = YES;
-				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = YES;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
-				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
-				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
-				GCC_WARN_UNDECLARED_SELECTOR = YES;
-				GCC_WARN_UNINITIALIZED_AUTOS = YES;
-				GCC_WARN_UNUSED_FUNCTION = YES;
-				GCC_WARN_UNUSED_VARIABLE = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				OTHER_LDFLAGS = "-all_load";
+				PRODUCT_NAME = "shipit-watcher";
 			};
 			name = Profile;
 		};
@@ -1823,7 +1800,7 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "shipit-installer";
 				SKIP_INSTALL = YES;
 			};
 			name = Debug;
@@ -1833,7 +1810,7 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "shipit-installer";
 				SKIP_INSTALL = YES;
 			};
 			name = Release;
@@ -1843,7 +1820,7 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "shipit-installer";
 				SKIP_INSTALL = YES;
 			};
 			name = Test;
@@ -1853,7 +1830,7 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "shipit-installer";
 				SKIP_INSTALL = YES;
 			};
 			name = Profile;
@@ -2112,6 +2089,7 @@
 				5349B401188709C300FE1E55 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		534FF36B17D8E90A0020A51A /* Build configuration list for PBXNativeTarget "TestService" */ = {
 			isa = XCConfigurationList;

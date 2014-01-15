@@ -57,7 +57,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			};
 
 			NSMutableArray *arguments = [[NSMutableArray alloc] init];
-			[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
+			[arguments addObject:[squirrelBundle URLForResource:@"shipit-installer" withExtension:nil].path];
 
 			// Pass in the service name so ShipIt knows how to broadcast itself.
 			[arguments addObject:jobLabel];
@@ -144,17 +144,14 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return [[[request
 		writeUsingURL:directoryManager.shipItStateURL]
 		then:^{
-			return [[[RACSignal
+			return [[RACSignal
 				zip:@[
 					self.class.shipItJobDictionary,
 					domainAuthorization[1],
 				] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
 					return [self submitInstallJob:jobDictionary domain:domainAuthorization[0] authorization:authorizationValue];
 				}]
-				flatten]
-				then:^{
-					return (request.relaunchAfterInstallation ? [self submitLaunchJob] : [RACSignal empty]);
-				}];
+				flatten];
 		}]
 		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
 }
@@ -176,10 +173,6 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 		return [RACSignal error:CFBridgingRelease(cfError)];
 	}
 
-	return [RACSignal empty];
-}
-
-- (RACSignal *)submitLaunchJob {
 	return [RACSignal empty];
 }
 
