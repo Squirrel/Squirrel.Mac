@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D014AC0017B97885007D79D0"
-               BuildableName = "ShipIt"
-               BlueprintName = "ShipIt"
+               BuildableName = "ShipIt Installer"
+               BlueprintName = "ShipIt Installer"
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
