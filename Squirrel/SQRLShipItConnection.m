@@ -52,10 +52,6 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
 			};
 
-			jobDict[@(LAUNCH_JOBKEY_MACHSERVICES)] = @{
-				jobLabel: @YES
-			};
-
 			NSMutableArray *arguments = [[NSMutableArray alloc] init];
 			[arguments addObject:[squirrelBundle URLForResource:@"shipit-installer" withExtension:nil].path];
 
