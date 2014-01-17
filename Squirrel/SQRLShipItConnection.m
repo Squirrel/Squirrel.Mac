@@ -31,7 +31,35 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 }
 
-+ (RACSignal *)shipItJobDictionary {
++ (NSDictionary *)shipItWatcherJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
+	NSParameterAssert(requestURL != nil);
+	NSParameterAssert(readyURL != nil);
+
+	NSString *jobLabel = [self.shipItJobLabel stringByAppendingString:@".watcher"];
+
+	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
+	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
+
+	NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
+	jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
+	jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
+	jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
+	jobDict[@(LAUNCH_JOBKEY_THROTTLEINTERVAL)] = @2;
+
+	NSMutableArray *arguments = [[NSMutableArray alloc] init];
+	[arguments addObject:[squirrelBundle URLForResource:@"shipit-watcher" withExtension:nil].path];
+	[arguments addObject:jobLabel];
+	[arguments addObject:requestURL.path];
+	[arguments addObject:readyURL.path];
+	jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
+
+	return jobDict;
+}
+
++ (RACSignal *)shipItInstallerJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
+	NSParameterAssert(requestURL != nil);
+	NSParameterAssert(readyURL != nil);
+
 	NSString *jobLabel = self.shipItJobLabel;
 
 	return [[[RACSignal
@@ -57,6 +85,9 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 
 			// Pass in the service name so ShipIt knows how to broadcast itself.
 			[arguments addObject:jobLabel];
+
+			[arguments addObject:requestURL.path];
+			[arguments addObject:readyURL.path];
 
 			jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
@@ -135,21 +166,46 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 - (RACSignal *)sendRequest:(SQRLShipItState *)request {
 	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.class.shipItJobLabel];
 
-	RACTuple *domainAuthorization = (self.privileged ? RACTuplePack((__bridge id)kSMDomainSystemLaunchd, self.class.shipItAuthorization) : RACTuplePack((__bridge id)kSMDomainUserLaunchd, [RACSignal return:nil]));
-
-	return [[[request
-		writeUsingURL:directoryManager.shipItStateURL]
-		then:^{
-			return [[RACSignal
-				zip:@[
-					self.class.shipItJobDictionary,
-					domainAuthorization[1],
-				] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
-					return [self submitJob:jobDictionary domain:domainAuthorization[0] authorization:authorizationValue];
-				}]
-				flatten];
+	RACSignal *waitFileLocation = [[[RACSignal
+		defer:^{
+			NSURL *temporaryDirectory = [[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:@"com.github.Squirrel"];
+			NSURL *waitFilesLocation = [temporaryDirectory URLByAppendingPathComponent:@"wait"];
+			return [RACSignal return:waitFilesLocation];
 		}]
+		try:^(NSURL *waitDirectory, NSError **errorRef) {
+			return [NSFileManager.defaultManager createDirectoryAtURL:waitDirectory withIntermediateDirectories:YES attributes:nil error:errorRef];
+		}]
+		map:^(NSURL *waitDirectory) {
+			return [waitDirectory URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
+		}];
+
+	return [[[RACSignal zip:@[
+			directoryManager.shipItStateURL,
+			waitFileLocation,
+		] reduce:^(NSURL *requestURL, NSURL *readyURL) {
+			return [[self
+				submitWatcherJobForRequestURL:requestURL readyURL:readyURL]
+				concat:[self submitInstallerJobForRequestURL:requestURL readyURL:readyURL]];
+		}]
+		flatten]
 		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
+}
+
+- (RACSignal *)submitWatcherJobForRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
+	NSDictionary *job = [self.class shipItWatcherJobDictionaryWithRequestURL:requestURL readyURL:readyURL];
+	return [[self
+		submitJob:job domain:(__bridge id)kSMDomainUserLaunchd authorization:nil]
+		setNameWithFormat:@"%@ -submitWatcherJobForRequestURL: %@ readyURL: %@", self, requestURL, readyURL];
+}
+
+- (RACSignal *)submitInstallerJobForRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
+	return [[[self.class
+		shipItInstallerJobDictionaryWithRequestURL:requestURL readyURL:readyURL]
+		flattenMap:^(NSDictionary *job) {
+			RACTuple *domainAuthorization = (self.privileged ? RACTuplePack((__bridge id)kSMDomainSystemLaunchd, self.class.shipItAuthorization) : RACTuplePack((__bridge id)kSMDomainUserLaunchd, [RACSignal return:nil]));
+			return [self submitJob:job domain:domainAuthorization[0] authorization:domainAuthorization[1]];
+		}]
+		setNameWithFormat:@"%@ -submitInstallerJobForRequestURL: %@ readyURL: %@", self, requestURL, readyURL];
 }
 
 - (RACSignal *)submitJob:(NSDictionary *)job domain:(NSString *)domain authorization:(SQRLAuthorization *)authorizationValue {

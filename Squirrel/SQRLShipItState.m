@@ -57,13 +57,13 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 #pragma mark Serialization
 
-+ (RACSignal *)readUsingURL:(RACSignal *)URL {
++ (RACSignal *)readFromURL:(NSURL *)URL {
 	NSParameterAssert(URL != nil);
 
-	return [[[URL
-		flattenMap:^(NSURL *stateURL) {
-			NSError *error = nil;
-			NSData *data = [NSData dataWithContentsOfURL:stateURL options:NSDataReadingUncached error:&error];
+	return [[[RACSignal
+		defer:^{
+			NSError *error;
+			NSData *data = [NSData dataWithContentsOfURL:URL options:NSDataReadingUncached error:&error];
 			if (data == nil) {
 				return [RACSignal error:error];
 			}
@@ -83,10 +83,10 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 
 			return [RACSignal return:state];
 		}]
-		setNameWithFormat:@"+readUsingURL: %@", URL];
+		setNameWithFormat:@"+readFromURL: %@", URL];
 }
 
-- (RACSignal *)writeUsingURL:(RACSignal *)URL {
+- (RACSignal *)writeToURL:(NSURL *)URL {
 	NSParameterAssert(URL != nil);
 
 	RACSignal *serialization = [RACSignal defer:^{
@@ -103,20 +103,11 @@ const NSInteger SQRLShipItStateErrorArchiving = 3;
 		return [RACSignal return:data];
 	}];
 
-	return [[[RACSignal
-		zip:@[
-			URL,
-			serialization
-		] reduce:^(NSURL *stateURL, NSData *data) {
-			NSError *error = nil;
-			if (![data writeToURL:stateURL options:NSDataWritingAtomic error:&error]) {
-				return [RACSignal error:error];
-			}
-
-			return [RACSignal empty];
+	return [[serialization
+		try:^(NSData *data, NSError **errorRef) {
+			return [data writeToURL:URL options:NSDataWritingAtomic error:errorRef];
 		}]
-		flatten]
-		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
+		setNameWithFormat:@"%@ -writeToURL: %@", self, URL];
 }
 
 @end

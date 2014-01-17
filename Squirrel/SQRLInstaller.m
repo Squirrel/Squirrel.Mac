@@ -283,8 +283,11 @@ typedef struct {
 	return [step flattenMap:^(NSNumber *nextState) {
 		state.installerState = nextState.integerValue;
 		state.installationStateAttempt = 1;
-		return [[state
-			writeUsingURL:self.directoryManager.shipItStateURL]
+
+		return [[self.directoryManager.shipItStateURL
+			flattenMap:^(NSURL *URL) {
+				return [state writeToURL:URL];
+			}]
 			// Automatically begin the next step.
 			concat:[self stepRepeatedly:step withState:state]];
 	}];
@@ -332,7 +335,11 @@ typedef struct {
 			// control to -backUpBundleAtURL:. Really, the flow
 			// here should be refactored so it doesn't matter.
 			state.backupBundleURL = backupBundleURL;
-			return [state writeUsingURL:self.directoryManager.shipItStateURL];
+
+			return [self.directoryManager.shipItStateURL
+				flattenMap:^(NSURL *URL) {
+					return [state writeToURL:URL];
+				}];
 		}]
 		setNameWithFormat:@"%@ -backUpWithState: %@", self, state];
 }

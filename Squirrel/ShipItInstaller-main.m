@@ -38,12 +38,22 @@ int main(int argc, const char * argv[]) {
 			return EXIT_FAILURE;
 		}
 		NSString *jobLabel = @(argv[1]);
-
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:jobLabel];
-		RACSignal *stateLocation = directoryManager.shipItStateURL;
+
+		if (argc < 3) {
+			NSLog(@"Missing ShipIt request URL");
+			return EXIT_FAILURE;
+		}
+		NSURL *requestURL = [NSURL fileURLWithPath:@(argv[2])];
+
+		if (argc < 4) {
+			NSLog(@"Missing ShipIt ready URL");
+			return EXIT_FAILURE;
+		}
+		NSURL *readyURL = [NSURL fileURLWithPath:@(argv[3])];
 
 		[[[[SQRLShipItState
-			readUsingURL:stateLocation]
+			readFromURL:requestURL]
 			catch:^(NSError *error) {
 				NSLog(@"Error reading saved installer state: %@", error);
 
@@ -71,7 +81,7 @@ int main(int argc, const char * argv[]) {
 						}];
 				} else {
 					action = [[[[[state
-						writeUsingURL:stateLocation]
+						writeToURL:requestURL]
 						initially:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");
