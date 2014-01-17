@@ -145,14 +145,14 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 					self.class.shipItJobDictionary,
 					domainAuthorization[1],
 				] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
-					return [self submitInstallJob:jobDictionary domain:domainAuthorization[0] authorization:authorizationValue];
+					return [self submitJob:jobDictionary domain:domainAuthorization[0] authorization:authorizationValue];
 				}]
 				flatten];
 		}]
 		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
 }
 
-- (RACSignal *)submitInstallJob:(NSDictionary *)job domain:(NSString *)domain authorization:(SQRLAuthorization *)authorizationValue {
+- (RACSignal *)submitJob:(NSDictionary *)job domain:(NSString *)domain authorization:(SQRLAuthorization *)authorizationValue {
 	AuthorizationRef authorization = authorizationValue.authorization;
 
 	CFErrorRef cfError;
@@ -161,7 +161,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 		cfError = NULL;
 
 		if (![error.domain isEqual:(__bridge id)kSMErrorDomainLaunchd] || error.code != kSMErrorJobNotFound) {
-			NSLog(@"Could not remove previous ShipIt job: %@", error);
+			NSLog(@"Could not remove previous ShipIt job %@: %@", job[@(LAUNCH_JOBKEY_LABEL)], error);
 		}
 	}
 
