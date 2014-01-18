@@ -176,10 +176,13 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			return [NSFileManager.defaultManager createDirectoryAtURL:waitDirectory withIntermediateDirectories:YES attributes:nil error:errorRef];
 		}]
 		map:^(NSURL *waitDirectory) {
-			return [waitDirectory URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString];
+			NSProcessInfo *processInfo = NSProcessInfo.processInfo;
+			NSString *waitFileName = [processInfo.processName stringByAppendingFormat:@"-%@", processInfo.globallyUniqueString];
+			return [waitDirectory URLByAppendingPathComponent:waitFileName];
 		}];
 
-	return [[[RACSignal zip:@[
+	return [[[RACSignal
+		zip:@[
 			directoryManager.shipItStateURL,
 			waitFileLocation,
 		] reduce:^(NSURL *requestURL, NSURL *readyURL) {
