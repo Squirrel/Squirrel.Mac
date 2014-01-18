@@ -16,7 +16,7 @@ it(@"should write a response when the target exits", ^{
 
 	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:testApplication.bundleURL updateBundleURL:[self createTestApplicationUpdate] bundleIdentifier:testApplication.bundleIdentifier codeSignature:self.testApplicationSignature];
 	RACSignal *stateLocation = self.shipItDirectoryManager.shipItStateURL;
-	expect([[state writeUsingURL:stateLocation] waitUntilCompleted:NULL]).to.beTruthy();
+	expect([[state writeToURL:stateLocation.first] waitUntilCompleted:NULL]).to.beTruthy();
 
 	NSString *requestPath = stateLocation.first;
 	NSString *responsePath = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"completed"].path;
