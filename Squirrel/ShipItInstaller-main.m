@@ -15,7 +15,7 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLShipItState.h"
-#import "SQRLTerminationListener.h"
+#import "SQRLFileListener.h"
 
 // The maximum number of times ShipIt should run the same installation state, in
 // an attempt to update.
@@ -26,6 +26,65 @@ static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
+
+static RACSignal *waitForReadyURL(NSURL *readyURL) {
+	SQRLFileListener *listener = [[SQRLFileListener alloc] initWithFileURL:readyURL];
+	return listener.waitUntilPresent;
+}
+
+static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *requestURL) {
+	return [[[SQRLShipItState
+		readFromURL:requestURL]
+		catch:^(NSError *error) {
+			NSLog(@"Error reading saved installer state: %@", error);
+
+			// Exit successfully so launchd doesn't restart us again.
+			return [RACSignal empty];
+		}]
+		flattenMap:^(SQRLShipItState *state) {
+			BOOL freshInstall = (state.installerState == SQRLInstallerStateNothingToDo);
+			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
+
+			NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
+			RACSignal *action;
+
+			if (attempt > SQRLShipItMaximumInstallationAttempts) {
+				action = [[[installer.abortInstallationCommand
+					execute:state]
+					initially:^{
+						NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
+					}]
+					catch:^(NSError *error) {
+						NSLog(@"Error aborting installation: %@", error);
+
+						// Exit successfully so launchd doesn't restart us again.
+						return [RACSignal empty];
+					}];
+			} else {
+				action = [[[[[state
+					writeToURL:requestURL]
+					initially:^{
+						if (freshInstall) {
+							NSLog(@"Beginning installation");
+							state.installerState = SQRLInstallerStateClearingQuarantine;
+						} else {
+							NSLog(@"Resuming installation from state %i", (int)state.installerState);
+						}
+
+						state.installationStateAttempt = attempt;
+					}]
+					then:^{
+						return [installer.installUpdateCommand execute:state];
+					}]
+					doCompleted:^{
+						NSLog(@"Installation completed successfully");
+					}]
+					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+			}
+
+			return action;
+		}];
+}
 
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
@@ -52,57 +111,8 @@ int main(int argc, const char * argv[]) {
 		}
 		NSURL *readyURL = [NSURL fileURLWithPath:@(argv[3])];
 
-		[[[[SQRLShipItState
-			readFromURL:requestURL]
-			catch:^(NSError *error) {
-				NSLog(@"Error reading saved installer state: %@", error);
-
-				// Exit successfully so launchd doesn't restart us again.
-				return [RACSignal empty];
-			}]
-			flattenMap:^(SQRLShipItState *state) {
-				BOOL freshInstall = (state.installerState == SQRLInstallerStateNothingToDo);
-				SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
-
-				NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
-				RACSignal *action;
-
-				if (attempt > SQRLShipItMaximumInstallationAttempts) {
-					action = [[[installer.abortInstallationCommand
-						execute:state]
-						initially:^{
-							NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
-						}]
-						catch:^(NSError *error) {
-							NSLog(@"Error aborting installation: %@", error);
-
-							// Exit successfully so launchd doesn't restart us again.
-							return [RACSignal empty];
-						}];
-				} else {
-					action = [[[[[state
-						writeToURL:requestURL]
-						initially:^{
-							if (freshInstall) {
-								NSLog(@"Beginning installation");
-								state.installerState = SQRLInstallerStateClearingQuarantine;
-							} else {
-								NSLog(@"Resuming installation from state %i", (int)state.installerState);
-							}
-
-							state.installationStateAttempt = attempt;
-						}]
-						then:^{
-							return [installer.installUpdateCommand execute:state];
-						}]
-						doCompleted:^{
-							NSLog(@"Installation completed successfully");
-						}]
-						sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
-				}
-
-				return action;
-			}]
+		[[waitForReadyURL(readyURL)
+			concat:install(directoryManager, requestURL)]
 			subscribeError:^(NSError *error) {
 				NSLog(@"Installation error: %@", error);
 				exit(EXIT_FAILURE);
