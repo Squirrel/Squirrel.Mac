@@ -29,7 +29,7 @@ int main(int argc, const char * argv[])
 		NSString *responsePath = @(argv[2]);
 
 		[[[[SQRLShipItState
-			readUsingURL:[RACSignal return:[NSURL fileURLWithPath:requestPath]]]
+			readFromURL:[NSURL fileURLWithPath:requestPath]]
 			flattenMap:^(SQRLShipItState *state) {
 				if (state.bundleIdentifier == nil) return [RACSignal empty];
 

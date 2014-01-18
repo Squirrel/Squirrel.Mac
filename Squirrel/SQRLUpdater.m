@@ -468,9 +468,12 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[[[SQRLShipItState
-		readUsingURL:self.shipItStateURL]
-		catchTo:[RACSignal empty]]
+	return [[[[[self.shipItStateURL
+		flattenMap:^(NSURL *URL) {
+			return [[SQRLShipItState
+				readFromURL:URL]
+				catchTo:[RACSignal empty]];
+		}]
 		flattenMap:^(SQRLShipItState *existingState) {
 			return [self validateExistingState:existingState];
 		}]
@@ -483,16 +486,19 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[[SQRLShipItState
-		readUsingURL:self.shipItStateURL]
-		flattenMap:^(SQRLShipItState *existingState) {
-			return [self validateExistingState:existingState];
-		}]
-		flattenMap:^(SQRLShipItState *state) {
-			state.relaunchAfterInstallation = YES;
-			return [[state
-				writeUsingURL:self.shipItStateURL]
-				sqrl_addTransactionWithName:NSLocalizedString(@"Preparing to relaunch", nil) description:NSLocalizedString(@"%@ is preparing to relaunch to install an update. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier];
+	return [[[[[[self.shipItStateURL
+		flattenMap:^(NSURL *URL) {
+			return [[[SQRLShipItState
+				readFromURL:URL]
+				flattenMap:^(SQRLShipItState *existingState) {
+					return [self validateExistingState:existingState];
+				}]
+				flattenMap:^(SQRLShipItState *state) {
+					state.relaunchAfterInstallation = YES;
+					return [[state
+						writeToURL:URL]
+						sqrl_addTransactionWithName:NSLocalizedString(@"Preparing to relaunch", nil) description:NSLocalizedString(@"%@ is preparing to relaunch to install an update. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier];
+				}];
 		}]
 		deliverOn:RACScheduler.mainThreadScheduler]
 		doCompleted:^{
