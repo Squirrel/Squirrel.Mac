@@ -206,16 +206,16 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 }
 
 - (RACSignal *)submitInstallerJobForRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
-	return [[[self.class
-		shipItInstallerJobDictionaryWithRequestURL:requestURL readyURL:readyURL]
-		flattenMap:^(NSDictionary *job) {
-			RACTuple *domainAuthorization = (self.privileged ? RACTuplePack((__bridge id)kSMDomainSystemLaunchd, self.class.shipItAuthorization) : RACTuplePack((__bridge id)kSMDomainUserLaunchd, [RACSignal return:nil]));
+	RACTuple *domainAuthorization = (self.privileged ? RACTuplePack((__bridge id)kSMDomainSystemLaunchd, self.class.shipItAuthorization) : RACTuplePack((__bridge id)kSMDomainUserLaunchd, [RACSignal return:nil]));
 
-			return [domainAuthorization[1]
-				flattenMap:^(SQRLAuthorization *authorization) {
-					return [self submitJob:job domain:domainAuthorization[0] authorization:authorization];
-				}];
+	return [[[RACSignal
+		zip:@[
+			[self.class shipItInstallerJobDictionaryWithRequestURL:requestURL readyURL:readyURL],
+			domainAuthorization[1],
+		] reduce:^(NSDictionary *job, SQRLAuthorization *authorization) {
+			return [self submitJob:job domain:domainAuthorization[0] authorization:authorization];
 		}]
+		flatten]
 		setNameWithFormat:@"%@ -submitInstallerJobForRequestURL: %@ readyURL: %@", self, requestURL, readyURL];
 }
 
