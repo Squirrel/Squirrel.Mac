@@ -23,7 +23,9 @@ updates installed are valid.
 
 # Adopting Squirrel
 
+1. Install xctool with `brew install xctool`
 1. Add the Squirrel repository as a git submodule
+1. Run `script/bootstrap` from within the submodule
 1. Add a reference to Squirrel.xcodeproj to your project
 1. Add Squirrel.framework as a target dependency
 1. Link Squirrel.framework and add it to a Copy Files build phase which copies
