@@ -82,6 +82,24 @@ static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *request
 					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 			}
 
+			if (state.relaunchAfterInstallation) {
+				action = [action
+					finally:^{
+						FSRef target;
+						if (!CFURLGetFSRef((__bridge CFURLRef)state.targetBundleURL, &target)) return;
+
+						// LaunchServices is surprisingly root safe, see
+						// Technical Note TN2083 - Process Manager and Launch
+						// Services.
+						LSApplicationParameters application = {
+							.version = 0,
+							.flags = kLSLaunchDefaults | kLSLaunchAndDisplayErrors,
+							.application = &target,
+						};
+						LSOpenApplication(&application, NULL);
+					}];
+			}
+
 			return action;
 		}];
 }
