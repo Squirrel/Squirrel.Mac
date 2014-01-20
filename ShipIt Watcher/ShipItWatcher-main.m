@@ -44,9 +44,10 @@ int main(int argc, const char * argv[])
 				return [RACSignal empty];
 			}]
 			subscribeError:^(NSError *error) {
-				NSLog(@"Installation error: %@", error);
+				NSLog(@"Error waiting for termination: %@", error);
 				exit(EXIT_FAILURE);
 			} completed:^{
+				NSLog(@"Application terminated");
 				exit(EXIT_SUCCESS);
 			}];
 

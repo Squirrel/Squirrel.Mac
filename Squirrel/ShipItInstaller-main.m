@@ -111,8 +111,11 @@ int main(int argc, const char * argv[]) {
 		}
 		NSURL *readyURL = [NSURL fileURLWithPath:@(argv[3])];
 
-		[[waitForReadyURL(readyURL)
+		[[[waitForReadyURL(readyURL)
 			concat:install(directoryManager, requestURL)]
+			doCompleted:^{
+				[NSFileManager.defaultManager removeItemAtURL:readyURL error:NULL];
+			}]
 			subscribeError:^(NSError *error) {
 				NSLog(@"Installation error: %@", error);
 				exit(EXIT_FAILURE);
