@@ -10,7 +10,7 @@
 
 SpecBegin(SQRLFileListener)
 
-it(@"should send a value for a file that already exists", ^{
+it(@"should complete when the file already exists", ^{
 	NSURL *fileToWatch = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"test-file"];
 
 	NSError *error;
@@ -25,7 +25,7 @@ it(@"should send a value for a file that already exists", ^{
 	expect(error).to.beNil();
 });
 
-it(@"should send a value for a file that appears", ^{
+it(@"should complete when the file appears", ^{
 	NSURL *fileToWatch = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"test-file"];
 
 	SQRLFileListener *listener = [[SQRLFileListener alloc] initWithFileURL:fileToWatch];
