@@ -45,6 +45,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
 	jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
 	jobDict[@(LAUNCH_JOBKEY_THROTTLEINTERVAL)] = @2;
+	jobDict[@(LAUNCH_JOBKEY_RUNATLOAD)] = @YES;
 
 	NSMutableArray *arguments = [[NSMutableArray alloc] init];
 	[arguments addObject:[squirrelBundle URLForResource:@"shipit-watcher" withExtension:nil].path];
