@@ -43,7 +43,7 @@
 	_directoryManager = directoryManager;
 
 	_queue = dispatch_queue_create("com.github.Squirrel.SQRLDownloadManager.queue", DISPATCH_QUEUE_CONCURRENT);
-	dispatch_set_target_queue(_queue, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, 0));
+	dispatch_set_target_queue(_queue, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_BACKGROUND, 0));
 
 	return self;
 }
