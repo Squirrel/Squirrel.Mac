@@ -34,7 +34,8 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 
 // Attempts to launch ShipIt.
 //
-// launchTarget - Whether to launch the target of the installation post-install.
+// request - The install parameters, target bundle, update bundle, whether to
+//           launch when install is complete etc.
 //
 // Returns a signal which will complete, or error, on a background scheduler.
 - (RACSignal *)sendRequest:(SQRLShipItState *)request;
