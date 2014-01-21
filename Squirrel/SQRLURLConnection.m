@@ -91,7 +91,7 @@
 				signalForDelegateSelector:@selector(connection:didReceiveData:)]
 				takeUntil:finished];
 
-			RACDisposable *responsesDisposable = [[[[[RACSignal
+			[[[[[RACSignal
 				merge:@[ responses, errors ]]
 				takeUntil:finished]
 				map:^(NSURLResponse *response) {
@@ -114,8 +114,6 @@
 
 			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
 				[connection cancel];
-
-				[responsesDisposable dispose];
 			}]];
 		}]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), request];
