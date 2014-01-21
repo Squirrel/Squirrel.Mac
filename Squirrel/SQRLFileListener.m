@@ -49,7 +49,7 @@
 				dispatch_release(source);
 			}];
 		}]
-		setNameWithFormat:@"%@ -present", self];
+		setNameWithFormat:@"%@ -waitUntilPresent", self];
 
 	return self;
 }
