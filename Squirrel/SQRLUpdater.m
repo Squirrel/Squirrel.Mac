@@ -47,6 +47,16 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 
+// Lazily removes outdated temporary directories (used for previous updates)
+// upon first subscription.
+//
+// Pruning directories while an update is pending or in progress will result in
+// undefined behavior.
+//
+// Sends each removed directory then completes, or errors, on an unspecified
+// thread.
+@property (nonatomic, strong, readonly) RACSignal *prunedUpdateDirectories;
+
 // Parses an update model from downloaded data.
 //
 // data - JSON data representing an update manifest. This must not be nil.
@@ -75,14 +85,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Returns a signal which sends an unarchived `NSBundle` then completes, or
 // errors, on a background thread.
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
-
-// Removes outdated temporary directories used for previous updates.
-//
-// Pruning directories while an update is pending or in progress will result in
-// undefined behavior.
-//
-// Returns a signal which will complete or error on an unspecified thread.
-- (RACSignal *)pruneUpdateDirectories;
 
 // Creates a unique directory in which to save the update bundle, for later use
 // by ShipIt.
@@ -165,8 +167,35 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
 
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
-
 	@weakify(self);
+
+	_prunedUpdateDirectories = [[[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
+				return YES;
+			}];
+
+			return [[enumerator.rac_sequence.signal
+				filter:^(NSURL *enumeratedURL) {
+					NSString *name = enumeratedURL.lastPathComponent;
+					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
+				}]
+				doNext:^(NSURL *directoryURL) {
+					NSError *error = nil;
+					if (![manager removeItemAtURL:directoryURL error:&error]) {
+						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		replayLazily]
+		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
+
 	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
 		@strongify(self);
 		NSParameterAssert(self.updateRequest != nil);
@@ -175,8 +204,15 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-		return [[[[[[NSURLConnection
-			rac_sendAsynchronousRequest:request]
+		// Prune old updates before the first update check.
+		return [[[[[[[self.prunedUpdateDirectories
+			catch:^(NSError *error) {
+				NSLog(@"Error pruning old updates: %@", error);
+				return [RACSignal empty];
+			}]
+			then:^{
+				return [NSURLConnection rac_sendAsynchronousRequest:request];
+			}]
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
@@ -230,13 +266,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
 	@weakify(self);
 
-	return [[[[[[[self
-		pruneUpdateDirectories]
-		catch:^(NSError *error) {
-			NSLog(@"Error pruning update directories: %@", error);
-			return [RACSignal empty];
-		}]
-		concat:[RACSignal interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]]
+	return [[[[[RACSignal
+		interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 		flattenMap:^(id _) {
 			@strongify(self);
 			return [[self.checkForUpdatesCommand
@@ -371,35 +402,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 }
 
 #pragma mark File Management
-
-- (RACSignal *)pruneUpdateDirectories {
-	return [[[[RACSignal
-		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return [directoryManager applicationSupportURL];
-		}]
-		flattenMap:^(NSURL *appSupportURL) {
-			NSFileManager *manager = [[NSFileManager alloc] init];
-			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
-				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
-				return YES;
-			}];
-
-			return [[enumerator.rac_sequence.signal
-				filter:^(NSURL *enumeratedURL) {
-					NSString *name = enumeratedURL.lastPathComponent;
-					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
-				}]
-				doNext:^(NSURL *directoryURL) {
-					NSError *error = nil;
-					if (![manager removeItemAtURL:directoryURL error:&error]) {
-						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
-					}
-				}];
-		}]
-		ignoreValues]
-		setNameWithFormat:@"%@ -pruneUpdateDirectories", self];
-}
 
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
 	return [[[RACSignal
