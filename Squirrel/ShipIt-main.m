@@ -116,7 +116,6 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 						}
 
 						NSError *error;
-						// TODO: needs special affordance when we're running as root, we shouldn't be linking AppKit at all
 						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
 							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
 							return;
