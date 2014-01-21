@@ -24,7 +24,7 @@
 		createSignal:^(id<RACSubscriber> subscriber) {
 			NSURL *parentDirectory = fileURL.URLByDeletingLastPathComponent;
 
-			int fileDescriptor = open(parentDirectory.fileSystemRepresentation, O_RDONLY);
+			int fileDescriptor = open(parentDirectory.path.fileSystemRepresentation, O_RDONLY);
 
 			void (^checkExists)(void) = ^{
 				BOOL exists = [NSFileManager.defaultManager fileExistsAtPath:fileURL.path isDirectory:NULL];
