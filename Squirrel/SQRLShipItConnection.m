@@ -222,15 +222,17 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 - (RACSignal *)submitJob:(NSDictionary *)job domain:(NSString *)domain authorization:(SQRLAuthorization *)authorizationValue {
 	return [[RACSignal
 		defer:^{
+			NSString *jobLabel = job[@(LAUNCH_JOBKEY_LABEL)];
+
 			AuthorizationRef authorization = authorizationValue.authorization;
 
 			CFErrorRef cfError;
-			if (!SMJobRemove((__bridge CFStringRef)domain, (__bridge CFStringRef)self.class.shipItJobLabel, authorization, true, &cfError)) {
+			if (!SMJobRemove((__bridge CFStringRef)domain, (__bridge CFStringRef)jobLabel, authorization, true, &cfError)) {
 				NSError *error = CFBridgingRelease(cfError);
 				cfError = NULL;
 
 				if (![error.domain isEqual:(__bridge id)kSMErrorDomainLaunchd] || error.code != kSMErrorJobNotFound) {
-					NSLog(@"Could not remove previous ShipIt job %@: %@", job[@(LAUNCH_JOBKEY_LABEL)], error);
+					NSLog(@"Could not remove previous ShipIt job %@: %@", jobLabel, error);
 				}
 			}
 
