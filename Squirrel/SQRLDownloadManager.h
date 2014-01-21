@@ -42,8 +42,8 @@
 // Previously started downloads may have been removed and require
 // reinitialising.
 //
-// request - Must not be nil, pass the request you are performing and require a
-//           disk location to save the response body to.
+// request - The request you are performing and require a disk location to save
+//           the response body to. Must not be nil.
 //
 // Returns a signal which sends an `SQRLDownload` object then completes, or
 // errors.
@@ -51,8 +51,9 @@
 
 // Store metadata for a download so that it can be resumed later.
 //
-// download - The download being stored for future resumption, must not be nil.
-// request  - The request for which the download can be resumed.
+// download - The download being stored for future resumption. Must not be nil.
+// request  - The request for which the download can be resumed. Must not be
+//            nil.
 //
 // Returns a signal which completes or errors.
 - (RACSignal *)setDownload:(SQRLResumableDownload *)download forRequest:(NSURLRequest *)request;
