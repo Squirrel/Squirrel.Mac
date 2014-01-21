@@ -314,7 +314,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 	NSParameterAssert(update != nil);
 
 	return [[[self.directoryManager
-		uniqueUpdateDirectoryURL]
+		createUniqueUpdateDirectoryURL]
 		flattenMap:^(NSURL *downloadDirectory) {
 			return [[[[[[self
 				downloadArchiveForUpdate:update intoDirectory:downloadDirectory]

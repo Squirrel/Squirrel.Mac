@@ -30,23 +30,23 @@
 // application identifier.
 //
 // Returns a signal which synchronously sends a URL then completes, or errors.
-- (RACSignal *)applicationSupportURL;
+@property (readonly, nonatomic) RACSignal *applicationSupportURL;
 
 // Finds or creates a downloads directory to store update downloads in prior to
 // installation. This is an applicationSupportURL subdirectory.
 //
 // Returns a signal which sends a URL then completes, or errors.
-- (RACSignal *)downloadDirectoryURL;
+@property (readonly, nonatomic) RACSignal *downloadDirectoryURL;
 
 // Creates a new directory to unpack a downloaded update into prior to
 // installation. This is an applicationSupportURL subdirectory.
 //
 // Returns a signal which sends a URL then completes, or errors.
-- (RACSignal *)uniqueUpdateDirectoryURL;
+- (RACSignal *)createUniqueUpdateDirectoryURL;
 
 // Determines where archived `SQRLShipItState` should be saved.
 //
 // Returns a signal which synchronously sends a URL then completes, or errors.
-- (RACSignal *)shipItStateURL;
+@property (readonly, nonatomic) RACSignal *shipItStateURL;
 
 @end
