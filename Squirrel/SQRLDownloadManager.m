@@ -19,6 +19,22 @@
 @interface SQRLDownloadManager ()
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
 @property (nonatomic, assign, readonly) dispatch_queue_t queue;
+
+// Reads the download index.
+//
+// Returns a signal which sends the download index at time of read then
+// completes, or errors.
+- (RACSignal *)readDownloadIndex;
+
+// Write a new download index.
+//
+// block - Map from the old download index to the new download index. Writing
+//         is serialised, subsequent writers will receive the output of the
+//         previous map block. If the output of the map is equal to the input
+//         no write is attempted and the returned signal completes.
+//
+// Returns a signal which completes or errors.
+- (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block;
 @end
 
 @implementation SQRLDownloadManager
@@ -82,10 +98,6 @@
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-// Reads the download index.
-//
-// Returns a signal which sends the download index at time of read then
-// completes, or errors.
 - (RACSignal *)readDownloadIndex {
 	return [[[self
 		downloadStoreIndexFileLocation]
@@ -122,14 +134,6 @@
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-// Write a new download index.
-//
-// block - Map from the old download index to the new download index. Writing
-//         is serialised, subsequent writers will receive the output of the
-//         previous map block. If the output of the map is equal to the input
-//         no write is attempted and the returned signal completes.
-//
-// Returns a signal which completes or errors.
 - (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block {
 	NSParameterAssert(block != nil);
 
