@@ -32,6 +32,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
 const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
+// The prefix used when creating temporary directories for updates. This will be
+// followed by a random string of characters.
+static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
+
 @interface SQRLUpdater ()
 
 // The code signature for the running application, used to check updates before
@@ -71,6 +75,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 // Returns a signal which sends an unarchived `NSBundle` then completes, or
 // errors, on a background thread.
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
+
+// Removes outdated temporary directories used for previous updates.
+//
+// Pruning directories while an update is pending or in progress will result in
+// undefined behavior.
+//
+// Returns a signal which will complete or error on an unspecified thread.
+- (RACSignal *)pruneUpdateDirectories;
 
 // Creates a unique directory in which to save the update bundle, for later use
 // by ShipIt.
@@ -218,8 +230,13 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
 	@weakify(self);
 
-	return [[[[[RACSignal
-		interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
+	return [[[[[[[self
+		pruneUpdateDirectories]
+		catch:^(NSError *error) {
+			NSLog(@"Error pruning update directories: %@", error);
+			return [RACSignal empty];
+		}]
+		concat:[RACSignal interval:interval onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]]
 		flattenMap:^(id _) {
 			@strongify(self);
 			return [[self.checkForUpdatesCommand
@@ -355,6 +372,35 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 #pragma mark File Management
 
+- (RACSignal *)pruneUpdateDirectories {
+	return [[[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
+				return YES;
+			}];
+
+			return [[enumerator.rac_sequence.signal
+				filter:^(NSURL *enumeratedURL) {
+					NSString *name = enumeratedURL.lastPathComponent;
+					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
+				}]
+				doNext:^(NSURL *directoryURL) {
+					NSError *error = nil;
+					if (![manager removeItemAtURL:directoryURL error:&error]) {
+						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		ignoreValues]
+		setNameWithFormat:@"%@ -pruneUpdateDirectories", self];
+}
+
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
 	return [[[RACSignal
 		defer:^{
@@ -362,7 +408,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			return [directoryManager applicationSupportURL];
 		}]
 		flattenMap:^(NSURL *appSupportURL) {
-			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
 			@onExit {
 				free(updateDirectoryCString);
