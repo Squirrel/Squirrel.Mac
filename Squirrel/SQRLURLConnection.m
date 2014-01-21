@@ -122,6 +122,8 @@
 #pragma mark Download
 
 - (RACSignal *)truncateDownload:(SQRLDownload *)download {
+	NSParameterAssert(download != nil);
+
 	return [[[[[RACSignal
 		defer:^{
 			NSError *error = nil;
@@ -138,6 +140,9 @@
 }
 
 - (RACSignal *)recordDownload:(SQRLResumableDownload *)download downloadManager:(SQRLDownloadManager *)downloadManager {
+	NSParameterAssert(download != nil);
+	NSParameterAssert(downloadManager != nil);
+	
 	return [[[[downloadManager
 		setDownload:download forRequest:self.request]
 		ignoreValues]
