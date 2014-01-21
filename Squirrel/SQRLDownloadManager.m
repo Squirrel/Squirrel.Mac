@@ -102,33 +102,21 @@
 	return [[[self
 		downloadStoreIndexFileLocation]
 		flattenMap:^(NSURL *location) {
-			return [[RACSignal
+			return [RACSignal
 				create:^(id<RACSubscriber> subscriber) {
 					dispatch_async(self.queue, ^{
 						if (subscriber.disposable.disposed) return;
 
 						NSError *error;
-						NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:&error];
-						if (propertyListData == nil) {
+						NSDictionary *propertyList = [self readPropertyListWithContentsOfURL:location error:&error];
+						if (propertyList == nil) {
 							[subscriber sendError:error];
 							return;
 						}
 
-						[subscriber sendNext:propertyListData];
+						[subscriber sendNext:propertyList];
 						[subscriber sendCompleted];
 					});
-				}]
-				tryMap:^ NSDictionary * (NSData *propertyListData, NSError **errorRef) {
-					NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-					if (propertyList == nil) {
-						if (errorRef != NULL) {
-							NSDictionary *errorInfo = @{ NSURLErrorKey: location };
-							*errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:errorInfo];
-						}
-						return nil;
-					}
-
-					return propertyList;
 				}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
@@ -144,18 +132,11 @@
 				dispatch_barrier_async(self.queue, ^{
 					if (subscriber.disposable.disposed) return;
 
-					NSDictionary *propertyList;
-
-					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:NULL];
-					if (propertyListData == nil) {
-						propertyList = @{};
-					} else {
-						propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
-						if (propertyList == nil) {
-							NSDictionary *errorInfo = @{ NSURLErrorKey: location };
-							[subscriber sendError:[NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:errorInfo]];
-							return;
-						}
+					NSError *error;
+					NSDictionary *propertyList = [self readPropertyListWithContentsOfURL:location error:&error];
+					if (propertyList == nil) {
+						[subscriber sendError:error];
+						return;
 					}
 
 					NSDictionary *newPropertyList = block(propertyList);
@@ -171,7 +152,6 @@
 						return;
 					}
 
-					NSError *error;
 					BOOL write = [newData writeToURL:location options:NSDataWritingAtomic error:&error];
 					if (!write) {
 						[subscriber sendError:error];
@@ -183,6 +163,24 @@
 			}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
+}
+
+- (NSDictionary *)readPropertyListWithContentsOfURL:(NSURL *)location error:(NSError **)errorRef {
+	NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:NULL];
+	if (propertyListData == nil) {
+		return @{};
+	}
+
+	NSDictionary *propertyList = [NSKeyedUnarchiver unarchiveObjectWithData:propertyListData];
+	if (propertyList == nil) {
+		if (errorRef != NULL) {
+			NSDictionary *errorInfo = @{ NSURLErrorKey: location };
+			*errorRef = [NSError errorWithDomain:NSCocoaErrorDomain code:NSPropertyListReadCorruptError userInfo:errorInfo];
+		}
+		return nil;
+	}
+
+	return propertyList;
 }
 
 + (NSString *)keyForURL:(NSURL *)URL {
