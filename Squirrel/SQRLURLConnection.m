@@ -18,9 +18,6 @@
 // The request the downloader was initialised with.
 @property (nonatomic, copy, readonly) NSURLRequest *request;
 
-// Connection to retreive the remote resource.
-@property (nonatomic, strong) NSURLConnection *connection;
-
 // Listens for invocations of `selector` on the receiver.
 //
 // The first argument of `selector` must be an `NSURLConnection` object.
