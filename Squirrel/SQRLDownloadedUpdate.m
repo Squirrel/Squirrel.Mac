@@ -41,10 +41,7 @@
 #pragma mark MTLJSONSerializing
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
-	return @{
-		@keypath(SQRLDownloadedUpdate.new, update): @"update",
-		@keypath(SQRLDownloadedUpdate.new, bundleURL): @"bundleURL",
-	};
+	return @{};
 }
 
 + (NSValueTransformer *)updateJSONTransformer {
