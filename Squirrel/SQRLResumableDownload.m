@@ -51,8 +51,7 @@
 			if (ETag == nil) return request;
 
 			NSNumber *alreadyDownloadedSize = nil;
-			NSError *alreadyDownloadedSizeError = nil;
-			BOOL getAlreadyDownloadedSize = [self.fileURL getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:&alreadyDownloadedSizeError];
+			BOOL getAlreadyDownloadedSize = [self.fileURL getResourceValue:&alreadyDownloadedSize forKey:NSURLFileSizeKey error:NULL];
 			if (!getAlreadyDownloadedSize) return request;
 
 			NSMutableURLRequest *newRequest = [request mutableCopy];
