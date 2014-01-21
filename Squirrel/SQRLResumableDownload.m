@@ -15,6 +15,7 @@
 @implementation SQRLResumableDownload
 
 - (instancetype)initWithRequest:(NSURLRequest *)request response:(NSHTTPURLResponse *)response fileURL:(NSURL *)fileURL {
+	NSParameterAssert(request != nil);
 	NSParameterAssert(response != nil);
 	NSParameterAssert(fileURL != nil);
 
