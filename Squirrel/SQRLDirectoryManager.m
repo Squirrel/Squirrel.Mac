@@ -62,9 +62,8 @@
 
 + (RACSignal *)createDirectoryForURL:(RACSignal *)URLSignal {
 	return [[URLSignal
-		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
-			BOOL create = [NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:nil error:errorRef];
-			return (create ? directoryURL : nil);
+		try:^(NSURL *directoryURL, NSError **errorRef) {
+			return [NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:nil error:errorRef];
 		}]
 		setNameWithFormat:@"%@ +createDirectoryForURL: %@", self, URLSignal];
 }
