@@ -10,15 +10,12 @@
 
 @class RACSignal;
 
+// A download is a file which holds the response body for a request and can be
+// resumed by a subsequent request if the initial transfer is interrupted.
+//
+// Don't create a download directly, instead retrieve one from
+// `SQRLDownloadManager`.
 @interface SQRLDownload : MTLModel
-
-// Designated initialiser.
-//
-// request - Must not be nil. The request this download is for.
-// fileURL - Must not be nil. The file location to save received data to.
-//
-// Returns an initialised download suitable for saving response data.
-- (instancetype)initWithRequest:(NSURLRequest *)request fileURL:(NSURL *)fileURL;
 
 // The `request` the receiver was initialised with.
 @property (readonly, copy, nonatomic) NSURLRequest *request;

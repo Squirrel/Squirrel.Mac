@@ -7,6 +7,7 @@
 //
 
 #import "SQRLDownload.h"
+#import "SQRLDownload+Private.h"
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 

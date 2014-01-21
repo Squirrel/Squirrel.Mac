@@ -12,6 +12,8 @@
 #import <CommonCrypto/CommonCrypto.h>
 
 #import "SQRLDirectoryManager.h"
+#import "SQRLDownload.h"
+#import "SQRLDownload+Private.h"
 #import "SQRLResumableDownload.h"
 
 @interface SQRLDownloadManager ()
