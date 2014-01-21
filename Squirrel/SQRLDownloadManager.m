@@ -49,7 +49,7 @@
 }
 
 - (void)dealloc {
-	dispatch_release(_queue);
+	if (_queue != NULL) dispatch_release(_queue);
 }
 
 - (RACSignal *)removeAllResumableDownloads {
