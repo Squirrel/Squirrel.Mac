@@ -9,6 +9,9 @@
 #import "SQRLTestUpdate.h"
 #import "SQRLZipArchiver.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
+#import "SQRLDirectoryManager.h"
+#import "SQRLURLConnection.h"
+#import "SQRLDownloadManager.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -177,6 +180,85 @@ describe(@"response handling", ^{
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
 	});
+});
+
+it(@"should clean up resumable downloads after a successful download", ^{
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication"];
+	SQRLDownloadManager *downloadManager = [[SQRLDownloadManager alloc] initWithDirectoryManager:directoryManager];
+
+	NSError *error = nil;
+	BOOL remove = [[downloadManager removeAllResumableDownloads] asynchronouslyWaitUntilCompleted:&error];
+	expect(remove).to.beTruthy();
+	expect(error).to.beNil();
+
+	NSURL *updateApplicationBundle = [self createTestApplicationUpdate];
+
+	NSURL *firstDownload = zipUpdate(updateApplicationBundle);
+	SQRLURLConnection *connection = [[SQRLURLConnection alloc] initWithRequest:[NSURLRequest requestWithURL:firstDownload]];
+	BOOL download = [[connection download:downloadManager] asynchronouslyWaitUntilCompleted:&error];
+	expect(download).to.beTruthy();
+	expect(error).to.beNil();
+
+	NSURL *downloadDirectory = [[directoryManager downloadDirectoryURL] firstOrDefault:nil success:NULL error:&error];
+	expect(downloadDirectory).notTo.beNil();
+	expect(error).to.beNil();
+
+	NSArray *contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:downloadDirectory includingPropertiesForKeys:@[] options:0 error:&error];
+	expect(contents.count).to.equal(1);
+
+	SQRLTestUpdate *update = [[SQRLTestUpdate alloc] initWithDictionary:@{
+		@"updateURL": zipUpdate(updateApplicationBundle),
+		@"final": @YES,
+	} error:NULL];
+
+	writeUpdate(update);
+
+	NSRunningApplication *app = launchWithEnvironment(nil);
+	expect(app.terminated).will.beTruthy();
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+
+	contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:downloadDirectory includingPropertiesForKeys:@[] options:0 error:&error];
+	if (contents == nil) {
+		expect(error.domain).to.equal(NSCocoaErrorDomain);
+		expect(error.code).to.equal(NSFileReadNoSuchFileError);
+	} else {
+		expect(contents.count).to.equal(0);
+	}
+});
+
+it(@"should unpack update archives into a .noindex directory", ^{
+	NSURL *zippedUpdateLocation = zipUpdate([self createTestApplicationUpdate]);
+
+	SQRLTestUpdate *update = [[SQRLTestUpdate alloc] initWithDictionary:@{
+		@keypath(update.updateURL): zippedUpdateLocation,
+	} error:NULL];
+
+	writeUpdate(update);
+
+	__block SQRLDownloadedUpdate *downloadedUpdate;
+
+	[[[[[NSDistributedNotificationCenter.defaultCenter
+		rac_addObserverForName:@"com.github.Squirrel.TestApplication.updateReceived" object:nil]
+		map:^(NSNotification *notification) {
+			return notification.userInfo[@"update"];
+		}]
+		tryMap:^(NSString *serialisedUpdate, NSError **errorRef) {
+			NSData *JSONData = [serialisedUpdate dataUsingEncoding:NSUTF8StringEncoding];
+			return [NSJSONSerialization JSONObjectWithData:JSONData options:0 error:errorRef];
+		}]
+		tryMap:^(NSDictionary *JSONDictionary, NSError **errorRef) {
+			return [MTLJSONAdapter modelOfClass:SQRLDownloadedUpdate.class fromJSONDictionary:JSONDictionary error:errorRef];
+		}]
+		subscribeNext:^(SQRLDownloadedUpdate *update) {
+			downloadedUpdate = update;
+		}];
+
+	launchWithEnvironment(nil);
+
+	expect(downloadedUpdate).willNot.beNil();
+
+	NSURL *bundleURL = downloadedUpdate.bundle.bundleURL;
+	expect([bundleURL.path rangeOfString:@".noindex"].location).notTo.equal(NSNotFound);
 });
 
 SpecEnd

@@ -9,7 +9,7 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLZipArchiver.h"
 
-SpecBegin(SQRLZipArchiver)
+SpecBegin(SQRLZipOperation)
 
 it(@"should extract a zip archive created by the Finder", ^{
 	NSURL *zipURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication.app" withExtension:@"zip"];

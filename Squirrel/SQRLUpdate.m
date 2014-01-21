@@ -14,6 +14,8 @@ NSString * const SQRLUpdateJSONReleaseNotesKey = @"notes";
 NSString * const SQRLUpdateJSONNameKey = @"name";
 NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
+NSString * const SQRLUpdateErrorDomain = @"SQRLUpdateErrorDomain";
+
 @implementation SQRLUpdate
 
 #pragma mark Lifecycle
@@ -50,7 +52,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
 		}
-		
+
 		return NO;
 	}
 
@@ -61,10 +63,10 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
 	return @{
-		@keypath(SQRLUpdate.new, releaseNotes): @"notes",
-		@keypath(SQRLUpdate.new, releaseName): @"name",
-		@keypath(SQRLUpdate.new, releaseDate): @"pub_date",
-		@keypath(SQRLUpdate.new, updateURL): @"url",
+		@keypath(SQRLUpdate.new, releaseNotes): SQRLUpdateJSONReleaseNotesKey,
+		@keypath(SQRLUpdate.new, releaseName): SQRLUpdateJSONNameKey,
+		@keypath(SQRLUpdate.new, releaseDate): SQRLUpdateJSONPublicationDateKey,
+		@keypath(SQRLUpdate.new, updateURL): SQRLUpdateJSONURLKey,
 	};
 }
 
@@ -94,8 +96,8 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 		}
 
 		// If neither match, try removing the ':' in the time zone
-		static NSRegularExpression *timeZoneSuffix = nil;
-		static dispatch_once_t timeZoneSuffixPredicate = 0;
+		static NSRegularExpression *timeZoneSuffix;
+		static dispatch_once_t timeZoneSuffixPredicate;
 		dispatch_once(&timeZoneSuffixPredicate, ^ {
 			timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:0 error:NULL];
 		});
@@ -142,7 +144,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 			};
 			*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
 		}
-		
+
 		return NO;
 	}
 

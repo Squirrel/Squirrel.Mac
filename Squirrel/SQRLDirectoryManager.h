@@ -26,14 +26,27 @@
 //                 on-disk locations for. This must not be nil.
 - (instancetype)initWithApplicationIdentifier:(NSString *)appIdentifier;
 
-// Finds or creates an Application Support folder.
+// Finds or creates an Application Support subdirectory for the receiver’s
+// application identifier.
 //
 // Returns a signal which synchronously sends a URL then completes, or errors.
-- (RACSignal *)applicationSupportURL;
+@property (readonly, nonatomic) RACSignal *applicationSupportURL;
+
+// Finds or creates a downloads directory to store update downloads in prior to
+// installation. This is an applicationSupportURL subdirectory.
+//
+// Returns a signal which sends a URL then completes, or errors.
+@property (readonly, nonatomic) RACSignal *downloadDirectoryURL;
+
+// Creates a new directory to unpack a downloaded update into prior to
+// installation. This is an applicationSupportURL subdirectory.
+//
+// Returns a signal which sends a URL then completes, or errors.
+- (RACSignal *)createUniqueUpdateDirectoryURL;
 
 // Determines where archived `SQRLShipItState` should be saved.
 //
 // Returns a signal which synchronously sends a URL then completes, or errors.
-- (RACSignal *)shipItStateURL;
+@property (readonly, nonatomic) RACSignal *shipItStateURL;
 
 @end

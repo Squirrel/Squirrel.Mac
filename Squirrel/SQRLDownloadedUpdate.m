@@ -7,6 +7,7 @@
 //
 
 #import "SQRLDownloadedUpdate.h"
+#import "SQRLUpdate.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
 @interface SQRLDownloadedUpdate ()
@@ -40,9 +41,15 @@
 #pragma mark MTLJSONSerializing
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
-	return [super.JSONKeyPathsByPropertyKey mtl_dictionaryByAddingEntriesFromDictionary:@{
-		@keypath(SQRLDownloadedUpdate.new, bundleURL): NSNull.null
-	}];
+	return @{};
+}
+
++ (NSValueTransformer *)updateJSONTransformer {
+	return [MTLValueTransformer mtl_JSONDictionaryTransformerWithModelClass:SQRLUpdate.class];
+}
+
++ (NSValueTransformer *)bundleURLJSONTransformer {
+	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
 }
 
 @end
