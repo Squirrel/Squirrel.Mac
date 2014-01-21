@@ -161,7 +161,7 @@
 			if (httpResponse.statusCode != 206 /* Partial Data */) {
 				downloadSignal = [self truncateDownload:download];
 			} else {
-				downloadSignal = RACSignal.empty;
+				downloadSignal = [RACSignal empty];
 			}
 
 			SQRLResumableDownload *newDownload = [[SQRLResumableDownload alloc] initWithRequest:self.request response:httpResponse fileURL:download.fileURL];
