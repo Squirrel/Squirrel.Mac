@@ -108,7 +108,7 @@
 						if (subscriber.disposable.disposed) return;
 
 						NSError *error = nil;
-						NSData *propertyListData = [NSData dataWithContentsOfURL:location options:0 error:&error];
+						NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:&error];
 						if (propertyListData == nil) {
 							[subscriber sendError:error];
 							return;
