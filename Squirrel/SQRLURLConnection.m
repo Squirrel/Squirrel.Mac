@@ -222,12 +222,10 @@
 		promiseOnScheduler:RACScheduler.immediateScheduler]
 		deferred];
 
-	RACSignal *request = [download
+	return [[[download
 		flattenMap:^(SQRLDownload *download) {
 			return [download resumableRequest];
-		}];
-
-	return [[request
+		}]
 		flattenMap:^(NSURLRequest *request) {
 			return [self connectionSignalWithRequest:request mapData:^(NSURLResponse *response, RACSignal *data) {
 				RACSignal *downloadURL = [[[[download
