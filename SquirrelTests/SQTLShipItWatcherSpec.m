@@ -18,7 +18,7 @@ it(@"should write a response when the target exits", ^{
 	RACSignal *stateLocation = self.shipItDirectoryManager.shipItStateURL;
 	expect([[state writeToURL:stateLocation.first] waitUntilCompleted:NULL]).to.beTruthy();
 
-	NSString *requestPath = stateLocation.first;
+	NSString *requestPath = [stateLocation.first path];
 	NSString *responsePath = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"completed"].path;
 
 	NSBundle *squirrelBundle = [NSBundle bundleWithIdentifier:@"com.github.Squirrel"];
