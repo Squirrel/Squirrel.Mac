@@ -35,7 +35,7 @@
 //         no write is attempted and the returned signal completes.
 //
 // Returns a signal which completes or errors.
-- (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block;
+- (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSMutableDictionary *))block;
 @end
 
 @implementation SQRLDownloadManager
@@ -123,7 +123,7 @@
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
 
-- (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSDictionary *))block {
+- (RACSignal *)writeDownloadIndexWithBlock:(NSDictionary * (^)(NSMutableDictionary *))block {
 	NSParameterAssert(block != nil);
 
 	return [[[self
@@ -140,7 +140,7 @@
 						return;
 					}
 
-					NSDictionary *newPropertyList = block(propertyList);
+					NSDictionary *newPropertyList = block([propertyList mutableCopy]);
 					if ([newPropertyList isEqual:propertyList]) {
 						[subscriber sendCompleted];
 						return;
@@ -222,18 +222,16 @@
 	NSParameterAssert(request != nil);
 
 	return [[self
-		writeDownloadIndexWithBlock:^(NSDictionary *index) {
+		writeDownloadIndexWithBlock:^(NSMutableDictionary *index) {
 			NSString *key = [self.class keyForURL:request.URL];
 
-			NSMutableDictionary *newIndex = [index mutableCopy];
-
 			if (download != nil) {
-				newIndex[key] = download;
+				index[key] = download;
 			} else {
-				[newIndex removeObjectForKey:key];
+				[index removeObjectForKey:key];
 			}
 
-			return newIndex;
+			return index;
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
