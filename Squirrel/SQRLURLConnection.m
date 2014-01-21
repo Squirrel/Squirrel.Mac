@@ -183,7 +183,7 @@
 
 	uint8_t const *bytes = data.bytes;
 	size_t length = data.length;
-	while (1) {
+	while (length > 0) {
 		NSInteger written = [outputStream write:bytes maxLength:length];
 		if (written == -1) {
 			NSError *streamError = outputStream.streamError;
@@ -192,8 +192,6 @@
 			if (errorRef != NULL) *errorRef = streamError;
 			return NO;
 		}
-
-		if ((NSUInteger)written == length) break;
 		
 		bytes += written;
 		length -= written;
