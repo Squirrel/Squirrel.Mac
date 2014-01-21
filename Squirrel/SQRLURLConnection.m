@@ -126,10 +126,10 @@
 		defer:^{
 			NSError *error = nil;
 			BOOL remove = [NSFileManager.defaultManager removeItemAtURL:download.fileURL error:&error];
-			return (remove ? RACSignal.empty : [RACSignal error:error]);
+			return (remove ? [RACSignal empty] : [RACSignal error:error]);
 		}]
 		catch:^(NSError *error) {
-			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return RACSignal.empty;
+			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return [RACSignal empty];
 			return [RACSignal error:error];
 		}]
 		ignoreValues]
