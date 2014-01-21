@@ -141,10 +141,9 @@
 - (RACSignal *)recordDownload:(SQRLResumableDownload *)download downloadManager:(SQRLDownloadManager *)downloadManager {
 	NSParameterAssert(download != nil);
 	NSParameterAssert(downloadManager != nil);
-	
-	return [[[[downloadManager
+
+	return [[[downloadManager
 		setDownload:download forRequest:self.request]
-		ignoreValues]
 		concat:[RACSignal return:download]]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
