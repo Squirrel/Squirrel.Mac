@@ -107,7 +107,7 @@
 					dispatch_async(self.queue, ^{
 						if (subscriber.disposable.disposed) return;
 
-						NSError *error = nil;
+						NSError *error;
 						NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:&error];
 						if (propertyListData == nil) {
 							[subscriber sendError:error];
@@ -144,7 +144,7 @@
 				dispatch_barrier_async(self.queue, ^{
 					if (subscriber.disposable.disposed) return;
 
-					NSDictionary *propertyList = nil;
+					NSDictionary *propertyList;
 
 					NSData *propertyListData = [NSData dataWithContentsOfURL:location options:NSDataReadingUncached error:NULL];
 					if (propertyListData == nil) {
@@ -171,7 +171,7 @@
 						return;
 					}
 
-					NSError *error = nil;
+					NSError *error;
 					BOOL write = [newData writeToURL:location options:NSDataWritingAtomic error:&error];
 					if (!write) {
 						[subscriber sendError:error];
