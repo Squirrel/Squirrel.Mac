@@ -196,12 +196,8 @@
 - (RACSignal *)downloadForRequest:(NSURLRequest *)request {
 	NSParameterAssert(request != nil);
 
-	return [[[[[self
+	return [[[[self
 		readDownloadIndex]
-		catch:^(NSError *error) {
-			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileReadNoSuchFileError) return [RACSignal return:@{}];
-			return [RACSignal error:error];
-		}]
 		map:^(NSDictionary *index) {
 			NSString *key = [self.class keyForURL:request.URL];
 			return index[key];
