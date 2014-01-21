@@ -80,13 +80,13 @@
 			return [RACSignal return:directoryURL];
 		}]
 		map:^ (NSURL *directoryURL) {
-			NSArray *pathComponents = [[@[ self.applicationIdentifier, @"com.github.Squirrel" ].rac_signal
+			RACSignal *identifierComponents = [@[ self.applicationIdentifier, @"com.github.Squirrel" ].rac_signal
 				map:^(NSString *name) {
 					return [self.class fileSystemNameForIdentifier:name];
-				}]
-				array];
+				}];
 
-			return [NSURL fileURLWithPathComponents:[directoryURL.pathComponents arrayByAddingObjectsFromArray:pathComponents]];
+			RACSignal *pathComponents = [directoryURL.pathComponents.rac_signal concat:identifierComponents];
+			return [NSURL fileURLWithPathComponents:[pathComponents array]];
 		}]
 		setNameWithFormat:@"%@ -applicationSupportURL", self];
 	return [self.class createDirectoryForURL:applicationSupportURL];
