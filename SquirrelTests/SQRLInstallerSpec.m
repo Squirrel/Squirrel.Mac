@@ -154,26 +154,26 @@ describe(@"signal handling", ^{
 	});
 
 	it(@"should handle SIGHUP", ^{
-		system("killall -HUP ShipIt");
+		system("killall -HUP shipit-installer");
 	});
 
 	it(@"should handle SIGTERM", ^{
-		system("killall -TERM ShipIt");
+		system("killall -TERM shipit-installer");
 	});
 
 	it(@"should handle SIGINT", ^{
-		system("killall -INT ShipIt");
+		system("killall -INT shipit-installer");
 	});
 
 	it(@"should handle SIGQUIT", ^{
-		system("killall -QUIT ShipIt");
+		system("killall -QUIT shipit-installer");
 	});
 
 	it(@"should handle SIGKILL", ^{
 		// SIGKILL is unique in that it'll always terminate ShipIt, so send it
 		// a few times to really test resumption.
 		for (int i = 0; i < 3; i++) {
-			system("killall -KILL ShipIt");
+			system("killall -KILL shipit-installer");
 
 			// Wait at least for the launchd throttle interval.
 			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);
