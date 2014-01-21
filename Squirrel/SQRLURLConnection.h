@@ -26,14 +26,15 @@
 // request - Must not be nil, the request is issued with NSURLConnection.
 - (instancetype)initWithRequest:(NSURLRequest *)request __attribute__((nonnull (1)));
 
-// Starts retrieving the resource, cancels when the subscription is disposed.
+// Starts accumulating the resource body in memory, cancels when the
+// subscription is disposed.
 //
 // Returns a signal when sends a tuple of `NSURLResponse` and `NSData`, then
 // completes or errors.
 - (RACSignal *)retrieve;
 
-// Starts downloading the resource, cancels when the the subscription is
-// disposed.
+// Starts downloading the resource body to disk, resuming from a previous
+// download if possible, cancels when the subscription is disposed.
 //
 // downloadManager - Must be non nil, determines where the downloads will be
 //                   stored and resumed from. For a previously started download
