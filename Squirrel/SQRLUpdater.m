@@ -338,7 +338,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
 		flattenMap:^(NSURL *zipOutputURL) {
-			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
+			return [[SQRLZipArchiver
+				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
+				doCompleted:^{
+					NSError *error = nil;
+					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
+						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
+					}
+				}];
 		}]
 		then:^{
 			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
