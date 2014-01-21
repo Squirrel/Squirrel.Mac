@@ -103,15 +103,13 @@
 			// add them to the Launch Services database.
 			return [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
 		}]
-		tryMap:^ NSURL * (NSURL *directoryURL, NSError **errorRef) {
+		try:^(NSURL *directoryURL, NSError **errorRef) {
 			// Explicitly just provide the owner with permission, discarding the
 			// current umask. This matches the `mkdtemp` behaviour.
 			NSDictionary *directoryAttributes = @{
 				NSFilePosixPermissions: @(S_IRWXU),
 			};
-			if (![NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:directoryAttributes error:errorRef]) return nil;
-
-			return directoryURL;
+			return [NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:directoryAttributes error:errorRef];
 		}]
 		setNameWithFormat:@"%@ -createUniqueUpdateDirectoryURL", self];
 }
