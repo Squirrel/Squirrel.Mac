@@ -25,12 +25,11 @@
 	} error:NULL];
 }
 
-- (BOOL)isEqual:(id)object {
+- (BOOL)isEqual:(SQRLResumableDownload *)object {
 	if (![object isKindOfClass:self.class]) return NO;
 
-	SQRLResumableDownload *other = (SQRLResumableDownload *)object;
-	if (!(self.response == nil && other.response == nil) && ![self responseEqual:other.response]) return NO;
-	if (![other.fileURL isEqual:self.fileURL]) return NO;
+	if (!(self.response == nil && object.response == nil) && ![self responseEqual:object.response]) return NO;
+	if (![object.fileURL isEqual:self.fileURL]) return NO;
 
 	return YES;
 }
