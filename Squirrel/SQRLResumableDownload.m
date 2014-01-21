@@ -26,6 +26,7 @@
 }
 
 - (BOOL)isEqual:(SQRLResumableDownload *)object {
+	if (self == object) return YES;
 	if (![object isKindOfClass:self.class]) return NO;
 
 	if (!(self.response == nil && object.response == nil) && ![self responseEqual:object.response]) return NO;
