@@ -59,16 +59,16 @@
 			[self.directoryManager downloadDirectoryURL]
 		]]
 		flattenMap:^ (NSURL *location) {
-			return [[[[RACSignal
-				return:location]
-				try:^(NSURL *location, NSError **errorRef) {
-					return [NSFileManager.defaultManager removeItemAtURL:location error:errorRef];
+			return [[RACSignal
+				defer:^{
+					NSError *error;
+					BOOL remove  = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
+					return (remove ? [RACSignal empty] : [RACSignal error:error]);
 				}]
 				catch:^(NSError *error) {
-					if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return RACSignal.empty;
+					if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return [RACSignal empty];
 					return [RACSignal error:error];
-				}]
-				ignoreValues];
+				}];
 		}]
 		setNameWithFormat:@"%@ %s", self, sel_getName(_cmd)];
 }
