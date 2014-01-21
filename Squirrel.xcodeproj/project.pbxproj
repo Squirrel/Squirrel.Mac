@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5316AF7A188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 5316AF78188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.h */; };
+		5316AF7B188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */; };
+		5316AF95188EFFA100C070DF /* RACSignal+SQRLFileManagerExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */; };
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */; };
 		53390937184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */; };
@@ -426,6 +429,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		5316AF78188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLFileManagerExtensions.h"; sourceTree = "<group>"; };
+		5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "RACSignal+SQRLFileManagerExtensions.m"; sourceTree = "<group>"; };
 		53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSHTTPURLResponse+SQRLExtensions.h"; sourceTree = "<group>"; };
 		53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSHTTPURLResponse+SQRLExtensions.m"; sourceTree = "<group>"; };
 		53390949184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSHTTPURLResponseExtensionsSpec.m; sourceTree = "<group>"; };
@@ -725,6 +730,8 @@
 				D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */,
 				53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */,
 				53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */,
+				5316AF78188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.h */,
+				5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */,
 			);
 			name = Extensions;
 			sourceTree = "<group>";
@@ -1085,6 +1092,7 @@
 				53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */,
 				D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
+				5316AF7A188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.h in Headers */,
 				53C318731816C38A0074B481 /* SQRLResumableDownload.h in Headers */,
 				536CD4E2183E5D7F000C0FD1 /* SQRLDownload.h in Headers */,
 				53C3186F1816C38A0074B481 /* SQRLDownloadManager.h in Headers */,
@@ -1475,6 +1483,7 @@
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D043F77217FF40C90012F996 /* SQRLTerminationListener.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
+				5316AF95188EFFA100C070DF /* RACSignal+SQRLFileManagerExtensions.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */,
 				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
@@ -1501,6 +1510,7 @@
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */,
 				D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
 				53C318741816C38A0074B481 /* SQRLResumableDownload.m in Sources */,
+				5316AF7B188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m in Sources */,
 				D0964B3917F2E01500D88BF7 /* SQRLDownloadedUpdate.m in Sources */,
 				D014ABB817B96CB3007D79D0 /* SQRLShipItLauncher.m in Sources */,
 				53C318721816C38A0074B481 /* SQRLURLConnection.m in Sources */,

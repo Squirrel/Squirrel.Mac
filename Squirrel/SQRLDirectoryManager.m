@@ -9,6 +9,7 @@
 #import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <ReactiveCocoa/EXTScope.h>
+#import "RACSignal+SQRLFileManagerExtensions.h"
 
 @interface SQRLDirectoryManager ()
 
@@ -60,16 +61,8 @@
 	return [identifier stringByReplacingOccurrencesOfString:@"." withString:@"~"];
 }
 
-+ (RACSignal *)createDirectoryForURL:(RACSignal *)URLSignal {
-	return [[URLSignal
-		try:^(NSURL *directoryURL, NSError **errorRef) {
-			return [NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:nil error:errorRef];
-		}]
-		setNameWithFormat:@"%@ +createDirectoryForURL: %@", self, URLSignal];
-}
-
 - (RACSignal *)applicationSupportURL {
-	RACSignal *applicationSupportURL = [[[RACSignal
+	return [[[[RACSignal
 		defer:^{
 			NSError *error = nil;
 			NSURL *directoryURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
@@ -88,18 +81,18 @@
 			RACSignal *pathComponents = [directoryURL.pathComponents.rac_signal concat:identifierComponents];
 			return [NSURL fileURLWithPathComponents:[pathComponents array]];
 		}]
+		sqrl_tryCreateDirectory]
 		setNameWithFormat:@"%@ -applicationSupportURL", self];
-	return [self.class createDirectoryForURL:applicationSupportURL];
 }
 
 - (RACSignal *)downloadDirectoryURL {
-	RACSignal *downloadDirectoryURL = [[[self
+	return [[[[self
 		applicationSupportURL]
 		map:^(NSURL *directoryURL) {
 			return [directoryURL URLByAppendingPathComponent:@"downloads"];
 		}]
+		sqrl_tryCreateDirectory]
 		setNameWithFormat:@"%@ -downloadDirectoryURL", self];
-	return [self.class createDirectoryForURL:downloadDirectoryURL];
 }
 
 - (RACSignal *)createUniqueUpdateDirectoryURL {
