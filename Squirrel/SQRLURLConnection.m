@@ -124,7 +124,7 @@
 - (RACSignal *)truncateDownload:(SQRLDownload *)download {
 	NSParameterAssert(download != nil);
 
-	return [[[[[RACSignal
+	return [[[[RACSignal
 		defer:^{
 			NSError *error = nil;
 			BOOL remove = [NSFileManager.defaultManager removeItemAtURL:download.fileURL error:&error];
@@ -134,7 +134,6 @@
 			if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) return [RACSignal empty];
 			return [RACSignal error:error];
 		}]
-		ignoreValues]
 		concat:[RACSignal return:download]]
 		setNameWithFormat:@"%@ %s %@", self, sel_getName(_cmd), download];
 }
