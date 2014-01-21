@@ -9,12 +9,13 @@
 #import "SQRLDownloadManager.h"
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
-#import <CommonCrypto/CommonCrypto.h>
 
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownload.h"
 #import "SQRLDownload+Private.h"
 #import "SQRLResumableDownload.h"
+
+#import "NSData+SQRLExtensions.h"
 
 @interface SQRLDownloadManager ()
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *directoryManager;
@@ -78,7 +79,7 @@
 			return [[RACSignal
 				defer:^{
 					NSError *error;
-					BOOL remove  = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
+					BOOL remove = [NSFileManager.defaultManager removeItemAtURL:location error:&error];
 					return (remove ? [RACSignal empty] : [RACSignal error:error]);
 				}]
 				catch:^(NSError *error) {
@@ -189,22 +190,7 @@
 
 + (NSString *)fileNameForURL:(NSURL *)URL {
 	NSString *key = [self keyForURL:URL];
-	return [self base16:[self SHA1:[key dataUsingEncoding:NSUTF8StringEncoding]]];
-}
-
-+ (NSData *)SHA1:(NSData *)data {
-	unsigned char hash[CC_SHA1_DIGEST_LENGTH];
-	CC_SHA1(data.bytes, (CC_LONG)data.length, hash);
-	return [NSData dataWithBytes:hash length:sizeof(hash) / sizeof(*hash)];
-}
-
-+ (NSString *)base16:(NSData *)data {
-	NSMutableString *base16 = [NSMutableString stringWithCapacity:data.length * 2];
-	for (NSUInteger idx = 0; idx < data.length; idx++) {
-		uint8_t byte = *((uint8_t *)data.bytes + idx);
-		[base16 appendFormat:@"%02hhx", byte];
-	}
-	return base16;
+	return [[[key dataUsingEncoding:NSUTF8StringEncoding] sqrl_SHA1Hash] sqrl_base16String];
 }
 
 - (RACSignal *)downloadForRequest:(NSURLRequest *)request {

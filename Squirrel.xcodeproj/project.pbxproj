@@ -11,6 +11,8 @@
 		5316AF7B188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */; };
 		5316AF95188EFFA100C070DF /* RACSignal+SQRLFileManagerExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */; };
 		5316AFA8188F002100C070DF /* SQRLDownload+Private.h in Headers */ = {isa = PBXBuildFile; fileRef = 5316AFA6188F002100C070DF /* SQRLDownload+Private.h */; };
+		5316AFAC188F0A8E00C070DF /* NSData+SQRLExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 5316AFAA188F0A8E00C070DF /* NSData+SQRLExtensions.h */; };
+		5316AFAD188F0A8E00C070DF /* NSData+SQRLExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 5316AFAB188F0A8E00C070DF /* NSData+SQRLExtensions.m */; };
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
 		53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = 53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */; };
 		53390937184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */; };
@@ -433,6 +435,8 @@
 		5316AF78188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLFileManagerExtensions.h"; sourceTree = "<group>"; };
 		5316AF79188EFC1800C070DF /* RACSignal+SQRLFileManagerExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "RACSignal+SQRLFileManagerExtensions.m"; sourceTree = "<group>"; };
 		5316AFA6188F002100C070DF /* SQRLDownload+Private.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SQRLDownload+Private.h"; sourceTree = "<group>"; };
+		5316AFAA188F0A8E00C070DF /* NSData+SQRLExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+SQRLExtensions.h"; sourceTree = "<group>"; };
+		5316AFAB188F0A8E00C070DF /* NSData+SQRLExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+SQRLExtensions.m"; sourceTree = "<group>"; };
 		53390934184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSHTTPURLResponse+SQRLExtensions.h"; sourceTree = "<group>"; };
 		53390935184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSHTTPURLResponse+SQRLExtensions.m"; sourceTree = "<group>"; };
 		53390949184F6322009FA41F /* NSHTTPURLResponseExtensionsSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NSHTTPURLResponseExtensionsSpec.m; sourceTree = "<group>"; };
@@ -697,6 +701,8 @@
 			children = (
 				D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */,
 				D00F5B8A17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m */,
+				5316AFAA188F0A8E00C070DF /* NSData+SQRLExtensions.h */,
+				5316AFAB188F0A8E00C070DF /* NSData+SQRLExtensions.m */,
 			);
 			name = Extensions;
 			sourceTree = "<group>";
@@ -1091,6 +1097,7 @@
 				53C318711816C38A0074B481 /* SQRLURLConnection.h in Headers */,
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
+				5316AFAC188F0A8E00C070DF /* NSData+SQRLExtensions.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				5316AFA8188F002100C070DF /* SQRLDownload+Private.h in Headers */,
 				53390936184F6219009FA41F /* NSHTTPURLResponse+SQRLExtensions.h in Headers */,
@@ -1510,6 +1517,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5316AFAD188F0A8E00C070DF /* NSData+SQRLExtensions.m in Sources */,
 				D0964B3D17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
 				F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */,
 				D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
