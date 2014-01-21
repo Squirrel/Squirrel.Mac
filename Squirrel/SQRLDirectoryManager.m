@@ -105,7 +105,7 @@
 - (RACSignal *)createUniqueUpdateDirectoryURL {
 	return [[[[self
 		applicationSupportURL]
-		map:^ (NSURL *directoryURL) {
+		map:^(NSURL *directoryURL) {
 			// noindex so that Spotlight doesn't pick up apps pending update and
 			// add them to the Launch Services database.
 			return [[directoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString] URLByAppendingPathExtension:@"noindex"];
