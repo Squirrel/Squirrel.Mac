@@ -164,7 +164,15 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
-	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
+	if (_signature == nil) {
+#if DEBUG
+		NSLog(@"Could not get code signature for running application, application updates are disabled: %@", error);
+		return nil;
+#else
+		NSDictionary *exceptionInfo = @{ NSUnderlyingErrorKey: error };
+		@throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Could not get code signature for running application" userInfo:exceptionInfo];
+#endif
+	}
 
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 	@weakify(self);
