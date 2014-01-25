@@ -83,7 +83,7 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 - (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL {
 	NSParameterAssert(bundleURL != nil);
 
-	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+	return [[RACSignal create:^(id<RACSubscriber> subscriber) {
 		SecStaticCodeRef staticCode = NULL;
 		
 		OSStatus result = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode);
@@ -100,8 +100,10 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 			if (failureReason != nil) userInfo[NSLocalizedFailureReasonErrorKey] = failureReason;
 			
 			[subscriber sendError:[NSError errorWithDomain:SQRLCodeSignatureErrorDomain code:SQRLCodeSignatureErrorCouldNotCreateStaticCode userInfo:userInfo]];
-			return nil;
+			return;
 		}
+
+		if (subscriber.disposable.disposed) return;
 		
 		CFErrorRef validityError = NULL;
 		result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures, (__bridge SecRequirementRef)self.requirement, &validityError);
@@ -119,11 +121,10 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 			if (validityError != NULL) userInfo[NSUnderlyingErrorKey] = (__bridge NSError *)validityError;
 			
 			[subscriber sendError:[NSError errorWithDomain:SQRLCodeSignatureErrorDomain code:SQRLCodeSignatureErrorDidNotPass userInfo:userInfo]];
-			return nil;
+			return;
 		}
 		
 		[subscriber sendCompleted];
-		return nil;
 	}] setNameWithFormat:@"-verifyCodeSignatureOfBundle: %@", bundleURL];
 }
 

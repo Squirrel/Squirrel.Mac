@@ -145,42 +145,32 @@ typedef struct {
 	if (self == nil) return nil;
 
 	_directoryManager = directoryManager;
-
-	@weakify(self);
-
-	RACSignal *aborting = [[[[RACObserve(self, abortInstallationCommand)
-		ignore:nil]
-		map:^(RACCommand *command) {
-			return command.executing;
-		}]
-		switchToLatest]
-		setNameWithFormat:@"aborting"];
-
-	_installUpdateCommand = [[RACCommand alloc] initWithEnabled:[aborting not] signalBlock:^(SQRLShipItState *state) {
-		@strongify(self);
-		NSParameterAssert(state != nil);
-
-		return [[self
-			resumeInstallationFromState:state]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
-	}];
-
-	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItState *state) {
-		@strongify(self);
-		NSParameterAssert(state != nil);
-
-		return [[[RACSignal
-			zip:@[
-				[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
-				[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
-			] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
-				return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
-			}]
-			flatten]
-			sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
-	}];
 	
 	return self;
+}
+
+#pragma mark Actions
+
+- (RACSignal *)installUpdateWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[self
+		resumeInstallationFromState:state]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+}
+
+- (RACSignal *)abortInstallationWithState:(SQRLShipItState *)state {
+	NSParameterAssert(state != nil);
+
+	return [[[RACSignal
+		zip:@[
+			[self getRequiredKey:@keypath(state.targetBundleURL) fromState:state],
+			[self getRequiredKey:@keypath(state.codeSignature) fromState:state]
+		] reduce:^(NSURL *targetBundleURL, SQRLCodeSignature *codeSignature) {
+			return [self verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:state.backupBundleURL];
+		}]
+		flatten]
+		sqrl_addTransactionWithName:NSLocalizedString(@"Aborting update", nil) description:NSLocalizedString(@"An update to %@ is being rolled back, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
 }
 
 #pragma mark Installer State
@@ -262,13 +252,12 @@ typedef struct {
 			nextState = dispatchTable[tableIndex + 1].installerState;
 		}
 
-		return [[step
+		return [[[step
 			doCompleted:^{
 				NSLog(@"Completed state %i", (int)installerState);
 			}]
-			then:^{
-				return [RACSignal return:@(nextState)];
-			}];
+			ignoreValues]
+			concat:[RACSignal return:@(nextState)]];
 	}];
 
 	return [[self
@@ -365,11 +354,9 @@ typedef struct {
 					// failure. Try recovering it if it did.
 					return [[self
 						verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
-						then:^{
-							// Recovery succeeded, but we still want to pass
-							// through the original error.
-							return [RACSignal error:error];
-						}];
+						// Recovery succeeded, but we still want to pass
+						// through the original error.
+						concat:[RACSignal error:error]];
 				}];
 		}]
 		flatten]
@@ -387,11 +374,9 @@ typedef struct {
 		] reduce:^(NSURL *targetBundleURL, NSURL *backupBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[self
 				verifyBundleAtURL:targetBundleURL usingSignature:codeSignature recoveringUsingBackupAtURL:backupBundleURL]
-				then:^{
-					return [[self
-						deleteBackupAtURL:backupBundleURL]
-						catchTo:[RACSignal empty]];
-				}];
+				concat:[[self
+					deleteBackupAtURL:backupBundleURL]
+					catchTo:[RACSignal empty]]];
 		}]
 		flatten]
 		setNameWithFormat:@"%@ -verifyInPlaceWithState: %@", self, state];
@@ -438,26 +423,23 @@ typedef struct {
 - (RACSignal *)deleteBackupAtURL:(NSURL *)backupURL {
 	NSParameterAssert(backupURL != nil);
 
-	return [[[RACSignal
+	return [[RACSignal
 		defer:^{
 			NSError *error = nil;
-			if ([NSFileManager.defaultManager removeItemAtURL:backupURL error:&error]) {
-				return [RACSignal empty];
-			} else {
+			if (![NSFileManager.defaultManager removeItemAtURL:backupURL error:&error]) {
 				return [RACSignal error:error];
 			}
-		}]
-		then:^{
+
 			// Also remove the temporary directory that the backup lived in.
 			NSURL *temporaryDirectoryURL = backupURL.URLByDeletingLastPathComponent;
 
 			// However, use rmdir() to skip it in case there are other files
 			// contained within (for whatever reason).
-			if (rmdir(temporaryDirectoryURL.path.fileSystemRepresentation) == 0) {
-				return [RACSignal empty];
-			} else {
+			if (rmdir(temporaryDirectoryURL.path.fileSystemRepresentation) != 0) {
 				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
 			}
+
+			return [RACSignal empty];
 		}]
 		setNameWithFormat:@"%@ -deleteBackupAtURL: %@", self, backupURL];
 }
@@ -471,10 +453,11 @@ typedef struct {
 		catch:^(NSError *error) {
 			if (backupBundleURL == nil) return [RACSignal error:error];
 
-			return [[[[self
-				installItemAtURL:bundleURL fromURL:backupBundleURL]
-				initially:^{
+			return [[[RACSignal
+				defer:^{
 					[NSFileManager.defaultManager removeItemAtURL:bundleURL error:NULL];
+
+					return [self installItemAtURL:bundleURL fromURL:backupBundleURL];
 				}]
 				doCompleted:^{
 					NSLog(@"Restored backup bundle to %@", bundleURL);
@@ -495,9 +478,7 @@ typedef struct {
 
 	return [[[[self
 		verifyBundleAtURL:targetURL usingSignature:signature recoveringUsingBackupAtURL:nil]
-		then:^{
-			return [RACSignal return:@YES];
-		}]
+		concat:[RACSignal return:@YES]]
 		catch:^(NSError *error) {
 			BOOL directory;
 			if ([NSFileManager.defaultManager fileExistsAtPath:sourceURL.path isDirectory:&directory]) {
@@ -563,7 +544,7 @@ typedef struct {
 				return YES;
 			}];
 
-			return enumerator.rac_sequence.signal;
+			return enumerator.allObjects.rac_signal;
 		}]
 		flattenMap:^(NSURL *URL) {
 			const char *path = URL.path.fileSystemRepresentation;

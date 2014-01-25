@@ -55,16 +55,15 @@ int main(int argc, const char * argv[]) {
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
 		RACSignal *stateLocation = directoryManager.shipItStateURL;
 
-		[[[[[[SQRLShipItState
+		[[[[[[[SQRLShipItState
 			readUsingURL:stateLocation]
 			flattenMap:^(SQRLShipItState *state) {
 				return waitForTerminationIfNecessary(state);
 			}]
-			then:^{
-				// Read the latest state, in case it was modified by the
-				// controlling application in the meantime.
-				return [SQRLShipItState readUsingURL:stateLocation];
-			}]
+			ignoreValues]
+			// Read the latest state, in case it was modified by the
+			// controlling application in the meantime.
+			concat:[SQRLShipItState readUsingURL:stateLocation]]
 			catch:^(NSError *error) {
 				NSLog(@"Error reading saved installer state: %@", error);
 
@@ -79,10 +78,11 @@ int main(int argc, const char * argv[]) {
 				RACSignal *action;
 
 				if (attempt > SQRLShipItMaximumInstallationAttempts) {
-					action = [[[installer.abortInstallationCommand
-						execute:state]
-						initially:^{
+					action = [[RACSignal
+						defer:^{
 							NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
+
+							return [installer abortInstallationWithState:state];
 						}]
 						catch:^(NSError *error) {
 							NSLog(@"Error aborting installation: %@", error);
@@ -91,9 +91,8 @@ int main(int argc, const char * argv[]) {
 							return [RACSignal empty];
 						}];
 				} else {
-					action = [[[[[state
-						writeUsingURL:stateLocation]
-						initially:^{
+					action = [[[[RACSignal
+						defer:^{
 							if (freshInstall) {
 								NSLog(@"Beginning installation");
 								state.installerState = SQRLInstallerStateClearingQuarantine;
@@ -102,10 +101,10 @@ int main(int argc, const char * argv[]) {
 							}
 
 							state.installationStateAttempt = attempt;
+
+							return [state writeUsingURL:stateLocation];
 						}]
-						then:^{
-							return [installer.installUpdateCommand execute:state];
-						}]
+						concat:[installer installUpdateWithState:state]]
 						doCompleted:^{
 							NSLog(@"Installation completed successfully");
 						}]
@@ -117,7 +116,7 @@ int main(int argc, const char * argv[]) {
 					// fails.
 					action = [[action
 						deliverOn:RACScheduler.mainThreadScheduler]
-						finally:^{
+						doFinished:^{
 							NSURL *bundleURL = state.targetBundleURL;
 							if (bundleURL == nil) {
 								NSLog(@"Missing target bundle URL, cannot relaunch application");
