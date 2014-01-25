@@ -226,7 +226,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		subject]
 		setNameWithFormat:@"%@ updates", self];
 
-	_shipItLauncher = [[[[[[RACSignal
+	_shipItLauncher = [[[[[[[RACSignal
 		defer:^{
 			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
@@ -239,11 +239,12 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
 		}]
 		// These operators ensure that the actual work only executes once,
-		// without starting it immediately.
+		// without starting it immediately. Super hacky.
 		concat:[RACSignal return:RACUnit.defaultUnit]]
 		concat:[RACSignal never]]
 		shareWhileActive]
 		take:1]
+		ignoreValues]
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
