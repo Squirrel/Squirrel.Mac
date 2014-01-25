@@ -207,7 +207,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		concat:[RACSignal never]]
 		shareWhileActive]
 		take:1]
-		map:^(NSArray *URLs) {
+		flattenMap:^(NSArray *URLs) {
 			return URLs.rac_signal;
 		}]
 		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
