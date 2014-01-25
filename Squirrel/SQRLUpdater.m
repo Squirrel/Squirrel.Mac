@@ -285,38 +285,43 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	NSMutableURLRequest *newRequest = [request mutableCopy];
 	[newRequest setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-	return [[[[[[NSURLConnection
-		rac_sendAsynchronousRequest:newRequest]
+	return [[[[[[[[self.prunedUpdateDirectories
+		catch:^(NSError *error) {
+			NSLog(@"Error pruning old updates: %@", error);
+			return [RACSignal empty];
+		}]
+		ignoreValues]
+		concat:[NSURLConnection rac_sendAsynchronousRequest:newRequest]]
 		reduceEach:^(NSURLResponse *response, NSData *bodyData) {
-		if ([response isKindOfClass:NSHTTPURLResponse.class]) {
-			NSHTTPURLResponse *httpResponse = (id)response;
-			if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-				NSDictionary *errorInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-					SQRLUpdaterServerDataErrorKey: bodyData,
-				};
-				NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
-				return [RACSignal error:error];
+			if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+				NSHTTPURLResponse *httpResponse = (id)response;
+				if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+						SQRLUpdaterServerDataErrorKey: bodyData,
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (httpResponse.statusCode == 204 /* No Content */) {
+					return [RACSignal empty];
+				}
 			}
 
-			if (httpResponse.statusCode == 204 /* No Content */) {
-				return [RACSignal empty];
-			}
-		}
-
-		return [RACSignal return:bodyData];
-	}]
-	flatten]
-	flattenMap:^(NSData *data) {
-		return [self updateFromJSONData:data];
-	}]
-	flattenMap:^(SQRLUpdate *update) {
-		return [self downloadAndPrepareUpdate:update];
-	}]
-	doNext:^(SQRLDownloadedUpdate *update) {
-		[self->_updates sendNext:update];
-	}];
+			return [RACSignal return:bodyData];
+		}]
+		flatten]
+		flattenMap:^(NSData *data) {
+			return [self updateFromJSONData:data];
+		}]
+		flattenMap:^(SQRLUpdate *update) {
+			return [self downloadAndPrepareUpdate:update];
+		}]
+		doNext:^(SQRLDownloadedUpdate *update) {
+			[self->_updates sendNext:update];
+		}];
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
