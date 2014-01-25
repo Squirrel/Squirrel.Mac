@@ -177,7 +177,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	@weakify(self);
 
-	_prunedUpdateDirectories = [[[[RACSignal
+	_prunedUpdateDirectories = [[[[[[[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
 			return [directoryManager applicationSupportURL];
@@ -189,7 +189,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				return YES;
 			}];
 
-			return [[enumerator.rac_sequence.signal
+			return [[enumerator.allObjects.rac_signal
 				filter:^(NSURL *enumeratedURL) {
 					NSString *name = enumeratedURL.lastPathComponent;
 					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
@@ -201,7 +201,15 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					}
 				}];
 		}]
-		replayLazily]
+		collect]
+		// These operators ensure that the actual work only executes once,
+		// without starting it immediately.
+		concat:[RACSignal never]]
+		shareWhileActive]
+		take:1]
+		map:^(NSArray *URLs) {
+			return URLs.rac_signal;
+		}]
 		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
 
 	_checkForUpdatesAction = [[[RACSignal
@@ -218,7 +226,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		subject]
 		setNameWithFormat:@"%@ updates", self];
 
-	_shipItLauncher = [[[[RACSignal
+	_shipItLauncher = [[[[[[RACSignal
 		defer:^{
 			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
@@ -230,8 +238,12 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			// wait for another, more canonical error.
 			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
 		}]
-		promiseOnScheduler:RACScheduler.immediateScheduler]
-		deferred]
+		// These operators ensure that the actual work only executes once,
+		// without starting it immediately.
+		concat:[RACSignal return:RACUnit.defaultUnit]]
+		concat:[RACSignal never]]
+		shareWhileActive]
+		take:1]
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
@@ -252,7 +264,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			@strongify(self);
 
 			return [[[self.checkForUpdatesAction
-				deferred]
+				signalWithValue:nil]
 				ignoreValues]
 				catch:^(NSError *error) {
 					NSLog(@"Error checking for updates: %@", error);
@@ -466,8 +478,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				return YES;
 			}];
 
-			NSURL *updateBundleURL = [[[enumerator.rac_promise
-				start]
+			NSURL *updateBundleURL = [[enumerator.allObjects.rac_signal
 				filter:^(NSURL *URL) {
 					NSString *type = nil;
 					NSError *error = nil;
@@ -569,7 +580,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[[[SQRLShipItState
+	return [[[[[[[SQRLShipItState
 		readUsingURL:self.shipItStateURL]
 		flattenMap:^(SQRLShipItState *existingState) {
 			return [self validateExistingState:existingState];
@@ -587,8 +598,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		// Never allow `completed` to escape this signal chain (in case
 		// -terminate: is asynchronous or something crazy).
 		concat:[RACSignal never]]
-		promiseOnScheduler:RACScheduler.immediateScheduler]
-		deferred]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
 

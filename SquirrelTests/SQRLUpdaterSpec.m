@@ -154,7 +154,7 @@ describe(@"updating", ^{
 					NSArray *contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:appSupportURL includingPropertiesForKeys:nil options:0 error:NULL];
 					if (contents == nil) return [RACSignal empty];
 
-					return contents.rac_sequence.signal;
+					return contents.rac_signal;
 				}]
 				filter:^(NSURL *directoryURL) {
 					return [directoryURL.lastPathComponent hasPrefix:@"update."];
@@ -179,7 +179,7 @@ describe(@"updating", ^{
 
 			// Also test that this is the only update directory (any others
 			// should've been removed).
-			NSArray *directoryURLs = [updateDirectoryURLs toArray];
+			NSArray *directoryURLs = [updateDirectoryURLs array];
 			expect(directoryURLs.count).to.equal(1);
 
 			NSArray *contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:directoryURLs[0] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles error:NULL];
@@ -208,7 +208,7 @@ describe(@"response handling", ^{
 		}];
 
 		NSError *error = nil;
-		BOOL result = [[updater.checkForUpdatesAction deferred] asynchronouslyWaitUntilCompleted:&error];
+		BOOL result = [[updater.checkForUpdatesAction signalWithValue:nil] asynchronouslyWaitUntilCompleted:&error];
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerResponse);
@@ -225,7 +225,7 @@ describe(@"response handling", ^{
 		}];
 
 		NSError *error = nil;
-		BOOL result = [[updater.checkForUpdatesAction deferred] asynchronouslyWaitUntilCompleted:&error];
+		BOOL result = [[updater.checkForUpdatesAction signalWithValue:nil] asynchronouslyWaitUntilCompleted:&error];
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);

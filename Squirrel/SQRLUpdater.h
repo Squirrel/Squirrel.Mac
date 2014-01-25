@@ -104,8 +104,8 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // relaunch. Otherwise, you can simply use `-[NSApplication terminate:]` or any
 // other exit mechanism.
 //
-// After invoking this method, the receiver is responsible for terminating the
-// application upon success. The app must not be terminated in any other way
+// After subscribing to this signal, the receiver is responsible for terminating
+// the application upon success. The app must not be terminated in any other way
 // unless an error occurs.
 //
 // Returns a signal that will error on the main scheduler if anything goes

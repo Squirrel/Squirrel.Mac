@@ -70,7 +70,7 @@
 			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
 			updateCheckCount++;
 
-			return [self.updater.checkForUpdatesAction deferred];
+			return [self.updater.checkForUpdatesAction signalWithValue:nil];
 		}]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Got a candidate update: %@", update);

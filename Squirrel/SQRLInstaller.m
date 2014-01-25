@@ -544,7 +544,7 @@ typedef struct {
 				return YES;
 			}];
 
-			return [enumerator.rac_promise start];
+			return enumerator.allObjects.rac_signal;
 		}]
 		flattenMap:^(NSURL *URL) {
 			const char *path = URL.path.fileSystemRepresentation;
