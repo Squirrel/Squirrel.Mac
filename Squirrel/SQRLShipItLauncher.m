@@ -13,6 +13,7 @@
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
+#import "SQRLAuthorization.h"
 
 NSString * const SQRLShipItLauncherErrorDomain = @"SQRLShipItLauncherErrorDomain";
 
@@ -108,16 +109,13 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 			AuthorizationRef authorization = NULL;
 			OSStatus authorizationError = AuthorizationCreate(&rights, &environment, kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights, &authorization);
+
 			if (authorizationError == noErr) {
-				[subscriber sendNext:(__bridge id)authorization];
+				[subscriber sendNext:[[SQRLAuthorization alloc] initWithAuthorization:authorization]];
 				[subscriber sendCompleted];
 			} else {
 				[subscriber sendError:[NSError errorWithDomain:NSOSStatusErrorDomain code:authorizationError userInfo:nil]];
 			}
-
-			[subscriber.disposable addDisposable:[RACDisposable disposableWithBlock:^{
-				if (authorization != NULL) AuthorizationFree(authorization, kAuthorizationFlagDestroyRights);
-			}]];
 		}]
 		setNameWithFormat:@"+shipItAuthorization"];
 }
@@ -127,11 +125,13 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		zip:@[
 			self.shipItJobDictionary,
 			(privileged ? self.shipItAuthorization : [RACSignal return:nil])
-		] reduce:^(NSDictionary *jobDictionary, id authorization) {
+		] reduce:^(NSDictionary *jobDictionary, SQRLAuthorization *authorizationValue) {
 			CFStringRef domain = (privileged ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
 
+			AuthorizationRef authorization = authorizationValue.authorization;
+
 			CFErrorRef cfError;
-			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, (__bridge AuthorizationRef)authorization, true, &cfError)) {
+			if (!SMJobRemove(domain, (__bridge CFStringRef)self.shipItJobLabel, authorization, true, &cfError)) {
 				NSError *error = CFBridgingRelease(cfError);
 				cfError = NULL;
 
@@ -140,7 +140,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 				}
 			}
 
-			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, (__bridge AuthorizationRef)authorization, &cfError)) {
+			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, authorization, &cfError)) {
 				return [RACSignal error:CFBridgingRelease(cfError)];
 			}
 

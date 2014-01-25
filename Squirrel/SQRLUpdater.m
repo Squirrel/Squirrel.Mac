@@ -32,6 +32,10 @@ const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
 const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
+// The prefix used when creating temporary directories for updates. This will be
+// followed by a random string of characters.
+static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
+
 @interface SQRLUpdater ()
 
 // The code signature for the running application, used to check updates before
@@ -42,6 +46,16 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 //
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+
+// Lazily removes outdated temporary directories (used for previous updates)
+// upon first subscription.
+//
+// Pruning directories while an update is pending or in progress will result in
+// undefined behavior.
+//
+// Sends each removed directory then completes, or errors, on an unspecified
+// thread.
+@property (nonatomic, strong, readonly) RACSignal *prunedUpdateDirectories;
 
 // Parses an update model from downloaded data.
 //
@@ -151,13 +165,48 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
-	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
+	if (_signature == nil) {
+#if DEBUG
+		NSLog(@"Could not get code signature for running application, application updates are disabled: %@", error);
+		return nil;
+#else
+		NSDictionary *exceptionInfo = @{ NSUnderlyingErrorKey: error };
+		@throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Could not get code signature for running application" userInfo:exceptionInfo];
+#endif
+	}
 
 	@weakify(self);
+
+	_prunedUpdateDirectories = [[[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
+				return YES;
+			}];
+
+			return [[enumerator.rac_sequence.signal
+				filter:^(NSURL *enumeratedURL) {
+					NSString *name = enumeratedURL.lastPathComponent;
+					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
+				}]
+				doNext:^(NSURL *directoryURL) {
+					NSError *error = nil;
+					if (![manager removeItemAtURL:directoryURL error:&error]) {
+						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		replayLazily]
+		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
+
 	_checkForUpdatesAction = [[[RACSignal
 		defer:^{
 			@strongify(self);
-
 			return [RACSignal return:self.updateRequest];
 		}]
 		flattenMap:^(NSURLRequest *request) {
@@ -361,7 +410,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
 		flattenMap:^(NSURL *zipOutputURL) {
-			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
+			return [[SQRLZipArchiver
+				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
+				doCompleted:^{
+					NSError *error = nil;
+					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
+						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
+					}
+				}];
 		}]
 		concat:[self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory]]
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
@@ -376,7 +432,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			return [directoryManager applicationSupportURL];
 		}]
 		flattenMap:^(NSURL *appSupportURL) {
-			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
 			@onExit {
 				free(updateDirectoryCString);

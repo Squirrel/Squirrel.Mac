@@ -15,6 +15,8 @@
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
+		5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */ = {isa = PBXBuildFile; fileRef = 5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */; };
+		5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */ = {isa = PBXBuildFile; fileRef = 5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
@@ -419,6 +421,8 @@
 		53710D8117D8F5C300A992DE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		53710D8217D8F5C300A992DE /* targets.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = targets.awk; sourceTree = "<group>"; };
 		53710D8317D8F5C300A992DE /* xcodebuild.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = xcodebuild.awk; sourceTree = "<group>"; };
+		5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLAuthorization.h; sourceTree = "<group>"; };
+		5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLAuthorization.m; sourceTree = "<group>"; };
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
@@ -620,6 +624,15 @@
 			);
 			name = Scripts;
 			path = script;
+			sourceTree = "<group>";
+		};
+		5374DCD8187AD0DC006B7056 /* Authorization */ = {
+			isa = PBXGroup;
+			children = (
+				5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */,
+				5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */,
+			);
+			name = Authorization;
 			sourceTree = "<group>";
 		};
 		53B70015181E944F000FFBD0 /* Products */ = {
@@ -968,6 +981,7 @@
 				D0A56BF61804BABB00A84EDC /* Code Signing */,
 				D0A56BE71804BA2400A84EDC /* State */,
 				D06B58BC18032BE800656D97 /* Transactions */,
+				5374DCD8187AD0DC006B7056 /* Authorization */,
 			);
 			name = Shared;
 			path = Squirrel;
@@ -1016,6 +1030,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */,
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
@@ -1441,6 +1456,7 @@
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
+				5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1629,6 +1645,7 @@
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 			};
 			name = Debug;
 		};
@@ -1638,6 +1655,7 @@
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 			};
 			name = Release;
 		};
@@ -1647,6 +1665,7 @@
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 			};
 			name = Test;
 		};
@@ -1656,6 +1675,7 @@
 			buildSettings = {
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 			};
 			name = Profile;
 		};

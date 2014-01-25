@@ -23,13 +23,36 @@ updates installed are valid.
 
 # Adopting Squirrel
 
+1. Install xctool with `brew install xctool`
 1. Add the Squirrel repository as a git submodule
+1. Run `script/bootstrap` from within the submodule
 1. Add a reference to Squirrel.xcodeproj to your project
 1. Add Squirrel.framework as a target dependency
 1. Link Squirrel.framework and add it to a Copy Files build phase which copies
 it into your Frameworks directory
-1. Ensure your Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`) includes the
-Frameworks directory Squirrel.framework is copied into
+1. Ensure your application includes the [dependencies](#dependencies). Squirrel
+does not embed them itself.
+
+# Dependencies
+
+Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
+and [Mantle](https://github.com/MantleFramework/Mantle).
+
+If your application is already using ReactiveCocoa, ensure it is using the same
+version as Squirrel.
+
+Otherwise, add a target dependency and Copy Files build phase entry for the
+ReactiveCocoa.framework target included in Squirrel's repository, in
+External/ReactiveCocoa.
+
+Similarly, ensure your application includes Mantle, or copies in the Squirrel
+version.
+
+Finally, ensure your application's Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`)
+includes the directory that Squirrel.framework, ReactiveCocoa.framework
+and Mantle.framework are copied into.
+
+# Configuration
 
 Once Squirrel is added to your project, you need to configure and start it.
 
