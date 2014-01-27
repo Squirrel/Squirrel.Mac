@@ -60,7 +60,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 - (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request;
 
 // Saves the details of the targetBundleURL in the preferences, so that the
-// install can be aborted, then moves the targetBundleURL to an owned directory.
+// bundle can be restored to its original location, then moves the
+// targetBundleURL to an owned directory.
 //
 // request - The request whose target should be removed in preparation of an
 //           update being installed.
