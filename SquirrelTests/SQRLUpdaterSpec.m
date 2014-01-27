@@ -232,4 +232,85 @@ describe(@"response handling", ^{
 	});
 });
 
+fdescribe(@"state", ^{
+	__block OHHTTPStubs *stubs = nil;
+	__block SQRLUpdater *updater = nil;
+
+	__block OHHTTPStubsResponse *response = nil;
+
+	beforeAll(^{
+		NSURLRequest *localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"fake://host/path"]];
+
+		stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL isEqual:localRequest.URL];
+		} withStubResponse:^(NSURLRequest *request) {
+			return response;
+		}];
+
+		updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
+	});
+
+	afterAll(^{
+		[OHHTTPStubs removeRequestHandler:stubs];
+	});
+
+	it(@"should transition through idle, checking and idle, when there is no update", ^{
+		response = [OHHTTPStubsResponse responseWithData:nil statusCode:/* No Content */ 204 responseTime:0 headers:nil];
+
+		RACReplaySubject *stateSubject = [RACReplaySubject subject];
+		[RACObserve(updater, state) subscribe:stateSubject];
+
+		NSError *error;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		expect(result).to.beTruthy();
+		expect(error).to.beNil();
+
+		[stateSubject sendCompleted];
+
+		NSArray *expectedStates = @[
+			@(SQRLUpdaterStateIdle),
+			@(SQRLUpdaterStateCheckingForUpdate),
+			@(SQRLUpdaterStateIdle),
+		];
+		expect([stateSubject toArray]).to.equal(expectedStates);
+	});
+
+	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
+		NSURL *testUpdateURL = [self createTestApplicationUpdate];
+
+		NSError *error;
+		SQRLUpdate *update = [SQRLUpdate modelWithDictionary:@{
+			@"updateURL": zipUpdate(testUpdateURL),
+		} error:&error];
+		expect(update).notTo.beNil();
+		expect(error).to.beNil();
+
+		NSDictionary *updateInfo = [MTLJSONAdapter JSONDictionaryFromModel:update];
+		expect(updateInfo).notTo.beNil();
+
+		NSData *updateData = [NSJSONSerialization dataWithJSONObject:updateInfo options:0 error:&error];
+		expect(updateData).notTo.beNil();
+		expect(error).to.beNil();
+
+		response = [OHHTTPStubsResponse responseWithData:updateData statusCode:/* OK */ 200 responseTime:0 headers:nil];
+
+		RACReplaySubject *stateSubject = [RACReplaySubject subject];
+		[RACObserve(updater, state) subscribe:stateSubject];
+
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		expect(result).to.beTruthy();
+		expect(error).to.beNil();
+
+		[stateSubject sendCompleted];
+
+		NSArray *expectedStates = @[
+			@(SQRLUpdaterStateIdle),
+			@(SQRLUpdaterStateCheckingForUpdate),
+			@(SQRLUpdaterStateDownloadingUpdate),
+			@(SQRLUpdaterStateAwaitingRelaunch),
+		];
+		expect([stateSubject toArray]).to.equal(expectedStates);
+	});
+});
+
 SpecEnd
