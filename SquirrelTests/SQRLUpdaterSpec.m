@@ -244,7 +244,9 @@ describe(@"state", ^{
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
 
-		expect(testApplication.terminated).will.beTruthy();
+		[NSRunLoop.currentRunLoop runUntilDate:[NSDate.date dateByAddingTimeInterval:3]];
+
+		expect(testApplication.terminated).to.beTruthy();
 		[testApplication forceTerminate];
 
 		[stateSubject sendCompleted];
@@ -278,7 +280,9 @@ describe(@"state", ^{
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
 
-		expect(testApplication.terminated).will.beTruthy();
+		[NSRunLoop.currentRunLoop runUntilDate:[NSDate.date dateByAddingTimeInterval:3]];
+
+		expect(testApplication.terminated).to.beTruthy();
 		[testApplication forceTerminate];
 
 		[stateSubject sendCompleted];
