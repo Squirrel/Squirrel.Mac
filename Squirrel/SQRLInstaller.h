@@ -53,14 +53,14 @@ extern const NSInteger SQRLInstallerErrorChangingPermissions;
 //                         state. Must not be nil.
 - (instancetype)initWithApplicationIdentifier:(NSString *)applicationIdentifier;
 
-// When executed with an `SQRLShipItRequest`, attempts to install the update or
+// When executed with a `SQRLShipItRequest`, attempts to install the update or
 // resume an in-progress installation.
 //
 // Each execution will complete or error on an unspecified scheduler when
 // installation has completed or failed.
 @property (nonatomic, strong, readonly) RACCommand *installUpdateCommand;
 
-// When executed with an `SQRLShipItRequest`, aborts an installation, and
+// When executed with a `SQRLShipItRequest`, aborts an installation, and
 // attempts to restore the old version of the application if necessary.
 //
 // This must not be executed while `installUpdateCommand` is executing.
