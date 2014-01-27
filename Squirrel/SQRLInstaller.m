@@ -350,7 +350,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Failed to copy bundle %@ to temporary location %@", nil), bundleURL, newBundleURL];
 			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 		}]
-		setNameWithFormat:@"%@ -moveBundleAtURL: %@ toDirectory: %@", self, bundleURL, directoryURL];
+		setNameWithFormat:@"%@ -copyBundleAtURL: %@ toDirectory: %@", self, bundleURL, directoryURL];
 }
 
 - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL {
