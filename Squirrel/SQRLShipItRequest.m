@@ -85,22 +85,18 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 }
 
 + (RACSignal *)readFromData:(NSData *)data {
-	return [[[RACSignal
-		return:data]
-		tryMap:^ SQRLShipItRequest * (NSData *data, NSError **errorRef) {
+	return [[RACSignal
+		defer:^{
 			SQRLShipItRequest *state = [NSKeyedUnarchiver unarchiveObjectWithData:data];
 			if (![state isKindOfClass:SQRLShipItRequest.class]) {
-				if (errorRef != NULL) {
-					NSDictionary *userInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read saved state", nil),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
-					};
-					*errorRef = [NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo];
-				}
-				return nil;
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read saved state", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
+				};
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo]];
 			}
 
-			return state;
+			return [RACSignal return:state];
 		}]
 		setNameWithFormat:@"+readFromData: <NSData %p>", data];
 }
@@ -137,22 +133,18 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 }
 
 - (RACSignal *)serialization {
-	return [[[RACSignal
-		return:self]
-		tryMap:^ NSData * (SQRLShipItRequest *request, NSError **errorRef) {
-			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:request];
+	return [[RACSignal
+		defer:^{
+			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
 			if (data == nil) {
-				if (errorRef != NULL) {
-					NSDictionary *userInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
-					};
-					*errorRef = [NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo];
-				}
-				return nil;
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
+				};
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo]];
 			}
 
-			return data;
+			return [RACSignal return:data];
 		}]
 		setNameWithFormat:@"%@ serialization", self];
 }
