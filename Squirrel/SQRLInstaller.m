@@ -221,7 +221,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				concat:[RACSignal return:bundleURL]];
 		}]
 		zipWith:[self
-			codeSignatureForURL:request.targetBundleURL]]
+			codeSignatureForBundleAtURL:request.targetBundleURL]]
 		reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[[self
 				verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
@@ -238,7 +238,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	return [[[[RACSignal
 		zip:@[
 			[self ownedTemporaryDirectoryURL],
-			[self codeSignatureForURL:request.targetBundleURL],
+			[self codeSignatureForBundleAtURL:request.targetBundleURL],
 		] reduce:^(NSURL *directoryURL, SQRLCodeSignature *codeSignature) {
 			NSURL *targetBundleURL = request.targetBundleURL;
 			NSURL *newBundleURL = [directoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
@@ -383,7 +383,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 #pragma mark Verification
 
-- (RACSignal *)codeSignatureForURL:(NSURL *)URL {
+- (RACSignal *)codeSignatureForBundleAtURL:(NSURL *)URL {
 	return [[RACSignal
 		defer:^{
 			NSError *error;
@@ -391,7 +391,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			if (codeSignature == nil) return [RACSignal error:error];
 			return [RACSignal return:codeSignature];
 		}]
-		setNameWithFormat:@"%@ -codeSignatureForURL: %@", self, URL];
+		setNameWithFormat:@"%@ -codeSignatureForBundleAtURL: %@", self, URL];
 }
 
 - (RACSignal *)verifyBundleAtURL:(NSURL *)bundleURL usingSignature:(SQRLCodeSignature *)signature {
