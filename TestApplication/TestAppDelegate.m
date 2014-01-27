@@ -63,6 +63,13 @@
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 	self.updater.updateClass = SQRLTestUpdate.class;
 
+	[RACObserve(self.updater, state)
+		subscribeNext:^(NSNumber *state) {
+			NSLog(@"State transition: %@", state);
+
+			[NSDistributedNotificationCenter.defaultCenter postNotificationName:@"com.github.Squirrel.TestApplication.state-changed" object:nil userInfo:@{ @"state": state }];
+		}];
+
 	__block NSUInteger updateCheckCount = 1;
 
 	[[[[[[[[[[RACSignal
