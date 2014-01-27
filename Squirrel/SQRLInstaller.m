@@ -234,8 +234,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		zip:@[
 			[self ownedTemporaryDirectoryURL],
 			[self codeSignatureForURL:request.targetBundleURL],
-		]
-		reduce:^(NSURL *directoryURL, SQRLCodeSignature *codeSignature) {
+		] reduce:^(NSURL *directoryURL, SQRLCodeSignature *codeSignature) {
 			NSURL *targetBundleURL = request.targetBundleURL;
 			NSURL *newBundleURL = [directoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
 
