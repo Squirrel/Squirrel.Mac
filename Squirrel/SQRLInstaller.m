@@ -39,6 +39,12 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 // The defaults domain to store all resumable state in.
 @property (nonatomic, copy, readonly) NSString *applicationIdentifier;
 
+// The bundle currently owned by this installer.
+//
+// Stores the bundle moved aside by an install request so that the original
+// bundle can be restored to its original location if needed.
+@property (nonatomic, strong) SQRLInstallerOwnedBundle *ownedBundle;
+
 // Reads the given key from `request`, failing if it's not set.
 //
 // key     - The property key to read from `request`. This must not be nil, and
@@ -59,9 +65,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 // or errors.
 - (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request;
 
-// Saves the details of the targetBundleURL in the preferences, so that the
-// bundle can be restored to its original location, then moves the
-// targetBundleURL to an owned directory.
+// Saves a `SQRLInstallerOwnedBundle` for the targetBundleURL to the
+// preferences, then moves the targetBundleURL to an owned directory.
 //
 // request - The request whose target should be removed in preparation of an
 //           update being installed.
