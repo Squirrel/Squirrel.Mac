@@ -61,8 +61,21 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // Returns a signal which will synchronously complete or error.
 - (RACSignal *)writeUsingURL:(RACSignal *)URLSignal;
 
-// Designated initialiser, ShipIt clients construct an update request and
-// serialize it to disk for ShipIt to load and perform.
+// Designated initialiser.
+//
+// updateBundleURL         - The update bundle which will replace
+//                           targetBundleURL.
+// targetBundleURL         - Where the update should be installed, if a bundle
+//                           is already present, the update is checked for
+//                           suitability against this bundle.
+// bundleIdentifier        - The bundle identifier that the installer should
+//                           wait for instances of to terminate before
+//                           installing.
+// launchAfterInstallation - Whether the updated application should be launched
+//                           after installation.
+//
+// Returns a request which can be written to disk for ShipIt to read and
+// perform.
 - (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation;
 
 // The URL to the downloaded update's app bundle.
