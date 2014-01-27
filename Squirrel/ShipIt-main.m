@@ -64,7 +64,7 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 		flattenMap:^(SQRLShipItRequest *request) {
 			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
 
-			NSUInteger attempt = (installationAttempts(applicationIdentifier) + 1);
+			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
 			setInstallationAttempts(applicationIdentifier, attempt);
 
 			RACSignal *action;
