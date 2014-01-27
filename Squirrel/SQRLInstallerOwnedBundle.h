@@ -19,7 +19,15 @@
 
 // Designated initialiser.
 //
-// 
+// originalURL   - Where the bundle currently resides, and should be restored to
+//                 should an error occur.
+// temporaryURL  - Where the bundle will be moved to, so that another bundle can
+//                 take its place at originalURL.
+// codeSignature - The code signature of the original bundle, so that the
+//                 signature can be used irrespective of where the bundle
+//                 currently resides.
+//
+// Returns an initialised owned bundle for serializing.
 - (instancetype)initWithOriginalURL:(NSURL *)originalURL temporaryURL:(NSURL *)temporaryURL codeSignature:(SQRLCodeSignature *)codeSignature;
 
 @property (readonly, copy, nonatomic) NSURL *originalURL;
