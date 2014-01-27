@@ -260,25 +260,24 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
-			return [[[[self
+			return [[[[[self
 				acquireTargetBundleURLForRequest:request]
-				then:^{
-					return [self installItemToURL:request.targetBundleURL fromURL:updateBundleURL];
-				}]
-				then:^{
-					NSArray *ownedLocations = @[
-						updateBundleURL,
-						self.ownedBundle.temporaryURL,
-					];
-
-					return [[ownedLocations.rac_sequence.signal
-						map:^(NSURL *location) {
-							return [[[self
-								deleteOwnedBundleAtURL:location]
-								catchTo:[RACSignal empty]]
-								ignoreValues];
+				concat:[self installItemToURL:request.targetBundleURL fromURL:updateBundleURL]]
+				concat:[RACSignal
+					defer:^{
+						return @[
+							updateBundleURL,
+							self.ownedBundle.temporaryURL,
+						].rac_sequence.signal;
+					}]]
+				flattenMap:^(NSURL *location) {
+					return [[[[self
+						deleteOwnedBundleAtURL:location]
+						doError:^(NSError *error) {
+							NSLog(@"Couldn't remove owned bundle at location %@, error %@", location, error.sqrl_verboseDescription);
 						}]
-						concat];
+						catchTo:[RACSignal empty]]
+						ignoreValues];
 				}]
 				doCompleted:^{
 					self.ownedBundle = nil;
