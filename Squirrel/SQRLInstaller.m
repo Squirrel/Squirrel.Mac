@@ -204,7 +204,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 - (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
-	RACSignal *preparedBundleURLSignal = [[[self
+	return [[[[[[[self
 		ownedTemporaryDirectoryURL]
 		flattenMap:^(NSURL *directoryURL) {
 			return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
@@ -214,21 +214,10 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				clearQuarantineForDirectory:bundleURL]
 				ignoreValues]
 				concat:[RACSignal return:bundleURL]];
-		}];
-
-	RACSignal *codeSignatureSignal = [self
-		codeSignatureForURL:request.targetBundleURL];
-
-	// There's a race condition between checking the code signature _now_ and
-	// before actually doing the swap. We'll need to check the code signature
-	// again later.
-
-	return [[[RACSignal
-		zip:@[
-			preparedBundleURLSignal,
-			codeSignatureSignal,
-		]
-		reduce:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
+		}]
+		zipWith:[self
+			codeSignatureForURL:request.targetBundleURL]]
+		reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[[self
 				verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
 				ignoreValues]
