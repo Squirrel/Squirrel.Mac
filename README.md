@@ -82,9 +82,9 @@ installed.
 
 ## Update Requests
 
-Squirrel is indifferent to the request you provide for update checking. It adds
-`Accept: application/json` to the request headers because it is responsible for
-parsing the response.
+Squirrel is indifferent to the request the client application provides for
+update checking. `Accept: application/json` is added to the request headers
+because Squirrel is responsible for parsing the response.
 
 For the requirements imposed on the responses and the body format of an update
 response see [Server Support](#server-support).
