@@ -60,7 +60,16 @@ Once Squirrel is added to your project, you need to configure and start it.
 #import <Squirrel/Squirrel.h>
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
-	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://mycompany.com/myapp/latest"]]];
+	NSURLComponents *components = [[NSURLComponents alloc] init];
+
+	components.scheme = @"http";
+	components.host = @"mycompany.com";
+	components.path = @"/myapp/latest";
+
+	NSString *bundleVersion = NSBundle.mainBundle.sqrl_bundleVersion;
+	components.query = [[NSString stringWithFormat:@"version=%@", bundleVersion] stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLQueryAllowedCharacterSet]
+
+	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:[NSURLRequest requestWithURL:components.URL]];
 
 	// Check for updates every 4 hours.
 	[self.updater startAutomaticChecksWithInterval:60 * 60 * 4];
@@ -88,7 +97,7 @@ would like.
 
 How you include the version identifier or other criteria is specific to the
 server that you are requesting updates from. A common approach is to use query
-parameters.
+parameters, [Configuration](#configuration) shows an example of this.
 
 ## Update Available Notifications
 
