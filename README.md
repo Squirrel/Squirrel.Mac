@@ -13,8 +13,8 @@ suitable update.
 
 The update JSON Squirrel requests should be dynamically generated based on
 criteria in the request, and whether an update is required. Squirrel relies
-on server side support for determining whether an update is required, see [Server
-Support](#server-support) below.
+on server side support for determining whether an update is required, see
+[Server Support](#server-support).
 
 Squirrel’s installer is also designed to be fault tolerant, and ensure that any
 updates installed are valid.
