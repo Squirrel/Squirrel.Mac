@@ -73,9 +73,12 @@ installed.
 
 ## Update Requests
 
-Squirrel is indifferent to the request you provide for update checking. It only
-imposes requirements on the responses and the body format of an update response.
-See [Server Support](#server-support) for more details.
+Squirrel is indifferent to the request you provide for update checking. It adds
+`Accept: application/json` to the request headers because it is responsible for
+parsing the response.
+
+For the requirements imposed on the responses and the body format of an update
+response see [Server Support](#server-support).
 
 Your update request must *at least* include a version identifier so that the
 server can determine whether an update for this specific version is required. It
@@ -113,13 +116,15 @@ If you want to install a downloaded update and automatically relaunch afterward,
 
 # Server Support
 
+Your server is expected to determine whether an update is required based on the
+[Update Request](#update-requests) your client issued.
+
 If an update is required your server should respond with a status code of
 [200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) and include the
-update JSON in the body, see [Update JSON Format](#update-json-format).
-Squirrel **will** download and install this update, even if the version of the
-update is the same as the currently running version. To save redundantly
-downloading the same version multiple times your server must inform the client
-not to update.
+[update JSON](#update-json-format) in the body. Squirrel **will** download and
+install this update, even if the version of the update is the same as the
+currently running version. To save redundantly downloading the same version
+multiple times your server must not inform the client to update.
 
 If no update is required your server must respond with a status code of
 [204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5). Squirrel
