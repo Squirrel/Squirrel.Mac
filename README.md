@@ -16,7 +16,7 @@ criteria in the request, and whether an update is required. Squirrel relies
 on server side support for determining whether an update is required, see
 [Server Support](#server-support).
 
-Squirrel’s installer is also designed to be fault tolerant, and ensure that any
+Squirrel's installer is also designed to be fault tolerant, and ensure that any
 updates installed are valid.
 
 ![:shipit:](http://shipitsquirrel.github.io/images/ship%20it%20squirrel.png)
