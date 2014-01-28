@@ -71,7 +71,23 @@ Squirrel will periodically request and automatically download any updates. When
 your application terminates, any downloaded update will be automatically
 installed.
 
-## Update Notifications
+## Update Requests
+
+Squirrel is indifferent to the request you provide for update checking. It only
+imposes requirements on the responses and the body format of an update response.
+See [Server Support](#server-support) for more details.
+
+Your update request must *at least* include a version identifier so that the
+server can determine whether an update for this specific version is required. It
+may also include other identifying criteria such as operating system version or
+username, to allow the server to deliver as fine grained an update as you
+would like.
+
+How you include the version identifier or other criteria is specific to the
+server that you are requesting updates from. A common approach is to use query
+parameters.
+
+## Update Available Notifications
 
 To know when an update is ready to be installed, you can subscribe to the
 `updates` signal on `SQRLUpdater`:
@@ -95,10 +111,24 @@ If you want to install a downloaded update and automatically relaunch afterward,
 }];
 ```
 
-# Update JSON Format
+# Server Support
 
-Squirrel requests the URL you provide with `Accept: application/json` and
-expects the following schema in response:
+If an update is required your server should respond with a status code of
+[200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) and include the
+update JSON in the body, see [Update JSON Format](#update-json-format).
+Squirrel **will** download and install this update, even if the version of the
+update is the same as the currently running version. To save redundantly
+downloading the same version multiple times your server must inform the client
+not to update.
+
+If no update is required your server must respond with a status code of
+[204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5). Squirrel
+will check for an update again at the interval you specify.
+
+## Update JSON Format
+
+When an update is available, Squirrel expects the following schema in response
+to the update request provided:
 
 ```json
 {
@@ -117,19 +147,6 @@ will be added to the `Accept` header so that your server can return the
 appropriate format.
 
 "pub_date" if present must be formatted according to ISO 8601.
-
-# Server Support
-
-If an update is required your server should respond with a status code of
-[200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) and include the
-update JSON in the body. Squirrel **will** download and install this update,
-even if the version of the update is the same as the currently running version.
-To save redundantly downloading the same version multiple times your server must
-inform the client not to update.
-
-If no update is required your server must respond with a status code of
-[204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5). Squirrel
-will check for an update again at the interval you specify.
 
 # User Interface
 
