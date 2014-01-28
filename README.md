@@ -117,7 +117,7 @@ If you want to install a downloaded update and automatically relaunch afterward,
 # Server Support
 
 Your server is expected to determine whether an update is required based on the
-[Update Request](#update-requests) your client issued.
+[Update Request](#update-requests) your client issues.
 
 If an update is required your server should respond with a status code of
 [200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) and include the
