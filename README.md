@@ -116,7 +116,7 @@ installing ZIP updates. If future update formats are supported their MIME type
 will be added to the `Accept` header so that your server can return the
 appropriate format.
 
-"pub_date" if present must be formatted according to ISO 8601
+"pub_date" if present must be formatted according to ISO 8601.
 
 # Server Support
 
