@@ -252,11 +252,11 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			flattenMap:^(SQRLUpdate *update) {
 				return [[RACSignal
 					defer:^RACSignal *{
-						self.state = SQRLUpdaterStateAwaitingRelaunch;
+						self.state = SQRLUpdaterStateDownloadingUpdate;
 
 						return [self downloadAndPrepareUpdate:update];
 					}]
-					doCompleted:^{
+					doNext:^(id _) {
 						self.state = SQRLUpdaterStateAwaitingRelaunch;
 					}];
 			}]
