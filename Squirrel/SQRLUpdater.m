@@ -215,7 +215,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
 		// Prune old updates before the first update check.
-		return [[[[[[[[[[self.prunedUpdateDirectories
+		return [[[[[[[[self.prunedUpdateDirectories
 			catch:^(NSError *error) {
 				NSLog(@"Error pruning old updates: %@", error);
 				return [RACSignal empty];
@@ -249,14 +249,16 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			flattenMap:^(NSData *data) {
 				return [self updateFromJSONData:data];
 			}]
-			doNext:^(id _) {
-				self.state = SQRLUpdaterStateDownloadingUpdate;
-			}]
 			flattenMap:^(SQRLUpdate *update) {
-				return [self downloadAndPrepareUpdate:update];
-			}]
-			doNext:^(id _) {
-				self.state = SQRLUpdaterStateAwaitingRelaunch;
+				return [[RACSignal
+					defer:^RACSignal *{
+						self.state = SQRLUpdaterStateAwaitingRelaunch;
+
+						return [self downloadAndPrepareUpdate:update];
+					}]
+					doCompleted:^{
+						self.state = SQRLUpdaterStateAwaitingRelaunch;
+					}];
 			}]
 			finally:^{
 				if (self.state == SQRLUpdaterStateAwaitingRelaunch) return;
