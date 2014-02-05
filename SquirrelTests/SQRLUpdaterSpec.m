@@ -11,6 +11,7 @@
 
 #import "SQRLTestUpdate.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
+#import "TestAppConstants.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -234,9 +235,9 @@ describe(@"response handling", ^{
 
 static RACSignal * (^stateNotificationListener)(void) = ^ {
 	return [[[NSDistributedNotificationCenter.defaultCenter
-		rac_addObserverForName:@"com.github.Squirrel.TestApplication.state-changed" object:nil]
+		rac_addObserverForName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil]
 		map:^(NSNotification *notification) {
-			return notification.userInfo[@"state"];
+			return notification.userInfo[SQRLTestAppUpdaterStateKey];
 		}]
 		setNameWithFormat:@"stateNotificationListener"];
 };

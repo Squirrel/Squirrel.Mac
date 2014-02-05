@@ -12,6 +12,7 @@
 #import "SQRLTestUpdate.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import "TestAppConstants.h"
 
 @interface TestAppDelegate ()
 
@@ -66,7 +67,7 @@
 	[RACObserve(self.updater, state) subscribeNext:^(NSNumber *state) {
 		NSLog(@"State transition: %@", state);
 
-		[NSDistributedNotificationCenter.defaultCenter postNotificationName:@"com.github.Squirrel.TestApplication.state-changed" object:nil userInfo:@{ @"state": state }];
+		[NSDistributedNotificationCenter.defaultCenter postNotificationName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil userInfo:@{ SQRLTestAppUpdaterStateKey: state }];
 	}];
 
 	__block NSUInteger updateCheckCount = 1;
