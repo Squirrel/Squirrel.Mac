@@ -163,8 +163,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItRequest *request) {
 		@strongify(self);
 
-		return [self
-			abortInstall];
+		return [self abortInstall];
 	}];
 	
 	return self;
@@ -223,8 +222,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				ignoreValues]
 				concat:[RACSignal return:bundleURL]];
 		}]
-		zipWith:[self
-			codeSignatureForBundleAtURL:request.targetBundleURL]]
+		zipWith:[self codeSignatureForBundleAtURL:request.targetBundleURL]]
 		reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
 			return [[[self
 				verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
