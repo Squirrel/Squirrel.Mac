@@ -11,6 +11,7 @@
 
 #import "SQRLTestUpdate.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
+#import "TestAppConstants.h"
 
 SpecBegin(SQRLUpdater)
 
@@ -229,6 +230,64 @@ describe(@"response handling", ^{
 		expect(result).to.beFalsy();
 		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
 		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
+	});
+});
+
+static RACSignal * (^stateNotificationListener)(void) = ^ {
+	return [[[NSDistributedNotificationCenter.defaultCenter
+		rac_addObserverForName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil]
+		map:^(NSNotification *notification) {
+			return notification.userInfo[SQRLTestAppUpdaterStateKey];
+		}]
+		setNameWithFormat:@"stateNotificationListener"];
+};
+
+describe(@"state", ^{
+	it(@"should transition through idle, checking and idle, when there is no update", ^{
+		NSMutableArray *states = [NSMutableArray array];
+		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
+			[states addObject:state];
+		}];
+
+		NSRunningApplication *testApplication = launchWithEnvironment(nil);
+
+		NSArray *expectedStates = @[
+			@(SQRLUpdaterStateIdle),
+			@(SQRLUpdaterStateCheckingForUpdate),
+			@(SQRLUpdaterStateIdle),
+		];
+		expect(states).will.equal(expectedStates);
+
+		expect(testApplication.terminated).will.beTruthy();
+	});
+
+	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
+		NSMutableArray *states = [NSMutableArray array];
+		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
+			[states addObject:state];
+		}];
+
+		NSError *error;
+		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+			@"updateURL": zipUpdate([self createTestApplicationUpdate]),
+			@"final": @YES,
+		} error:&error];
+		expect(update).notTo.beNil();
+		expect(error).to.beNil();
+
+		writeUpdate(update);
+
+		NSRunningApplication *testApplication = launchWithEnvironment(nil);
+
+		NSArray *expectedStates = @[
+			@(SQRLUpdaterStateIdle),
+			@(SQRLUpdaterStateCheckingForUpdate),
+			@(SQRLUpdaterStateDownloadingUpdate),
+			@(SQRLUpdaterStateAwaitingRelaunch),
+		];
+		expect(states).will.equal(expectedStates);
+
+		expect(testApplication.terminated).will.beTruthy();
 	});
 });
 

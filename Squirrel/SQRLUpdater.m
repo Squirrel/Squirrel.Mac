@@ -38,6 +38,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 @interface SQRLUpdater ()
 
+@property (atomic, readwrite) SQRLUpdaterState state;
+
 // The code signature for the running application, used to check updates before
 // sending them to ShipIt.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
@@ -213,12 +215,14 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
 		// Prune old updates before the first update check.
-		return [[[[[[[self.prunedUpdateDirectories
+		return [[[[[[[[self.prunedUpdateDirectories
 			catch:^(NSError *error) {
 				NSLog(@"Error pruning old updates: %@", error);
 				return [RACSignal empty];
 			}]
 			then:^{
+				self.state = SQRLUpdaterStateCheckingForUpdate;
+
 				return [NSURLConnection rac_sendAsynchronousRequest:request];
 			}]
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
@@ -246,7 +250,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				return [self updateFromJSONData:data];
 			}]
 			flattenMap:^(SQRLUpdate *update) {
-				return [self downloadAndPrepareUpdate:update];
+				return [[RACSignal
+					defer:^{
+						self.state = SQRLUpdaterStateDownloadingUpdate;
+
+						return [self downloadAndPrepareUpdate:update];
+					}]
+					doCompleted:^{
+						self.state = SQRLUpdaterStateAwaitingRelaunch;
+					}];
+			}]
+			finally:^{
+				if (self.state == SQRLUpdaterStateAwaitingRelaunch) return;
+				self.state = SQRLUpdaterStateIdle;
 			}]
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
