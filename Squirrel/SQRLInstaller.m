@@ -149,8 +149,11 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		// If that's the case, we need to abort the previous owned bundle, and
 		// then handle the new install request.
 
-		return [[[self
+		return [[[[self
 			abortInstall]
+			doError:^(NSError *error) {
+				NSLog(@"Couldn't abort install and restore owned bundle to previous location %@, error %@", self.ownedBundle.originalURL, error.sqrl_verboseDescription);
+			}]
 			catchTo:[RACSignal empty]]
 			then:^{
 				return [self installRequest:request];
