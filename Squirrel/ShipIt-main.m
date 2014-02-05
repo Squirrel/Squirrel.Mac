@@ -57,12 +57,12 @@ static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
 static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *directoryManager) {
 	NSString *applicationIdentifier = directoryManager.applicationIdentifier;
 
-	[[[readRequestSignal
+	[[[[[readRequestSignal
 		flattenMap:^(SQRLShipItRequest *request) {
-			return [[waitForTerminationIfNecessary(request)
-				ignoreValues]
-				concat:readRequestSignal];
+			return waitForTerminationIfNecessary(request);
 		}]
+		ignoreValues]
+		concat:readRequestSignal]
 		flattenMap:^(SQRLShipItRequest *request) {
 			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
 
