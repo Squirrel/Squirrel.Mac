@@ -15,9 +15,9 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLShipItState.h"
 #import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
+#import "SQRLShipItRequest.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -109,16 +109,6 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 //
 // Returns a signal which completes or errors on a background thread.
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update;
-
-// Verifies that an existing state is innocuous, and therefore safe to
-// overwrite.
-//
-// This won't be the case if, for example, an update is currently being
-// installed.
-//
-// Returns a signal which sends `existingState` then completes upon successful
-// validation, or errors otherwise.
-- (RACSignal *)validateExistingState:(SQRLShipItState *)existingState;
 
 @end
 
@@ -453,37 +443,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		setNameWithFormat:@"%@ -verifyAndPrepareUpdate: %@ fromBundle: %@", self, update, updateBundle];
 }
 
-- (RACSignal *)validateExistingState:(SQRLShipItState *)existingState {
-	return [[RACSignal
-		defer:^{
-			if (existingState.installerState != SQRLInstallerStateNothingToDo) {
-				// If this happens, shit is crazy, because it implies that an
-				// update is being installed over us right now.
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Installation in progress", nil),
-					NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An update for %@ is already in progress.", nil), NSRunningApplication.currentApplication.bundleIdentifier],
-				};
-
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
-			}
-
-			return [RACSignal return:existingState];
-		}]
-		setNameWithFormat:@"%@ -validateExistingState: %@", self, existingState];
-}
-
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[[[[SQRLShipItState
-		readUsingURL:self.shipItStateURL]
-		catchTo:[RACSignal empty]]
-		flattenMap:^(SQRLShipItState *existingState) {
-			return [self validateExistingState:existingState];
-		}]
-		then:^{
-			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier];
-			return [state writeUsingURL:self.shipItStateURL];
+	return [[[[RACSignal
+		defer:^{
+			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO];
+			return [request writeUsingURL:self.shipItStateURL];
 		}]
 		then:^{
 			return self.shipItLauncher;
@@ -493,14 +460,13 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[[SQRLShipItState
+	return [[[[[[[[SQRLShipItRequest
 		readUsingURL:self.shipItStateURL]
-		flattenMap:^(SQRLShipItState *existingState) {
-			return [self validateExistingState:existingState];
+		map:^(SQRLShipItRequest *request) {
+			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES];
 		}]
-		flattenMap:^(SQRLShipItState *state) {
-			state.relaunchAfterInstallation = YES;
-			return [[state
+		flattenMap:^(SQRLShipItRequest *request) {
+			return [[request
 				writeUsingURL:self.shipItStateURL]
 				sqrl_addTransactionWithName:NSLocalizedString(@"Preparing to relaunch", nil) description:NSLocalizedString(@"%@ is preparing to relaunch to install an update. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier];
 		}]
