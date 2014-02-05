@@ -54,7 +54,9 @@ static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
 		setNameWithFormat:@"waitForTerminationIfNecessary"];
 }
 
-static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
+static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *directoryManager) {
+	NSString *applicationIdentifier = directoryManager.applicationIdentifier;
+
 	[[[readRequestSignal
 		flattenMap:^(SQRLShipItRequest *request) {
 			return [[waitForTerminationIfNecessary(request)
@@ -149,9 +151,7 @@ int main(int argc, const char * argv[]) {
 		char const *jobLabel = argv[1];
 		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
 
-		NSString *applicationIdentifier = directoryManager.applicationIdentifier;
-
-		installRequest([SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL], applicationIdentifier);
+		installRequest([SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL], directoryManager);
 
 		dispatch_main();
 	}
