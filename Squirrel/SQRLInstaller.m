@@ -43,7 +43,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 //
 // Stores the bundle moved aside by an install request so that the original
 // bundle can be restored to its original location if needed.
-@property (nonatomic, strong) SQRLInstallerOwnedBundle *ownedBundle;
+@property (atomic, strong) SQRLInstallerOwnedBundle *ownedBundle;
 
 // Reads the given key from `request`, failing if it's not set.
 //
