@@ -256,7 +256,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 						return [self downloadAndPrepareUpdate:update];
 					}]
-					doNext:^(id _) {
+					doCompleted:^{
 						self.state = SQRLUpdaterStateAwaitingRelaunch;
 					}];
 			}]
