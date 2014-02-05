@@ -28,7 +28,7 @@ beforeEach(^{
 });
 
 afterEach(^{
-	NSURL *stateURL = [[directoryManager shipItStateURL] firstOrDefault:nil success:NULL error:NULL];
+	NSURL *stateURL = [[directoryManager shipItStateURL] first];
 	expect(stateURL).notTo.beNil();
 	
 	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];

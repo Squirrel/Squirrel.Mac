@@ -315,20 +315,22 @@ static void SQRLSignalHandler(int sig) {
 	return manager;
 }
 
-- (void)performInstall:(SQRLShipItRequest *)request remote:(BOOL)remote {
+- (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
 		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
-		NSError *error = nil;
-		STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
+		__block NSError *error = nil;
+		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to.beTruthy();
+		expect(error).to.beNil();
 
 		[self addCleanupBlock:^{
 			// Remove ShipIt's launchd job so it doesn't relaunch itself.
 			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
 
-			NSError *lookupError = nil;
+			NSError *lookupError;
 			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
-			STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, lookupError);
+			expect(stateURL).notTo.beNil();
+			expect(lookupError).to.beNil();
 
 			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 		}];
@@ -336,10 +338,10 @@ static void SQRLSignalHandler(int sig) {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
 		expect(installer).notTo.beNil();
 
-		NSError *installError = nil;
-		BOOL install = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installError];
-		expect(install).to.beTruthy();
-		expect(installError).to.beNil();
+		NSError *installedError = nil;
+		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
+		expect(installed).to.beTruthy();
+		expect(installedError).to.beNil();
 	}
 }
 

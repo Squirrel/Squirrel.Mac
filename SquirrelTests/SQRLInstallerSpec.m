@@ -37,7 +37,7 @@ beforeEach(^{
 it(@"should install an update using ShipIt", ^{
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self performInstall:request remote:YES];
+	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -45,7 +45,7 @@ it(@"should install an update using ShipIt", ^{
 it(@"should install an update in process", ^{
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self performInstall:request remote:NO];
+	[self installWithRequest:request remote:NO];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -57,7 +57,7 @@ it(@"should install an update and relaunch", ^{
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:YES];
 
-	[self performInstall:request remote:YES];
+	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
@@ -69,7 +69,7 @@ it(@"should install an update from another volume", ^{
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self performInstall:request remote:YES];
+	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -80,7 +80,7 @@ it(@"should install an update to another volume", ^{
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self performInstall:request remote:YES];
+	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
@@ -125,13 +125,13 @@ describe(@"with backup restoration", ^{
 	});
 
 	it(@"should not install an update after too many attempts", ^{
-		[self performInstall:request remote:YES];
+		[self installWithRequest:request remote:YES];
 	});
 
 	it(@"should relaunch even after failing to install an update", ^{
 		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES];
 
-		[self performInstall:request remote:YES];
+		[self installWithRequest:request remote:YES];
 
 		expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).will.equal(1);
 	});
@@ -146,7 +146,7 @@ it(@"should disallow writing the updated application except by the owner", ^{
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self performInstall:request remote:YES];
+	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
@@ -164,7 +164,7 @@ describe(@"signal handling", ^{
 
 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-		[self performInstall:request remote:YES];
+		[self installWithRequest:request remote:YES];
 
 		// Apply a random delay before sending the termination signal, to
 		// fuzz out race conditions.
