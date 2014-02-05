@@ -64,13 +64,13 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // Designated initialiser.
 //
 // updateBundleURL         - The update bundle which will replace
-//                           targetBundleURL.
+//                           targetBundleURL. Must not be nil.
 // targetBundleURL         - Where the update should be installed, if a bundle
 //                           is already present, the update is checked for
-//                           suitability against this bundle.
+//                           suitability against this bundle. Must not be nil.
 // bundleIdentifier        - The bundle identifier that the installer should
 //                           wait for instances of to terminate before
-//                           installing.
+//                           installing. Can be nil.
 // launchAfterInstallation - Whether the updated application should be launched
 //                           after installation.
 //
