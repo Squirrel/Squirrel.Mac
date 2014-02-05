@@ -232,41 +232,39 @@ describe(@"response handling", ^{
 	});
 });
 
+static RACSignal * (^stateNotificationListener)(void) = ^ {
+	return [[[NSDistributedNotificationCenter.defaultCenter
+		rac_addObserverForName:@"com.github.Squirrel.TestApplication.state-changed" object:nil]
+		map:^(NSNotification *notification) {
+			return notification.userInfo[@"state"];
+		}]
+		setNameWithFormat:@"stateNotificationListener"];
+};
+
 describe(@"state", ^{
 	it(@"should transition through idle, checking and idle, when there is no update", ^{
-		RACReplaySubject *stateSubject = [RACReplaySubject subject];
-		[[[NSDistributedNotificationCenter.defaultCenter
-			rac_addObserverForName:@"com.github.Squirrel.TestApplication.state-changed" object:nil]
-		 	map:^(NSNotification *notification) {
-				return notification.userInfo[@"state"];
-			}]
-			subscribe:stateSubject];
+		NSMutableArray *states = [NSMutableArray array];
+		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
+			[states addObject:state];
+		}];
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
-
-		[NSRunLoop.currentRunLoop runUntilDate:[NSDate.date dateByAddingTimeInterval:3]];
-
-		expect(testApplication.terminated).to.beTruthy();
-		[testApplication forceTerminate];
-
-		[stateSubject sendCompleted];
 
 		NSArray *expectedStates = @[
 			@(SQRLUpdaterStateIdle),
 			@(SQRLUpdaterStateCheckingForUpdate),
 			@(SQRLUpdaterStateIdle),
 		];
-		expect([stateSubject toArray]).to.equal(expectedStates);
+		expect(states).will.equal(expectedStates);
+
+		expect(testApplication.terminated).will.beTruthy();
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
-		RACReplaySubject *stateSubject = [RACReplaySubject subject];
-		[[[NSDistributedNotificationCenter.defaultCenter
-			rac_addObserverForName:@"com.github.Squirrel.TestApplication.state-changed" object:nil]
-		 	map:^(NSNotification *notification) {
-				return notification.userInfo[@"state"];
-			}]
-			subscribe:stateSubject];
+		NSMutableArray *states = [NSMutableArray array];
+		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
+			[states addObject:state];
+		}];
 
 		NSError *error;
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
@@ -280,20 +278,15 @@ describe(@"state", ^{
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
 
-		[NSRunLoop.currentRunLoop runUntilDate:[NSDate.date dateByAddingTimeInterval:3]];
-
-		expect(testApplication.terminated).to.beTruthy();
-		[testApplication forceTerminate];
-
-		[stateSubject sendCompleted];
-
 		NSArray *expectedStates = @[
 			@(SQRLUpdaterStateIdle),
 			@(SQRLUpdaterStateCheckingForUpdate),
 			@(SQRLUpdaterStateDownloadingUpdate),
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
-		expect([stateSubject toArray]).to.equal(expectedStates);
+		expect(states).will.equal(expectedStates);
+
+		expect(testApplication.terminated).will.beTruthy();
 	});
 });
 
