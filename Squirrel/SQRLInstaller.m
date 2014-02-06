@@ -261,9 +261,10 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
-			return [[[[[[self
+			return [[[[[[[self
 				acquireTargetBundleURLForRequest:request]
 				concat:[self installItemToURL:request.targetBundleURL fromURL:updateBundleURL]]
+				concat:[RACSignal return:request.updateBundleURL]]
 				concat:[RACSignal return:updateBundleURL]]
 				concat:[RACSignal defer:^{
 					return [RACSignal return:self.ownedBundle.temporaryURL];
