@@ -11,11 +11,11 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
-#import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
-#import "SQRLShipItState.h"
+#import "SQRLInstaller+Private.h"
 #import "SQRLFileListener.h"
+#import "SQRLShipItRequest.h"
 
 // The maximum number of times ShipIt should run the same installation state, in
 // an attempt to update.
@@ -27,76 +27,90 @@ static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 
+static NSUInteger installationAttempts(NSString *applicationIdentifier) {
+	return CFPreferencesGetAppIntegerValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFStringRef)applicationIdentifier, NULL);
+}
+
+static BOOL setInstallationAttempts(NSString *applicationIdentifier, NSUInteger attempts) {
+	CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(attempts), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+}
+
+static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
+	CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+}
+
 static RACSignal *waitForReadyURL(NSURL *readyURL) {
 	SQRLFileListener *listener = [[SQRLFileListener alloc] initWithFileURL:readyURL];
 	return listener.waitUntilPresent;
 }
 
 static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *requestURL) {
-	return [[[SQRLShipItState
+	return [[SQRLShipItRequest
 		readFromURL:requestURL]
-		catch:^(NSError *error) {
-			NSLog(@"Error reading saved installer state: %@", error);
+		flattenMap:^(SQRLShipItRequest *request) {
+			NSString *applicationIdentifier = directoryManager.applicationIdentifier;
+			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
 
-			// Exit successfully so launchd doesn't restart us again.
-			return [RACSignal empty];
-		}]
-		flattenMap:^(SQRLShipItState *state) {
-			BOOL freshInstall = (state.installerState == SQRLInstallerStateNothingToDo);
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:directoryManager];
+			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
+			setInstallationAttempts(applicationIdentifier, attempt);
 
-			NSUInteger attempt = (freshInstall ? 1 : state.installationStateAttempt + 1);
 			RACSignal *action;
-
 			if (attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[installer.abortInstallationCommand
-					execute:state]
+					execute:request]
 					initially:^{
-						NSLog(@"Too many attempts to install from state %i, aborting update", (int)state.installerState);
+						NSLog(@"Too many attempts to install, aborting update");
 					}]
 					catch:^(NSError *error) {
 						NSLog(@"Error aborting installation: %@", error);
 
-						// Exit successfully so launchd doesn't restart us again.
+						// Exit successfully so launchd doesn't restart us
+						// again.
 						return [RACSignal empty];
 					}];
 			} else {
-				action = [[[[[state
-					writeToURL:requestURL]
+				action = [[[[installer.installUpdateCommand
+					execute:request]
 					initially:^{
+						BOOL freshInstall = (attempt == 1);
 						if (freshInstall) {
 							NSLog(@"Beginning installation");
-							state.installerState = SQRLInstallerStateClearingQuarantine;
 						} else {
-							NSLog(@"Resuming installation from state %i", (int)state.installerState);
+							NSLog(@"Resuming installation attempt %i", (int)attempt);
 						}
-
-						state.installationStateAttempt = attempt;
-					}]
-					then:^{
-						return [installer.installUpdateCommand execute:state];
 					}]
 					doCompleted:^{
 						NSLog(@"Installation completed successfully");
 					}]
-					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), state.targetBundleURL.path];
+					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path];
 			}
 
-			if (state.relaunchAfterInstallation) {
-				action = [action
-					finally:^{
-						FSRef target;
-						if (!CFURLGetFSRef((__bridge CFURLRef)state.targetBundleURL, &target)) return;
+			// Clear the installation attempts for a successful abort or
+			// install.
+			action = [action doCompleted:^{
+				clearInstallationAttempts(applicationIdentifier);
+			}];
 
-						// LaunchServices is surprisingly root safe, see
-						// Technical Note TN2083 - Process Manager and Launch
-						// Services.
-						LSApplicationParameters application = {
-							.version = 0,
-							.flags = kLSLaunchDefaults | kLSLaunchAndDisplayErrors,
-							.application = &target,
-						};
-						LSOpenApplication(&application, NULL);
+			if (request.launchAfterInstallation) {
+				// Launch regardless of whether installation succeeds or fails.
+				action = [[action
+					deliverOn:RACScheduler.mainThreadScheduler]
+					finally:^{
+						NSURL *bundleURL = request.targetBundleURL;
+						if (bundleURL == nil) {
+							NSLog(@"Missing target bundle URL, cannot launch application");
+							return;
+						}
+
+						NSError *error;
+						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
+							return;
+						}
+
+						NSLog(@"Application launched at %@", bundleURL);
 					}];
 			}
 
@@ -114,8 +128,9 @@ int main(int argc, const char * argv[]) {
 			NSLog(@"Missing launchd job label for ShipIt");
 			return EXIT_FAILURE;
 		}
-		NSString *jobLabel = @(argv[1]);
-		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:jobLabel];
+
+		char const *jobLabel = argv[1];
+		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
 
 		if (argc < 3) {
 			NSLog(@"Missing ShipIt request URL");
@@ -146,4 +161,3 @@ int main(int argc, const char * argv[]) {
 
 	return EXIT_SUCCESS;
 }
-

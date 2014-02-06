@@ -6,7 +6,7 @@
 //  Copyright (c) 2014 GitHub. All rights reserved.
 //
 
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
 #import "SQRLDirectoryManager.h"
 
 SpecBegin(SQRLShipItWatcher)
@@ -14,7 +14,7 @@ SpecBegin(SQRLShipItWatcher)
 it(@"should write a response when the target exits", ^{
 	NSRunningApplication *testApplication = [self launchTestApplicationWithEnvironment:nil];
 
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:testApplication.bundleURL updateBundleURL:[self createTestApplicationUpdate] bundleIdentifier:testApplication.bundleIdentifier codeSignature:self.testApplicationSignature];
+	SQRLShipItRequest *state = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:[self createTestApplicationUpdate] targetBundleURL:testApplication.bundleURL bundleIdentifier:testApplication.bundleIdentifier launchAfterInstallation:NO];
 	RACSignal *stateLocation = self.shipItDirectoryManager.shipItStateURL;
 	expect([[state writeToURL:stateLocation.first] waitUntilCompleted:NULL]).to.beTruthy();
 

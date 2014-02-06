@@ -14,7 +14,7 @@
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
 #import "SQRLAuthorization.h"
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
 
 NSString * const SQRLShipItConnectionErrorDomain = @"SQRLShipItConnectionErrorDomain";
 
@@ -163,10 +163,28 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return self;
 }
 
-- (RACSignal *)sendRequest:(SQRLShipItState *)request {
+- (RACSignal *)sendRequest:(SQRLShipItRequest *)request {
 	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.class.shipItJobLabel];
 
-	RACSignal *waitFileLocation = [[[RACSignal
+	return [[[RACSignal
+		zip:@[
+			directoryManager.shipItStateURL,
+			[self waitFileLocation],
+		] reduce:^(NSURL *requestURL, NSURL *readyURL) {
+			RACSignal *submitJobs = [[self
+				submitWatcherJobForRequestURL:requestURL readyURL:readyURL]
+				concat:[self submitInstallerJobForRequestURL:requestURL readyURL:readyURL]];
+
+			return [[request
+				writeToURL:requestURL]
+				concat:submitJobs];
+		}]
+		flatten]
+		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
+}
+
+- (RACSignal *)waitFileLocation {
+	return [[[[RACSignal
 		defer:^{
 			NSURL *temporaryDirectory = [[NSURL fileURLWithPath:NSTemporaryDirectory()] URLByAppendingPathComponent:@"com.github.Squirrel"];
 			NSURL *waitFilesLocation = [temporaryDirectory URLByAppendingPathComponent:@"wait"];
@@ -179,23 +197,8 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			NSProcessInfo *processInfo = NSProcessInfo.processInfo;
 			NSString *waitFileName = [processInfo.processName stringByAppendingFormat:@"-%@", processInfo.globallyUniqueString];
 			return [waitDirectory URLByAppendingPathComponent:waitFileName];
-		}];
-
-	return [[[RACSignal
-		zip:@[
-			directoryManager.shipItStateURL,
-			waitFileLocation,
-		] reduce:^(NSURL *requestURL, NSURL *readyURL) {
-			RACSignal *submitJobs = [[self
-				submitWatcherJobForRequestURL:requestURL readyURL:readyURL]
-				concat:[self submitInstallerJobForRequestURL:requestURL readyURL:readyURL]];
-
-			return [[request
-				writeToURL:requestURL]
-				concat:submitJobs];
 		}]
-		flatten]
-		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
+		setNameWithFormat:@"%@ waitFileLocation", self];
 }
 
 - (RACSignal *)submitWatcherJobForRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {

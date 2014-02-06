@@ -18,7 +18,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 
 @class SQRLCodeSignature;
 @class SQRLDirectoryManager;
-@class SQRLShipItState;
+@class SQRLShipItRequest;
 
 @interface SQRLTestCase : SPTSenTestCase
 
@@ -46,10 +46,6 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // A code signature with requirements from TestApplication.app.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *testApplicationSignature;
 
-// A serialized `SecRequirementRef` representing the requirements from
-// TestApplication.app.
-@property (nonatomic, copy, readonly) NSData *testApplicationCodeSigningRequirementData;
-
 // A directory manager for finding URLs that apply to ShipIt.
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *shipItDirectoryManager;
 
@@ -75,10 +71,10 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 // deleted at the end of the example.
 - (NSURL *)createTestApplicationUpdate;
 
-// Submits ShipIt's launchd job to start it up.
+// Runs the installer in process or submits ShipIt's launchd job to start it up.
 //
 // request - The install to send to ShipIt.
-- (void)launchShipItWithRequest:(SQRLShipItState *)request;
+- (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote;
 
 // Creates a disk image, then mounts it.
 //

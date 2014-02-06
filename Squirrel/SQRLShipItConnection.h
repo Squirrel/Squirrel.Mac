@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 
 @class RACSignal;
-@class SQRLShipItState;
+@class SQRLShipItRequest;
 
 // The domain for errors originating within SQRLShipItConnection.
 extern NSString * const SQRLShipItConnectionErrorDomain;
@@ -38,6 +38,6 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 //           launch when install is complete etc.
 //
 // Returns a signal which will complete, or error, on a background scheduler.
-- (RACSignal *)sendRequest:(SQRLShipItState *)request;
+- (RACSignal *)sendRequest:(SQRLShipItRequest *)request;
 
 @end

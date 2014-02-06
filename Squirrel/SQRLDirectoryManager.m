@@ -9,13 +9,6 @@
 #import "SQRLDirectoryManager.h"
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
-@interface SQRLDirectoryManager ()
-
-// The application identifier to use in file locations.
-@property (nonatomic, copy, readonly) NSString *applicationIdentifier;
-
-@end
-
 @implementation SQRLDirectoryManager
 
 #pragma mark Lifecycle

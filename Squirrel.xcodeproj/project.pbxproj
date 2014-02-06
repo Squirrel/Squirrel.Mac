@@ -15,27 +15,37 @@
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
 		534FF36A17D8E90A0020A51A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 534FF36917D8E90A0020A51A /* main.m */; };
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
+		536CFB71187C905700E952CF /* ReactiveCocoa.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
+		536CFB7D187C917F00E952CF /* Mantle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
+		5371815F18A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
+		5371816018A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
 		5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */ = {isa = PBXBuildFile; fileRef = 5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */; };
 		5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */ = {isa = PBXBuildFile; fileRef = 5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */; };
 		537648F718871792008FB816 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
-		537648FA18871EDA008FB816 /* SQTLShipItWatcherSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 537648F918871EDA008FB816 /* SQTLShipItWatcherSpec.m */; };
+		537648FA18871EDA008FB816 /* SQRLShipItWatcherSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */; };
 		537648FD18872C43008FB816 /* shipit-watcher in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = 5349B3F4188709C300FE1E55 /* shipit-watcher */; };
 		537648FE18873592008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
 		5376490318873638008FB816 /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BAC1804B1FD00A84EDC /* libMantle-Mac.a */; };
 		5376490418873638008FB816 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */; };
-		537649051887364E008FB816 /* SQRLShipItState.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */; };
+		537649051887364E008FB816 /* (null) in Sources */ = {isa = PBXBuildFile; };
 		5376490618873659008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
 		53764907188737B4008FB816 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
 		53764908188737D3008FB816 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
-		53764AE61889CD03008FB816 /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
 		53764AF91889EBFD008FB816 /* SQRLFileListenerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AF81889EBFD008FB816 /* SQRLFileListenerSpec.m */; };
 		53764AFA1889EC04008FB816 /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
+		5397A5CE187D92810014A477 /* SQRLShipItRequest.h in Headers */ = {isa = PBXBuildFile; fileRef = 5397A5CC187D92810014A477 /* SQRLShipItRequest.h */; };
+		5397A5CF187D92810014A477 /* SQRLShipItRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5CD187D92810014A477 /* SQRLShipItRequest.m */; };
+		5397A5D0187D92810014A477 /* SQRLShipItRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5CD187D92810014A477 /* SQRLShipItRequest.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
 		53B70030181E9460000FFBD0 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 53B70025181E944F000FFBD0 /* OHHTTPStubs.framework */; };
+		53B8BD2F18A4341F00FF317E /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
+		53C8168B18A4293700A8B595 /* SQRLShipItRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5CD187D92810014A477 /* SQRLShipItRequest.m */; };
+		53C816A218A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */; };
+		53C816A318A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */; };
 		53CE752D188330590085C0EB /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0217B18FEE0086ED44 /* Foundation.framework */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
@@ -55,7 +65,7 @@
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
 		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */; };
-		D049059D18055671004E683E /* SQRLShipItStateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059C18055671004E683E /* SQRLShipItStateSpec.m */; };
+		D049059D18055671004E683E /* SQRLShipItRequestSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059C18055671004E683E /* SQRLShipItRequestSpec.m */; };
 		D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059F180558B7004E683E /* SQRLTestUpdate.m */; };
 		D04905A1180558B7004E683E /* SQRLTestUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059F180558B7004E683E /* SQRLTestUpdate.m */; };
 		D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */ = {isa = PBXBuildFile; fileRef = D014AC1017B9789C007D79D0 /* SQRLInstaller.m */; };
@@ -85,8 +95,6 @@
 		D0A56BB71804B20C00A84EDC /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
 		D0A56BBA1804B21700A84EDC /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BAC1804B1FD00A84EDC /* libMantle-Mac.a */; };
 		D0A56BCF1804B8FC00A84EDC /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BA41804B1FD00A84EDC /* Mantle.framework */; };
-		D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */; };
-		D0A56BEC1804BA3C00A84EDC /* SQRLShipItState.m in Sources */ = {isa = PBXBuildFile; fileRef = D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */; };
 		D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
@@ -104,7 +112,7 @@
 		D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0D97E4417B58FC400301C72 /* ResourceRules.plist */; };
 		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */; };
-		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */; };
+		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */; };
 		D0F3F03617E83928003AFA6B /* libExpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F01F17E83918003AFA6B /* libExpecta.a */; };
 		D0F3F03717E83928003AFA6B /* libSpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F02B17E83918003AFA6B /* libSpecta.a */; };
 		D0F3F06317E83B03003AFA6B /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0F3F05617E83A1D003AFA6B /* ReactiveCocoa.framework */; };
@@ -434,6 +442,8 @@
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
+				536CFB7D187C917F00E952CF /* Mantle.framework in Copy Frameworks */,
+				536CFB71187C905700E952CF /* ReactiveCocoa.framework in Copy Frameworks */,
 				D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
@@ -468,15 +478,22 @@
 		53710D8117D8F5C300A992DE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		53710D8217D8F5C300A992DE /* targets.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = targets.awk; sourceTree = "<group>"; };
 		53710D8317D8F5C300A992DE /* xcodebuild.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = xcodebuild.awk; sourceTree = "<group>"; };
+		5371815D18A29DC8005ED798 /* TestAppConstants.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TestAppConstants.h; sourceTree = "<group>"; };
+		5371815E18A29DC8005ED798 /* TestAppConstants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestAppConstants.m; sourceTree = "<group>"; };
 		5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLAuthorization.h; sourceTree = "<group>"; };
 		5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLAuthorization.m; sourceTree = "<group>"; };
-		537648F918871EDA008FB816 /* SQTLShipItWatcherSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQTLShipItWatcherSpec.m; sourceTree = "<group>"; };
+		537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItWatcherSpec.m; sourceTree = "<group>"; };
 		53764AE41889CD03008FB816 /* SQRLFileListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLFileListener.h; sourceTree = "<group>"; };
 		53764AE51889CD03008FB816 /* SQRLFileListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileListener.m; sourceTree = "<group>"; };
 		53764AF81889EBFD008FB816 /* SQRLFileListenerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileListenerSpec.m; sourceTree = "<group>"; };
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
+		5397A5CC187D92810014A477 /* SQRLShipItRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItRequest.h; sourceTree = "<group>"; };
+		5397A5CD187D92810014A477 /* SQRLShipItRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItRequest.m; sourceTree = "<group>"; };
+		5397A69C187DF6490014A477 /* SQRLInstaller+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLInstaller+Private.h"; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
+		53C816A018A4314500A8B595 /* SQRLInstallerOwnedBundle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLInstallerOwnedBundle.h; sourceTree = "<group>"; };
+		53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerOwnedBundle.m; sourceTree = "<group>"; };
 		53E1E674181E942300ED813C /* OHHTTPStubs.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = OHHTTPStubs.xcodeproj; path = External/ReactiveCocoa/external/specta/../../../OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.xcodeproj; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
@@ -500,7 +517,7 @@
 		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLTerminationListener.h; path = ../Squirrel/SQRLTerminationListener.h; sourceTree = "<group>"; };
 		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLTerminationListener.m; path = ../Squirrel/SQRLTerminationListener.m; sourceTree = "<group>"; };
 		D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManagerSpec.m; sourceTree = "<group>"; };
-		D049059C18055671004E683E /* SQRLShipItStateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItStateSpec.m; sourceTree = "<group>"; };
+		D049059C18055671004E683E /* SQRLShipItRequestSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItRequestSpec.m; sourceTree = "<group>"; };
 		D049059E180558B7004E683E /* SQRLTestUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestUpdate.h; sourceTree = "<group>"; };
 		D049059F180558B7004E683E /* SQRLTestUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestUpdate.m; sourceTree = "<group>"; };
 		D06B58B218032B1500656D97 /* RACSignal+SQRLTransactionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLTransactionExtensions.h"; sourceTree = "<group>"; };
@@ -523,8 +540,6 @@
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
 		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
 		D0A56B961804B1FD00A84EDC /* Mantle.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Mantle.xcodeproj; path = External/Mantle/Mantle.xcodeproj; sourceTree = "<group>"; };
-		D0A56BE81804BA3C00A84EDC /* SQRLShipItState.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItState.h; sourceTree = "<group>"; };
-		D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItState.m; sourceTree = "<group>"; };
 		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
@@ -563,7 +578,7 @@
 		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = SOURCE_ROOT; };
 		D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestCase.h; sourceTree = "<group>"; };
 		D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestCase.m; sourceTree = "<group>"; };
-		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureVerifierSpec.m; sourceTree = "<group>"; };
+		D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLCodeSignatureSpec.m; sourceTree = "<group>"; };
 		D0F3F01417E83918003AFA6B /* Expecta.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Expecta.xcodeproj; path = External/ReactiveCocoa/external/expecta/Expecta.xcodeproj; sourceTree = "<group>"; };
 		D0F3F01717E83918003AFA6B /* Specta.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Specta.xcodeproj; path = External/ReactiveCocoa/external/specta/Specta.xcodeproj; sourceTree = "<group>"; };
 		D0F3F04A17E83A1D003AFA6B /* ReactiveCocoa.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = ReactiveCocoa.xcodeproj; path = External/ReactiveCocoa/ReactiveCocoaFramework/ReactiveCocoa.xcodeproj; sourceTree = "<group>"; };
@@ -733,6 +748,7 @@
 			children = (
 				D014AC0417B97885007D79D0 /* ShipItInstaller-main.m */,
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
+				5397A69C187DF6490014A477 /* SQRLInstaller+Private.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
 				53764AE41889CD03008FB816 /* SQRLFileListener.h */,
 				53764AE51889CD03008FB816 /* SQRLFileListener.m */,
@@ -776,6 +792,8 @@
 			children = (
 				D08D4E1A17B451500012B22D /* TestAppDelegate.h */,
 				D08D4E1B17B451500012B22D /* TestAppDelegate.m */,
+				5371815D18A29DC8005ED798 /* TestAppConstants.h */,
+				5371815E18A29DC8005ED798 /* TestAppConstants.m */,
 				D08D4E2017B451500012B22D /* Images.xcassets */,
 				534FF36217D8E90A0020A51A /* TestService */,
 				D08D4E0F17B451500012B22D /* Supporting Files */,
@@ -846,8 +864,10 @@
 			children = (
 				D0D2B6231804E903000EA901 /* SQRLDirectoryManager.h */,
 				D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */,
-				D0A56BE81804BA3C00A84EDC /* SQRLShipItState.h */,
-				D0A56BE91804BA3C00A84EDC /* SQRLShipItState.m */,
+				5397A5CC187D92810014A477 /* SQRLShipItRequest.h */,
+				5397A5CD187D92810014A477 /* SQRLShipItRequest.m */,
+				53C816A018A4314500A8B595 /* SQRLInstallerOwnedBundle.h */,
+				53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */,
 			);
 			name = State;
 			sourceTree = "<group>";
@@ -1037,16 +1057,16 @@
 				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
 				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
 				D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */,
-				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m */,
+				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */,
 				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
 				D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */,
 				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
-				D049059C18055671004E683E /* SQRLShipItStateSpec.m */,
+				D049059C18055671004E683E /* SQRLShipItRequestSpec.m */,
 				D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
-				537648F918871EDA008FB816 /* SQTLShipItWatcherSpec.m */,
+				537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */,
 				53764AF81889EBFD008FB816 /* SQRLFileListenerSpec.m */,
 			);
 			name = Specs;
@@ -1108,6 +1128,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5397A5CE187D92810014A477 /* SQRLShipItRequest.h in Headers */,
 				5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */,
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
@@ -1510,10 +1531,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				537649051887364E008FB816 /* SQRLShipItState.m in Sources */,
+				537649051887364E008FB816 /* (null) in Sources */,
 				53764907188737B4008FB816 /* SQRLCodeSignature.m in Sources */,
 				537648F718871792008FB816 /* SQRLTerminationListener.m in Sources */,
 				5349B3F8188709C300FE1E55 /* ShipItWatcher-main.m in Sources */,
+				53C8168B18A4293700A8B595 /* SQRLShipItRequest.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1529,12 +1551,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0A56BEC1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
-				53764AE61889CD03008FB816 /* SQRLFileListener.m in Sources */,
 				D014AC1117B9789C007D79D0 /* SQRLInstaller.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipItInstaller-main.m in Sources */,
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */,
+				5397A5D0187D92810014A477 /* SQRLShipItRequest.m in Sources */,
 				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
+				53B8BD2F18A4341F00FF317E /* SQRLFileListener.m in Sources */,
+				53C816A318A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
 				D0964B3E17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.m in Sources */,
@@ -1548,6 +1571,7 @@
 				D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */,
 				D04905A1180558B7004E683E /* SQRLTestUpdate.m in Sources */,
 				D08D4E1517B451500012B22D /* main.m in Sources */,
+				5371816018A29DC8005ED798 /* TestAppConstants.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1564,7 +1588,7 @@
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
-				D0A56BEB1804BA3C00A84EDC /* SQRLShipItState.m in Sources */,
+				5397A5CF187D92810014A477 /* SQRLShipItRequest.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */,
 				D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
@@ -1584,14 +1608,16 @@
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
-				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureVerifierSpec.m in Sources */,
+				5371815F18A29DC8005ED798 /* TestAppConstants.m in Sources */,
+				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
-				537648FA18871EDA008FB816 /* SQTLShipItWatcherSpec.m in Sources */,
+				537648FA18871EDA008FB816 /* SQRLShipItWatcherSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
+				53C816A218A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
 				D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */,
-				D049059D18055671004E683E /* SQRLShipItStateSpec.m in Sources */,
+				D049059D18055671004E683E /* SQRLShipItRequestSpec.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

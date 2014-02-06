@@ -15,9 +15,10 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownloadedUpdate.h"
 #import "SQRLShipItConnection.h"
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
 #import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
+#import "SQRLShipItRequest.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
@@ -32,7 +33,13 @@ const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
 const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
+// The prefix used when creating temporary directories for updates. This will be
+// followed by a random string of characters.
+static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
+
 @interface SQRLUpdater ()
+
+@property (atomic, readwrite) SQRLUpdaterState state;
 
 // The code signature for the running application, used to check updates before
 // sending them to ShipIt.
@@ -40,6 +47,16 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 // When executed with an `SQRLShipItState`, launches ShipIt.
 @property (nonatomic, strong, readonly) RACCommand *shipItLauncher;
+
+// Lazily removes outdated temporary directories (used for previous updates)
+// upon first subscription.
+//
+// Pruning directories while an update is pending or in progress will result in
+// undefined behavior.
+//
+// Sends each removed directory then completes, or errors, on an unspecified
+// thread.
+@property (nonatomic, strong, readonly) RACSignal *prunedUpdateDirectories;
 
 // Parses an update model from downloaded data.
 //
@@ -108,16 +125,6 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 // Returns a signal which completes or errors on a background thread.
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update;
 
-// Verifies that an existing state is innocuous, and therefore safe to
-// overwrite.
-//
-// This won't be the case if, for example, an update is currently being
-// installed.
-//
-// Returns a signal which sends `existingState` then completes upon successful
-// validation, or errors otherwise.
-- (RACSignal *)validateExistingState:(SQRLShipItState *)existingState;
-
 @end
 
 @implementation SQRLUpdater
@@ -148,11 +155,46 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
-	NSAssert(_signature != nil, @"Could not get code signature for running application: %@", error);
+	if (_signature == nil) {
+#if DEBUG
+		NSLog(@"Could not get code signature for running application, application updates are disabled: %@", error);
+		return nil;
+#else
+		NSDictionary *exceptionInfo = @{ NSUnderlyingErrorKey: error };
+		@throw [NSException exceptionWithName:NSInternalInconsistencyException reason:@"Could not get code signature for running application" userInfo:exceptionInfo];
+#endif
+	}
 
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
-
 	@weakify(self);
+
+	_prunedUpdateDirectories = [[[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
+				return YES;
+			}];
+
+			return [[enumerator.rac_sequence.signal
+				filter:^(NSURL *enumeratedURL) {
+					NSString *name = enumeratedURL.lastPathComponent;
+					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
+				}]
+				doNext:^(NSURL *directoryURL) {
+					NSError *error = nil;
+					if (![manager removeItemAtURL:directoryURL error:&error]) {
+						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		replayLazily]
+		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
+
 	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
 		@strongify(self);
 		NSParameterAssert(self.updateRequest != nil);
@@ -161,8 +203,17 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-		return [[[[[[NSURLConnection
-			rac_sendAsynchronousRequest:request]
+		// Prune old updates before the first update check.
+		return [[[[[[[[self.prunedUpdateDirectories
+			catch:^(NSError *error) {
+				NSLog(@"Error pruning old updates: %@", error);
+				return [RACSignal empty];
+			}]
+			then:^{
+				self.state = SQRLUpdaterStateCheckingForUpdate;
+
+				return [NSURLConnection rac_sendAsynchronousRequest:request];
+			}]
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
@@ -188,12 +239,24 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 				return [self updateFromJSONData:data];
 			}]
 			flattenMap:^(SQRLUpdate *update) {
-				return [self downloadAndPrepareUpdate:update];
+				return [[RACSignal
+					defer:^{
+						self.state = SQRLUpdaterStateDownloadingUpdate;
+
+						return [self downloadAndPrepareUpdate:update];
+					}]
+					doCompleted:^{
+						self.state = SQRLUpdaterStateAwaitingRelaunch;
+					}];
+			}]
+			finally:^{
+				if (self.state == SQRLUpdaterStateAwaitingRelaunch) return;
+				self.state = SQRLUpdaterStateIdle;
 			}]
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
 
-	_shipItLauncher = [[RACCommand alloc] initWithSignalBlock:^(SQRLShipItState *request) {
+	_shipItLauncher = [[RACCommand alloc] initWithSignalBlock:^(SQRLShipItRequest *request) {
 		NSURL *targetURL = request.targetBundleURL;
 
 		NSNumber *targetWritable = nil;
@@ -335,7 +398,14 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
 		flattenMap:^(NSURL *zipOutputURL) {
-			return [SQRLZipArchiver unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory];
+			return [[SQRLZipArchiver
+				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
+				doCompleted:^{
+					NSError *error = nil;
+					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
+						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
+					}
+				}];
 		}]
 		then:^{
 			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
@@ -352,7 +422,7 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 			return [directoryManager applicationSupportURL];
 		}]
 		flattenMap:^(NSURL *appSupportURL) {
-			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:@"update.XXXXXXX"];
+			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
 			@onExit {
 				free(updateDirectoryCString);
@@ -446,40 +516,22 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 		setNameWithFormat:@"%@ -verifyAndPrepareUpdate: %@ fromBundle: %@", self, update, updateBundle];
 }
 
-- (RACSignal *)validateExistingState:(SQRLShipItState *)existingState {
-	return [[RACSignal
-		defer:^{
-			if (existingState.installerState != SQRLInstallerStateNothingToDo) {
-				// If this happens, shit is crazy, because it implies that an
-				// update is being installed over us right now.
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Installation in progress", nil),
-					NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An update for %@ is already in progress.", nil), NSRunningApplication.currentApplication.bundleIdentifier],
-				};
-
-				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorPreparingUpdateJob userInfo:userInfo]];
-			}
-
-			return [RACSignal return:existingState];
-		}]
-		setNameWithFormat:@"%@ -validateExistingState: %@", self, existingState];
-}
-
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[[self.shipItStateURL
-		flattenMap:^(NSURL *URL) {
-			return [[SQRLShipItState
-				readFromURL:URL]
-				catchTo:[RACSignal empty]];
+	return [[[[RACSignal
+		defer:^{
+			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO];
+
+			return [[self.shipItStateURL
+				flattenMap:^(NSURL *location) {
+					return [request writeToURL:location];
+				}]
+				concat:[RACSignal return:request]];
 		}]
-		flattenMap:^(SQRLShipItState *existingState) {
-			return [self validateExistingState:existingState];
-		}]
-		then:^{
-			SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:NSRunningApplication.currentApplication.bundleURL updateBundleURL:update.bundle.bundleURL bundleIdentifier:NSRunningApplication.currentApplication.bundleIdentifier codeSignature:self.signature];
-			return [self.shipItLauncher execute:state];
+		flattenMap:^(SQRLShipItRequest *request) {
+			return [self.shipItLauncher execute:request];
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
@@ -487,18 +539,16 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 - (RACSignal *)relaunchToInstallUpdate {
 	return [[[[[[self.shipItStateURL
-		flattenMap:^(NSURL *URL) {
-			return [[[SQRLShipItState
-				readFromURL:URL]
-				flattenMap:^(SQRLShipItState *existingState) {
-					return [self validateExistingState:existingState];
+		flattenMap:^(NSURL *location) {
+			return [[[[SQRLShipItRequest
+				readFromURL:location]
+				map:^(SQRLShipItRequest *request) {
+					return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES];
 				}]
-				flattenMap:^(SQRLShipItState *state) {
-					state.relaunchAfterInstallation = YES;
-					return [[state
-						writeToURL:URL]
-						sqrl_addTransactionWithName:NSLocalizedString(@"Preparing to relaunch", nil) description:NSLocalizedString(@"%@ is preparing to relaunch to install an update. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier];
-				}];
+				flattenMap:^(SQRLShipItRequest *request) {
+					return [request writeToURL:location];
+				}]
+				sqrl_addTransactionWithName:NSLocalizedString(@"Preparing to relaunch", nil) description:NSLocalizedString(@"%@ is preparing to relaunch to install an update. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier];
 		}]
 		deliverOn:RACScheduler.mainThreadScheduler]
 		doCompleted:^{

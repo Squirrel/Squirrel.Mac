@@ -10,7 +10,7 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
 #import "SQRLDirectoryManager.h"
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
 #import "SQRLTerminationListener.h"
 
 int main(int argc, const char * argv[])
@@ -28,21 +28,21 @@ int main(int argc, const char * argv[])
 		}
 		NSString *responsePath = @(argv[2]);
 
-		[[[[SQRLShipItState
+		[[[[SQRLShipItRequest
 			readFromURL:[NSURL fileURLWithPath:requestPath]]
-			flattenMap:^(SQRLShipItState *state) {
-				if (state.bundleIdentifier == nil) return [RACSignal empty];
+			flattenMap:^(SQRLShipItRequest *request) {
+				if (request.bundleIdentifier == nil) return [RACSignal empty];
 
-				SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:state.targetBundleURL bundleIdentifier:state.bundleIdentifier];
+				SQRLTerminationListener *listener = [[SQRLTerminationListener alloc] initWithURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier];
 				return [listener waitForTermination];
 			}]
-			then:^{
+			concat:[RACSignal defer:^{
 				NSError *error;
 				BOOL write = [[NSData data] writeToFile:responsePath options:0 error:&error];
 				if (!write) return [RACSignal error:error];
 
 				return [RACSignal empty];
-			}]
+			}]]
 			subscribeError:^(NSError *error) {
 				NSLog(@"Error waiting for termination: %@", error);
 				exit(EXIT_FAILURE);
