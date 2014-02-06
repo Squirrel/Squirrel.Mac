@@ -70,7 +70,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		flattenMap:^(NSData *data) {
 			return [self readFromData:data];
 		}]
-		setNameWithFormat:@"+readUsingURL: %@", URL];
+		setNameWithFormat:@"+readFromURL: %@", URL];
 }
 
 + (NSData *)readFromURL:(NSURL *)URL error:(NSError **)errorRef {
@@ -116,7 +116,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 			return [RACSignal empty];
 		}]
 		flatten]
-		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
+		setNameWithFormat:@"%@ -writeToURL: %@", self, URL];
 }
 
 - (BOOL)writeData:(NSData *)data toURL:(NSURL *)URL error:(NSError **)errorRef {
