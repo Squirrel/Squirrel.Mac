@@ -12,6 +12,7 @@
 #import "SQRLTestUpdate.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import "TestAppConstants.h"
 
 @interface TestAppDelegate ()
 
@@ -62,6 +63,12 @@
 	NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:updateURLString]];
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 	self.updater.updateClass = SQRLTestUpdate.class;
+
+	[RACObserve(self.updater, state) subscribeNext:^(NSNumber *state) {
+		NSLog(@"State transition: %@", state);
+
+		[NSDistributedNotificationCenter.defaultCenter postNotificationName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil userInfo:@{ SQRLTestAppUpdaterStateKey: state }];
+	}];
 
 	__block NSUInteger updateCheckCount = 1;
 

@@ -6,6 +6,20 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+// Represents the current state of the updater.
+//
+// SQRLUpdaterStateIdle              - Doing absolutely diddly squat.
+// SQRLUpdaterStateCheckingForUpdate - Checking for any updates from the server.
+// SQRLUpdaterStateDownloadingUpdate - Update found, downloading the archive.
+// SQRLUpdaterStateAwaitingRelaunch  - Awaiting a relaunch to install
+//                                     the update.
+typedef enum : NSUInteger {
+       SQRLUpdaterStateIdle,
+       SQRLUpdaterStateCheckingForUpdate,
+       SQRLUpdaterStateDownloadingUpdate,
+       SQRLUpdaterStateAwaitingRelaunch,
+} SQRLUpdaterState;
+
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
 
@@ -54,6 +68,11 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 //
 // If an update is available, it will be sent on `updates` once downloaded.
 @property (nonatomic, strong, readonly) RACCommand *checkForUpdatesCommand;
+
+// The current state of the manager.
+//
+// This property is KVO-compliant.
+@property (atomic, readonly) SQRLUpdaterState state;
 
 // Sends an `SQRLDownloadedUpdate` object on the main thread whenever a new
 // update is available.
