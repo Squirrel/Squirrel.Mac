@@ -10,6 +10,8 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
+#import "SQRLInstaller.h"
+#import "SQRLShipItRequest.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -295,19 +297,14 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (SQRLCodeSignature *)testApplicationSignature {
-	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		return [[SQRLCodeSignature alloc] initWithRequirement:requirement];
-	}];
-}
+	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
-- (NSData *)testApplicationCodeSigningRequirementData {
-	return [self performWithTestApplicationRequirement:^(SecRequirementRef requirement) {
-		CFDataRef data = NULL;
-		OSStatus status = SecRequirementCopyData(requirement, kSecCSDefaultFlags, &data);
-		STAssertTrue(status == noErr, @"Error copying data for requirement %@", requirement);
+	NSError *error = nil;
+	SQRLCodeSignature *signature = [SQRLCodeSignature signatureWithBundle:bundleURL error:&error];
+	STAssertNotNil(signature, @"Error getting signature for bundle at %@: %@", bundleURL, error);
 
-		return CFBridgingRelease(data);
-	}];
+	return signature;
 }
 
 - (SQRLDirectoryManager *)shipItDirectoryManager {
@@ -318,20 +315,34 @@ static void SQRLSignalHandler(int sig) {
 	return manager;
 }
 
-- (void)launchShipIt {
-	NSError *error = nil;
-	STAssertTrue([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error], @"Could not launch ShipIt: %@", error);
+- (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
+	if (remote) {
+		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
 
-	[self addCleanupBlock:^{
-		// Remove ShipIt's launchd job so it doesn't relaunch itself.
-		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+		__block NSError *error = nil;
+		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to.beTruthy();
+		expect(error).to.beNil();
 
-		NSError *lookupError = nil;
-		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
-		STAssertNotNil(stateURL, @"Could not find state URL from %@: %@", self.shipItDirectoryManager, lookupError);
-		
-		[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
-	}];
+		[self addCleanupBlock:^{
+			// Remove ShipIt's launchd job so it doesn't relaunch itself.
+			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+
+			NSError *lookupError;
+			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
+			expect(stateURL).notTo.beNil();
+			expect(lookupError).to.beNil();
+
+			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+		}];
+	} else {
+		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+		expect(installer).notTo.beNil();
+
+		NSError *installedError = nil;
+		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
+		expect(installed).to.beTruthy();
+		expect(installedError).to.beNil();
+	}
 }
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {

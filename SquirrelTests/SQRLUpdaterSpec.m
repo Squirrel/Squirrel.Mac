@@ -178,13 +178,7 @@ describe(@"updating", ^{
 			expect(app.terminated).will.beTruthy();
 			expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
-			// Also test that this is the only update directory (any others
-			// should've been removed).
-			NSArray *directoryURLs = [updateDirectoryURLs toArray];
-			expect(directoryURLs.count).to.equal(1);
-
-			NSArray *contents = [NSFileManager.defaultManager contentsOfDirectoryAtURL:directoryURLs[0] includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsHiddenFiles error:NULL];
-			expect(contents).to.equal(@[]);
+			expect([updateDirectoryURLs toArray]).will.equal(@[]);
 		});
 	});
 });

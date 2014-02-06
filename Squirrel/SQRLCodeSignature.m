@@ -19,9 +19,14 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 @interface SQRLCodeSignature ()
 
 // A `SecRequirementRef` that tested bundles must satisfy.
+@property (atomic, strong) id requirement;
+
+// Initializes the receiver with the given requirement.
 //
-// This property is automatically retained.
-@property (atomic) id requirement;
+// This is the designated initializer for this class.
+//
+// requirement - The code requirement for tested bundles. This must not be NULL.
+- (id)initWithRequirement:(SecRequirementRef)requirement;
 
 @end
 
@@ -37,8 +42,49 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 
 #pragma mark Lifecycle
 
-+ (instancetype)currentApplicationSignature:(NSError **)error {
-	return [self modelWithDictionary:nil error:error];
++ (instancetype)currentApplicationSignature:(NSError **)errorRef {
+	SecCodeRef staticCode = NULL;
+	OSStatus error = SecCodeCopySelf(kSecCSDefaultFlags, &staticCode);
+	if (error != noErr) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
+		return nil;
+	}
+
+	@onExit {
+		CFRelease(staticCode);
+	};
+
+	return [self signatureWithCode:staticCode error:errorRef];
+}
+
++ (instancetype)signatureWithBundle:(NSURL *)bundleURL error:(NSError **)errorRef {
+	SecStaticCodeRef bundleCode = NULL;
+	OSStatus error = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &bundleCode);
+	if (error != noErr) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
+		return nil;
+	}
+
+	@onExit {
+		CFRelease(bundleCode);
+	};
+
+	return [self signatureWithCode:bundleCode error:errorRef];
+}
+
++ (instancetype)signatureWithCode:(SecStaticCodeRef)code error:(NSError **)errorRef {
+	SecRequirementRef designatedRequirement = NULL;
+	OSStatus error = SecCodeCopyDesignatedRequirement(code, kSecCSDefaultFlags, &designatedRequirement);
+	if (error != noErr) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSOSStatusErrorDomain code:error userInfo:nil];
+		return nil;
+	}
+
+	@onExit {
+		CFRelease(designatedRequirement);
+	};
+
+	return [[SQRLCodeSignature alloc] initWithRequirement:designatedRequirement];
 }
 
 - (id)initWithRequirement:(SecRequirementRef)requirement {
@@ -47,35 +93,6 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 	return [self initWithDictionary:@{
 		@keypath(self.requirement): (__bridge id)requirement
 	} error:NULL];
-}
-
-- (id)initWithDictionary:(NSDictionary *)dictionary error:(NSError **)error {
-	self = [super initWithDictionary:dictionary error:error];
-	if (self == nil) return nil;
-
-	if (self.requirement == nil) {
-		SecCodeRef staticCode = NULL;
-		OSStatus result = SecCodeCopySelf(kSecCSDefaultFlags, &staticCode);
-		@onExit {
-			if (staticCode != NULL) CFRelease(staticCode);
-		};
-
-		if (result != noErr) {
-			if (error != NULL) *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:result userInfo:nil];
-			return nil;
-		}
-
-		SecRequirementRef req = NULL;
-		result = SecCodeCopyDesignatedRequirement(staticCode, kSecCSDefaultFlags, &req);
-		self.requirement = CFBridgingRelease(req);
-
-		if (result != noErr) {
-			if (error != NULL) *error = [NSError errorWithDomain:NSOSStatusErrorDomain code:result userInfo:nil];
-			return nil;
-		}
-	}
-
-	return self;
 }
 
 #pragma mark Verification

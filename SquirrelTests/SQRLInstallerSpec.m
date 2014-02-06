@@ -9,10 +9,24 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
+#import "SQRLInstaller+Private.h"
 #import "SQRLShipItLauncher.h"
-#import "SQRLShipItState.h"
+#import "SQRLShipItRequest.h"
+#import "SQRLInstallerOwnedBundle.h"
 
 SpecBegin(SQRLInstaller)
+
+mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
+	NSFileSecurity *fileSecurity = nil;
+	BOOL success = [fileURL getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:NULL];
+	expect(success).to.beTruthy();
+	expect(fileSecurity).notTo.beNil();
+
+	__block mode_t mode;
+	expect(CFFileSecurityGetMode((__bridge CFFileSecurityRef)fileSecurity, &mode)).to.beTruthy();
+
+	return mode & (S_IRWXU | S_IRWXG | S_IRWXO);
+};
 
 __block NSURL *updateURL;
 
@@ -20,11 +34,18 @@ beforeEach(^{
 	updateURL = [self createTestApplicationUpdate];
 });
 
-it(@"should install an update", ^{
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+it(@"should install an update using ShipIt", ^{
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self launchShipIt];
+	[self installWithRequest:request remote:YES];
+
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+});
+
+it(@"should install an update in process", ^{
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
+
+	[self installWithRequest:request remote:NO];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -34,11 +55,9 @@ it(@"should install an update and relaunch", ^{
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
 	expect(apps.count).to.equal(0);
 
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.relaunchAfterInstallation = YES;
-	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:YES];
 
-	[self launchShipIt];
+	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
@@ -48,10 +67,9 @@ it(@"should install an update from another volume", ^{
 	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication 2.1" fromDirectory:updateURL.URLByDeletingLastPathComponent];
 	updateURL = [diskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
 
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self launchShipIt];
+	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
@@ -60,70 +78,80 @@ it(@"should install an update to another volume", ^{
 	NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplication" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
 	NSURL *targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
 
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	[self launchShipIt];
+	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 });
 
-it(@"should install an update in process", ^{
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.installerState = SQRLInstallerStateClearingQuarantine;
+describe(@"with backup restoration", ^{
+	__block NSURL *targetURL;
 
-	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithDirectoryManager:SQRLDirectoryManager.currentApplicationManager];
-	expect(installer).notTo.beNil();
+	__block SQRLShipItRequest *request;
 
-	NSError *installError = nil;
-	BOOL install = [[installer.installUpdateCommand execute:state] asynchronouslyWaitUntilCompleted:&installError];
-	expect(install).to.beTruthy();
-	expect(installError).to.beNil();
+	beforeEach(^{
+		targetURL = self.testApplicationURL;
+
+		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO];
+
+		NSURL *copiedTargetURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication Target.app"];
+		expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:copiedTargetURL error:NULL]).to.beTruthy();
+
+		SQRLCodeSignature *codeSignature = self.testApplicationSignature;
+
+		SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:targetURL temporaryURL:copiedTargetURL codeSignature:codeSignature];
+		NSData *ownedBundleArchive = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle];
+		expect(ownedBundleArchive).notTo.beNil();
+
+		// Set up ShipIt's preferences like it paused in the middle of an
+		// installation.
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(4), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)ownedBundleArchive, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+
+		BOOL synchronized = CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(synchronized).to.beTruthy();
+	});
+
+	afterEach(^{
+		__block NSError *error;
+		expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
+		expect(error).to.beNil();
+
+		expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+	});
+
+	it(@"should not install an update after too many attempts", ^{
+		[self installWithRequest:request remote:YES];
+	});
+
+	it(@"should relaunch even after failing to install an update", ^{
+		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES];
+
+		[self installWithRequest:request remote:YES];
+
+		expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).will.equal(1);
+	});
 });
 
-it(@"should not install an update after too many attempts", ^{
-	NSURL *targetURL = self.testApplicationURL;
-	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
-	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
+it(@"should disallow writing the updated application except by the owner", ^{
+	NSString *command = [NSString stringWithFormat:@"chmod -R 0777 '%@'", updateURL.path];
+	expect(system(command.UTF8String)).to.equal(0);
 
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.backupBundleURL = backupURL;
-	state.installerState = SQRLInstallerStateInstalling;
-	state.installationStateAttempt = 4;
-	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+	expect(modeOfURL(updateURL)).to.equal(0777);
+	expect(modeOfURL([updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0777);
 
-	[self launchShipIt];
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-	// No update should've been installed, and the application should be
-	// restored from the backup.
-	__block NSError *error = nil;
-	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
-	expect(error).to.beNil();
+	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
-});
+	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
-it(@"should relaunch even after failing to install an update", ^{
-	NSURL *targetURL = self.testApplicationURL;
-	NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app.bak"];
-	expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:backupURL error:NULL]).to.beTruthy();
-
-	SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:targetURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-	state.backupBundleURL = backupURL;
-	state.installerState = SQRLInstallerStateInstalling;
-	state.installationStateAttempt = 4;
-	state.relaunchAfterInstallation = YES;
-	expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
-
-	[self launchShipIt];
-
-	__block NSError *error = nil;
-	expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
-	expect(error).to.beNil();
-
-	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).will.equal(1);
-	expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+	expect(modeOfURL(self.testApplicationURL)).to.equal(0755);
+	expect(modeOfURL([self.testApplicationURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0755);
 });
 
 describe(@"signal handling", ^{
@@ -134,13 +162,9 @@ describe(@"signal handling", ^{
 		// accessing the property.
 		targetURL = self.testApplicationURL;
 
-		SQRLShipItState *state = [[SQRLShipItState alloc] initWithTargetBundleURL:self.testApplicationURL updateBundleURL:updateURL bundleIdentifier:nil codeSignature:self.testApplicationSignature];
-		expect([[state writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
-		[self launchShipIt];
-
-		// Wait until ShipIt has transitioned by at least one state.
-		expect([[[SQRLShipItState readUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronousFirstOrDefault:nil success:NULL error:NULL] installerState]).willNot.equal(SQRLInstallerStateNothingToDo);
+		[self installWithRequest:request remote:YES];
 
 		// Apply a random delay before sending the termination signal, to
 		// fuzz out race conditions.
@@ -154,7 +178,7 @@ describe(@"signal handling", ^{
 		Expecta.asynchronousTestTimeout = 5;
 		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
 
-		NSError *error = nil;
+		NSError *error;
 		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
 		expect(success).to.beTruthy();
 		expect(error).to.beNil();
@@ -178,8 +202,11 @@ describe(@"signal handling", ^{
 
 	it(@"should handle SIGKILL", ^{
 		// SIGKILL is unique in that it'll always terminate ShipIt, so send it
-		// a few times to really test resumption.
-		for (int i = 0; i < 3; i++) {
+		// a couple times to really test resumption.
+		//
+		// Two SIGKILL signals means that it'll be launched three times (which
+		// matches the maximum number of attempts per state).
+		for (int i = 0; i < 2; i++) {
 			system("killall -KILL ShipIt");
 
 			// Wait at least for the launchd throttle interval.
