@@ -18,7 +18,7 @@
 //
 // Arguments are expected in the following order:
 //
-// requestPath  - File path to the serialised `SQRLShipItRequest`.
+// requestPath  - File path to the serialized `SQRLShipItRequest`.
 // responsePath - File path to create when all relevant applications have
 //                terminated and the installation can proceed.
 int main(int argc, const char * argv[]) {
@@ -27,16 +27,16 @@ int main(int argc, const char * argv[]) {
 			NSLog(@"Missing ShipIt request path");
 			return EXIT_FAILURE;
 		}
-		NSString *requestPath = @(argv[1]);
+		NSURL *requestURL = [NSURL fileURLWithPath:@(argv[1])];
 
 		if (argc < 3) {
 			NSLog(@"Missing ShipIt watcher output path");
 			return EXIT_FAILURE;
 		}
-		NSString *responsePath = @(argv[2]);
+		NSURL *responseURL = [NSURL fileURLWithPath:@(argv[2])];
 
 		[[[[SQRLShipItRequest
-			readFromURL:[NSURL fileURLWithPath:requestPath]]
+			readFromURL:requestURL]
 			flattenMap:^(SQRLShipItRequest *request) {
 				if (request.bundleIdentifier == nil) return [RACSignal empty];
 
@@ -45,7 +45,7 @@ int main(int argc, const char * argv[]) {
 			}]
 			concat:[RACSignal defer:^{
 				NSError *error;
-				BOOL write = [[NSData data] writeToFile:responsePath options:0 error:&error];
+				BOOL write = [[NSData data] writeToURL:responseURL options:0 error:&error];
 				if (!write) return [RACSignal error:error];
 
 				return [RACSignal empty];
