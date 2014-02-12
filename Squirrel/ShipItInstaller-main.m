@@ -41,11 +41,6 @@ static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
 	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 }
 
-static RACSignal *waitForReadyURL(NSURL *readyURL) {
-	SQRLFileListener *listener = [[SQRLFileListener alloc] initWithFileURL:readyURL];
-	return listener.waitUntilPresent;
-}
-
 static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *requestURL) {
 	return [[SQRLShipItRequest
 		readFromURL:requestURL]
@@ -144,7 +139,8 @@ int main(int argc, const char * argv[]) {
 		}
 		NSURL *readyURL = [NSURL fileURLWithPath:@(argv[3])];
 
-		[[[waitForReadyURL(readyURL)
+		[[[[SQRLFileListener
+			waitUntilItemExistsAtFileURL:readyURL]
 			concat:install(directoryManager, requestURL)]
 			doCompleted:^{
 				[NSFileManager.defaultManager removeItemAtURL:readyURL error:NULL];

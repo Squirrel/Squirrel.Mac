@@ -10,21 +10,35 @@
 
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
-@interface SQRLFileListener ()
-@property (readwrite, strong, nonatomic) RACSignal *waitUntilPresent;
-@end
+#import <dirent.h>
 
 @implementation SQRLFileListener
 
-- (instancetype)initWithFileURL:(NSURL *)fileURL {
-	self = [self init];
-	if (self == nil) return nil;
++ (RACSignal *)waitUntilItemExistsAtFileURL:(NSURL *)fileURL {
+	NSParameterAssert(fileURL != nil);
 
-	_waitUntilPresent = [[RACSignal
-		createSignal:^(id<RACSubscriber> subscriber) {
+	return [[RACSignal
+		createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
 			NSURL *parentDirectory = fileURL.URLByDeletingLastPathComponent;
 
-			int fileDescriptor = open(parentDirectory.path.fileSystemRepresentation, O_RDONLY);
+			void (^sendErrno)(void) = ^{
+				NSDictionary *errorInfo = @{
+					NSURLErrorKey: fileURL,
+				};
+				[subscriber sendError:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:errorInfo]];
+			};
+
+			DIR *directory = opendir(parentDirectory.path.fileSystemRepresentation);
+			if (directory == NULL) {
+				sendErrno();
+				return nil;
+			}
+
+			int fileDescriptor = dirfd(directory);
+			if (fileDescriptor == -1) {
+				sendErrno();
+				return nil;
+			}
 
 			void (^checkExists)(void) = ^{
 				BOOL exists = [NSFileManager.defaultManager fileExistsAtPath:fileURL.path isDirectory:NULL];
@@ -35,7 +49,7 @@
 
 			dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, fileDescriptor, DISPATCH_VNODE_WRITE, dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0));
 			dispatch_source_set_cancel_handler(source, ^{
-				close(fileDescriptor);
+				closedir(directory);
 			});
 			dispatch_source_set_event_handler(source, ^{
 				checkExists();
@@ -49,9 +63,7 @@
 				dispatch_release(source);
 			}];
 		}]
-		setNameWithFormat:@"%@ -waitUntilPresent", self];
-
-	return self;
+		setNameWithFormat:@"waitUntilItemExistsAtFileURL: %@", fileURL];
 }
 
 @end

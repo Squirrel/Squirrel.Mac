@@ -13,14 +13,13 @@
 // Subscribes to file events for the given URL.
 @interface SQRLFileListener : NSObject
 
-// Designated initialiser.
+// Wait for a file to appear at a file location.
 //
-// fileURL - The file system location to watch for events.
+// fileURL - URL to wait for, if the parent path doesn't already exist or isn't
+//           a directory, an error is sent. Must not be nil.
 //
-// Returns an initialised file listener.
-- (instancetype)initWithFileURL:(NSURL *)fileURL;
-
-// A signal which completes when the file system object is present.
-@property (readonly, strong, nonatomic) RACSignal *waitUntilPresent;
+// Returns a signal which completes when the file system object is present, or
+// errors.
++ (RACSignal *)waitUntilItemExistsAtFileURL:(NSURL *)fileURL;
 
 @end
