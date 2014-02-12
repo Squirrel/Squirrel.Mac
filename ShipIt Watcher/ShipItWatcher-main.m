@@ -13,8 +13,7 @@
 #import "SQRLShipItRequest.h"
 #import "SQRLTerminationListener.h"
 
-int main(int argc, const char * argv[])
-{
+int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		if (argc < 2) {
 			NSLog(@"Missing ShipIt request path");
