@@ -31,27 +31,39 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 }
 
-+ (NSDictionary *)shipItWatcherJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
-	NSParameterAssert(requestURL != nil);
-	NSParameterAssert(readyURL != nil);
-
-	NSString *jobLabel = [self.shipItJobLabel stringByAppendingString:@".watcher"];
-
-	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
-	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
++ (NSMutableDictionary *)jobDictionaryWithLabel:(NSString *)jobLabel command:(NSString *)command arguments:(NSArray *)arguments {
+	NSParameterAssert(jobLabel != nil);
+	NSParameterAssert(command != nil);
+	NSParameterAssert(arguments != nil);
 
 	NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
 	jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
 	jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
 	jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
 	jobDict[@(LAUNCH_JOBKEY_THROTTLEINTERVAL)] = @2;
-	jobDict[@(LAUNCH_JOBKEY_RUNATLOAD)] = @YES;
+
+	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
+	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
+
+	NSMutableArray *fullArguments = [NSMutableArray arrayWithObject:[squirrelBundle URLForResource:command withExtension:nil].path];
+	[fullArguments addObjectsFromArray:arguments];
+	jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = fullArguments;
+
+	return jobDict;
+}
+
++ (NSDictionary *)shipItWatcherJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
+	NSParameterAssert(requestURL != nil);
+	NSParameterAssert(readyURL != nil);
+
+	NSString *jobLabel = [self.shipItJobLabel stringByAppendingString:@".watcher"];
 
 	NSMutableArray *arguments = [[NSMutableArray alloc] init];
-	[arguments addObject:[squirrelBundle URLForResource:@"shipit-watcher" withExtension:nil].path];
 	[arguments addObject:requestURL.path];
 	[arguments addObject:readyURL.path];
-	jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
+
+	NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel command:@"shipit-watcher" arguments:arguments];
+	jobDict[@(LAUNCH_JOBKEY_RUNATLOAD)] = @YES;
 
 	return jobDict;
 }
@@ -68,20 +80,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			return [directoryManager applicationSupportURL];
 		}]
 		map:^(NSURL *appSupportURL) {
-			NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
-			NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
-
-			NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
-			jobDict[@(LAUNCH_JOBKEY_LABEL)] = jobLabel;
-			jobDict[@(LAUNCH_JOBKEY_NICE)] = @(-1);
-			jobDict[@(LAUNCH_JOBKEY_ENABLETRANSACTIONS)] = @NO;
-			jobDict[@(LAUNCH_JOBKEY_THROTTLEINTERVAL)] = @2;
-			jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
-				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
-			};
-
 			NSMutableArray *arguments = [[NSMutableArray alloc] init];
-			[arguments addObject:[squirrelBundle URLForResource:@"shipit-installer" withExtension:nil].path];
 
 			// Pass in the service name so ShipIt knows how to broadcast itself.
 			[arguments addObject:jobLabel];
@@ -89,7 +88,11 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			[arguments addObject:requestURL.path];
 			[arguments addObject:readyURL.path];
 
-			jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
+			NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel command:@"shipit-installer" arguments:arguments];
+			jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
+				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
+			};
+
 			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
 			jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [appSupportURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
 
