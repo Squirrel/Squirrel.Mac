@@ -113,6 +113,15 @@ static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *request
 		}];
 }
 
+// Waits for the termination file at the path provided, then reads the
+// `SQRLShipItRequest` at the path provided and performs the install if the
+// update passes validation.
+//
+// Arguments are expected in the following order:
+//
+// jobLabel   - The launchd job label for this task.
+// requestURL - File path to the serialized `SQRLShipItRequest`.
+// readyURL   - File path to the wait file.
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		atexit_b(^{
