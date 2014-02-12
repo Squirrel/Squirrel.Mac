@@ -13,6 +13,14 @@
 #import "SQRLShipItRequest.h"
 #import "SQRLTerminationListener.h"
 
+// Watches applications applicable to a `SQRLShipItRequest` for termination and
+// creates a file on disk when they've all terminated.
+//
+// Arguments are expected in the following order:
+//
+// requestPath  - File path to the serialised `SQRLShipItRequest`.
+// responsePath - File path to create when all relevant applications have
+//                terminated and the installation can proceed.
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		if (argc < 2) {
