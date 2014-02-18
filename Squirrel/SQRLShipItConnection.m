@@ -45,7 +45,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
-	NSMutableArray *fullArguments = [NSMutableArray arrayWithObject:[squirrelBundle URLForResource:executableName withExtension:nil].path];
+	NSMutableArray *fullArguments = [NSMutableArray arrayWithObject:[squirrelBundle pathForResource:executableName ofType:nil]];
 	[fullArguments addObjectsFromArray:arguments];
 	jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = fullArguments;
 
