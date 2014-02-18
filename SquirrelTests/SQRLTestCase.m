@@ -317,7 +317,7 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
-		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:NO];
+		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initWithRootPrivileges:NO];
 
 		__block NSError *error = nil;
 		expect([[connection sendRequest:request] waitUntilCompleted:&error]).to.beTruthy();

@@ -157,11 +157,11 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 		setNameWithFormat:@"+shipItAuthorization"];
 }
 
-- (instancetype)initForPrivileged:(BOOL)privileged {
+- (instancetype)initWithRootPrivileges:(BOOL)rootPrivileges {
 	self = [self init];
 	if (self == nil) return nil;
 
-	_privileged = privileged;
+	_privileged = rootPrivileges;
 
 	return self;
 }

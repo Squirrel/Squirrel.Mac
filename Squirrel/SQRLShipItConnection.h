@@ -64,7 +64,7 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 //              launched in the current user’s domain.
 //
 // Returns an initialised connection which can be used to start an install.
-- (instancetype)initForPrivileged:(BOOL)privileged;
+- (instancetype)initWithRootPrivileges:(BOOL)rootPrivileges;
 
 // Attempts to launch ShipIt.
 //

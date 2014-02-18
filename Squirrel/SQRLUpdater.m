@@ -265,7 +265,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 		// If we can't determine whether it can be written, assume
 		// nonprivileged and wait for another, more canonical error.
-		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initForPrivileged:(gotWritable && !targetWritable.boolValue)];
+		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initWithRootPrivileges:(gotWritable && !targetWritable.boolValue)];
 
 		return [connection sendRequest:request];
 	}];
