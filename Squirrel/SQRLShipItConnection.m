@@ -122,7 +122,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			NSString *prompt = NSLocalizedString(@"An update is ready to install.", @"SQRLShipItConnection, launch shipit, authorization prompt");
 
 			NSString *iconName = [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleIconFile"];
-			NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle.resourceURL URLByAppendingPathComponent:iconName].path);
+			NSString *iconPath = (iconName == nil ? nil : [NSBundle.mainBundle pathForImageResource:iconName]);
 
 			AuthorizationItem environmentItems[] = {
 				{
