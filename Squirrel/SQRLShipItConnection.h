@@ -73,7 +73,7 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 // process terminates.
 //
 // request - The install parameters, target bundle, update bundle, whether to
-//           launch when install is complete etc.
+//           launch when install is complete etc. Must not be nil.
 //
 // Returns a signal which will complete, or error, on a background scheduler.
 - (RACSignal *)sendRequest:(SQRLShipItRequest *)request;

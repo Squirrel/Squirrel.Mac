@@ -167,6 +167,8 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 }
 
 - (RACSignal *)sendRequest:(SQRLShipItRequest *)request {
+	NSParameterAssert(request != nil);
+
 	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.class.shipItJobLabel];
 
 	return [[[RACSignal
