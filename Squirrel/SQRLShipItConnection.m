@@ -31,9 +31,9 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 }
 
-+ (NSMutableDictionary *)jobDictionaryWithLabel:(NSString *)jobLabel command:(NSString *)command arguments:(NSArray *)arguments {
++ (NSMutableDictionary *)jobDictionaryWithLabel:(NSString *)jobLabel executableName:(NSString *)executableName arguments:(NSArray *)arguments {
 	NSParameterAssert(jobLabel != nil);
-	NSParameterAssert(command != nil);
+	NSParameterAssert(executableName != nil);
 	NSParameterAssert(arguments != nil);
 
 	NSMutableDictionary *jobDict = [NSMutableDictionary dictionary];
@@ -45,7 +45,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 	NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
-	NSMutableArray *fullArguments = [NSMutableArray arrayWithObject:[squirrelBundle URLForResource:command withExtension:nil].path];
+	NSMutableArray *fullArguments = [NSMutableArray arrayWithObject:[squirrelBundle URLForResource:executableName withExtension:nil].path];
 	[fullArguments addObjectsFromArray:arguments];
 	jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = fullArguments;
 
@@ -62,7 +62,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	[arguments addObject:requestURL.path];
 	[arguments addObject:readyURL.path];
 
-	NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel command:@"shipit-watcher" arguments:arguments];
+	NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel executableName:@"shipit-watcher" arguments:arguments];
 	jobDict[@(LAUNCH_JOBKEY_RUNATLOAD)] = @YES;
 
 	return jobDict;
@@ -88,7 +88,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			[arguments addObject:requestURL.path];
 			[arguments addObject:readyURL.path];
 
-			NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel command:@"shipit-installer" arguments:arguments];
+			NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel executableName:@"shipit-installer" arguments:arguments];
 			jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
 				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
 			};
