@@ -176,13 +176,10 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			directoryManager.shipItStateURL,
 			[self waitFileLocation],
 		] reduce:^(NSURL *requestURL, NSURL *readyURL) {
-			RACSignal *submitJobs = [[self
-				submitWatcherJobForRequestURL:requestURL readyURL:readyURL]
-				concat:[self submitInstallerJobForRequestURL:requestURL readyURL:readyURL]];
-
-			return [[request
+			return [[[request
 				writeToURL:requestURL]
-				concat:submitJobs];
+				concat:[self submitWatcherJobForRequestURL:requestURL readyURL:readyURL]]
+				concat:[self submitInstallerJobForRequestURL:requestURL readyURL:readyURL]];
 		}]
 		flatten]
 		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
