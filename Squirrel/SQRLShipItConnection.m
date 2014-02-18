@@ -132,7 +132,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 				},
 				{
 					.name = kAuthorizationEnvironmentIcon,
-					.valueLength = iconPath == nil ? 0 : strlen(iconPath.UTF8String),
+					.valueLength = (iconPath == nil ? 0 : strlen(iconPath.UTF8String)),
 					.value = (void *)iconPath.UTF8String,
 				},
 			};
