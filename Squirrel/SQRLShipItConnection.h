@@ -66,7 +66,11 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 // Returns an initialised connection which can be used to start an install.
 - (instancetype)initWithRootPrivileges:(BOOL)rootPrivileges;
 
-// Attempts to launch ShipIt.
+// Writes the request to disk and submits the wait for termination and installer
+// launchd jobs.
+//
+// After sending the request, the update will be attempted when the sending
+// process terminates.
 //
 // request - The install parameters, target bundle, update bundle, whether to
 //           launch when install is complete etc.
