@@ -31,6 +31,10 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 }
 
++ (NSString *)shipItWatcherJobLabel {
+	return [self.shipItJobLabel stringByAppendingString:@".watcher"];
+}
+
 + (NSMutableDictionary *)jobDictionaryWithLabel:(NSString *)jobLabel executableName:(NSString *)executableName arguments:(NSArray *)arguments {
 	NSParameterAssert(jobLabel != nil);
 	NSParameterAssert(executableName != nil);
@@ -52,20 +56,24 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return jobDict;
 }
 
-+ (NSDictionary *)shipItWatcherJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
++ (RACSignal *)shipItWatcherJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
 	NSParameterAssert(requestURL != nil);
 	NSParameterAssert(readyURL != nil);
 
-	NSString *jobLabel = [self.shipItJobLabel stringByAppendingString:@".watcher"];
+	return [[RACSignal
+		defer:^{
+			NSString *jobLabel = self.shipItWatcherJobLabel;
 
-	NSMutableArray *arguments = [[NSMutableArray alloc] init];
-	[arguments addObject:requestURL.path];
-	[arguments addObject:readyURL.path];
+			NSMutableArray *arguments = [[NSMutableArray alloc] init];
+			[arguments addObject:requestURL.path];
+			[arguments addObject:readyURL.path];
 
-	NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel executableName:@"shipit-watcher" arguments:arguments];
-	jobDict[@(LAUNCH_JOBKEY_RUNATLOAD)] = @YES;
+			NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel executableName:@"shipit-watcher" arguments:arguments];
+			jobDict[@(LAUNCH_JOBKEY_RUNATLOAD)] = @YES;
 
-	return jobDict;
+			return [RACSignal return:jobDict];
+		}]
+		setNameWithFormat:@"+shipItWatcherJobDictionaryWithRequestURL: %@ readyURL: %@", requestURL, readyURL];
 }
 
 + (RACSignal *)shipItInstallerJobDictionaryWithRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
@@ -98,7 +106,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			
 			return jobDict;
 		}]
-		setNameWithFormat:@"+shipItJobDictionary"];
+		setNameWithFormat:@"+shipItInstallerJobDictionaryWithRequestURL: %@ readyURL: %@", requestURL, readyURL];
 }
 
 + (RACSignal *)shipItAuthorization {
@@ -200,9 +208,11 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 }
 
 - (RACSignal *)submitWatcherJobForRequestURL:(NSURL *)requestURL readyURL:(NSURL *)readyURL {
-	NSDictionary *job = [self.class shipItWatcherJobDictionaryWithRequestURL:requestURL readyURL:readyURL];
-	return [[self
-		submitJob:job domain:(__bridge id)kSMDomainUserLaunchd authorization:nil]
+	return [[[self.class
+		shipItWatcherJobDictionaryWithRequestURL:requestURL readyURL:readyURL]
+		flattenMap:^(NSDictionary *job) {
+			return [self submitJob:job domain:(__bridge id)kSMDomainUserLaunchd authorization:nil];
+		}]
 		setNameWithFormat:@"%@ -submitWatcherJobForRequestURL: %@ readyURL: %@", self, requestURL, readyURL];
 }
 
