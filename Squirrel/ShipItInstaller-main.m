@@ -120,8 +120,8 @@ static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *request
 // Arguments are expected in the following order:
 //
 // jobLabel   - The launchd job label for this task.
-// requestURL - File path to the serialized `SQRLShipItRequest`.
-// readyURL   - File path to the wait file.
+// requestURL - Location of the serialized `SQRLShipItRequest` file.
+// readyURL   - Location of the wait file the install is dependent on.
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		atexit_b(^{
