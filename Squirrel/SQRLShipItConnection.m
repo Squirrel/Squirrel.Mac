@@ -197,7 +197,10 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			return [RACSignal return:waitFilesLocation];
 		}]
 		try:^(NSURL *waitDirectory, NSError **errorRef) {
-			return [NSFileManager.defaultManager createDirectoryAtURL:waitDirectory withIntermediateDirectories:YES attributes:nil error:errorRef];
+			NSDictionary *attributes = @{
+				NSFilePosixPermissions: @(S_IRWXU),
+			};
+			return [NSFileManager.defaultManager createDirectoryAtURL:waitDirectory withIntermediateDirectories:YES attributes:attributes error:errorRef];
 		}]
 		map:^(NSURL *waitDirectory) {
 			NSProcessInfo *processInfo = NSProcessInfo.processInfo;
