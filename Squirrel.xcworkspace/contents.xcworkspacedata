@@ -8,9 +8,6 @@
       location = "group:External/Mantle/Mantle.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:External/OHHTTPStubs/OHHTTPStubsDemo/OHHTTPStubsDemo.xcodeproj">
-   </FileRef>
-   <FileRef
       location = "group:External/ReactiveCocoa/ReactiveCocoaFramework/ReactiveCocoa.xcodeproj">
    </FileRef>
    <FileRef
@@ -18,5 +15,8 @@
    </FileRef>
    <FileRef
       location = "group:External/ReactiveCocoa/external/expecta/Expecta.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:External/OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.xcodeproj">
    </FileRef>
 </Workspace>
