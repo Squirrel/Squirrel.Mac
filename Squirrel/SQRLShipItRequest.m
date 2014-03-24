@@ -87,8 +87,22 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 + (RACSignal *)readFromData:(NSData *)data {
 	return [[RACSignal
 		defer:^{
-			SQRLShipItRequest *state = [NSKeyedUnarchiver unarchiveObjectWithData:data];
-			if (![state isKindOfClass:SQRLShipItRequest.class]) {
+			NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingWithData:data];
+
+			SQRLShipItRequest *request = nil;
+			@try {
+				request = [unarchiver decodeObjectForKey:@"root"]; // NSKeyedArchiveRootObjectKey
+			} @catch (NSException *exception) {
+				if (![exception.name isEqualToString:NSInvalidUnarchiveOperationException]) {
+					@throw;
+				}
+			}
+
+			if (![request isKindOfClass:SQRLShipItRequest.class]) {
+				request = nil;
+			}
+
+			if (request == nil) {
 				NSDictionary *userInfo = @{
 					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read saved state", nil),
 					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
@@ -96,7 +110,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo]];
 			}
 
-			return [RACSignal return:state];
+			return [RACSignal return:request];
 		}]
 		setNameWithFormat:@"+readFromData: <NSData %p>", data];
 }
