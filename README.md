@@ -34,6 +34,8 @@ it into your Frameworks directory
 1. Ensure your application includes the [dependencies](#dependencies). Squirrel
 does not embed them itself.
 
+If you’re developing Squirrel on its own, then use `Squirrel.xcworkspace`.
+
 # Dependencies
 
 Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
