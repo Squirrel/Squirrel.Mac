@@ -96,11 +96,10 @@
 		D4ACA4FC18DB9E7700EBD899 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4EF18DB9C9400EBD899 /* libReactiveCocoa-Mac.a */; };
 		D4ACA4FD18DB9EAF00EBD899 /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F118DB9C9D00EBD899 /* libMantle-Mac.a */; };
 		D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */; };
-		D4ACA50718DB9FEB00EBD899 /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F918DB9DA800EBD899 /* ReactiveCocoa.framework */; };
-		D4ACA50818DBA01700EBD899 /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F918DB9DA800EBD899 /* ReactiveCocoa.framework */; };
-		D4ACA50918DBA03400EBD899 /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F918DB9DA800EBD899 /* ReactiveCocoa.framework */; };
-		D4ACA50B18DBA03D00EBD899 /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA50A18DBA03D00EBD899 /* Mantle.framework */; };
-		D4ACA50C18DBA16600EBD899 /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA50A18DBA03D00EBD899 /* Mantle.framework */; };
+		D4C4909918E46DE900786EFE /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
+		D4C4909B18E46DFE00786EFE /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
+		D4C4909E18E46E1000786EFE /* ReactiveCocoa.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
+		D4C4909F18E46E1000786EFE /* Mantle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
@@ -185,6 +184,8 @@
 			dstSubfolderSpec = 10;
 			files = (
 				D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */,
+				D4C4909E18E46E1000786EFE /* ReactiveCocoa.framework in Copy Frameworks */,
+				D4C4909F18E46E1000786EFE /* Mantle.framework in Copy Frameworks */,
 			);
 			name = "Copy Frameworks";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -315,9 +316,9 @@
 		D4ACA4F118DB9C9D00EBD899 /* libMantle-Mac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libMantle-Mac.a"; path = "External/Mantle/build/Debug/libMantle-Mac.a"; sourceTree = "<group>"; };
 		D4ACA4F518DB9CCB00EBD899 /* libExpecta.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libExpecta.a; path = External/ReactiveCocoa/external/expecta/build/Debug/libExpecta.a; sourceTree = "<group>"; };
 		D4ACA4F718DB9CCE00EBD899 /* libSpecta.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libSpecta.a; path = External/ReactiveCocoa/external/specta/build/Debug/libSpecta.a; sourceTree = "<group>"; };
-		D4ACA4F918DB9DA800EBD899 /* ReactiveCocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ReactiveCocoa.framework; path = External/ReactiveCocoa/ReactiveCocoaFramework/build/Debug/ReactiveCocoa.framework; sourceTree = "<group>"; };
 		D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OHHTTPStubs.framework; path = External/OHHTTPStubs/OHHTTPStubs/build/Debug/OHHTTPStubs.framework; sourceTree = "<group>"; };
-		D4ACA50A18DBA03D00EBD899 /* Mantle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Mantle.framework; path = External/Mantle/build/Debug/Mantle.framework; sourceTree = "<group>"; };
+		D4C4909818E46DE900786EFE /* Mantle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Mantle.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = ReactiveCocoa.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		F65A915F17A71AA5005A4666 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -352,7 +353,6 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D4ACA50718DB9FEB00EBD899 /* ReactiveCocoa.framework in Frameworks */,
 				D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */,
 				D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */,
 			);
@@ -367,8 +367,8 @@
 				F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */,
 				533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */,
 				D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */,
-				D4ACA50818DBA01700EBD899 /* ReactiveCocoa.framework in Frameworks */,
-				D4ACA50C18DBA16600EBD899 /* Mantle.framework in Frameworks */,
+				D4C4909918E46DE900786EFE /* Mantle.framework in Frameworks */,
+				D4C4909B18E46DFE00786EFE /* ReactiveCocoa.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -377,9 +377,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */,
-				D4ACA50B18DBA03D00EBD899 /* Mantle.framework in Frameworks */,
 				D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */,
-				D4ACA50918DBA03400EBD899 /* ReactiveCocoa.framework in Frameworks */,
 				D4ACA4F618DB9CCB00EBD899 /* libExpecta.a in Frameworks */,
 				D4ACA4F818DB9CCE00EBD899 /* libSpecta.a in Frameworks */,
 				D061E40317FD581C00CC134A /* IOKit.framework in Frameworks */,
@@ -603,9 +601,9 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				D4ACA50A18DBA03D00EBD899 /* Mantle.framework */,
+				D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */,
+				D4C4909818E46DE900786EFE /* Mantle.framework */,
 				D4ACA4F118DB9C9D00EBD899 /* libMantle-Mac.a */,
-				D4ACA4F918DB9DA800EBD899 /* ReactiveCocoa.framework */,
 				D4ACA4EF18DB9C9400EBD899 /* libReactiveCocoa-Mac.a */,
 				D4ACA4F518DB9CCB00EBD899 /* libExpecta.a */,
 				D4ACA4F718DB9CCE00EBD899 /* libSpecta.a */,
