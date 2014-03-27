@@ -93,6 +93,8 @@
 		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */; };
 		D45F1A9218E46F2E005CE515 /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
 		D45F1A9318E46F2E005CE515 /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
+		D45F1A9418E47055005CE515 /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
+		D45F1A9518E47055005CE515 /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
 		D4ACA4F618DB9CCB00EBD899 /* libExpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F518DB9CCB00EBD899 /* libExpecta.a */; };
 		D4ACA4F818DB9CCE00EBD899 /* libSpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F718DB9CCE00EBD899 /* libSpecta.a */; };
 		D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */; };
@@ -357,6 +359,8 @@
 			files = (
 				D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */,
 				D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */,
+				D45F1A9418E47055005CE515 /* ReactiveCocoa.framework in Frameworks */,
+				D45F1A9518E47055005CE515 /* Mantle.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
