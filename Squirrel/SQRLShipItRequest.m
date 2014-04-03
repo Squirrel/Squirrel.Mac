@@ -14,6 +14,9 @@ NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
 
 NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestPropertyErrorKey";
 
+@interface SQRLShipItRequest () <MTLJSONSerializing>
+@end
+
 @implementation SQRLShipItRequest
 
 #pragma mark Lifecycle
@@ -54,10 +57,22 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 
 #pragma mark Serialization
 
++ (NSDictionary *)JSONKeyPathsByPropertyKey {
+	return @{};
+}
+
++ (NSValueTransformer *)JSONTransformerForKey:(NSString *)key {
+	if ([@[ @keypath(SQRLShipItRequest.new, updateBundleURL), @keypath(SQRLShipItRequest.new, targetBundleURL) ] containsObject:key]) {
+		return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
+	} else {
+		return nil;
+	}
+}
+
 + (RACSignal *)readUsingURL:(RACSignal *)URL {
 	NSParameterAssert(URL != nil);
 
-	return [[[URL
+	return [[[[URL
 		flattenMap:^(NSURL *stateURL) {
 			NSError *error;
 			NSData *data = [self readFromURL:stateURL error:&error];
@@ -69,6 +84,15 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		}]
 		flattenMap:^(NSData *data) {
 			return [self readFromData:data];
+		}]
+		catch:^(NSError *error) {
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: @"Could not read update request",
+			} mutableCopy];
+			if (error != nil) {
+				userInfo[NSUnderlyingErrorKey] = error;
+			}
+			return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo]];
 		}]
 		setNameWithFormat:@"+readUsingURL: %@", URL];
 }
@@ -87,30 +111,23 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 + (RACSignal *)readFromData:(NSData *)data {
 	return [[RACSignal
 		defer:^{
-			NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingWithData:data];
-
-			SQRLShipItRequest *request = nil;
-			@try {
-				request = [unarchiver decodeObjectForKey:@"root"]; // NSKeyedArchiveRootObjectKey
-			} @catch (NSException *exception) {
-				if (![exception.name isEqualToString:NSInvalidUnarchiveOperationException]) {
-					@throw;
-				}
+			NSError *error;
+			NSDictionary *JSONDictionary = [NSJSONSerialization JSONObjectWithData:data options:0 error:&error];
+			if (JSONDictionary == nil) {
+				return [RACSignal error:error];
 			}
 
-			if (![request isKindOfClass:SQRLShipItRequest.class]) {
-				request = nil;
+			if (![JSONDictionary isKindOfClass:NSDictionary.class]) {
+				return [RACSignal error:nil];
 			}
 
+			SQRLShipItRequest *request = [MTLJSONAdapter modelOfClass:SQRLShipItRequest.class fromJSONDictionary:JSONDictionary error:&error];
 			if (request == nil) {
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read saved state", nil),
-					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while unarchiving.", nil)
-				};
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo]];
+				return [RACSignal error:error];
 			}
 
 			return [RACSignal return:request];
+
 		}]
 		setNameWithFormat:@"+readFromData: <NSData %p>", data];
 }
@@ -118,7 +135,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 - (RACSignal *)writeUsingURL:(RACSignal *)URL {
 	NSParameterAssert(URL != nil);
 
-	return [[[RACSignal
+	return [[[[RACSignal
 		zip:@[
 			URL,
 			[self serialization]
@@ -132,6 +149,16 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 			return [RACSignal empty];
 		}]
 		flatten]
+		catch:^(NSError *error) {
+			NSMutableDictionary *userInfo = [@{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Could not write update request", nil),
+				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil),
+			} mutableCopy];
+			if (error != nil) {
+				userInfo[NSUnderlyingErrorKey] = error;
+			}
+			return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo]];
+		}]
 		setNameWithFormat:@"%@ -writeUsingURL: %@", self, URL];
 }
 
@@ -149,13 +176,12 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 - (RACSignal *)serialization {
 	return [[RACSignal
 		defer:^{
-			NSData *data = [NSKeyedArchiver archivedDataWithRootObject:self];
+			NSDictionary *JSONDictionary = [MTLJSONAdapter JSONDictionaryFromModel:self];
+
+			NSError *error;
+			NSData *data = [NSJSONSerialization dataWithJSONObject:JSONDictionary options:0 error:&error];
 			if (data == nil) {
-				NSDictionary *userInfo = @{
-					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not save state", nil),
-					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil)
-				};
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo]];
+				return [RACSignal error:error];
 			}
 
 			return [RACSignal return:data];
