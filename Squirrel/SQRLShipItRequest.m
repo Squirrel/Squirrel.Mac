@@ -61,12 +61,12 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	return @{};
 }
 
-+ (NSValueTransformer *)JSONTransformerForKey:(NSString *)key {
-	if ([@[ @keypath(SQRLShipItRequest.new, updateBundleURL), @keypath(SQRLShipItRequest.new, targetBundleURL) ] containsObject:key]) {
-		return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
-	} else {
-		return nil;
-	}
++ (NSValueTransformer *)updateBundleURLJSONTransformer {
+	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
+}
+
++ (NSValueTransformer *)targetBundleURLJSONTransformer {
+	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
 }
 
 + (RACSignal *)readUsingURL:(RACSignal *)URL {
