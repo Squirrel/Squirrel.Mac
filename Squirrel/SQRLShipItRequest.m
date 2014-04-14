@@ -86,11 +86,13 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 			return [self readFromData:data];
 		}]
 		catch:^(NSError *error) {
-			NSMutableDictionary *userInfo = [@{
+			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: @"Could not read update request",
-			} mutableCopy];
+			};
 			if (error != nil) {
-				userInfo[NSUnderlyingErrorKey] = error;
+				userInfo = [userInfo mtl_dictionaryByAddingEntriesFromDictionary:@{
+					NSUnderlyingErrorKey: error,
+				}];
 			}
 			return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:userInfo]];
 		}]
@@ -150,12 +152,14 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		}]
 		flatten]
 		catch:^(NSError *error) {
-			NSMutableDictionary *userInfo = [@{
+			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: NSLocalizedString(@"Could not write update request", nil),
 				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil),
-			} mutableCopy];
+			};
 			if (error != nil) {
-				userInfo[NSUnderlyingErrorKey] = error;
+				userInfo = [userInfo mtl_dictionaryByAddingEntriesFromDictionary:@{
+					NSUnderlyingErrorKey: error,
+				}];
 			}
 			return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo]];
 		}]
