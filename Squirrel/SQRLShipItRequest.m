@@ -87,7 +87,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		}]
 		catch:^(NSError *error) {
 			NSDictionary *userInfo = @{
-				NSLocalizedDescriptionKey: @"Could not read update request",
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Could not read update request", nil),
 			};
 			if (error != nil) {
 				userInfo = [userInfo mtl_dictionaryByAddingEntriesFromDictionary:@{
