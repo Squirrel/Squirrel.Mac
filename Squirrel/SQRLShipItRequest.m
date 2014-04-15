@@ -119,10 +119,6 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 				return [RACSignal error:error];
 			}
 
-			if (![JSONDictionary isKindOfClass:NSDictionary.class]) {
-				return [RACSignal error:nil];
-			}
-
 			SQRLShipItRequest *request = [MTLJSONAdapter modelOfClass:SQRLShipItRequest.class fromJSONDictionary:JSONDictionary error:&error];
 			if (request == nil) {
 				return [RACSignal error:error];
