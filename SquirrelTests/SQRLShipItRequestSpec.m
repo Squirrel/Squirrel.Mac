@@ -60,4 +60,20 @@ it(@"should write and read state to disk", ^{
 	expect(readRequest).to.equal(request);
 });
 
+it(@"should fail gracefully with archives encoding a different class", ^{
+	NSURL *archiveLocation = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"archive"];
+
+	NSError *error;
+	BOOL write = [[NSKeyedArchiver archivedDataWithRootObject:@"rogue object"] writeToURL:archiveLocation atomically:YES];
+	expect(write).to.beTruthy();
+	expect(error).to.beNil();
+
+	BOOL success = NO;
+	SQRLShipItRequest *request = [[SQRLShipItRequest readUsingURL:[RACSignal return:archiveLocation]] firstOrDefault:nil success:&success error:&error];
+	expect(request).to.beNil();
+	expect(success).to.beFalsy();
+	expect(error.domain).to.equal(SQRLShipItRequestErrorDomain);
+	expect(error.code).to.equal(SQRLShipItRequestErrorUnarchiving);
+});
+
 SpecEnd
