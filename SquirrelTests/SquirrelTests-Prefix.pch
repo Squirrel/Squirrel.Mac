@@ -21,8 +21,8 @@
 	#define EXP_SHORTHAND
 	#import "Expecta.h"
 
-    // Expecta #defines startWith as beginWith, which messes up -startWith: :-(
-    #undef startWith
+	// Expecta #defines startWith as beginWith, which messes up -startWith: :-(
+	#undef startWith
 
 	#import "SQRLTestCase.h"
 #endif
