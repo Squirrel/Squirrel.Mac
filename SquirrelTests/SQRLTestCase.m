@@ -7,11 +7,13 @@
 //
 
 #import "SQRLTestCase.h"
+
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
-#import "SQRLShipItLauncher.h"
 #import "SQRLInstaller.h"
+#import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
+#import "SQRLTestHelper.h"
 #import <ServiceManagement/ServiceManagement.h>
 
 #pragma clang diagnostic push
@@ -112,20 +114,6 @@ static void SQRLSignalHandler(int sig) {
 	Expecta.asynchronousTestTimeout = 3;
 }
 
-- (void)SPT_setUp {
-	_exampleCleanupBlocks = [[NSMutableArray alloc] init];
-}
-
-- (void)SPT_tearDown {
-	NSArray *cleanupBlocks = [self.exampleCleanupBlocks copy];
-	_exampleCleanupBlocks = nil;
-
-	// Enumerate backwards, so later resources are cleaned up first.
-	for (dispatch_block_t block in cleanupBlocks.reverseObjectEnumerator) {
-		block();
-	}
-}
-
 - (void)tearDown {
 	[super tearDown];
 
@@ -133,7 +121,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (void)addCleanupBlock:(dispatch_block_t)block {
-	[self.exampleCleanupBlocks addObject:[block copy]];
+	[SQRLTestHelper addCleanupBlock:block];
 }
 
 #pragma mark Logging
@@ -163,7 +151,7 @@ static void SQRLSignalHandler(int sig) {
 		
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
-		STAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
+		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
 
 		[self addCleanupBlock:^{
 			[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
@@ -179,7 +167,7 @@ static void SQRLSignalHandler(int sig) {
 
 	NSError *error = nil;
 	BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:temporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
-	STAssertTrue(success, @"Couldn't create temporary directory at %@: %@", temporaryDirectoryURL, error);
+	XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", temporaryDirectoryURL, error);
 
 	return temporaryDirectoryURL;
 }
@@ -190,11 +178,11 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app" isDirectory:YES];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
 		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
-		STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
+		XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager copyItemAtURL:bundleURL toURL:fixtureURL error:&error];
-		STAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundleURL, fixtureURL, error);
+		XCTAssertTrue(success, @"Couldn't copy %@ to %@: %@", bundleURL, fixtureURL, error);
 
 		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 		[[NSData data] writeToURL:testAppLog atomically:YES];
@@ -202,7 +190,7 @@ static void SQRLSignalHandler(int sig) {
 		NSTask *readTestApp = [self.class tailTaskWithPaths:[RACSequence return:testAppLog.path]];
 		[readTestApp launch];
 
-		STAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
+		XCTAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
 
 		[self addCleanupBlock:^{
 			[readTestApp terminate];
@@ -215,7 +203,7 @@ static void SQRLSignalHandler(int sig) {
 - (NSBundle *)testApplicationBundle {
 	NSURL *fixtureURL = self.testApplicationURL;
 	NSBundle *bundle = [NSBundle bundleWithURL:fixtureURL];
-	STAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
+	XCTAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
 	
 	return bundle;
 }
@@ -235,7 +223,7 @@ static void SQRLSignalHandler(int sig) {
 
 	NSError *error = nil;
 	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:self.testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:configuration error:&error];
-	STAssertNotNil(app, @"Could not launch app at %@: %@", self.testApplicationURL, error);
+	XCTAssertNotNil(app, @"Could not launch app at %@: %@", self.testApplicationURL, error);
 
 	[self addCleanupBlock:^{
 		if (!app.terminated) {
@@ -256,11 +244,11 @@ static void SQRLSignalHandler(int sig) {
 
 - (NSURL *)createTestApplicationUpdate {
 	NSURL *originalURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication 2.1" withExtension:@"app"];
-	STAssertNotNil(originalURL, @"Couldn't find TestApplication update in test bundle");
+	XCTAssertNotNil(originalURL, @"Couldn't find TestApplication update in test bundle");
 
 	NSError *error = nil;
 	NSURL *updateParentURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.baseTemporaryDirectoryURL create:YES error:&error];
-	STAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
+	XCTAssertNotNil(updateParentURL, @"Could not create temporary directory for updating: %@", error);
 
 	[self addCleanupBlock:^{
 		[NSFileManager.defaultManager removeItemAtURL:updateParentURL error:NULL];
@@ -268,18 +256,18 @@ static void SQRLSignalHandler(int sig) {
 
 	NSURL *updateURL = [updateParentURL URLByAppendingPathComponent:originalURL.lastPathComponent isDirectory:YES];
 	BOOL success = [NSFileManager.defaultManager copyItemAtURL:originalURL toURL:updateURL error:&error];
-	STAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
+	XCTAssertTrue(success, @"Couldn't copy %@ to %@: %@", originalURL, updateURL, error);
 
 	return updateURL;
 }
 
 - (id)performWithTestApplicationRequirement:(id (^)(SecRequirementRef requirement))block {
 	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
-	STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
+	XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 	SecStaticCodeRef staticCode = NULL;
 	OSStatus status = SecStaticCodeCreateWithPath((__bridge CFURLRef)bundleURL, kSecCSDefaultFlags, &staticCode);
-	STAssertTrue(status == noErr, @"Error creating static code object for %@", bundleURL);
+	XCTAssertTrue(status == noErr, @"Error creating static code object for %@", bundleURL);
 
 	@onExit {
 		if (staticCode != NULL) CFRelease(staticCode);
@@ -287,7 +275,7 @@ static void SQRLSignalHandler(int sig) {
 
 	SecRequirementRef requirement = NULL;
 	status = SecCodeCopyDesignatedRequirement(staticCode, kSecCSDefaultFlags, &requirement);
-	STAssertTrue(status == noErr, @"Error getting designated requirement of %@", staticCode);
+	XCTAssertTrue(status == noErr, @"Error getting designated requirement of %@", staticCode);
 
 	@onExit {
 		if (requirement != NULL) CFRelease(requirement);
@@ -298,11 +286,11 @@ static void SQRLSignalHandler(int sig) {
 
 - (SQRLCodeSignature *)testApplicationSignature {
 	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
-	STAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
+	XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 	NSError *error = nil;
 	SQRLCodeSignature *signature = [SQRLCodeSignature signatureWithBundle:bundleURL error:&error];
-	STAssertNotNil(signature, @"Error getting signature for bundle at %@: %@", bundleURL, error);
+	XCTAssertNotNil(signature, @"Error getting signature for bundle at %@: %@", bundleURL, error);
 
 	return signature;
 }
@@ -310,7 +298,7 @@ static void SQRLSignalHandler(int sig) {
 - (SQRLDirectoryManager *)shipItDirectoryManager {
 	NSString *identifier = SQRLShipItLauncher.shipItJobLabel;
 	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:identifier];
-	STAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
+	XCTAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
 
 	return manager;
 }
@@ -347,7 +335,7 @@ static void SQRLSignalHandler(int sig) {
 
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL {
 	NSURL *destinationURL = [self.baseTemporaryDirectoryURL URLByAppendingPathComponent:name];
-	STAssertNotNil(destinationURL, @"Could not create disk image URL for %@", directoryURL);
+	XCTAssertNotNil(destinationURL, @"Could not create disk image URL for %@", directoryURL);
 
 	NSString *createInvocation;
 	if (directoryURL == nil) {
