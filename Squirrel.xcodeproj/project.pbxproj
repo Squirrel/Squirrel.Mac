@@ -27,6 +27,9 @@
 		5397A69D187DF8610014A477 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5EB187DA2570014A477 /* SQRLInstallerOwnedBundle.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
+		BE312944196B999300F1A675 /* SQRLTestHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = BE312943196B999300F1A675 /* SQRLTestHelper.m */; };
+		BE31BEA0196B74A900376A76 /* libSpecta-OSX.a in Frameworks */ = {isa = PBXBuildFile; fileRef = BE31BE9F196B74A900376A76 /* libSpecta-OSX.a */; };
+		BE31BEA1196B74B000376A76 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C1C17B18FEE0086ED44 /* XCTest.framework */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -77,7 +80,6 @@
 		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
-		D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BF0179CC00E00158214 /* SenTestingKit.framework */; };
 		D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BF5179CC00E00158214 /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
 		D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BF9179CC00E00158214 /* InfoPlist.strings */; };
@@ -96,7 +98,6 @@
 		D45F1A9418E47055005CE515 /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
 		D45F1A9518E47055005CE515 /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
 		D4ACA4F618DB9CCB00EBD899 /* libExpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F518DB9CCB00EBD899 /* libExpecta.a */; };
-		D4ACA4F818DB9CCE00EBD899 /* libSpecta.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA4F718DB9CCE00EBD899 /* libSpecta.a */; };
 		D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */; };
 		D4C4909918E46DE900786EFE /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
 		D4C4909B18E46DFE00786EFE /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
@@ -233,6 +234,9 @@
 		5397A69C187DF6490014A477 /* SQRLInstaller+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLInstaller+Private.h"; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
+		BE312942196B999300F1A675 /* SQRLTestHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestHelper.h; sourceTree = "<group>"; };
+		BE312943196B999300F1A675 /* SQRLTestHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestHelper.m; sourceTree = "<group>"; };
+		BE31BE9F196B74A900376A76 /* libSpecta-OSX.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = "libSpecta-OSX.a"; path = "External/ReactiveCocoa/external/specta/build/Debug/libSpecta-OSX.a"; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
@@ -284,8 +288,7 @@
 		D0C22BE4179CC00E00158214 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D0C22BE6179CC00E00158214 /* Squirrel-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Squirrel-Prefix.pch"; sourceTree = "<group>"; };
 		D0C22BE7179CC00E00158214 /* Squirrel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Squirrel.h; sourceTree = "<group>"; };
-		D0C22BEF179CC00E00158214 /* SquirrelTests.octest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SquirrelTests.octest; sourceTree = BUILT_PRODUCTS_DIR; };
-		D0C22BF0179CC00E00158214 /* SenTestingKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SenTestingKit.framework; path = Library/Frameworks/SenTestingKit.framework; sourceTree = DEVELOPER_DIR; };
+		D0C22BEF179CC00E00158214 /* SquirrelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SquirrelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "SquirrelTests-Info.plist"; sourceTree = "<group>"; };
 		D0C22BFA179CC00E00158214 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D0C22C09179CC02E00158214 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
@@ -384,10 +387,10 @@
 			files = (
 				D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */,
 				D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */,
+				BE31BEA1196B74B000376A76 /* XCTest.framework in Frameworks */,
+				BE31BEA0196B74A900376A76 /* libSpecta-OSX.a in Frameworks */,
 				D4ACA4F618DB9CCB00EBD899 /* libExpecta.a in Frameworks */,
-				D4ACA4F818DB9CCE00EBD899 /* libSpecta.a in Frameworks */,
 				D061E40317FD581C00CC134A /* IOKit.framework in Frameworks */,
-				D0C22BF1179CC00E00158214 /* SenTestingKit.framework in Frameworks */,
 				D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */,
 				D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */,
 				D0C22BF5179CC00E00158214 /* Squirrel.framework in Frameworks */,
@@ -598,7 +601,7 @@
 			isa = PBXGroup;
 			children = (
 				D0C22BD7179CC00E00158214 /* Squirrel.framework */,
-				D0C22BEF179CC00E00158214 /* SquirrelTests.octest */,
+				D0C22BEF179CC00E00158214 /* SquirrelTests.xctest */,
 				D08D4E0C17B451500012B22D /* TestApplication.app */,
 				D014AC0117B97885007D79D0 /* ShipIt */,
 				534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */,
@@ -609,6 +612,7 @@
 		D0C22BD9179CC00E00158214 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BE31BE9F196B74A900376A76 /* libSpecta-OSX.a */,
 				D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */,
 				D4C4909818E46DE900786EFE /* Mantle.framework */,
 				D4C490A218E46E8800786EFE /* libReactiveCocoa-Mac.a */,
@@ -622,7 +626,6 @@
 				D0C22BDA179CC00E00158214 /* Cocoa.framework */,
 				F6EB217F179D0E4D001108CF /* Security.framework */,
 				F6EB2161179CFD93001108CF /* SystemConfiguration.framework */,
-				D0C22BF0179CC00E00158214 /* SenTestingKit.framework */,
 				F60CA7EA179FC4F60069F69A /* Foundation.framework */,
 				D0366C1C17B18FEE0086ED44 /* XCTest.framework */,
 				D0366BFF17B18FEE0086ED44 /* Other Frameworks */,
@@ -760,6 +763,8 @@
 				D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */,
 				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
 				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
+				BE312942196B999300F1A675 /* SQRLTestHelper.h */,
+				BE312943196B999300F1A675 /* SQRLTestHelper.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
@@ -893,8 +898,8 @@
 			);
 			name = SquirrelTests;
 			productName = SquirrelTests;
-			productReference = D0C22BEF179CC00E00158214 /* SquirrelTests.octest */;
-			productType = "com.apple.product-type.bundle";
+			productReference = D0C22BEF179CC00E00158214 /* SquirrelTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -1045,6 +1050,7 @@
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				5397A69D187DF8610014A477 /* SQRLInstallerOwnedBundle.m in Sources */,
+				BE312944196B999300F1A675 /* SQRLTestHelper.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
 				D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */,
 				D049059D18055671004E683E /* SQRLShipItRequestSpec.m in Sources */,
@@ -1352,7 +1358,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
 				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
 					External/ReactiveCocoa/external/specta/src,
@@ -1361,7 +1370,6 @@
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				WRAPPER_EXTENSION = octest;
 			};
 			name = Debug;
 		};
@@ -1369,7 +1377,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
 				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
 					External/ReactiveCocoa/external/specta/src,
@@ -1378,7 +1389,6 @@
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				WRAPPER_EXTENSION = octest;
 			};
 			name = Release;
 		};
@@ -1414,7 +1424,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
 				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
 					External/ReactiveCocoa/external/specta/src,
@@ -1423,7 +1436,6 @@
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				WRAPPER_EXTENSION = octest;
 			};
 			name = Profile;
 		};
@@ -1458,7 +1470,10 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "\"$(DEVELOPER_LIBRARY_DIR)/Frameworks\"";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(DEVELOPER_FRAMEWORKS_DIR)",
+				);
 				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
 				HEADER_SEARCH_PATHS = (
 					External/ReactiveCocoa/external/specta/src,
@@ -1467,7 +1482,6 @@
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
 				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				WRAPPER_EXTENSION = octest;
 			};
 			name = Test;
 		};

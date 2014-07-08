@@ -8,7 +8,7 @@
 
 #ifdef __OBJC__
 	#import <Cocoa/Cocoa.h>
-	#import <SenTestingKit/SenTestingKit.h>
+	#import <XCTest/XCTest.h>
 
 	#import <Mantle/Mantle.h>
 	#import <ReactiveCocoa/ReactiveCocoa.h>
@@ -20,6 +20,9 @@
 
 	#define EXP_SHORTHAND
 	#import "Expecta.h"
+
+    // Expecta #defines startWith as beginWith, which messes up -startWith: :-(
+    #undef startWith
 
 	#import "SQRLTestCase.h"
 #endif
