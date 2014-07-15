@@ -908,7 +908,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = SQRL;
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0510;
 				ORGANIZATIONNAME = GitHub;
 			};
 			buildConfigurationList = D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */;
