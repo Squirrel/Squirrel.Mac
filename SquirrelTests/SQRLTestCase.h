@@ -20,7 +20,7 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 @class SQRLDirectoryManager;
 @class SQRLShipItRequest;
 
-@interface SQRLTestCase : SPTSenTestCase
+@interface SQRLTestCase : SPTXCTestCase
 
 // A URL to a temporary directory tests can use.
 //
