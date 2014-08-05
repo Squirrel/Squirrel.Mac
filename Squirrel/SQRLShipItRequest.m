@@ -69,7 +69,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
 }
 
-+ (RACSignal *)readUsingURL:(NSURL *)URL {
++ (RACSignal *)readFromURL:(NSURL *)URL {
 	NSParameterAssert(URL != nil);
 
 	return [[[[RACSignal
