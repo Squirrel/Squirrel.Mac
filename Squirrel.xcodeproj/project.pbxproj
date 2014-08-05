@@ -8,8 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
-		5349B3F5188709C300FE1E55 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
-		5349B3F8188709C300FE1E55 /* ShipItWatcher-main.m in Sources */ = {isa = PBXBuildFile; fileRef = 5349B3F7188709C300FE1E55 /* ShipItWatcher-main.m */; };
 		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		534FF36117D8E90A0020A51A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
@@ -21,17 +19,8 @@
 		5371816018A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
 		5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */ = {isa = PBXBuildFile; fileRef = 5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */; };
 		5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */ = {isa = PBXBuildFile; fileRef = 5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */; };
-		537648F718871792008FB816 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		537648FA18871EDA008FB816 /* SQRLShipItWatcherSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */; };
-		537648FD18872C43008FB816 /* shipit-watcher in Copy ShipIt */ = {isa = PBXBuildFile; fileRef = 5349B3F4188709C300FE1E55 /* shipit-watcher */; };
 		537648FE18873592008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
-		5376490318873638008FB816 /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0A56BAC1804B1FD00A84EDC /* libMantle-Mac.a */; };
-		5376490418873638008FB816 /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D0964B1C17F2DD4500D88BF7 /* libReactiveCocoa-Mac.a */; };
-		537649051887364E008FB816 /* (null) in Sources */ = {isa = PBXBuildFile; };
-		5376490618873659008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
-		53764907188737B4008FB816 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
-		53764908188737D3008FB816 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
-		53764AF91889EBFD008FB816 /* SQRLFileListenerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AF81889EBFD008FB816 /* SQRLFileListenerSpec.m */; };
 		53764AFA1889EC04008FB816 /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		5397A5CE187D92810014A477 /* SQRLShipItRequest.h in Headers */ = {isa = PBXBuildFile; fileRef = 5397A5CC187D92810014A477 /* SQRLShipItRequest.h */; };
@@ -40,7 +29,6 @@
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
 		53B8BD2F18A4341F00FF317E /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
-		53C8168B18A4293700A8B595 /* SQRLShipItRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5CD187D92810014A477 /* SQRLShipItRequest.m */; };
 		53C816A218A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */; };
 		53C816A318A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */; };
 		53CE752D188330590085C0EB /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0217B18FEE0086ED44 /* Foundation.framework */; };
@@ -63,7 +51,6 @@
 		D014AC1D17B979B7007D79D0 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D014AC1E17B979BD007D79D0 /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D03BE98D17B6174500458593 /* MainMenu.xib in Resources */ = {isa = PBXBuildFile; fileRef = D03BE98C17B6174500458593 /* MainMenu.xib */; };
-		D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */ = {isa = PBXBuildFile; fileRef = D043F77117FF40C90012F996 /* SQRLTerminationListener.m */; };
 		D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */; };
 		D049059D18055671004E683E /* SQRLShipItRequestSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059C18055671004E683E /* SQRLShipItRequestSpec.m */; };
 		D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = D049059F180558B7004E683E /* SQRLTestUpdate.m */; };
@@ -133,13 +120,6 @@
 			remoteGlobalIDString = 534FF35F17D8E90A0020A51A;
 			remoteInfo = TestService;
 		};
-		537648FB18872C27008FB816 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 5349B3F3188709C300FE1E55;
-			remoteInfo = "ShipIt Watcher";
-		};
 		D014AC1617B9793A007D79D0 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = D0C22BCE179CC00E00158214 /* Project object */;
@@ -171,15 +151,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		5349B3F2188709C300FE1E55 /* CopyFiles */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = /usr/share/man/man1/;
-			dstSubfolderSpec = 0;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 1;
-		};
 		534FF35417D8E8A90020A51A /* Copy LoginItems */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -208,7 +179,6 @@
 			dstPath = "";
 			dstSubfolderSpec = 7;
 			files = (
-				537648FD18872C43008FB816 /* shipit-watcher in Copy ShipIt */,
 				D014AC1817B97945007D79D0 /* shipit-installer in Copy ShipIt */,
 			);
 			name = "Copy ShipIt";
@@ -241,8 +211,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		5349B3F4188709C300FE1E55 /* shipit-watcher */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "shipit-watcher"; sourceTree = BUILT_PRODUCTS_DIR; };
-		5349B3F7188709C300FE1E55 /* ShipItWatcher-main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = "ShipItWatcher-main.m"; sourceTree = "<group>"; };
 		534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = com.github.Squirrel.TestApplication.TestService.xpc; sourceTree = BUILT_PRODUCTS_DIR; };
 		534FF36417D8E90A0020A51A /* TestService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestService-Info.plist"; sourceTree = "<group>"; };
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -263,7 +231,6 @@
 		537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItWatcherSpec.m; sourceTree = "<group>"; };
 		53764AE41889CD03008FB816 /* SQRLFileListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLFileListener.h; sourceTree = "<group>"; };
 		53764AE51889CD03008FB816 /* SQRLFileListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileListener.m; sourceTree = "<group>"; };
-		53764AF81889EBFD008FB816 /* SQRLFileListenerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileListenerSpec.m; sourceTree = "<group>"; };
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
 		5397A5CC187D92810014A477 /* SQRLShipItRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItRequest.h; sourceTree = "<group>"; };
 		5397A5CD187D92810014A477 /* SQRLShipItRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItRequest.m; sourceTree = "<group>"; };
@@ -294,8 +261,6 @@
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
-		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SQRLTerminationListener.h; path = ../Squirrel/SQRLTerminationListener.h; sourceTree = "<group>"; };
-		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SQRLTerminationListener.m; path = ../Squirrel/SQRLTerminationListener.m; sourceTree = "<group>"; };
 		D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManagerSpec.m; sourceTree = "<group>"; };
 		D049059C18055671004E683E /* SQRLShipItRequestSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItRequestSpec.m; sourceTree = "<group>"; };
 		D049059E180558B7004E683E /* SQRLTestUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestUpdate.h; sourceTree = "<group>"; };
@@ -373,18 +338,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		5349B3F1188709C300FE1E55 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				53764908188737D3008FB816 /* Security.framework in Frameworks */,
-				5376490618873659008FB816 /* AppKit.framework in Frameworks */,
-				5376490318873638008FB816 /* libMantle-Mac.a in Frameworks */,
-				5376490418873638008FB816 /* libReactiveCocoa-Mac.a in Frameworks */,
-				5349B3F5188709C300FE1E55 /* Foundation.framework in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		534FF35D17D8E90A0020A51A /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -453,16 +406,6 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		5349B3F6188709C300FE1E55 /* ShipIt Watcher */ = {
-			isa = PBXGroup;
-			children = (
-				5349B3F7188709C300FE1E55 /* ShipItWatcher-main.m */,
-				D043F77017FF40C90012F996 /* SQRLTerminationListener.h */,
-				D043F77117FF40C90012F996 /* SQRLTerminationListener.m */,
-			);
-			path = "ShipIt Watcher";
-			sourceTree = "<group>";
-		};
 		534FF36217D8E90A0020A51A /* TestService */ = {
 			isa = PBXGroup;
 			children = (
@@ -650,7 +593,6 @@
 				D0C22BF6179CC00E00158214 /* SquirrelTests */,
 				D08D4E0E17B451500012B22D /* TestApplication */,
 				D014AC0317B97885007D79D0 /* ShipIt Installer */,
-				5349B3F6188709C300FE1E55 /* ShipIt Watcher */,
 				D0C22BD9179CC00E00158214 /* Frameworks */,
 				53710D7C17D8F5C300A992DE /* Scripts */,
 				D0C22C07179CC02E00158214 /* Configuration */,
@@ -667,7 +609,6 @@
 				D08D4E0C17B451500012B22D /* TestApplication.app */,
 				D014AC0117B97885007D79D0 /* shipit-installer */,
 				534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */,
-				5349B3F4188709C300FE1E55 /* shipit-watcher */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -832,7 +773,6 @@
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
 				537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */,
-				53764AF81889EBFD008FB816 /* SQRLFileListenerSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -871,25 +811,6 @@
 /* End PBXHeadersBuildPhase section */
 
 /* Begin PBXNativeTarget section */
-		5349B3F3188709C300FE1E55 /* ShipIt Watcher */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 5349B3FD188709C300FE1E55 /* Build configuration list for PBXNativeTarget "ShipIt Watcher" */;
-			buildPhases = (
-				5349B3F0188709C300FE1E55 /* Sources */,
-				5349B3F1188709C300FE1E55 /* Frameworks */,
-				5349B3F2188709C300FE1E55 /* CopyFiles */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				5376490218873630008FB816 /* PBXTargetDependency */,
-				5376490018873628008FB816 /* PBXTargetDependency */,
-			);
-			name = "ShipIt Watcher";
-			productName = "ShipIt Watcher";
-			productReference = 5349B3F4188709C300FE1E55 /* shipit-watcher */;
-			productType = "com.apple.product-type.tool";
-		};
 		534FF35F17D8E90A0020A51A /* TestService */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 534FF36B17D8E90A0020A51A /* Build configuration list for PBXNativeTarget "TestService" */;
@@ -959,7 +880,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				537648FC18872C27008FB816 /* PBXTargetDependency */,
 				D014AC1717B9793A007D79D0 /* PBXTargetDependency */,
 			);
 			name = Squirrel;
@@ -1014,7 +934,6 @@
 				D08D4E0B17B451500012B22D /* TestApplication */,
 				534FF35F17D8E90A0020A51A /* TestService */,
 				D014AC0017B97885007D79D0 /* ShipIt Installer */,
-				5349B3F3188709C300FE1E55 /* ShipIt Watcher */,
 			);
 		};
 /* End PBXProject section */
@@ -1063,18 +982,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		5349B3F0188709C300FE1E55 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				537649051887364E008FB816 /* (null) in Sources */,
-				53764907188737B4008FB816 /* SQRLCodeSignature.m in Sources */,
-				537648F718871792008FB816 /* SQRLTerminationListener.m in Sources */,
-				5349B3F8188709C300FE1E55 /* ShipItWatcher-main.m in Sources */,
-				53C8168B18A4293700A8B595 /* SQRLShipItRequest.m in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		534FF35C17D8E90A0020A51A /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1138,9 +1045,7 @@
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
 				53764AFA1889EC04008FB816 /* SQRLFileListener.m in Sources */,
-				D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
-				53764AF91889EBFD008FB816 /* SQRLFileListenerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
@@ -1165,11 +1070,6 @@
 			isa = PBXTargetDependency;
 			target = 534FF35F17D8E90A0020A51A /* TestService */;
 			targetProxy = 534FF37017D8E9170020A51A /* PBXContainerItemProxy */;
-		};
-		537648FC18872C27008FB816 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 5349B3F3188709C300FE1E55 /* ShipIt Watcher */;
-			targetProxy = 537648FB18872C27008FB816 /* PBXContainerItemProxy */;
 		};
 		D014AC1717B9793A007D79D0 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1237,46 +1137,6 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		5349B3FE188709C300FE1E55 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
-			buildSettings = {
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "shipit-watcher";
-			};
-			name = Debug;
-		};
-		5349B3FF188709C300FE1E55 /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
-			buildSettings = {
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "shipit-watcher";
-			};
-			name = Release;
-		};
-		5349B400188709C300FE1E55 /* Test */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
-			buildSettings = {
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "shipit-watcher";
-			};
-			name = Test;
-		};
-		5349B401188709C300FE1E55 /* Profile */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
-			buildSettings = {
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				OTHER_LDFLAGS = "-all_load";
-				PRODUCT_NAME = "shipit-watcher";
-			};
-			name = Profile;
-		};
 		534FF36C17D8E90A0020A51A /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
@@ -1630,17 +1490,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		5349B3FD188709C300FE1E55 /* Build configuration list for PBXNativeTarget "ShipIt Watcher" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				5349B3FE188709C300FE1E55 /* Debug */,
-				5349B3FF188709C300FE1E55 /* Release */,
-				5349B400188709C300FE1E55 /* Test */,
-				5349B401188709C300FE1E55 /* Profile */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		534FF36B17D8E90A0020A51A /* Build configuration list for PBXNativeTarget "TestService" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
