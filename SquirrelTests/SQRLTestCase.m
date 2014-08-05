@@ -12,7 +12,6 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItConnection.h"
 #import "SQRLInstaller.h"
-#import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
 #import "SQRLTestHelper.h"
 #import <ServiceManagement/ServiceManagement.h>

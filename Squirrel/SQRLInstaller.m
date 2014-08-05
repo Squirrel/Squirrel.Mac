@@ -13,7 +13,6 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItRequest.h"
-#import "SQRLTerminationListener.h"
 #import <libkern/OSAtomic.h>
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>

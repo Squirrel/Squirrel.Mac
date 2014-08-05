@@ -69,7 +69,7 @@ it(@"should fail gracefully with archives encoding a different class", ^{
 	expect(error).to.beNil();
 
 	BOOL success = NO;
-	SQRLShipItRequest *request = [[SQRLShipItRequest readUsingURL:[RACSignal return:archiveLocation]] firstOrDefault:nil success:&success error:&error];
+	SQRLShipItRequest *request = [[SQRLShipItRequest readFromURL:archiveLocation] firstOrDefault:nil success:&success error:&error];
 	expect(request).to.beNil();
 	expect(success).to.beFalsy();
 	expect(error.domain).to.equal(SQRLShipItRequestErrorDomain);
