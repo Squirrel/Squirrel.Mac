@@ -14,7 +14,6 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLInstaller+Private.h"
-#import "SQRLFileListener.h"
 #import "SQRLShipItRequest.h"
 
 // The maximum number of times ShipIt should run the same installation state, in
@@ -121,7 +120,6 @@ static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *request
 //
 // jobLabel   - The launchd job label for this task.
 // requestURL - Location of the serialized `SQRLShipItRequest` file.
-// readyURL   - Location of the wait file the install is dependent on.
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		atexit_b(^{
@@ -148,9 +146,7 @@ int main(int argc, const char * argv[]) {
 		}
 		NSURL *readyURL = [NSURL fileURLWithPath:@(argv[3])];
 
-		[[[[SQRLFileListener
-			waitUntilItemExistsAtFileURL:readyURL]
-			concat:install(directoryManager, requestURL)]
+		[[install(directoryManager, requestURL)
 			doCompleted:^{
 				[NSFileManager.defaultManager removeItemAtURL:readyURL error:NULL];
 			}]

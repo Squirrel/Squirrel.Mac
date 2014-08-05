@@ -19,16 +19,13 @@
 		5371816018A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
 		5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */ = {isa = PBXBuildFile; fileRef = 5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */; };
 		5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */ = {isa = PBXBuildFile; fileRef = 5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */; };
-		537648FA18871EDA008FB816 /* SQRLShipItWatcherSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */; };
 		537648FE18873592008FB816 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0017B18FEE0086ED44 /* AppKit.framework */; };
-		53764AFA1889EC04008FB816 /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
 		5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */; };
 		5397A5CE187D92810014A477 /* SQRLShipItRequest.h in Headers */ = {isa = PBXBuildFile; fileRef = 5397A5CC187D92810014A477 /* SQRLShipItRequest.h */; };
 		5397A5CF187D92810014A477 /* SQRLShipItRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5CD187D92810014A477 /* SQRLShipItRequest.m */; };
 		5397A5D0187D92810014A477 /* SQRLShipItRequest.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5CD187D92810014A477 /* SQRLShipItRequest.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
-		53B8BD2F18A4341F00FF317E /* SQRLFileListener.m in Sources */ = {isa = PBXBuildFile; fileRef = 53764AE51889CD03008FB816 /* SQRLFileListener.m */; };
 		53C816A218A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */; };
 		53C816A318A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 53C816A118A4314500A8B595 /* SQRLInstallerOwnedBundle.m */; };
 		53CE752D188330590085C0EB /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C0217B18FEE0086ED44 /* Foundation.framework */; };
@@ -227,9 +224,6 @@
 		5371815E18A29DC8005ED798 /* TestAppConstants.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TestAppConstants.m; sourceTree = "<group>"; };
 		5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLAuthorization.h; sourceTree = "<group>"; };
 		5374DCC5187AD0D8006B7056 /* SQRLAuthorization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLAuthorization.m; sourceTree = "<group>"; };
-		537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItWatcherSpec.m; sourceTree = "<group>"; };
-		53764AE41889CD03008FB816 /* SQRLFileListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLFileListener.h; sourceTree = "<group>"; };
-		53764AE51889CD03008FB816 /* SQRLFileListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLFileListener.m; sourceTree = "<group>"; };
 		5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateSpec.m; sourceTree = "<group>"; };
 		5397A5CC187D92810014A477 /* SQRLShipItRequest.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLShipItRequest.h; sourceTree = "<group>"; };
 		5397A5CD187D92810014A477 /* SQRLShipItRequest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLShipItRequest.m; sourceTree = "<group>"; };
@@ -464,8 +458,6 @@
 				D014AC0F17B9789C007D79D0 /* SQRLInstaller.h */,
 				5397A69C187DF6490014A477 /* SQRLInstaller+Private.h */,
 				D014AC1017B9789C007D79D0 /* SQRLInstaller.m */,
-				53764AE41889CD03008FB816 /* SQRLFileListener.h */,
-				53764AE51889CD03008FB816 /* SQRLFileListener.m */,
 			);
 			name = "ShipIt Installer";
 			path = Squirrel;
@@ -769,7 +761,6 @@
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
-				537648F918871EDA008FB816 /* SQRLShipItWatcherSpec.m */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -996,7 +987,6 @@
 				D014AC1917B979A8007D79D0 /* SQRLCodeSignature.m in Sources */,
 				5397A5D0187D92810014A477 /* SQRLShipItRequest.m in Sources */,
 				D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */,
-				53B8BD2F18A4341F00FF317E /* SQRLFileListener.m in Sources */,
 				53C816A318A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */,
 				D014AC1A17B979AA007D79D0 /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */,
@@ -1041,7 +1031,6 @@
 			files = (
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
-				53764AFA1889EC04008FB816 /* SQRLFileListener.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
 				D0EDBEDD17B0DB3E0058BC3C /* SQRLTestCase.m in Sources */,
@@ -1049,7 +1038,6 @@
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */,
 				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
-				537648FA18871EDA008FB816 /* SQRLShipItWatcherSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				53C816A218A4314500A8B595 /* SQRLInstallerOwnedBundle.m in Sources */,
 				BE312944196B999300F1A675 /* SQRLTestHelper.m in Sources */,
