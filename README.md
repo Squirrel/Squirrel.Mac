@@ -169,4 +169,4 @@ appropriate format.
 
 Squirrel does not provide any GUI components for presenting updates. If you want
 to indicate updates to the user, make sure to [listen for downloaded
-updates](#update-notifications).
+updates](#update-available-notifications).
