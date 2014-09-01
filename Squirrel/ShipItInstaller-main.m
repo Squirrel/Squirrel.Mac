@@ -16,110 +16,127 @@
 #import "SQRLInstaller+Private.h"
 #import "SQRLShipItRequest.h"
 
-// The maximum number of times ShipIt should run the same installation state, in
-// an attempt to update.
-//
-// If ShipIt is launched in the same state more than this number of times,
-// updating will abort.
-static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
-
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 
-static NSUInteger installationAttempts(NSString *applicationIdentifier) {
-	return CFPreferencesGetAppIntegerValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFStringRef)applicationIdentifier, NULL);
+typedef NS_ENUM(NSInteger, SQRLShipItError) {
+	SQRLShipItErrorUnknownAction,
+	SQRLShipItErrorMissingRequestData,
+};
+
+static void reply(xpc_object_t response) {
+	xpc_connection_t connection = xpc_dictionary_get_remote_connection(response);
+	xpc_connection_send_message(connection, response);
 }
 
-static BOOL setInstallationAttempts(NSString *applicationIdentifier, NSUInteger attempts) {
-	CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(attempts), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+static void replyWithError(xpc_object_t response, NSError *error) {
+	xpc_dictionary_set_bool(response, "success", false);
+
+	if (error != nil) {
+		xpc_object_t errorDictionary = xpc_dictionary_create(NULL, NULL, 0);
+		xpc_dictionary_set_string(errorDictionary, "domain", error.domain.UTF8String);
+		xpc_dictionary_set_int64(errorDictionary, "code", error.code);
+		xpc_dictionary_set_string(errorDictionary, "description", error.localizedDescription.UTF8String);
+		xpc_dictionary_set_string(errorDictionary, "failureReason", error.localizedFailureReason.UTF8String);
+		xpc_dictionary_set_string(errorDictionary, "recoverySuggestion", error.localizedRecoverySuggestion.UTF8String);
+		xpc_dictionary_set_value(response, "error", errorDictionary);
+		xpc_release(errorDictionary);
+	}
+
+	reply(response);
 }
 
-static BOOL clearInstallationAttempts(NSString *applicationIdentifier) {
-	CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-	return CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+static void replyWithSuccess(xpc_object_t response) {
+	xpc_dictionary_set_bool(response, "success", true);
+	reply(response);
 }
 
-static RACSignal *install(SQRLDirectoryManager *directoryManager, NSURL *requestURL) {
-	return [[SQRLShipItRequest
-		readFromURL:requestURL]
+// Client requests from peer connections.
+//
+// applicationIdentifier - Current process reverse DNS identifier.
+// request               - XPC dictionary request object.
+//
+// Returns nothing.
+static void handleRequest(NSString *applicationIdentifier, xpc_object_t request) {
+	xpc_object_t response = xpc_dictionary_create_reply(request);
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
+
+	char const *action = xpc_dictionary_get_string(request, "action");
+	if (strcmp(action, "install") != 0) {
+		NSDictionary *errorInfo = @{
+			NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Cannot process \"%s\" requests", action],
+		};
+		replyWithError(response, [NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorUnknownAction userInfo:errorInfo]);
+		return;
+	}
+
+	size_t length;
+	void const *requestBytes = xpc_dictionary_get_data(request, "request", &length);
+	if (requestBytes == NULL) {
+		NSDictionary *errorInfo = @{
+			NSLocalizedDescriptionKey: [NSString stringWithFormat:@"Cannot process \"%s\" requests without \"request\" data", action],
+		};
+		replyWithError(response, [NSError errorWithDomain:SQRLShipItErrorDomain code:SQRLShipItErrorUnknownAction userInfo:errorInfo]);
+		return;
+	}
+
+	[[[SQRLShipItRequest
+		readFromData:[NSData dataWithBytes:requestBytes length:length] ]
 		flattenMap:^(SQRLShipItRequest *request) {
-			NSString *applicationIdentifier = directoryManager.applicationIdentifier;
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
-
-			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
-			setInstallationAttempts(applicationIdentifier, attempt);
-
-			RACSignal *action;
-			if (attempt > SQRLShipItMaximumInstallationAttempts) {
-				action = [[[installer.abortInstallationCommand
-					execute:request]
-					initially:^{
-						NSLog(@"Too many attempts to install, aborting update");
-					}]
-					catch:^(NSError *error) {
-						NSLog(@"Error aborting installation: %@", error);
-
-						// Exit successfully so launchd doesn't restart us
-						// again.
-						return [RACSignal empty];
+			return [[installer.installUpdateCommand
+				execute:request]
+				catch:^(NSError *error) {
+					return [[[installer.abortInstallationCommand
+						execute:nil]
+						doCompleted:^{
+							NSLog(@"Abort completed successfully");
+						}]
+						concat:[RACSignal error:error]];
 					}];
-			} else {
-				action = [[[[installer.installUpdateCommand
-					execute:request]
-					initially:^{
-						BOOL freshInstall = (attempt == 1);
-						if (freshInstall) {
-							NSLog(@"Beginning installation");
-						} else {
-							NSLog(@"Resuming installation attempt %i", (int)attempt);
-						}
-					}]
-					doCompleted:^{
-						NSLog(@"Installation completed successfully");
-					}]
-					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path];
-			}
-
-			// Clear the installation attempts for a successful abort or
-			// install.
-			action = [action doCompleted:^{
-				clearInstallationAttempts(applicationIdentifier);
-			}];
-
-			if (request.launchAfterInstallation) {
-				// Launch regardless of whether installation succeeds or fails.
-				action = [[action
-					deliverOn:RACScheduler.mainThreadScheduler]
-					finally:^{
-						NSURL *bundleURL = request.targetBundleURL;
-						if (bundleURL == nil) {
-							NSLog(@"Missing target bundle URL, cannot launch application");
-							return;
-						}
-
-						NSError *error;
-						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
-							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
-							return;
-						}
-
-						NSLog(@"Application launched at %@", bundleURL);
-					}];
-			}
-
-			return action;
+		}]
+		subscribeError:^(NSError *error){
+			NSLog(@"Installation failed with error: %@ %@", error, error.userInfo);
+			replyWithError(response, error);
+		} completed:^{
+			NSLog(@"Installation completed successfully");
+			replyWithSuccess(response);
 		}];
 }
 
-// Waits for the termination file at the path provided, then reads the
-// `SQRLShipItRequest` at the path provided and performs the install if the
-// update passes validation.
+// Peer connections from the listener connection.
+//
+// applicationIdentifier - Current process reverse DNS identifier.
+// newConnection         - The newly accepted connection from the listener.
+//
+// Returns nothing.
+static void handleConnection(NSString *applicationIdentifier, xpc_connection_t newConnection) {
+	xpc_connection_set_event_handler(newConnection, ^(xpc_object_t object) {
+		xpc_type_t type = xpc_get_type(object);
+		if (type == XPC_TYPE_ERROR) {
+			char *description = xpc_copy_description(object);
+			NSLog(@"XPC peer error: %s", description);
+			free(description);
+			return;
+		}
+
+		if (type != XPC_TYPE_DICTIONARY) {
+			NSLog(@"XPC peer expected dictionary");
+			return;
+		}
+
+		handleRequest(applicationIdentifier, object);
+	});
+	xpc_connection_resume(newConnection);
+}
+
+// Listens for XPC messages from clients.
 //
 // Arguments are expected in the following order:
 //
-// jobLabel   - The launchd job label for this task.
-// requestURL - Location of the serialized `SQRLShipItRequest` file.
+// jobLabel - The launchd job label for this task.
+//
+// Returns 0 on successful termination, non 0 otherwise.
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
 		atexit_b(^{
@@ -130,32 +147,21 @@ int main(int argc, const char * argv[]) {
 			NSLog(@"Missing launchd job label for ShipIt");
 			return EXIT_FAILURE;
 		}
-
 		char const *jobLabel = argv[1];
-		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
+		NSString *applicationIdentifier = @(jobLabel);
 
-		if (argc < 3) {
-			NSLog(@"Missing ShipIt request URL");
-			return EXIT_FAILURE;
-		}
-		NSURL *requestURL = [NSURL fileURLWithPath:@(argv[2])];
-
-		if (argc < 4) {
-			NSLog(@"Missing ShipIt ready URL");
-			return EXIT_FAILURE;
-		}
-		NSURL *readyURL = [NSURL fileURLWithPath:@(argv[3])];
-
-		[[install(directoryManager, requestURL)
-			doCompleted:^{
-				[NSFileManager.defaultManager removeItemAtURL:readyURL error:NULL];
-			}]
-			subscribeError:^(NSError *error) {
-				NSLog(@"Installation error: %@", error);
-				exit(EXIT_FAILURE);
-			} completed:^{
-				exit(EXIT_SUCCESS);
-			}];
+		xpc_connection_t server = xpc_connection_create_mach_service(jobLabel, NULL, XPC_CONNECTION_MACH_SERVICE_LISTENER);
+		xpc_connection_set_event_handler(server, ^(xpc_object_t object) {
+			xpc_type_t type = xpc_get_type(object);
+			if (type == XPC_TYPE_ERROR) {
+				char *description = xpc_copy_description(object);
+				NSLog(@"XPC listener error: %s", description);
+				free(description);
+			} else if (type == XPC_TYPE_CONNECTION) {
+				handleConnection(applicationIdentifier, object);
+			}
+		});
+		xpc_connection_resume(server);
 
 		dispatch_main();
 	}
