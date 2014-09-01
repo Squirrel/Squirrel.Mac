@@ -42,24 +42,21 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // single update request from the client's perspective.
 @interface SQRLShipItRequest : MTLModel
 
-// Reads a `SQRLShipItState` from disk, at the location specified by the given
-// URL signal.
+// Reads a `SQRLShipItState` from disk, at the location specified by the URL.
 //
-// URLSignal - Determines the file location to read from, the signal should send
-//             an `NSURL` object then complete, or error. This must not be nil.
+// URL - The file location to read from. This must not be nil.
 //
 // Returns a signal which will synchronously send a `SQRLShipItRequest` then
 // complete, or error.
 + (RACSignal *)readFromURL:(NSURL *)URL;
 
-// Writes the receiver to disk, at the location specified by the given URL
-// signal.
+// Reads a `SQRLShipItState` from encoded data.
 //
-// URLSignal - Determines the file location to write to. The signal should send
-//             an `NSURL` object then complete, or error. This must not be nil.
+// data - Serialised request from `serialization`.
 //
-// Returns a signal which will synchronously complete or error.
-- (RACSignal *)writeToURL:(NSURL *)URL;
+// Returns a signal which decodes the serialisation and sends a
+// `SQRLShipItRequest` then completes, or errors.
++ (RACSignal *)readFromData:(NSData *)data;
 
 // Designated initialiser.
 //
@@ -92,5 +89,18 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 
 // Whether to launch the application after an update is successfully installed.
 @property (nonatomic, assign, readonly) BOOL launchAfterInstallation;
+
+// Writes the receiver's serialization to disk, at the location specified by the
+// URL.
+//
+// URL - The file location to write to. This must not be nil.
+//
+// Returns a signal which will synchronously complete or error.
+- (RACSignal *)writeToURL:(NSURL *)URL;
+
+// Encode the receiver for saving to disk or sending over IPC.
+//
+// Returns a signal which sends a `NSData` then completes, or errors.
+- (RACSignal *)serialization;
 
 @end
