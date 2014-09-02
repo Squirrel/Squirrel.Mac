@@ -107,7 +107,7 @@ end
 module Codesign
 	class Task
 		def self.sign(target, identity)
-			codesign_with_arguments([ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,resource-rules,requirements", "--verbose", target.path ])
+			codesign_with_arguments([ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,requirements", "--verbose", target.path ])
 		end
 
 		protected
