@@ -137,7 +137,7 @@ unless build_dir && product_name
 	exit_error("Path to built product not provided")
 end
 
-input_path = File.join(build_dir, product_name)
+input_path = File.realpath(File.join(build_dir, product_name))
 unless File.exists?(input_path)
 	exit_error("Built product doesn't exist at path provided")
 end
