@@ -55,7 +55,7 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 @interface SQRLShipItConnection : NSObject
 
 // Returns the label for the ShipIt launchd job.
-+ (NSString *)shipItJobLabel;
++ (NSString *)shipItInstallerJobLabel;
 
 // Designated initialiser.
 //
@@ -66,8 +66,8 @@ extern const NSInteger SQRLShipItConnectionErrorCouldNotStartService;
 // Returns an initialised connection which can be used to start an install.
 - (instancetype)initWithRootPrivileges:(BOOL)rootPrivileges;
 
-// Writes the request to disk and submits the wait for termination and installer
-// launchd jobs.
+// Submits the request to the process network which will wait for termination
+// and then install.
 //
 // After sending the request, the update will be attempted when the sending
 // process terminates.

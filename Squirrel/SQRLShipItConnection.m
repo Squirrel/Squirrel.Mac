@@ -26,7 +26,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 
 @implementation SQRLShipItConnection
 
-+ (NSString *)shipItJobLabel {
++ (NSString *)shipItInstallerJobLabel {
 	NSString *currentAppIdentifier = NSBundle.mainBundle.bundleIdentifier ?: [NSString stringWithFormat:@"%@:%d", NSProcessInfo.processInfo.processName, NSProcessInfo.processInfo.processIdentifier];
 	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
 }
@@ -52,10 +52,8 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 	return jobDict;
 }
 
-+ (RACSignal *)shipItInstallerJobDictionaryWithRequestURL:(NSURL *)requestURL {
-	NSParameterAssert(requestURL != nil);
-
-	NSString *jobLabel = self.shipItJobLabel;
++ (RACSignal *)shipItInstallerJobDictionary {
+	NSString *jobLabel = self.shipItInstallerJobLabel;
 
 	return [[[RACSignal
 		defer:^{
@@ -68,8 +66,6 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			// Pass in the service name so ShipIt knows how to broadcast itself.
 			[arguments addObject:jobLabel];
 
-			[arguments addObject:requestURL.path];
-
 			NSMutableDictionary *jobDict = [self jobDictionaryWithLabel:jobLabel executableName:@"shipit-installer" arguments:arguments];
 			jobDict[@(LAUNCH_JOBKEY_KEEPALIVE)] = @{
 				@(LAUNCH_JOBKEY_KEEPALIVE_SUCCESSFULEXIT): @NO
@@ -80,7 +76,7 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 			
 			return jobDict;
 		}]
-		setNameWithFormat:@"+shipItInstallerJobDictionaryWithRequestURL: %@", requestURL];
+		setNameWithFormat:@"+shipItInstallerJobDictionary"];
 }
 
 + (RACSignal *)shipItAuthorization {
@@ -147,18 +143,17 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 - (RACSignal *)sendRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
-	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:self.class.shipItJobLabel];
+	return [[[self
+		submitInstallerJobForRequestIfNeeded:request]
+		concat:[RACSignal defer:^{
 
-	return [[directoryManager.shipItStateURL
-		flattenMap:^(NSURL *requestURL) {
-			return [[request
-				writeToURL:requestURL]
-				concat:[self submitInstallerJobForRequestURL:requestURL]];
-		}]
+		}]]
 		setNameWithFormat:@"%@ -sendRequest: %@", self, request];
 }
 
-- (RACSignal *)submitInstallerJobForRequestURL:(NSURL *)requestURL {
+- (RACSignal *)submitInstallerJobForRequestIfNeeded:(SQRLShipItRequest *)request {
+	// TODO implement lazy submission when the job is already loaded in launchd
+
 	CFStringRef domain = NULL; RACSignal *authorization;
 	if (self.privileged) {
 		domain = kSMDomainSystemLaunchd;
@@ -170,13 +165,13 @@ const NSInteger SQRLShipItConnectionErrorCouldNotStartService = 1;
 
 	return [[[RACSignal
 		zip:@[
-			[self.class shipItInstallerJobDictionaryWithRequestURL:requestURL],
+			self.class.shipItInstallerJobDictionary,
 			authorization,
 		] reduce:^(NSDictionary *job, SQRLAuthorization *authorization) {
 			return [self submitJob:job domain:(__bridge id)domain authorization:authorization];
 		}]
 		flatten]
-		setNameWithFormat:@"%@ -submitInstallerJobForRequestURL: %@", self, requestURL];
+		setNameWithFormat:@"%@ -submitInstallerJobForRequestIfNeeded: %@", self, request];
 }
 
 - (RACSignal *)submitJob:(NSDictionary *)job domain:(NSString *)domain authorization:(SQRLAuthorization *)authorizationValue {
