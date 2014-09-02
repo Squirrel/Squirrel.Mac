@@ -39,7 +39,7 @@ If you’re developing Squirrel on its own, then use `Squirrel.xcworkspace`.
 # Dependencies
 
 Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
-and [Mantle](https://github.com/MantleFramework/Mantle).
+and [Mantle](https://github.com/Mantle/Mantle).
 
 If your application is already using ReactiveCocoa, ensure it is using the same
 version as Squirrel.
