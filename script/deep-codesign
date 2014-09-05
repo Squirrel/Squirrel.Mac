@@ -106,8 +106,10 @@ end
 
 module Codesign
 	class Task
-		def self.sign(target, identity, *args)
-			codesign_with_arguments([ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,requirements" ] + args + [ "--verbose", target.path ])
+		def self.sign(target, identity, timestamp)
+			arguments = [ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,requirements", "--verbose", target.path ]
+			arguments.unshift("--timestamp=none") if not timestamp
+			codesign_with_arguments(arguments)
 		end
 
 		protected
@@ -193,8 +195,8 @@ targets = targets.sort_by do |target|
 end
 targets.reverse!
 
-other_args = [ "--timestamp=none" ] if ENV["CONFIGURATION"] != "Release"
+use_timestamp = ENV["CONFIGURATION"] == "Release"
 targets.each do |target|
 	puts "=> #{target.path}"
-	Codesign::Task.sign(target, codesign_identity, *other_args)
+	Codesign::Task.sign(target, codesign_identity, use_timestamp)
 end
