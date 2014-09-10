@@ -23,7 +23,7 @@
 		// Should only fallback to when running under otest, where
 		// NSBundle.mainBundle doesn't return useful data.
 		if (identifier == nil) {
-			identifier = NSRunningApplication.currentApplication.localizedName;
+			identifier = NSProcessInfo.processInfo.processName;
 		}
 
 		NSAssert(identifier != nil, @"Could not automatically determine the current application's identifier");

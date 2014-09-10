@@ -10,8 +10,8 @@
 
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
+#import "SQRLShipItConnection.h"
 #import "SQRLInstaller.h"
-#import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
 #import "SQRLTestHelper.h"
 #import <ServiceManagement/ServiceManagement.h>
@@ -148,7 +148,7 @@ static void SQRLSignalHandler(int sig) {
 	if (_baseTemporaryDirectoryURL == nil) {
 		NSURL *globalTemporaryDirectory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
 		_baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
-		
+
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
 		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
@@ -204,7 +204,7 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *fixtureURL = self.testApplicationURL;
 	NSBundle *bundle = [NSBundle bundleWithURL:fixtureURL];
 	XCTAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
-	
+
 	return bundle;
 }
 
@@ -296,7 +296,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (SQRLDirectoryManager *)shipItDirectoryManager {
-	NSString *identifier = SQRLShipItLauncher.shipItJobLabel;
+	NSString *identifier = SQRLShipItConnection.shipItJobLabel;
 	SQRLDirectoryManager *manager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:identifier];
 	XCTAssertNotNil(manager, @"Could not create directory manager for %@", identifier);
 
@@ -305,15 +305,15 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
-		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initWithRootPrivileges:NO];
 
 		__block NSError *error = nil;
-		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to.beTruthy();
+		expect([[connection sendRequest:request] waitUntilCompleted:&error]).to.beTruthy();
 		expect(error).to.beNil();
 
 		[self addCleanupBlock:^{
 			// Remove ShipIt's launchd job so it doesn't relaunch itself.
-			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItConnection.shipItJobLabel, NULL, true, NULL);
 
 			NSError *lookupError;
 			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];

@@ -10,7 +10,7 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLInstaller+Private.h"
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
 #import "SQRLShipItRequest.h"
 #import "SQRLInstallerOwnedBundle.h"
 
@@ -185,19 +185,19 @@ describe(@"signal handling", ^{
 	});
 
 	it(@"should handle SIGHUP", ^{
-		system("killall -HUP ShipIt");
+		system("killall -HUP shipit-installer");
 	});
 
 	it(@"should handle SIGTERM", ^{
-		system("killall -TERM ShipIt");
+		system("killall -TERM shipit-installer");
 	});
 
 	it(@"should handle SIGINT", ^{
-		system("killall -INT ShipIt");
+		system("killall -INT shipit-installer");
 	});
 
 	it(@"should handle SIGQUIT", ^{
-		system("killall -QUIT ShipIt");
+		system("killall -QUIT shipit-installer");
 	});
 
 	it(@"should handle SIGKILL", ^{
@@ -206,8 +206,8 @@ describe(@"signal handling", ^{
 		//
 		// Two SIGKILL signals means that it'll be launched three times (which
 		// matches the maximum number of attempts per state).
-		for (int i = 0; i < 2; i++) {
-			system("killall -KILL ShipIt");
+		for (int i = 0; i < 3; i++) {
+			system("killall -KILL shipit-installer");
 
 			// Wait at least for the launchd throttle interval.
 			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);

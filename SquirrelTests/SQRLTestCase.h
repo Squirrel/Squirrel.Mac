@@ -72,6 +72,8 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 - (NSURL *)createTestApplicationUpdate;
 
 // Runs the installer in process or submits ShipIt's launchd job to start it up.
+//
+// request - The install to send to ShipIt.
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote;
 
 // Creates a disk image, then mounts it.

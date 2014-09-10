@@ -15,8 +15,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "D014AC0017B97885007D79D0"
-               BuildableName = "ShipIt"
-               BlueprintName = "ShipIt"
+               BuildableName = "shipit-installer"
+               BlueprintName = "ShipIt Installer"
                ReferencedContainer = "container:Squirrel.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -28,6 +28,16 @@
       shouldUseLaunchSchemeArgsEnv = "YES"
       buildConfiguration = "Test">
       <Testables>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "D0C22BEE179CC00E00158214"
+               BuildableName = "SquirrelTests.xctest"
+               BlueprintName = "SquirrelTests"
+               ReferencedContainer = "container:Squirrel.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction

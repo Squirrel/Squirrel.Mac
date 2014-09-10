@@ -14,7 +14,8 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownloadedUpdate.h"
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
+#import "SQRLShipItRequest.h"
 #import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
 #import "SQRLShipItRequest.h"
@@ -44,10 +45,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // sending them to ShipIt.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
 
-// Lazily launches ShipIt upon first subscription.
-//
-// Sends completed or error.
-@property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+// When executed with an `SQRLShipItState`, launches ShipIt.
+@property (nonatomic, strong, readonly) RACCommand *shipItLauncher;
 
 // Lazily removes outdated temporary directories (used for previous updates)
 // upon first subscription.
@@ -171,7 +170,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	_prunedUpdateDirectories = [[[[RACSignal
 		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
 			return [directoryManager applicationSupportURL];
 		}]
 		flattenMap:^(NSURL *appSupportURL) {
@@ -257,20 +256,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
 
-	_shipItLauncher = [[[RACSignal
-		defer:^{
-			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+	_shipItLauncher = [[RACCommand alloc] initWithSignalBlock:^(SQRLShipItRequest *request) {
+		NSURL *targetURL = request.targetBundleURL;
 
-			NSNumber *targetWritable = nil;
-			NSError *targetWritableError = nil;
-			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
+		NSNumber *targetWritable = nil;
+		NSError *targetWritableError = nil;
+		BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
 
-			// If we can't determine whether it can be written, assume nonprivileged and
-			// wait for another, more canonical error.
-			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
-		}]
-		replayLazily]
-		setNameWithFormat:@"shipItLauncher"];
+		// If we can't determine whether it can be written, assume
+		// nonprivileged and wait for another, more canonical error.
+		SQRLShipItConnection *connection = [[SQRLShipItConnection alloc] initWithRootPrivileges:(gotWritable && !targetWritable.boolValue)];
+
+		return [connection sendRequest:request];
+	}];
 	
 	return self;
 }
@@ -420,7 +418,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
 	return [[[RACSignal
 		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
 			return [directoryManager applicationSupportURL];
 		}]
 		flattenMap:^(NSURL *appSupportURL) {
@@ -494,12 +492,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 }
 
 - (RACSignal *)shipItStateURL {
-	return [[RACSignal
-		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return directoryManager.shipItStateURL;
-		}]
-		setNameWithFormat:@"%@ -shipItStateURL", self];
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
+	return directoryManager.shipItStateURL;
 }
 
 #pragma mark Installing Updates
@@ -529,24 +523,31 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO];
-			return [request writeUsingURL:self.shipItStateURL];
+
+			return [[self.shipItStateURL
+				flattenMap:^(NSURL *location) {
+					return [request writeToURL:location];
+				}]
+				concat:[RACSignal return:request]];
 		}]
-		then:^{
-			return self.shipItLauncher;
+		flattenMap:^(SQRLShipItRequest *request) {
+			return [self.shipItLauncher execute:request];
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
 }
 
 - (RACSignal *)relaunchToInstallUpdate {
-	return [[[[[[[[SQRLShipItRequest
-		readUsingURL:self.shipItStateURL]
-		map:^(SQRLShipItRequest *request) {
-			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES];
-		}]
-		flattenMap:^(SQRLShipItRequest *request) {
-			return [[request
-				writeUsingURL:self.shipItStateURL]
+	return [[[[[[self.shipItStateURL
+		flattenMap:^(NSURL *location) {
+			return [[[[SQRLShipItRequest
+				readFromURL:location]
+				map:^(SQRLShipItRequest *request) {
+					return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES];
+				}]
+				flattenMap:^(SQRLShipItRequest *request) {
+					return [request writeToURL:location];
+				}]
 				sqrl_addTransactionWithName:NSLocalizedString(@"Preparing to relaunch", nil) description:NSLocalizedString(@"%@ is preparing to relaunch to install an update. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier];
 		}]
 		deliverOn:RACScheduler.mainThreadScheduler]

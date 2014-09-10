@@ -40,20 +40,20 @@ it(@"should copy", ^{
 	expect(requestCopy).notTo.beIdenticalTo(request);
 });
 
-it(@"should fail to read state when no file exists yet", ^{
+it(@"should fail to read when no file exists yet", ^{
 	NSError *error;
-	BOOL success = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
+	BOOL success = [[SQRLShipItRequest readFromURL:[directoryManager.shipItStateURL first]] waitUntilCompleted:&error];
 	expect(success).to.beFalsy();
 	expect(error).notTo.beNil();
 });
 
-it(@"should write and read state to disk", ^{
+it(@"should write and read to disk", ^{
 	NSError *error;
-	BOOL success = [[request writeUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
+	BOOL success = [[request writeToURL:[directoryManager.shipItStateURL first]] waitUntilCompleted:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
-	SQRLShipItRequest *readRequest = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] firstOrDefault:nil success:&success error:&error];
+	SQRLShipItRequest *readRequest = [[SQRLShipItRequest readFromURL:[directoryManager.shipItStateURL first]] firstOrDefault:nil success:&success error:&error];
 	expect(success).to.beTruthy();
 	expect(error).to.beNil();
 
@@ -69,7 +69,7 @@ it(@"should fail gracefully with archives encoding a different class", ^{
 	expect(error).to.beNil();
 
 	BOOL success = NO;
-	SQRLShipItRequest *request = [[SQRLShipItRequest readUsingURL:[RACSignal return:archiveLocation]] firstOrDefault:nil success:&success error:&error];
+	SQRLShipItRequest *request = [[SQRLShipItRequest readFromURL:archiveLocation] firstOrDefault:nil success:&success error:&error];
 	expect(request).to.beNil();
 	expect(success).to.beFalsy();
 	expect(error.domain).to.equal(SQRLShipItRequestErrorDomain);

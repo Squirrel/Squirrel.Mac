@@ -69,13 +69,13 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
 }
 
-+ (RACSignal *)readUsingURL:(RACSignal *)URL {
++ (RACSignal *)readFromURL:(NSURL *)URL {
 	NSParameterAssert(URL != nil);
 
-	return [[[[URL
-		flattenMap:^(NSURL *stateURL) {
+	return [[[[RACSignal
+		defer:^{
 			NSError *error;
-			NSData *data = [self readFromURL:stateURL error:&error];
+			NSData *data = [self readFromURL:URL error:&error];
 			if (data == nil) {
 				return [RACSignal error:error];
 			}
@@ -130,23 +130,20 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		setNameWithFormat:@"+readFromData: <NSData %p>", data];
 }
 
-- (RACSignal *)writeUsingURL:(RACSignal *)URL {
+- (RACSignal *)writeToURL:(NSURL *)URL {
 	NSParameterAssert(URL != nil);
 
-	return [[[[RACSignal
-		zip:@[
-			URL,
-			[self serialization]
-		] reduce:^(NSURL *stateURL, NSData *data) {
+	return [[[[self
+		serialization]
+		flattenMap:^(NSData *data) {
 			NSError *error;
-			BOOL write = [self writeData:data toURL:stateURL error:&error];
+			BOOL write = [self writeData:data toURL:URL error:&error];
 			if (!write) {
 				return [RACSignal error:error];
 			}
 
 			return [RACSignal empty];
 		}]
-		flatten]
 		catch:^(NSError *error) {
 			NSDictionary *userInfo = @{
 				NSLocalizedDescriptionKey: NSLocalizedString(@"Could not write update request", nil),

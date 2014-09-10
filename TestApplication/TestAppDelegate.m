@@ -8,7 +8,7 @@
 
 #import "TestAppDelegate.h"
 #import "SQRLDirectoryManager.h"
-#import "SQRLShipItLauncher.h"
+#import "SQRLShipItConnection.h"
 #import "SQRLTestUpdate.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
@@ -35,7 +35,7 @@
 		NSLog(@"TestApplication quitting");
 	});
 
-	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+	SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItConnection.shipItJobLabel];
 
 	NSError *error = nil;
 	BOOL removed = [[[directoryManager
