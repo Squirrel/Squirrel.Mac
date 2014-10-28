@@ -6,9 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDirectoryManager.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLDirectoryManager)
+SpecBegin(SQRLDirectoryManagerSpec)
 
 __block NSString *otestIdentifier;
 

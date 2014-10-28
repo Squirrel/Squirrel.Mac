@@ -6,7 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-SpecBegin(SQRLUpdate)
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
+
+SpecBegin(SQRLUpdateSpec)
 
 it(@"should return nil when initialised without a url", ^{
 	NSError *error = nil;

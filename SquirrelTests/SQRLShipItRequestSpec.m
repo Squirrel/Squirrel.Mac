@@ -6,10 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDirectoryManager.h"
-#import "SQRLShipItRequest.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLShipItRequest)
+SpecBegin(SQRLShipItRequestSpec)
 
 __block SQRLDirectoryManager *directoryManager;
 __block SQRLShipItRequest *request;
@@ -30,7 +32,7 @@ beforeEach(^{
 afterEach(^{
 	NSURL *stateURL = [[directoryManager shipItStateURL] first];
 	expect(stateURL).notTo.beNil();
-	
+
 	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 });
 

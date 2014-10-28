@@ -6,15 +6,14 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignature.h"
-#import "SQRLDirectoryManager.h"
-#import "SQRLInstaller.h"
-#import "SQRLInstaller+Private.h"
-#import "SQRLShipItLauncher.h"
-#import "SQRLShipItRequest.h"
-#import "SQRLInstallerOwnedBundle.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLInstaller)
+#import "SQRLInstaller+Private.h"
+
+SpecBegin(SQRLInstallerSpec)
 
 mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
 	NSFileSecurity *fileSecurity = nil;

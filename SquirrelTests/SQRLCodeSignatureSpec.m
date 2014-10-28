@@ -6,9 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignature.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLCodeSignature)
+SpecBegin(SQRLCodeSignatureSpec)
 
 __block NSBundle *bundle;
 __block void (^corruptURL)(NSURL *URL);

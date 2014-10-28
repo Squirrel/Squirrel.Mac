@@ -6,6 +6,11 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
+
 // The short version string for the `testApplicationBundle`.
 extern NSString * const SQRLTestApplicationOriginalShortVersionString;
 

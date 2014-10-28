@@ -6,10 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLCodeSignature.h"
-#import "SQRLZipArchiver.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLZipArchiver)
+SpecBegin(SQRLZipArchiverSpec)
 
 it(@"should extract a zip archive created by the Finder", ^{
 	NSURL *zipURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication.app" withExtension:@"zip"];

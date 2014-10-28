@@ -6,9 +6,12 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLTerminationListener.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLTerminationListener)
+SpecBegin(SQRLTerminationListenerSpec)
 
 __block SQRLTerminationListener *listener;
 

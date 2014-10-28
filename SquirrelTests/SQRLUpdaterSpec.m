@@ -6,14 +6,16 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLDirectoryManager.h"
-#import "SQRLZipArchiver.h"
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
 
 #import "SQRLTestUpdate.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "TestAppConstants.h"
 
-SpecBegin(SQRLUpdater)
+SpecBegin(SQRLUpdaterSpec)
 
 __block NSURL *JSONURL;
 
@@ -55,7 +57,7 @@ beforeEach(^{
 
 describe(@"updating", ^{
 	__block NSURL *updateURL;
-	
+
 	beforeEach(^{
 		updateURL = [self createTestApplicationUpdate];
 	});
@@ -143,7 +145,7 @@ describe(@"updating", ^{
 	describe(@"cleaning up", ^{
 		__block NSURL *appSupportURL;
 		__block RACSignal *updateDirectoryURLs;
-		
+
 		beforeEach(^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication.ShipIt"];
 
