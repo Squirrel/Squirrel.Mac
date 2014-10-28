@@ -27,7 +27,6 @@
 		5397A69D187DF8610014A477 /* SQRLInstallerOwnedBundle.m in Sources */ = {isa = PBXBuildFile; fileRef = 5397A5EB187DA2570014A477 /* SQRLInstallerOwnedBundle.m */; };
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
-		BE312944196B999300F1A675 /* SQRLTestHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = BE312943196B999300F1A675 /* SQRLTestHelper.m */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -273,8 +272,6 @@
 		5397A69C187DF6490014A477 /* SQRLInstaller+Private.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SQRLInstaller+Private.h"; sourceTree = "<group>"; };
 		53AACF4917E9CA0500B41027 /* SQRLUpdate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdate.h; sourceTree = "<group>"; };
 		53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdate.m; sourceTree = "<group>"; };
-		BE312942196B999300F1A675 /* SQRLTestHelper.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTestHelper.h; sourceTree = "<group>"; };
-		BE312943196B999300F1A675 /* SQRLTestHelper.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTestHelper.m; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
@@ -885,8 +882,6 @@
 				D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */,
 				D0EDBEDB17B0DB3E0058BC3C /* SQRLTestCase.h */,
 				D0EDBEDC17B0DB3E0058BC3C /* SQRLTestCase.m */,
-				BE312942196B999300F1A675 /* SQRLTestHelper.h */,
-				BE312943196B999300F1A675 /* SQRLTestHelper.m */,
 				D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */,
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
@@ -1214,7 +1209,6 @@
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				5397A69D187DF8610014A477 /* SQRLInstallerOwnedBundle.m in Sources */,
-				BE312944196B999300F1A675 /* SQRLTestHelper.m in Sources */,
 				D061E40217FD580D00CC134A /* SQRLInstaller.m in Sources */,
 				D04905A0180558B7004E683E /* SQRLTestUpdate.m in Sources */,
 				D049059D18055671004E683E /* SQRLShipItRequestSpec.m in Sources */,

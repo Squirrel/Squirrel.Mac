@@ -25,7 +25,10 @@ extern NSString * const SQRLBundleShortVersionStringKey;
 @class SQRLDirectoryManager;
 @class SQRLShipItRequest;
 
-@interface SQRLTestCase : SPTXCTestCase
+// FIXME: This category is a total hack, but there's no other way to run
+// teardown logic for every example yet:
+// https://github.com/Quick/Quick/issues/163
+@interface QuickSpec (SQRLFixtures)
 
 // A URL to a temporary directory tests can use.
 //

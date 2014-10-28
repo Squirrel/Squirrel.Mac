@@ -13,8 +13,8 @@
 #import "SQRLInstaller.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
-#import "SQRLTestHelper.h"
 #import <ServiceManagement/ServiceManagement.h>
+#import <objc/runtime.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
@@ -43,7 +43,7 @@ static void SQRLSignalHandler(int sig) {
 	abort();
 }
 
-@interface SQRLTestCase ()
+@interface QuickSpec (Fixtures)
 
 // An array of dispatch_block_t values, for performing cleanup after the current
 // example finishes.
@@ -61,11 +61,7 @@ static void SQRLSignalHandler(int sig) {
 
 @end
 
-@implementation SQRLTestCase
-
-#pragma mark Properties
-
-@synthesize baseTemporaryDirectoryURL = _baseTemporaryDirectoryURL;
+@implementation QuickSpec (SQRLFixtures)
 
 #pragma mark Lifecycle
 
@@ -110,18 +106,32 @@ static void SQRLSignalHandler(int sig) {
 
 	signal(SIGILL, &SQRLSignalHandler);
 	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
+}
 
-	Expecta.asynchronousTestTimeout = 3;
+- (NSMutableArray *)cleanupBlocks {
+	NSMutableArray *blocks = objc_getAssociatedObject(self, _cmd);
+	if (blocks == nil) {
+		blocks = [NSMutableArray array];
+		objc_setAssociatedObject(self, _cmd, blocks, OBJC_ASSOCIATION_RETAIN);
+	}
+	return blocks;
 }
 
 - (void)tearDown {
 	[super tearDown];
 
 	SQRLKillAllTestApplications();
+	
+	// Enumerate backwards, so later resources are cleaned up first.
+	for (dispatch_block_t block in self.cleanupBlocks.reverseObjectEnumerator) {
+		block();
+	}
+
+	[self.cleanupBlocks removeAllObjects];
 }
 
 - (void)addCleanupBlock:(dispatch_block_t)block {
-	[SQRLTestHelper addCleanupBlock:block];
+	[self.cleanupBlocks addObject:[block copy]];
 }
 
 #pragma mark Logging
@@ -145,21 +155,22 @@ static void SQRLSignalHandler(int sig) {
 #pragma mark Temporary Directory
 
 - (NSURL *)baseTemporaryDirectoryURL {
-	if (_baseTemporaryDirectoryURL == nil) {
+	if (objc_getAssociatedObject(self, _cmd) == nil) {
 		NSURL *globalTemporaryDirectory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
-		_baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
-		
+		NSURL *baseURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
+		objc_setAssociatedObject(self, _cmd, baseURL, OBJC_ASSOCIATION_COPY);
+
 		NSError *error = nil;
-		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
-		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
+		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:baseURL withIntermediateDirectories:YES attributes:nil error:&error];
+		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", baseURL, error);
 
 		[self addCleanupBlock:^{
-			[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
-			_baseTemporaryDirectoryURL = nil;
+			[NSFileManager.defaultManager removeItemAtURL:baseURL error:NULL];
+			objc_setAssociatedObject(self, _cmd, nil, OBJC_ASSOCIATION_COPY);
 		}];
 	}
 
-	return _baseTemporaryDirectoryURL;
+	return objc_getAssociatedObject(self, _cmd);
 }
 
 - (NSURL *)temporaryDirectoryURL {
@@ -204,7 +215,7 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *fixtureURL = self.testApplicationURL;
 	NSBundle *bundle = [NSBundle bundleWithURL:fixtureURL];
 	XCTAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
-	
+
 	return bundle;
 }
 
@@ -305,10 +316,10 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
-		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to(beTruthy());
+		expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 
 		__block NSError *error = nil;
-		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to(beTruthy());
+		expect(@([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
 
 		[self addCleanupBlock:^{
@@ -328,7 +339,7 @@ static void SQRLSignalHandler(int sig) {
 
 		NSError *installedError = nil;
 		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
-		expect(installed).to(beTruthy());
+		expect(@(installed)).to(beTruthy());
 		expect(installedError).to(beNil());
 	}
 }
@@ -344,15 +355,15 @@ static void SQRLSignalHandler(int sig) {
 		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -format UDSP -size 10m -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
 	}
 
-	expect(system(createInvocation.UTF8String)).to(equal(0));
+	expect(@(system(createInvocation.UTF8String))).to(equal(@0));
 
 	NSString *mountInvocation = [NSString stringWithFormat:@"hdiutil attach '%@.sparseimage' -noverify -noautofsck -readwrite -quiet", destinationURL.path];
-	expect(system(mountInvocation.UTF8String)).to(equal(0));
+	expect(@(system(mountInvocation.UTF8String))).to(equal(@0));
 
 	NSString *path = [NSString stringWithFormat:@"/Volumes/%@", name];
 	[self addCleanupBlock:^{
 		NSString *detachInvocation = [NSString stringWithFormat:@"hdiutil detach '%@' -force -quiet", path];
-		expect(system(detachInvocation.UTF8String)).to(equal(0));
+		expect(@(system(detachInvocation.UTF8String))).to(equal(@0));
 	}];
 
 	return [NSURL fileURLWithPath:path isDirectory:YES];
