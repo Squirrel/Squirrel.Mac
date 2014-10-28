@@ -74,7 +74,6 @@
 			dispatch_resume(source);
 			return [RACDisposable disposableWithBlock:^{
 				dispatch_source_cancel(source);
-				dispatch_release(source);
 			}];
 		}]
 		setNameWithFormat:@"%@ -waitForTerminationOfProcessIdentifier: %i", self, (int)processIdentifier];

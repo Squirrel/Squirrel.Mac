@@ -6,6 +6,9 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import <Foundation/Foundation.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+
 // Represents the current state of the updater.
 //
 // SQRLUpdaterStateIdle              - Doing absolutely diddly squat.
