@@ -28,7 +28,6 @@
 		53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = 53AACF4917E9CA0500B41027 /* SQRLUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
 		BE312944196B999300F1A675 /* SQRLTestHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = BE312943196B999300F1A675 /* SQRLTestHelper.m */; };
-		BE31BEA1196B74B000376A76 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0366C1C17B18FEE0086ED44 /* XCTest.framework */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -78,10 +77,8 @@
 		D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
-		D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BE3179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BF5179CC00E00158214 /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
-		D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D0C22BF9179CC00E00158214 /* InfoPlist.strings */; };
 		D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22C4A179CC15100158214 /* SQRLUpdater.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
@@ -101,8 +98,6 @@
 		D4C4909B18E46DFE00786EFE /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
 		D4C4909E18E46E1000786EFE /* ReactiveCocoa.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
 		D4C4909F18E46E1000786EFE /* Mantle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
-		D4C490A118E46E8200786EFE /* libMantle-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C490A018E46E8200786EFE /* libMantle-Mac.a */; };
-		D4C490A318E46E8800786EFE /* libReactiveCocoa-Mac.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C490A218E46E8800786EFE /* libReactiveCocoa-Mac.a */; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
@@ -251,7 +246,6 @@
 		D0366C0017B18FEE0086ED44 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		D0366C0117B18FEE0086ED44 /* CoreData.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreData.framework; path = System/Library/Frameworks/CoreData.framework; sourceTree = SDKROOT; };
 		D0366C0217B18FEE0086ED44 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
-		D0366C1C17B18FEE0086ED44 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = Library/Frameworks/XCTest.framework; sourceTree = DEVELOPER_DIR; };
 		D03BE98C17B6174500458593 /* MainMenu.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = MainMenu.xib; sourceTree = "<group>"; };
 		D043F77017FF40C90012F996 /* SQRLTerminationListener.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLTerminationListener.h; sourceTree = "<group>"; };
 		D043F77117FF40C90012F996 /* SQRLTerminationListener.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListener.m; sourceTree = "<group>"; };
@@ -278,16 +272,15 @@
 		D097B9BC17BB4777006C3FEB /* IOKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = IOKit.framework; path = System/Library/Frameworks/IOKit.framework; sourceTree = SDKROOT; };
 		D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLInstallerSpec.m; sourceTree = "<group>"; };
 		D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */ = {isa = PBXFileReference; lastKnownFileType = wrapper.application; path = "TestApplication 2.1.app"; sourceTree = "<group>"; };
+		D0AFE3351A00236E00C6048F /* Framework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Framework.xcconfig; sourceTree = "<group>"; };
+		D0AFE3361A00237400C6048F /* iOS-Framework.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = "iOS-Framework.xcconfig"; sourceTree = "<group>"; };
 		D0B1DDCB17B487D90059C355 /* unused-helper */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.executable"; path = "unused-helper"; sourceTree = "<group>"; };
 		D0C22BD7179CC00E00158214 /* Squirrel.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Squirrel.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BDA179CC00E00158214 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
 		D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Squirrel-Info.plist"; sourceTree = "<group>"; };
-		D0C22BE4179CC00E00158214 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
-		D0C22BE6179CC00E00158214 /* Squirrel-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Squirrel-Prefix.pch"; sourceTree = "<group>"; };
 		D0C22BE7179CC00E00158214 /* Squirrel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = Squirrel.h; sourceTree = "<group>"; };
 		D0C22BEF179CC00E00158214 /* SquirrelTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SquirrelTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "SquirrelTests-Info.plist"; sourceTree = "<group>"; };
-		D0C22BFA179CC00E00158214 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		D0C22C09179CC02E00158214 /* Common.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Common.xcconfig; sourceTree = "<group>"; };
 		D0C22C0B179CC02E00158214 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
 		D0C22C0C179CC02E00158214 /* Profile.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Profile.xcconfig; sourceTree = "<group>"; };
@@ -307,7 +300,6 @@
 		D0C22C4A179CC15100158214 /* SQRLUpdater.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdater.h; sourceTree = "<group>"; };
 		D0C22C4B179CC15100158214 /* SQRLUpdater.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdater.m; sourceTree = "<group>"; };
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
-		D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SquirrelTests-Prefix.pch"; sourceTree = "<group>"; };
 		D0D2B6231804E903000EA901 /* SQRLDirectoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDirectoryManager.h; sourceTree = "<group>"; };
 		D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManager.m; sourceTree = "<group>"; };
 		D0D97E4417B58FC400301C72 /* ResourceRules.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = ResourceRules.plist; sourceTree = "<group>"; };
@@ -319,8 +311,6 @@
 		D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OHHTTPStubs.framework; path = External/OHHTTPStubs/OHHTTPStubs/build/Debug/OHHTTPStubs.framework; sourceTree = "<group>"; };
 		D4C4909818E46DE900786EFE /* Mantle.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Mantle.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = ReactiveCocoa.framework; sourceTree = BUILT_PRODUCTS_DIR; };
-		D4C490A018E46E8200786EFE /* libMantle-Mac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libMantle-Mac.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		D4C490A218E46E8800786EFE /* libReactiveCocoa-Mac.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libReactiveCocoa-Mac.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F60CA7EA179FC4F60069F69A /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		F65A915F17A71AA5005A4666 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
 		F6EB2161179CFD93001108CF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -346,8 +336,6 @@
 				D014AC1F17B979C4007D79D0 /* Cocoa.framework in Frameworks */,
 				D014AC1D17B979B7007D79D0 /* Security.framework in Frameworks */,
 				D014AC1E17B979BD007D79D0 /* ServiceManagement.framework in Frameworks */,
-				D4C490A118E46E8200786EFE /* libMantle-Mac.a in Frameworks */,
-				D4C490A318E46E8800786EFE /* libReactiveCocoa-Mac.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -382,7 +370,6 @@
 			files = (
 				D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */,
 				D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */,
-				BE31BEA1196B74B000376A76 /* XCTest.framework in Frameworks */,
 				D061E40317FD581C00CC134A /* IOKit.framework in Frameworks */,
 				D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */,
 				D0A6D2BC17B9FA9E00B2C3DF /* Security.framework in Frameworks */,
@@ -607,8 +594,6 @@
 			children = (
 				D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */,
 				D4C4909818E46DE900786EFE /* Mantle.framework */,
-				D4C490A218E46E8800786EFE /* libReactiveCocoa-Mac.a */,
-				D4C490A018E46E8200786EFE /* libMantle-Mac.a */,
 				D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */,
 				D097B9BC17BB4777006C3FEB /* IOKit.framework */,
 				D014ABB917B97403007D79D0 /* ServiceManagement.framework */,
@@ -617,7 +602,6 @@
 				F6EB217F179D0E4D001108CF /* Security.framework */,
 				F6EB2161179CFD93001108CF /* SystemConfiguration.framework */,
 				F60CA7EA179FC4F60069F69A /* Foundation.framework */,
-				D0366C1C17B18FEE0086ED44 /* XCTest.framework */,
 				D0366BFF17B18FEE0086ED44 /* Other Frameworks */,
 			);
 			name = Frameworks;
@@ -638,8 +622,6 @@
 			isa = PBXGroup;
 			children = (
 				D0C22BE2179CC00E00158214 /* Squirrel-Info.plist */,
-				D0C22BE3179CC00E00158214 /* InfoPlist.strings */,
-				D0C22BE6179CC00E00158214 /* Squirrel-Prefix.pch */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -661,8 +643,6 @@
 				D000219617BAD34D0050109A /* TestApplication.app.zip */,
 				D09D244917B59AB30001FAF8 /* TestApplication 2.1.app */,
 				D0C22BF8179CC00E00158214 /* SquirrelTests-Info.plist */,
-				D0C22BF9179CC00E00158214 /* InfoPlist.strings */,
-				D0C22C51179CC1A200158214 /* SquirrelTests-Prefix.pch */,
 			);
 			name = "Supporting Files";
 			sourceTree = "<group>";
@@ -704,6 +684,7 @@
 			isa = PBXGroup;
 			children = (
 				D0C22C10179CC02E00158214 /* Application.xcconfig */,
+				D0AFE3351A00236E00C6048F /* Framework.xcconfig */,
 				D0C22C11179CC02E00158214 /* StaticLibrary.xcconfig */,
 			);
 			path = Targets;
@@ -714,6 +695,7 @@
 			children = (
 				D0C22C13179CC02E00158214 /* iOS-Application.xcconfig */,
 				D0C22C14179CC02E00158214 /* iOS-Base.xcconfig */,
+				D0AFE3361A00237400C6048F /* iOS-Framework.xcconfig */,
 				D0C22C15179CC02E00158214 /* iOS-StaticLibrary.xcconfig */,
 			);
 			path = iOS;
@@ -948,7 +930,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0C22BE5179CC00E00158214 /* InfoPlist.strings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -956,7 +937,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				D0C22BFB179CC00E00158214 /* InfoPlist.strings in Resources */,
 				D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */,
 				D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */,
 				D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */,
@@ -1102,22 +1082,6 @@
 			name = Credits.rtf;
 			sourceTree = "<group>";
 		};
-		D0C22BE3179CC00E00158214 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D0C22BE4179CC00E00158214 /* en */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
-		D0C22BF9179CC00E00158214 /* InfoPlist.strings */ = {
-			isa = PBXVariantGroup;
-			children = (
-				D0C22BFA179CC00E00158214 /* en */,
-			);
-			name = InfoPlist.strings;
-			sourceTree = "<group>";
-		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
@@ -1173,11 +1137,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"\"$(BUILT_PRODUCTS_DIR)/include/\"",
-					"\"$(OBJROOT)/UninstalledProducts/include/\"",
-				);
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1187,11 +1146,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"\"$(BUILT_PRODUCTS_DIR)/include/\"",
-					"\"$(OBJROOT)/UninstalledProducts/include/\"",
-				);
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1201,11 +1155,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"\"$(BUILT_PRODUCTS_DIR)/include/\"",
-					"\"$(OBJROOT)/UninstalledProducts/include/\"",
-				);
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1215,11 +1164,6 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
-				HEADER_SEARCH_PATHS = (
-					"\"$(BUILT_PRODUCTS_DIR)/include/\"",
-					"\"$(OBJROOT)/UninstalledProducts/include/\"",
-				);
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 			};
@@ -1293,11 +1237,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0B179CC02E00158214 /* Debug.xcconfig */;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
 			};
 			name = Debug;
@@ -1306,12 +1246,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0D179CC02E00158214 /* Release.xcconfig */;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
 			};
 			name = Release;
@@ -1324,7 +1259,6 @@
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Debug;
@@ -1337,7 +1271,6 @@
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Release;
@@ -1350,13 +1283,7 @@
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
-				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					External/ReactiveCocoa/external/specta/src,
-					"External/ReactiveCocoa/external/expecta/src/**",
-				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -1369,13 +1296,7 @@
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
-				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					External/ReactiveCocoa/external/specta/src,
-					"External/ReactiveCocoa/external/expecta/src/**",
-				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -1384,12 +1305,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0C179CC02E00158214 /* Profile.xcconfig */;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
-				GCC_PREPROCESSOR_DEFINITIONS = "NDEBUG=1";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
 			};
 			name = Profile;
@@ -1402,7 +1318,6 @@
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Profile;
@@ -1415,13 +1330,7 @@
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
-				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					External/ReactiveCocoa/external/specta/src,
-					"External/ReactiveCocoa/external/expecta/src/**",
-				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Profile;
@@ -1430,11 +1339,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0E179CC02E00158214 /* Test.xcconfig */;
 			buildSettings = {
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
-				CLANG_CXX_LIBRARY = "libc++";
-				GCC_C_LANGUAGE_STANDARD = gnu99;
-				GCC_PREFIX_HEADER = "Squirrel/Squirrel-Prefix.pch";
-				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				MACOSX_DEPLOYMENT_TARGET = 10.8;
 				SDKROOT = macosx;
 			};
 			name = Test;
@@ -1447,7 +1352,6 @@
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
-				PRODUCT_NAME = "$(TARGET_NAME)";
 				WRAPPER_EXTENSION = framework;
 			};
 			name = Test;
@@ -1460,13 +1364,7 @@
 					"$(inherited)",
 					"$(DEVELOPER_FRAMEWORKS_DIR)",
 				);
-				GCC_PREFIX_HEADER = "SquirrelTests/SquirrelTests-Prefix.pch";
-				HEADER_SEARCH_PATHS = (
-					External/ReactiveCocoa/external/specta/src,
-					"External/ReactiveCocoa/external/expecta/src/**",
-				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				OTHER_LDFLAGS = "-all_load";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Test;
