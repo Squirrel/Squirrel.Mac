@@ -13,16 +13,16 @@
 
 #import "SQRLInstaller+Private.h"
 
-SpecBegin(SQRLInstallerSpec)
+QuickSpecBegin(SQRLInstallerSpec)
 
 mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
 	NSFileSecurity *fileSecurity = nil;
 	BOOL success = [fileURL getResourceValue:&fileSecurity forKey:NSURLFileSecurityKey error:NULL];
-	expect(success).to.beTruthy();
-	expect(fileSecurity).notTo.beNil();
+	expect(success).to(beTruthy());
+	expect(fileSecurity).notTo(beNil());
 
 	__block mode_t mode;
-	expect(CFFileSecurityGetMode((__bridge CFFileSecurityRef)fileSecurity, &mode)).to.beTruthy();
+	expect(CFFileSecurityGetMode((__bridge CFFileSecurityRef)fileSecurity, &mode)).to(beTruthy());
 
 	return mode & (S_IRWXU | S_IRWXG | S_IRWXO);
 };
@@ -38,7 +38,7 @@ it(@"should install an update using ShipIt", ^{
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 it(@"should install an update in process", ^{
@@ -46,20 +46,20 @@ it(@"should install an update in process", ^{
 
 	[self installWithRequest:request remote:NO];
 
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 it(@"should install an update and relaunch", ^{
 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
-	expect(apps.count).to.equal(0);
+	expect(apps.count).to(equal(0));
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:YES];
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
-	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).will.equal(1);
+	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count).toEventually(equal(1));
 });
 
 it(@"should install an update from another volume", ^{
@@ -70,7 +70,7 @@ it(@"should install an update from another volume", ^{
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 it(@"should install an update to another volume", ^{
@@ -82,7 +82,7 @@ it(@"should install an update to another volume", ^{
 	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
-	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 describe(@"with backup restoration", ^{
@@ -96,13 +96,13 @@ describe(@"with backup restoration", ^{
 		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO];
 
 		NSURL *copiedTargetURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication Target.app"];
-		expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:copiedTargetURL error:NULL]).to.beTruthy();
+		expect([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:copiedTargetURL error:NULL]).to(beTruthy());
 
 		SQRLCodeSignature *codeSignature = self.testApplicationSignature;
 
 		SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:targetURL temporaryURL:copiedTargetURL codeSignature:codeSignature];
 		NSData *ownedBundleArchive = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle];
-		expect(ownedBundleArchive).notTo.beNil();
+		expect(ownedBundleArchive).notTo(beNil());
 
 		// Set up ShipIt's preferences like it paused in the middle of an
 		// installation.
@@ -112,15 +112,15 @@ describe(@"with backup restoration", ^{
 		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)ownedBundleArchive, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 
 		BOOL synchronized = CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-		expect(synchronized).to.beTruthy();
+		expect(synchronized).to(beTruthy());
 	});
 
 	afterEach(^{
 		__block NSError *error;
-		expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).will.beTruthy();
-		expect(error).to.beNil();
+		expect([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error]).toEventually(beTruthy());
+		expect(error).to(beNil());
 
-		expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
 	it(@"should not install an update after too many attempts", ^{
@@ -132,25 +132,25 @@ describe(@"with backup restoration", ^{
 
 		[self installWithRequest:request remote:YES];
 
-		expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).will.equal(1);
+		expect([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count).toEventually(equal(1));
 	});
 });
 
 it(@"should disallow writing the updated application except by the owner", ^{
 	NSString *command = [NSString stringWithFormat:@"chmod -R 0777 '%@'", updateURL.path];
-	expect(system(command.UTF8String)).to.equal(0);
+	expect(system(command.UTF8String)).to(equal(0));
 
-	expect(modeOfURL(updateURL)).to.equal(0777);
-	expect(modeOfURL([updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0777);
+	expect(modeOfURL(updateURL)).to(equal(0777));
+	expect(modeOfURL([updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to(equal(0777));
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
-	expect(modeOfURL(self.testApplicationURL)).to.equal(0755);
-	expect(modeOfURL([self.testApplicationURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to.equal(0755);
+	expect(modeOfURL(self.testApplicationURL)).to(equal(0755));
+	expect(modeOfURL([self.testApplicationURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"])).to(equal(0755));
 });
 
 describe(@"signal handling", ^{
@@ -175,12 +175,12 @@ describe(@"signal handling", ^{
 		// Wait up to the launchd throttle interval, then verify that ShipIt
 		// relaunched and finished installing the update.
 		Expecta.asynchronousTestTimeout = 5;
-		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 		NSError *error;
 		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
-		expect(success).to.beTruthy();
-		expect(error).to.beNil();
+		expect(success).to(beTruthy());
+		expect(error).to(beNil());
 	});
 
 	it(@"should handle SIGHUP", ^{
@@ -215,4 +215,4 @@ describe(@"signal handling", ^{
 	});
 });
 
-SpecEnd
+QuickSpecEnd

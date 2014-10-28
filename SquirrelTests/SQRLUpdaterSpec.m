@@ -15,31 +15,31 @@
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "TestAppConstants.h"
 
-SpecBegin(SQRLUpdaterSpec)
+QuickSpecBegin(SQRLUpdaterSpec)
 
 __block NSURL *JSONURL;
 
 void (^writeUpdate)(SQRLUpdate *) = ^(SQRLUpdate *update) {
 	NSDictionary *updateInfo = [MTLJSONAdapter JSONDictionaryFromModel:update];
-	expect(updateInfo).notTo.beNil();
+	expect(updateInfo).notTo(beNil());
 
 	NSError *error = nil;
 	NSData *JSON = [NSJSONSerialization dataWithJSONObject:updateInfo options:NSJSONWritingPrettyPrinted error:&error];
-	expect(JSON).notTo.beNil();
-	expect(error).to.beNil();
+	expect(JSON).notTo(beNil());
+	expect(error).to(beNil());
 
 	BOOL success = [JSON writeToURL:JSONURL options:NSDataWritingAtomic error:&error];
-	expect(success).to.beTruthy();
-	expect(error).to.beNil();
+	expect(success).to(beTruthy());
+	expect(error).to(beNil());
 };
 
 NSURL * (^zipUpdate)(NSURL *) = ^(NSURL *updateURL) {
 	NSURL *zipFolderURL = [NSFileManager.defaultManager URLForDirectory:NSItemReplacementDirectory inDomain:NSUserDomainMask appropriateForURL:self.temporaryDirectoryURL create:YES error:NULL];
-	expect(zipFolderURL).notTo.beNil();
+	expect(zipFolderURL).notTo(beNil());
 
 	NSURL *zippedUpdateURL = [[zipFolderURL URLByAppendingPathComponent:updateURL.lastPathComponent] URLByAppendingPathExtension:@"zip"];
 	BOOL success = [[SQRLZipArchiver createZipArchiveAtURL:zippedUpdateURL fromDirectoryAtURL:updateURL] asynchronouslyWaitUntilCompleted:NULL];
-	expect(success).to.beTruthy();
+	expect(success).to(beTruthy());
 
 	return zippedUpdateURL;
 };
@@ -68,19 +68,19 @@ describe(@"updating", ^{
 			@"updateURL": zipUpdate(updateURL),
 			@"final": @YES
 		} error:&error];
-		expect(update).notTo.beNil();
-		expect(error).to.beNil();
+		expect(update).notTo(beNil());
+		expect(error).to(beNil());
 
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(app.terminated).will.beTruthy();
-		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+		expect(app.terminated).toEventually(beTruthy());
+		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	it(@"should not install a corrupt update", ^{
 		NSURL *codeSignatureURL = [updateURL URLByAppendingPathComponent:@"Contents/_CodeSignature"];
-		expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to.beTruthy();
+		expect([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL]).to(beTruthy());
 
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(updateURL),
@@ -90,11 +90,11 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(app.terminated).will.beTruthy();
+		expect(app.terminated).toEventually(beTruthy());
 
 		// Give the update some time to finish installing.
 		[NSThread sleepForTimeInterval:0.2];
-		expect(self.testApplicationBundleVersion).to.equal(SQRLTestApplicationOriginalShortVersionString);
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
 	it(@"should update to the most recently enqueued job", ^{
@@ -121,8 +121,8 @@ describe(@"updating", ^{
 
 		writeUpdate(update);
 
-		expect(app.terminated).will.beTruthy();
-		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+		expect(app.terminated).toEventually(beTruthy());
+		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	it(@"should use the application's bundled version of Squirrel and update in-place after a significant delay", ^{
@@ -137,9 +137,9 @@ describe(@"updating", ^{
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
 		Expecta.asynchronousTestTimeout = delay + 3;
-		expect(app.terminated).will.beTruthy();
+		expect(app.terminated).toEventually(beTruthy());
 
-		expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	describe(@"cleaning up", ^{
@@ -150,7 +150,7 @@ describe(@"updating", ^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication.ShipIt"];
 
 			appSupportURL = [[directoryManager applicationSupportURL] first];
-			expect(appSupportURL).notTo.beNil();
+			expect(appSupportURL).notTo(beNil());
 
 			updateDirectoryURLs = [[RACSignal
 				defer:^{
@@ -171,16 +171,16 @@ describe(@"updating", ^{
 				@"final": @YES
 			} error:&error];
 
-			expect(update).notTo.beNil();
-			expect(error).to.beNil();
+			expect(update).notTo(beNil());
+			expect(error).to(beNil());
 
 			writeUpdate(update);
 
 			NSRunningApplication *app = launchWithEnvironment(nil);
-			expect(app.terminated).will.beTruthy();
-			expect(self.testApplicationBundleVersion).will.equal(SQRLTestApplicationUpdatedShortVersionString);
+			expect(app.terminated).toEventually(beTruthy());
+			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
-			expect([updateDirectoryURLs toArray]).will.equal(@[]);
+			expect([updateDirectoryURLs toArray]).toEventually(equal(@[]));
 		});
 	});
 });
@@ -206,9 +206,9 @@ describe(@"response handling", ^{
 
 		NSError *error = nil;
 		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
-		expect(result).to.beFalsy();
-		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
-		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerResponse);
+		expect(result).to(beFalsy());
+		expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
+		expect(error.code).to(equal(SQRLUpdaterErrorInvalidServerResponse));
 	});
 
 	it(@"should return an error for non JSON data", ^{
@@ -223,9 +223,9 @@ describe(@"response handling", ^{
 
 		NSError *error = nil;
 		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
-		expect(result).to.beFalsy();
-		expect(error.domain).to.equal(SQRLUpdaterErrorDomain);
-		expect(error.code).to.equal(SQRLUpdaterErrorInvalidServerBody);
+		expect(result).to(beFalsy());
+		expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
+		expect(error.code).to(equal(SQRLUpdaterErrorInvalidServerBody));
 	});
 });
 
@@ -252,9 +252,9 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateCheckingForUpdate),
 			@(SQRLUpdaterStateIdle),
 		];
-		expect(states).will.equal(expectedStates);
+		expect(states).toEventually(equal(expectedStates));
 
-		expect(testApplication.terminated).will.beTruthy();
+		expect(testApplication.terminated).toEventually(beTruthy());
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
@@ -268,8 +268,8 @@ describe(@"state", ^{
 			@"updateURL": zipUpdate([self createTestApplicationUpdate]),
 			@"final": @YES,
 		} error:&error];
-		expect(update).notTo.beNil();
-		expect(error).to.beNil();
+		expect(update).notTo(beNil());
+		expect(error).to(beNil());
 
 		writeUpdate(update);
 
@@ -281,10 +281,10 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateDownloadingUpdate),
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
-		expect(states).will.equal(expectedStates);
+		expect(states).toEventually(equal(expectedStates));
 
-		expect(testApplication.terminated).will.beTruthy();
+		expect(testApplication.terminated).toEventually(beTruthy());
 	});
 });
 
-SpecEnd
+QuickSpecEnd

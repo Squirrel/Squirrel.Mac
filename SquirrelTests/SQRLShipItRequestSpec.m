@@ -11,7 +11,7 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
-SpecBegin(SQRLShipItRequestSpec)
+QuickSpecBegin(SQRLShipItRequestSpec)
 
 __block SQRLDirectoryManager *directoryManager;
 __block SQRLShipItRequest *request;
@@ -21,45 +21,45 @@ beforeEach(^{
 
 	NSURL *updateURL = [self createTestApplicationUpdate];
 	request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
-	expect(request).notTo.beNil();
+	expect(request).notTo(beNil());
 
-	expect(request.targetBundleURL).to.equal(self.testApplicationURL);
-	expect(request.updateBundleURL).to.equal(updateURL);
-	expect(request.bundleIdentifier).to.beNil();
-	expect(request.launchAfterInstallation).to.beFalsy();
+	expect(request.targetBundleURL).to(equal(self.testApplicationURL));
+	expect(request.updateBundleURL).to(equal(updateURL));
+	expect(request.bundleIdentifier).to(beNil());
+	expect(request.launchAfterInstallation).to(beFalsy());
 });
 
 afterEach(^{
 	NSURL *stateURL = [[directoryManager shipItStateURL] first];
-	expect(stateURL).notTo.beNil();
+	expect(stateURL).notTo(beNil());
 
 	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 });
 
 it(@"should copy", ^{
 	SQRLShipItRequest *requestCopy = [request copy];
-	expect(requestCopy).to.equal(request);
-	expect(requestCopy).notTo.beIdenticalTo(request);
+	expect(requestCopy).to(equal(request));
+	expect(requestCopy).notTo(beIdenticalTo(request));
 });
 
 it(@"should fail to read state when no file exists yet", ^{
 	NSError *error;
 	BOOL success = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
-	expect(success).to.beFalsy();
-	expect(error).notTo.beNil();
+	expect(success).to(beFalsy());
+	expect(error).notTo(beNil());
 });
 
 it(@"should write and read state to disk", ^{
 	NSError *error;
 	BOOL success = [[request writeUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
-	expect(success).to.beTruthy();
-	expect(error).to.beNil();
+	expect(success).to(beTruthy());
+	expect(error).to(beNil());
 
 	SQRLShipItRequest *readRequest = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] firstOrDefault:nil success:&success error:&error];
-	expect(success).to.beTruthy();
-	expect(error).to.beNil();
+	expect(success).to(beTruthy());
+	expect(error).to(beNil());
 
-	expect(readRequest).to.equal(request);
+	expect(readRequest).to(equal(request));
 });
 
 it(@"should fail gracefully with archives encoding a different class", ^{
@@ -67,15 +67,15 @@ it(@"should fail gracefully with archives encoding a different class", ^{
 
 	NSError *error;
 	BOOL write = [[NSKeyedArchiver archivedDataWithRootObject:@"rogue object"] writeToURL:archiveLocation atomically:YES];
-	expect(write).to.beTruthy();
-	expect(error).to.beNil();
+	expect(write).to(beTruthy());
+	expect(error).to(beNil());
 
 	BOOL success = NO;
 	SQRLShipItRequest *request = [[SQRLShipItRequest readUsingURL:[RACSignal return:archiveLocation]] firstOrDefault:nil success:&success error:&error];
-	expect(request).to.beNil();
-	expect(success).to.beFalsy();
-	expect(error.domain).to.equal(SQRLShipItRequestErrorDomain);
-	expect(error.code).to.equal(SQRLShipItRequestErrorUnarchiving);
+	expect(request).to(beNil());
+	expect(success).to(beFalsy());
+	expect(error.domain).to(equal(SQRLShipItRequestErrorDomain));
+	expect(error.code).to(equal(SQRLShipItRequestErrorUnarchiving));
 });
 
-SpecEnd
+QuickSpecEnd

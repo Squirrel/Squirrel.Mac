@@ -305,11 +305,11 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
-		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to(beTruthy());
 
 		__block NSError *error = nil;
-		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to.beTruthy();
-		expect(error).to.beNil();
+		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to(beTruthy());
+		expect(error).to(beNil());
 
 		[self addCleanupBlock:^{
 			// Remove ShipIt's launchd job so it doesn't relaunch itself.
@@ -317,19 +317,19 @@ static void SQRLSignalHandler(int sig) {
 
 			NSError *lookupError;
 			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
-			expect(stateURL).notTo.beNil();
-			expect(lookupError).to.beNil();
+			expect(stateURL).notTo(beNil());
+			expect(lookupError).to(beNil());
 
 			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 		}];
 	} else {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
-		expect(installer).notTo.beNil();
+		expect(installer).notTo(beNil());
 
 		NSError *installedError = nil;
 		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
-		expect(installed).to.beTruthy();
-		expect(installedError).to.beNil();
+		expect(installed).to(beTruthy());
+		expect(installedError).to(beNil());
 	}
 }
 
@@ -344,15 +344,15 @@ static void SQRLSignalHandler(int sig) {
 		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -format UDSP -size 10m -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
 	}
 
-	expect(system(createInvocation.UTF8String)).to.equal(0);
+	expect(system(createInvocation.UTF8String)).to(equal(0));
 
 	NSString *mountInvocation = [NSString stringWithFormat:@"hdiutil attach '%@.sparseimage' -noverify -noautofsck -readwrite -quiet", destinationURL.path];
-	expect(system(mountInvocation.UTF8String)).to.equal(0);
+	expect(system(mountInvocation.UTF8String)).to(equal(0));
 
 	NSString *path = [NSString stringWithFormat:@"/Volumes/%@", name];
 	[self addCleanupBlock:^{
 		NSString *detachInvocation = [NSString stringWithFormat:@"hdiutil detach '%@' -force -quiet", path];
-		expect(system(detachInvocation.UTF8String)).to.equal(0);
+		expect(system(detachInvocation.UTF8String)).to(equal(0));
 	}];
 
 	return [NSURL fileURLWithPath:path isDirectory:YES];
