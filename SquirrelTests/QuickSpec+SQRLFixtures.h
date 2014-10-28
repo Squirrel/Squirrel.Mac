@@ -1,5 +1,5 @@
 //
-//  SQRLTestCase.h
+//  QuickSpec+SQRLFixtures.h
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-08-06.

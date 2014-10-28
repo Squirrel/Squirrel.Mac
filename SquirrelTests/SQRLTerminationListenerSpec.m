@@ -13,6 +13,8 @@
 
 #import "SQRLTerminationListener.h"
 
+#import "QuickSpec+SQRLFixtures.h"
+
 QuickSpecBegin(SQRLTerminationListenerSpec)
 
 __block SQRLTerminationListener *listener;
@@ -28,7 +30,7 @@ it(@"should complete immediately when the app is not running", ^{
 		completed = YES;
 	}];
 
-	expect(completed).to(beTruthy());
+	expect(@(completed)).to(beTruthy());
 });
 
 it(@"should wait until one instance terminates", ^{
@@ -43,11 +45,11 @@ it(@"should wait until one instance terminates", ^{
 	}];
 
 	expect(observedApp).toEventually(equal(app));
-	expect(completed).to(beFalsy());
+	expect(@(completed)).to(beFalsy());
 
 	[app forceTerminate];
-	expect(app.terminated).toEventually(beTruthy());
-	expect(completed).toEventually(beTruthy());
+	expect(@(app.terminated)).toEventually(beTruthy());
+	expect(@(completed)).toEventually(beTruthy());
 });
 
 it(@"should wait until multiple instances terminate", ^{
@@ -59,15 +61,15 @@ it(@"should wait until multiple instances terminate", ^{
 		completed = YES;
 	}];
 
-	expect(completed).to(beFalsy());
+	expect(@(completed)).to(beFalsy());
 
 	[app1 forceTerminate];
-	expect(app1.terminated).toEventually(beTruthy());
-	expect(completed).to(beFalsy());
+	expect(@(app1.terminated)).toEventually(beTruthy());
+	expect(@(completed)).to(beFalsy());
 
 	[app2 forceTerminate];
-	expect(app2.terminated).toEventually(beTruthy());
-	expect(completed).toEventually(beTruthy());
+	expect(@(app2.terminated)).toEventually(beTruthy());
+	expect(@(completed)).toEventually(beTruthy());
 });
 
 QuickSpecEnd

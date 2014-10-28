@@ -11,6 +11,8 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "QuickSpec+SQRLFixtures.h"
+
 QuickSpecBegin(SQRLDeepCodesign)
 
 NSMutableDictionary * (^environmentSuitableForChildProcess)(void) = ^ {
@@ -47,7 +49,7 @@ void (^resignTestApplicationPreserveEverythingButTheRequirements)(void) = ^{
 	[resignCodesignTask launch];
 	[resignCodesignTask waitUntilExit];
 
-	expect(resignCodesignTask.terminationStatus).to(equal(0));
+	expect(@(resignCodesignTask.terminationStatus)).to(equal(@0));
 };
 
 void (^deepCodesignTestApplication)(void) = ^{
@@ -59,8 +61,8 @@ void (^deepCodesignTestApplication)(void) = ^{
 	NSNumber *executable = nil;
 	NSError *executableError = nil;
 	BOOL getExecutable = [deepCodesignLocation getResourceValue:&executable forKey:NSURLIsExecutableKey error:&executableError];
-	expect(getExecutable).to(beTruthy());
-	expect(executable.boolValue).to(beTruthy());
+	expect(@(getExecutable)).to(beTruthy());
+	expect(@(executable.boolValue)).to(beTruthy());
 	expect(executableError).to(beNil());
 
 	NSTask *deepCodesignTask = [[NSTask alloc] init];
@@ -80,7 +82,7 @@ void (^deepCodesignTestApplication)(void) = ^{
 	[deepCodesignTask launch];
 	[deepCodesignTask waitUntilExit];
 
-	expect(deepCodesignTask.terminationStatus).to(equal(0));
+	expect(@(deepCodesignTask.terminationStatus)).to(equal(@0));
 
 	/*
 		By signing test application's contents, which are covered by test
@@ -116,9 +118,9 @@ it(@"should deep sign the test application", ^{
 });
 
 xit(@"should deep verify after signing", ^{
-	expect(deepVerify()).to(beFalsy());
+	expect(@(deepVerify())).to(beFalsy());
 	deepCodesignTestApplication();
-	expect(deepVerify()).to(beTruthy());
+	expect(@(deepVerify())).to(beTruthy());
 });
 
 QuickSpecEnd

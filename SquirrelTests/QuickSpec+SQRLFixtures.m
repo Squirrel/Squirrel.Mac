@@ -1,12 +1,12 @@
 //
-//  SQRLTestCase.m
+//  QuickSpec+SQRLFixtures.m
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-08-06.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLTestCase.h"
+#import "QuickSpec+SQRLFixtures.h"
 
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"

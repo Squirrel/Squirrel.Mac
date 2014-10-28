@@ -42,8 +42,8 @@ it(@"should send an Application Support URL", ^{
 	expect(error).to(beNil());
 
 	__block BOOL directory = NO;
-	expect([NSFileManager.defaultManager fileExistsAtPath:appSupportURL.path isDirectory:&directory]).to(beTruthy());
-	expect(directory).to(beTruthy());
+	expect(@([NSFileManager.defaultManager fileExistsAtPath:appSupportURL.path isDirectory:&directory])).to(beTruthy());
+	expect(@(directory)).to(beTruthy());
 });
 
 it(@"should send a ShipIt state URL", ^{

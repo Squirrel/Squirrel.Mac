@@ -18,7 +18,7 @@ it(@"should return nil when initialised without a url", ^{
 	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{} error:&error];
 	expect(update).to(beNil());
 	expect(error.domain).to(equal(NSCocoaErrorDomain));
-	expect(error.code).to(equal(NSKeyValueValidationError));
+	expect(@(error.code)).to(equal(@(NSKeyValueValidationError)));
 });
 
 it(@"should return nil when initialised with a url not in URL syntax", ^{
@@ -26,7 +26,7 @@ it(@"should return nil when initialised with a url not in URL syntax", ^{
 	SQRLUpdate *update = [[SQRLUpdate alloc] initWithDictionary:@{ @"updateURL": [NSURL URLWithString:@"test"] } error:&error];
 	expect(update).to(beNil());
 	expect(error.domain).to(equal(NSCocoaErrorDomain));
-	expect(error.code).to(equal(NSKeyValueValidationError));
+	expect(@(error.code)).to(equal(@(NSKeyValueValidationError)));
 });
 
 it(@"should validate release name and notes", ^{

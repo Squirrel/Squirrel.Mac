@@ -14,6 +14,8 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItRequest.h"
 
+#import "QuickSpec+SQRLFixtures.h"
+
 QuickSpecBegin(SQRLShipItRequestSpec)
 
 __block SQRLDirectoryManager *directoryManager;
@@ -29,7 +31,7 @@ beforeEach(^{
 	expect(request.targetBundleURL).to(equal(self.testApplicationURL));
 	expect(request.updateBundleURL).to(equal(updateURL));
 	expect(request.bundleIdentifier).to(beNil());
-	expect(request.launchAfterInstallation).to(beFalsy());
+	expect(@(request.launchAfterInstallation)).to(beFalsy());
 });
 
 afterEach(^{
@@ -48,18 +50,18 @@ it(@"should copy", ^{
 it(@"should fail to read state when no file exists yet", ^{
 	NSError *error;
 	BOOL success = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
-	expect(success).to(beFalsy());
+	expect(@(success)).to(beFalsy());
 	expect(error).notTo(beNil());
 });
 
 it(@"should write and read state to disk", ^{
 	NSError *error;
 	BOOL success = [[request writeUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:&error];
-	expect(success).to(beTruthy());
+	expect(@(success)).to(beTruthy());
 	expect(error).to(beNil());
 
 	SQRLShipItRequest *readRequest = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] firstOrDefault:nil success:&success error:&error];
-	expect(success).to(beTruthy());
+	expect(@(success)).to(beTruthy());
 	expect(error).to(beNil());
 
 	expect(readRequest).to(equal(request));
@@ -70,15 +72,15 @@ it(@"should fail gracefully with archives encoding a different class", ^{
 
 	NSError *error;
 	BOOL write = [[NSKeyedArchiver archivedDataWithRootObject:@"rogue object"] writeToURL:archiveLocation atomically:YES];
-	expect(write).to(beTruthy());
+	expect(@(write)).to(beTruthy());
 	expect(error).to(beNil());
 
 	BOOL success = NO;
 	SQRLShipItRequest *request = [[SQRLShipItRequest readUsingURL:[RACSignal return:archiveLocation]] firstOrDefault:nil success:&success error:&error];
 	expect(request).to(beNil());
-	expect(success).to(beFalsy());
+	expect(@(success)).to(beFalsy());
 	expect(error.domain).to(equal(SQRLShipItRequestErrorDomain));
-	expect(error.code).to(equal(SQRLShipItRequestErrorUnarchiving));
+	expect(@(error.code)).to(equal(@(SQRLShipItRequestErrorUnarchiving)));
 });
 
 QuickSpecEnd

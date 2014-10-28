@@ -29,11 +29,11 @@ describe(@"-sqrl_operatingSystemShortVersionString", ^{
 
 		NSRange fullRange = NSMakeRange(0, versionString.length);
 		NSRange matchRange = [regex rangeOfFirstMatchInString:versionString options:0 range:fullRange];
-		expect(NSEqualRanges(matchRange, fullRange)).to(beTruthy());
+		expect(@(NSEqualRanges(matchRange, fullRange))).to(beTruthy());
 	});
 
 	it(@"should be numerically comparable", ^{
-		expect([@"10.6.9" compare:versionString options:NSNumericSearch]).to(equal(NSOrderedAscending));
+		expect(@([@"10.6.9" compare:versionString options:NSNumericSearch])).to(equal(@(NSOrderedAscending)));
 	});
 });
 
