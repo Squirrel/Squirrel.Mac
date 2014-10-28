@@ -123,7 +123,7 @@ describe(@"with backup restoration", ^{
 
 	afterEach(^{
 		__block NSError *error;
-		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).toEventually(beTruthy());
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
 
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));

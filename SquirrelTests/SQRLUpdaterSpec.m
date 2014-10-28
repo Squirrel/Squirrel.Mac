@@ -94,7 +94,7 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
 
 		// Give the update some time to finish installing.
 		[NSThread sleepForTimeInterval:0.2];
@@ -125,7 +125,7 @@ describe(@"updating", ^{
 
 		writeUpdate(update);
 
-		expect(@(app.terminated)).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
@@ -141,7 +141,7 @@ describe(@"updating", ^{
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
 		[NSThread sleepForTimeInterval:delay];
-		expect(@(app.terminated)).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
 
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
@@ -181,7 +181,7 @@ describe(@"updating", ^{
 			writeUpdate(update);
 
 			NSRunningApplication *app = launchWithEnvironment(nil);
-			expect(@(app.terminated)).toEventually(beTruthy());
+			expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
 			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 			expect([updateDirectoryURLs toArray]).toEventually(equal(@[]));
@@ -258,7 +258,7 @@ describe(@"state", ^{
 		];
 		expect(states).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(5).toEventually(beTruthy());
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
@@ -287,7 +287,7 @@ describe(@"state", ^{
 		];
 		expect(states).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(5).toEventually(beTruthy());
 	});
 });
 
