@@ -106,8 +106,10 @@ end
 
 module Codesign
 	class Task
-		def self.sign(target, identity)
-			codesign_with_arguments([ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,resource-rules,requirements", "--verbose", target.path ])
+		def self.sign(target, identity, timestamp)
+			arguments = [ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,requirements", "--verbose", target.path ]
+			arguments.unshift("--timestamp=none") if not timestamp
+			codesign_with_arguments(arguments)
 		end
 
 		protected
@@ -137,7 +139,7 @@ unless build_dir && product_name
 	exit_error("Path to built product not provided")
 end
 
-input_path = File.join(build_dir, product_name)
+input_path = File.realpath(File.join(build_dir, product_name))
 unless File.exists?(input_path)
 	exit_error("Built product doesn't exist at path provided")
 end
@@ -193,7 +195,8 @@ targets = targets.sort_by do |target|
 end
 targets.reverse!
 
+use_timestamp = ENV["CONFIGURATION"] == "Release"
 targets.each do |target|
 	puts "=> #{target.path}"
-	Codesign::Task.sign(target, codesign_identity)
+	Codesign::Task.sign(target, codesign_identity, use_timestamp)
 end

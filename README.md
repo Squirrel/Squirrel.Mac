@@ -39,7 +39,7 @@ If you’re developing Squirrel on its own, then use `Squirrel.xcworkspace`.
 # Dependencies
 
 Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
-and [Mantle](https://github.com/MantleFramework/Mantle).
+and [Mantle](https://github.com/Mantle/Mantle).
 
 If your application is already using ReactiveCocoa, ensure it is using the same
 version as Squirrel.
@@ -169,4 +169,4 @@ appropriate format.
 
 Squirrel does not provide any GUI components for presenting updates. If you want
 to indicate updates to the user, make sure to [listen for downloaded
-updates](#update-notifications).
+updates](#update-available-notifications).
