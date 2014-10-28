@@ -18,7 +18,7 @@ QuickSpecBegin(SQRLDirectoryManagerSpec)
 __block NSString *otestIdentifier;
 
 beforeEach(^{
-	otestIdentifier = NSRunningApplication.currentApplication.localizedName;
+	otestIdentifier = NSProcessInfo.processInfo.environment[@"FORCE_APP_IDENTIFIER"];
 	expect(otestIdentifier).notTo(beNil());
 });
 

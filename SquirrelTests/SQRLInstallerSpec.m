@@ -58,7 +58,7 @@ it(@"should install an update in process", ^{
 it(@"should install an update and relaunch", ^{
 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];
-	expect(@(apps.count)).to(equal(0));
+	expect(@(apps.count)).to(equal(@0));
 
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:YES];
 
