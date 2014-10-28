@@ -7,7 +7,14 @@
 //
 
 #import "SQRLTerminationListener.h"
-#import <ReactiveCocoa/ReactiveCocoa.h>
+
+#import "EXTKeyPathCoding.h"
+#import <ReactiveCocoa/NSArray+RACSequenceAdditions.h>
+#import <ReactiveCocoa/RACDisposable.h>
+#import <ReactiveCocoa/RACScheduler.h>
+#import <ReactiveCocoa/RACSequence.h>
+#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveCocoa/RACSubscriber.h>
 
 @interface SQRLTerminationListener ()
 

@@ -7,8 +7,11 @@
 //
 
 #import "SQRLCodeSignature.h"
-#import <ReactiveCocoa/EXTScope.h>
-#import <ReactiveCocoa/ReactiveCocoa.h>
+
+#import "EXTKeyPathCoding.h"
+#import "EXTScope.h"
+#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveCocoa/RACSubscriber.h>
 #import <Security/Security.h>
 
 NSString * const SQRLCodeSignatureErrorDomain = @"SQRLCodeSignatureErrorDomain";

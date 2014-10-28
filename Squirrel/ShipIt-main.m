@@ -7,8 +7,12 @@
 //
 
 #import <Foundation/Foundation.h>
-#import <ReactiveCocoa/EXTScope.h>
-#import <ReactiveCocoa/ReactiveCocoa.h>
+
+#import "EXTScope.h"
+#import <ReactiveCocoa/RACCommand.h>
+#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveCocoa/RACScheduler.h>
+
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLDirectoryManager.h"
