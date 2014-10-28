@@ -11,6 +11,8 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "SQRLZipArchiver.h"
+
 #import "SQRLTestUpdate.h"
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "TestAppConstants.h"

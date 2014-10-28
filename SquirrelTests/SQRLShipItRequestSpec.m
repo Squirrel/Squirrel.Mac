@@ -11,6 +11,9 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "SQRLDirectoryManager.h"
+#import "SQRLShipItRequest.h"
+
 QuickSpecBegin(SQRLShipItRequestSpec)
 
 __block SQRLDirectoryManager *directoryManager;

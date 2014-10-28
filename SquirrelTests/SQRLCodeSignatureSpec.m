@@ -11,6 +11,8 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "SQRLCodeSignature.h"
+
 QuickSpecBegin(SQRLCodeSignatureSpec)
 
 __block NSBundle *bundle;

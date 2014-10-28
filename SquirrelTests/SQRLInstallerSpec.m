@@ -12,6 +12,7 @@
 #import <Squirrel/Squirrel.h>
 
 #import "SQRLInstaller+Private.h"
+#import "SQRLShipItRequest.h"
 
 QuickSpecBegin(SQRLInstallerSpec)
 

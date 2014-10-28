@@ -11,6 +11,8 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "SQRLTerminationListener.h"
+
 QuickSpecBegin(SQRLTerminationListenerSpec)
 
 __block SQRLTerminationListener *listener;

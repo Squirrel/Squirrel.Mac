@@ -11,6 +11,8 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "SQRLDirectoryManager.h"
+
 QuickSpecBegin(SQRLDirectoryManagerSpec)
 
 __block NSString *otestIdentifier;

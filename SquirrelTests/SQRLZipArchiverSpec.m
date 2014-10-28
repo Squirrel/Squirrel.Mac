@@ -11,6 +11,8 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+#import "SQRLZipArchiver.h"
+
 QuickSpecBegin(SQRLZipArchiverSpec)
 
 it(@"should extract a zip archive created by the Finder", ^{
