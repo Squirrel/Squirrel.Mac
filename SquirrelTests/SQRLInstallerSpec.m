@@ -180,8 +180,7 @@ describe(@"signal handling", ^{
 	afterEach(^{
 		// Wait up to the launchd throttle interval, then verify that ShipIt
 		// relaunched and finished installing the update.
-		[NSThread sleepForTimeInterval:5];
-		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(self.testApplicationBundleVersion).withTimeout(5).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 		NSError *error;
 		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];

@@ -140,9 +140,7 @@ describe(@"updating", ^{
 		NSTimeInterval delay = 30;
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
-		[NSThread sleepForTimeInterval:delay];
-		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
-
+		expect(@(app.terminated)).withTimeout(delay).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
