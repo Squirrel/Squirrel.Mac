@@ -43,29 +43,33 @@ static void SQRLSignalHandler(int sig) {
 	abort();
 }
 
-@interface QuickSpec (Fixtures)
+// Returns an _unlaunched_ task that will follow log files at the given paths,
+// then pipe that output through this process.
+static NSTask *SQRLTailTaskWithPaths(RACSequence *paths) {
+	NSPipe *outputPipe = [NSPipe pipe];
+	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
 
-// An array of dispatch_block_t values, for performing cleanup after the current
-// example finishes.
-//
-// This array will be emptied between each example.
-@property (nonatomic, strong, readonly) NSMutableArray *exampleCleanupBlocks;
+	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
+		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
+		NSLog(@"\n%@", output);
+	};
+
+	NSTask *task = [[NSTask alloc] init];
+	task.launchPath = @"/usr/bin/tail";
+	task.standardOutput = outputPipe;
+	task.arguments = [[paths startWith:@"-f"] array];
+	return task;
+}
+
+static NSMutableArray *cleanupBlocks = nil;
 
 // The URL to the temporary directory which contains `temporaryDirectoryURL` and
 // all copied test data.
-@property (nonatomic, copy, readonly) NSURL *baseTemporaryDirectoryURL;
+static NSURL *baseTemporaryDirectoryURL = nil;
 
-// Returns an _unlaunched_ task that will follow log files at the given paths,
-// then pipe that output through this process.
-+ (NSTask *)tailTaskWithPaths:(RACSequence *)paths;
+QuickConfigurationBegin(Fixtures)
 
-@end
-
-@implementation QuickSpec (SQRLFixtures)
-
-#pragma mark Lifecycle
-
-+ (void)load {
++ (void)configure:(Configuration *)configuration {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
 
@@ -83,82 +87,68 @@ static void SQRLSignalHandler(int sig) {
 		].rac_sequence;
 	}];
 
-	for (NSURL *URL in URLs) {
-		[[NSData data] writeToURL:URL atomically:YES];
-	}
-
 	RACSequence *paths = [URLs map:^(NSURL *URL) {
 		return URL.path;
 	}];
 
-	NSTask *readShipIt = [self tailTaskWithPaths:paths];
-	[readShipIt launch];
+	NSTask *readShipIt = SQRLTailTaskWithPaths(paths);
 
-	NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
+	[configuration beforeSuite:^{
+		signal(SIGILL, &SQRLSignalHandler);
+		NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
 
-	atexit_b(^{
+		cleanupBlocks = [NSMutableArray array];
+
+		for (NSURL *URL in URLs) {
+			[[NSData data] writeToURL:URL atomically:YES];
+		}
+
+		[readShipIt launch];
+
+		NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
+	}];
+
+	[configuration afterSuite:^{
 		[readShipIt terminate];
-	});
-}
+	}];
 
-- (void)setUp {
-	[super setUp];
+	// We want to run any enqueued cleanup blocks after _and before_ each spec,
+	// in case beforeSuites (for example) use the fixtures.
+	void (^runCleanupBlocks)(void) = ^{
+		// Enumerate backwards, so later resources are cleaned up first.
+		for (dispatch_block_t block in cleanupBlocks.reverseObjectEnumerator) {
+			block();
+		}
 
-	signal(SIGILL, &SQRLSignalHandler);
-	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
-}
-
-- (NSMutableArray *)cleanupBlocks {
-	NSMutableArray *blocks = objc_getAssociatedObject(self, _cmd);
-	if (blocks == nil) {
-		blocks = [NSMutableArray array];
-		objc_setAssociatedObject(self, _cmd, blocks, OBJC_ASSOCIATION_RETAIN);
-	}
-	return blocks;
-}
-
-- (void)tearDown {
-	[super tearDown];
-
-	SQRLKillAllTestApplications();
-	
-	// Enumerate backwards, so later resources are cleaned up first.
-	for (dispatch_block_t block in self.cleanupBlocks.reverseObjectEnumerator) {
-		block();
-	}
-
-	[self.cleanupBlocks removeAllObjects];
-}
-
-- (void)addCleanupBlock:(dispatch_block_t)block {
-	[self.cleanupBlocks addObject:[block copy]];
-}
-
-#pragma mark Logging
-
-+ (NSTask *)tailTaskWithPaths:(RACSequence *)paths {
-	NSPipe *outputPipe = [NSPipe pipe];
-	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
-
-	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
-		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
-		NSLog(@"\n%@", output);
+		[cleanupBlocks removeAllObjects];
 	};
 
-	NSTask *task = [[NSTask alloc] init];
-	task.launchPath = @"/usr/bin/tail";
-	task.standardOutput = outputPipe;
-	task.arguments = [[paths startWith:@"-f"] array];
-	return task;
+	[configuration beforeEach:^{
+		runCleanupBlocks();
+	}];
+
+	[configuration afterEach:^{
+		runCleanupBlocks();
+		SQRLKillAllTestApplications();
+	}];
+}
+
+QuickConfigurationEnd
+
+@implementation QuickSpec (SQRLFixtures)
+
+#pragma mark Lifecycle
+
+- (void)addCleanupBlock:(dispatch_block_t)block {
+	[cleanupBlocks addObject:[block copy]];
 }
 
 #pragma mark Temporary Directory
 
 - (NSURL *)baseTemporaryDirectoryURL {
-	if (objc_getAssociatedObject(self, _cmd) == nil) {
+	if (baseTemporaryDirectoryURL == nil) {
 		NSURL *globalTemporaryDirectory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
-		NSURL *baseURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
-		objc_setAssociatedObject(self, _cmd, baseURL, OBJC_ASSOCIATION_COPY);
+		baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
 
 		NSError *error = nil;
 		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:baseURL withIntermediateDirectories:YES attributes:nil error:&error];
@@ -166,11 +156,11 @@ static void SQRLSignalHandler(int sig) {
 
 		[self addCleanupBlock:^{
 			[NSFileManager.defaultManager removeItemAtURL:baseURL error:NULL];
-			objc_setAssociatedObject(self, _cmd, nil, OBJC_ASSOCIATION_COPY);
+			baseTemporaryDirectoryURL = nil;
 		}];
 	}
 
-	return objc_getAssociatedObject(self, _cmd);
+	return baseTemporaryDirectoryURL;
 }
 
 - (NSURL *)temporaryDirectoryURL {
@@ -198,7 +188,7 @@ static void SQRLSignalHandler(int sig) {
 		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 		[[NSData data] writeToURL:testAppLog atomically:YES];
 
-		NSTask *readTestApp = [self.class tailTaskWithPaths:[RACSequence return:testAppLog.path]];
+		NSTask *readTestApp = SQRLTailTaskWithPaths([RACSequence return:testAppLog.path]);
 		[readTestApp launch];
 
 		XCTAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
