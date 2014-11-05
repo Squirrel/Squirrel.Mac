@@ -151,11 +151,11 @@ QuickConfigurationEnd
 		baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
 
 		NSError *error = nil;
-		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:baseURL withIntermediateDirectories:YES attributes:nil error:&error];
-		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", baseURL, error);
+		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
+		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", baseTemporaryDirectoryURL, error);
 
 		[self addCleanupBlock:^{
-			[NSFileManager.defaultManager removeItemAtURL:baseURL error:NULL];
+			[NSFileManager.defaultManager removeItemAtURL:baseTemporaryDirectoryURL error:NULL];
 			baseTemporaryDirectoryURL = nil;
 		}];
 	}
