@@ -533,7 +533,9 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				return NO;
 			}];
 
-			return [enumerator.rac_sequence.signal subscribe:subscriber];
+			return [[enumerator.rac_sequence.signal
+				startWith:directoryURL]
+				subscribe:subscriber];
 		}]
 		flattenMap:^(NSURL *itemURL) {
 			return [[[self
