@@ -61,6 +61,10 @@ static NSTask *SQRLTailTaskWithPaths(RACSequence *paths) {
 	return task;
 }
 
+static NSBundle *SQRLTestBundle(void) {
+	return [NSBundle bundleWithIdentifier:@"com.github.SquirrelTests"];
+}
+
 static NSMutableArray *cleanupBlocks = nil;
 
 // The URL to the temporary directory which contains `temporaryDirectoryURL` and
@@ -178,7 +182,7 @@ QuickConfigurationEnd
 - (NSURL *)testApplicationURL {
 	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app" isDirectory:YES];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
-		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+		NSURL *bundleURL = [SQRLTestBundle() URLForResource:@"TestApplication" withExtension:@"app"];
 		XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 		NSError *error = nil;
@@ -244,7 +248,7 @@ QuickConfigurationEnd
 }
 
 - (NSURL *)createTestApplicationUpdate {
-	NSURL *originalURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication 2.1" withExtension:@"app"];
+	NSURL *originalURL = [SQRLTestBundle() URLForResource:@"TestApplication 2.1" withExtension:@"app"];
 	XCTAssertNotNil(originalURL, @"Couldn't find TestApplication update in test bundle");
 
 	NSError *error = nil;
@@ -263,7 +267,7 @@ QuickConfigurationEnd
 }
 
 - (id)performWithTestApplicationRequirement:(id (^)(SecRequirementRef requirement))block {
-	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	NSURL *bundleURL = [SQRLTestBundle() URLForResource:@"TestApplication" withExtension:@"app"];
 	XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 	SecStaticCodeRef staticCode = NULL;
@@ -286,7 +290,7 @@ QuickConfigurationEnd
 }
 
 - (SQRLCodeSignature *)testApplicationSignature {
-	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	NSURL *bundleURL = [SQRLTestBundle() URLForResource:@"TestApplication" withExtension:@"app"];
 	XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 	NSError *error = nil;
