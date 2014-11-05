@@ -121,16 +121,14 @@ describe(@"with backup restoration", ^{
 		expect(@(synchronized)).to(beTruthy());
 	});
 
-	afterEach(^{
+	it(@"should not install an update after too many attempts", ^{
+		[self installWithRequest:request remote:YES];
+
 		__block NSError *error;
 		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
 
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
-	});
-
-	it(@"should not install an update after too many attempts", ^{
-		[self installWithRequest:request remote:YES];
 	});
 
 	it(@"should relaunch even after failing to install an update", ^{
@@ -139,6 +137,12 @@ describe(@"with backup restoration", ^{
 		[self installWithRequest:request remote:YES];
 
 		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@1));
+		
+		__block NSError *error;
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 });
 
@@ -162,6 +166,17 @@ it(@"should disallow writing the updated application except by the owner", ^{
 describe(@"signal handling", ^{
 	__block NSURL *targetURL;
 
+	void (^verifyUpdate)(void) = ^{
+		// Wait up to the launchd throttle interval, then verify that ShipIt
+		// relaunched and finished installing the update.
+		expect(self.testApplicationBundleVersion).withTimeout(5).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+
+		NSError *error;
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
+		expect(@(success)).to(beTruthy());
+		expect(error).to(beNil());
+	};
+
 	beforeEach(^{
 		// Copied so that we don't recreate the TestApplication bundle by
 		// accessing the property.
@@ -177,31 +192,24 @@ describe(@"signal handling", ^{
 		[NSThread sleepForTimeInterval:delay];
 	});
 
-	afterEach(^{
-		// Wait up to the launchd throttle interval, then verify that ShipIt
-		// relaunched and finished installing the update.
-		expect(self.testApplicationBundleVersion).withTimeout(5).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
-
-		NSError *error;
-		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
-		expect(@(success)).to(beTruthy());
-		expect(error).to(beNil());
-	});
-
 	it(@"should handle SIGHUP", ^{
 		system("killall -HUP ShipIt");
+		verifyUpdate();
 	});
 
 	it(@"should handle SIGTERM", ^{
 		system("killall -TERM ShipIt");
+		verifyUpdate();
 	});
 
 	it(@"should handle SIGINT", ^{
 		system("killall -INT ShipIt");
+		verifyUpdate();
 	});
 
 	it(@"should handle SIGQUIT", ^{
 		system("killall -QUIT ShipIt");
+		verifyUpdate();
 	});
 
 	it(@"should handle SIGKILL", ^{
@@ -217,6 +225,8 @@ describe(@"signal handling", ^{
 			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);
 			[NSThread sleepForTimeInterval:delay];
 		}
+
+		verifyUpdate();
 	});
 });
 
