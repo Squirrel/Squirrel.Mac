@@ -7,7 +7,14 @@
 //
 
 #import "SQRLTerminationListener.h"
-#import <ReactiveCocoa/ReactiveCocoa.h>
+
+#import "EXTKeyPathCoding.h"
+#import <ReactiveCocoa/NSArray+RACSequenceAdditions.h>
+#import <ReactiveCocoa/RACDisposable.h>
+#import <ReactiveCocoa/RACScheduler.h>
+#import <ReactiveCocoa/RACSequence.h>
+#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveCocoa/RACSubscriber.h>
 
 @interface SQRLTerminationListener ()
 
@@ -74,7 +81,6 @@
 			dispatch_resume(source);
 			return [RACDisposable disposableWithBlock:^{
 				dispatch_source_cancel(source);
-				dispatch_release(source);
 			}];
 		}]
 		setNameWithFormat:@"%@ -waitForTerminationOfProcessIdentifier: %i", self, (int)processIdentifier];

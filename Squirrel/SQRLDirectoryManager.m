@@ -7,7 +7,8 @@
 //
 
 #import "SQRLDirectoryManager.h"
-#import <ReactiveCocoa/ReactiveCocoa.h>
+
+#import <ReactiveCocoa/RACSignal+Operations.h>
 
 @implementation SQRLDirectoryManager
 
@@ -23,7 +24,7 @@
 		// Should only fallback to when running under otest, where
 		// NSBundle.mainBundle doesn't return useful data.
 		if (identifier == nil) {
-			identifier = NSRunningApplication.currentApplication.localizedName;
+			identifier = NSProcessInfo.processInfo.environment[@"FORCE_APP_IDENTIFIER"];
 		}
 
 		NSAssert(identifier != nil, @"Could not automatically determine the current application's identifier");

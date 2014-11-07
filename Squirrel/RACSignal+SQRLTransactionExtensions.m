@@ -7,6 +7,8 @@
 //
 
 #import "RACSignal+SQRLTransactionExtensions.h"
+
+#import <ReactiveCocoa/RACDisposable.h>
 #import <IOKit/pwr_mgt/IOPMLib.h>
 
 // How long before power assertions time out.

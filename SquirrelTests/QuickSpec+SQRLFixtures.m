@@ -1,20 +1,20 @@
 //
-//  SQRLTestCase.m
+//  QuickSpec+SQRLFixtures.m
 //  Squirrel
 //
 //  Created by Justin Spahr-Summers on 2013-08-06.
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import "SQRLTestCase.h"
+#import "QuickSpec+SQRLFixtures.h"
 
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
-#import "SQRLTestHelper.h"
 #import <ServiceManagement/ServiceManagement.h>
+#import <objc/runtime.h>
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Warc-retain-cycles"
@@ -43,90 +43,9 @@ static void SQRLSignalHandler(int sig) {
 	abort();
 }
 
-@interface SQRLTestCase ()
-
-// An array of dispatch_block_t values, for performing cleanup after the current
-// example finishes.
-//
-// This array will be emptied between each example.
-@property (nonatomic, strong, readonly) NSMutableArray *exampleCleanupBlocks;
-
-// The URL to the temporary directory which contains `temporaryDirectoryURL` and
-// all copied test data.
-@property (nonatomic, copy, readonly) NSURL *baseTemporaryDirectoryURL;
-
 // Returns an _unlaunched_ task that will follow log files at the given paths,
 // then pipe that output through this process.
-+ (NSTask *)tailTaskWithPaths:(RACSequence *)paths;
-
-@end
-
-@implementation SQRLTestCase
-
-#pragma mark Properties
-
-@synthesize baseTemporaryDirectoryURL = _baseTemporaryDirectoryURL;
-
-#pragma mark Lifecycle
-
-+ (void)load {
-	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
-	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
-
-	NSArray *folders = @[
-		@"com.github.Squirrel.TestApplication.ShipIt",
-		@"otest.ShipIt",
-		@"otest-x86_64.ShipIt",
-	];
-
-	RACSequence *URLs = [folders.rac_sequence flattenMap:^(NSString *folder) {
-		NSURL *baseURL = [appSupportURL URLByAppendingPathComponent:folder];
-		return @[
-			[baseURL URLByAppendingPathComponent:@"ShipIt_stdout.log"],
-			[baseURL URLByAppendingPathComponent:@"ShipIt_stderr.log"]
-		].rac_sequence;
-	}];
-
-	for (NSURL *URL in URLs) {
-		[[NSData data] writeToURL:URL atomically:YES];
-	}
-
-	RACSequence *paths = [URLs map:^(NSURL *URL) {
-		return URL.path;
-	}];
-
-	NSTask *readShipIt = [self tailTaskWithPaths:paths];
-	[readShipIt launch];
-
-	NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
-
-	atexit_b(^{
-		[readShipIt terminate];
-	});
-}
-
-- (void)setUp {
-	[super setUp];
-
-	signal(SIGILL, &SQRLSignalHandler);
-	NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
-
-	Expecta.asynchronousTestTimeout = 3;
-}
-
-- (void)tearDown {
-	[super tearDown];
-
-	SQRLKillAllTestApplications();
-}
-
-- (void)addCleanupBlock:(dispatch_block_t)block {
-	[SQRLTestHelper addCleanupBlock:block];
-}
-
-#pragma mark Logging
-
-+ (NSTask *)tailTaskWithPaths:(RACSequence *)paths {
+static NSTask *SQRLTailTaskWithPaths(RACSequence *paths) {
 	NSPipe *outputPipe = [NSPipe pipe];
 	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
 
@@ -142,24 +61,112 @@ static void SQRLSignalHandler(int sig) {
 	return task;
 }
 
+static NSBundle *SQRLTestBundle(void) {
+	return [NSBundle bundleWithIdentifier:@"com.github.SquirrelTests"];
+}
+
+static NSMutableArray *cleanupBlocks = nil;
+
+// The URL to the temporary directory which contains `temporaryDirectoryURL` and
+// all copied test data.
+static NSURL *baseTemporaryDirectoryURL = nil;
+
+QuickConfigurationBegin(Fixtures)
+
++ (void)configure:(Configuration *)configuration {
+	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
+	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
+
+	NSArray *folders = @[
+		@"com.github.Squirrel.TestApplication.ShipIt",
+		@"com.github.Squirrel.SquirrelTests.ShipIt",
+	];
+
+	RACSequence *URLs = [folders.rac_sequence flattenMap:^(NSString *folder) {
+		NSURL *baseURL = [appSupportURL URLByAppendingPathComponent:folder];
+		return @[
+			[baseURL URLByAppendingPathComponent:@"ShipIt_stdout.log"],
+			[baseURL URLByAppendingPathComponent:@"ShipIt_stderr.log"]
+		].rac_sequence;
+	}];
+
+	RACSequence *paths = [URLs map:^(NSURL *URL) {
+		return URL.path;
+	}];
+
+	NSTask *readShipIt = SQRLTailTaskWithPaths(paths);
+
+	[configuration beforeSuite:^{
+		signal(SIGILL, &SQRLSignalHandler);
+		NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
+
+		cleanupBlocks = [NSMutableArray array];
+
+		for (NSURL *URL in URLs) {
+			[NSFileManager.defaultManager createDirectoryAtURL:URL.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:NULL];
+			if (![[NSData data] writeToURL:URL atomically:YES]) {
+				NSLog(@"Could not touch log file at %@", URL);
+			}
+		}
+
+		[readShipIt launch];
+
+		NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
+	}];
+
+	[configuration afterSuite:^{
+		[readShipIt terminate];
+	}];
+
+	// We want to run any enqueued cleanup blocks after _and before_ each spec,
+	// in case beforeSuites (for example) use the fixtures.
+	void (^runCleanupBlocks)(void) = ^{
+		// Enumerate backwards, so later resources are cleaned up first.
+		for (dispatch_block_t block in cleanupBlocks.reverseObjectEnumerator) {
+			block();
+		}
+
+		[cleanupBlocks removeAllObjects];
+	};
+
+	[configuration beforeEach:^{
+		runCleanupBlocks();
+	}];
+
+	[configuration afterEach:^{
+		runCleanupBlocks();
+		SQRLKillAllTestApplications();
+	}];
+}
+
+QuickConfigurationEnd
+
+@implementation QuickSpec (SQRLFixtures)
+
+#pragma mark Lifecycle
+
+- (void)addCleanupBlock:(dispatch_block_t)block {
+	[cleanupBlocks addObject:[block copy]];
+}
+
 #pragma mark Temporary Directory
 
 - (NSURL *)baseTemporaryDirectoryURL {
-	if (_baseTemporaryDirectoryURL == nil) {
+	if (baseTemporaryDirectoryURL == nil) {
 		NSURL *globalTemporaryDirectory = [NSURL fileURLWithPath:NSTemporaryDirectory() isDirectory:YES];
-		_baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
-		
+		baseTemporaryDirectoryURL = [[globalTemporaryDirectory URLByAppendingPathComponent:@"com.github.SquirrelTests"] URLByAppendingPathComponent:[NSProcessInfo.processInfo globallyUniqueString]];
+
 		NSError *error = nil;
-		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:_baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
-		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", _baseTemporaryDirectoryURL, error);
+		BOOL success = [NSFileManager.defaultManager createDirectoryAtURL:baseTemporaryDirectoryURL withIntermediateDirectories:YES attributes:nil error:&error];
+		XCTAssertTrue(success, @"Couldn't create temporary directory at %@: %@", baseTemporaryDirectoryURL, error);
 
 		[self addCleanupBlock:^{
-			[NSFileManager.defaultManager removeItemAtURL:_baseTemporaryDirectoryURL error:NULL];
-			_baseTemporaryDirectoryURL = nil;
+			[NSFileManager.defaultManager removeItemAtURL:baseTemporaryDirectoryURL error:NULL];
+			baseTemporaryDirectoryURL = nil;
 		}];
 	}
 
-	return _baseTemporaryDirectoryURL;
+	return baseTemporaryDirectoryURL;
 }
 
 - (NSURL *)temporaryDirectoryURL {
@@ -177,7 +184,7 @@ static void SQRLSignalHandler(int sig) {
 - (NSURL *)testApplicationURL {
 	NSURL *fixtureURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.app" isDirectory:YES];
 	if (![NSFileManager.defaultManager fileExistsAtPath:fixtureURL.path]) {
-		NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+		NSURL *bundleURL = [SQRLTestBundle() URLForResource:@"TestApplication" withExtension:@"app"];
 		XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 		NSError *error = nil;
@@ -187,7 +194,7 @@ static void SQRLSignalHandler(int sig) {
 		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 		[[NSData data] writeToURL:testAppLog atomically:YES];
 
-		NSTask *readTestApp = [self.class tailTaskWithPaths:[RACSequence return:testAppLog.path]];
+		NSTask *readTestApp = SQRLTailTaskWithPaths([RACSequence return:testAppLog.path]);
 		[readTestApp launch];
 
 		XCTAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
@@ -204,7 +211,7 @@ static void SQRLSignalHandler(int sig) {
 	NSURL *fixtureURL = self.testApplicationURL;
 	NSBundle *bundle = [NSBundle bundleWithURL:fixtureURL];
 	XCTAssertNotNil(bundle, @"Couldn't open bundle at %@", fixtureURL);
-	
+
 	return bundle;
 }
 
@@ -243,7 +250,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (NSURL *)createTestApplicationUpdate {
-	NSURL *originalURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication 2.1" withExtension:@"app"];
+	NSURL *originalURL = [SQRLTestBundle() URLForResource:@"TestApplication 2.1" withExtension:@"app"];
 	XCTAssertNotNil(originalURL, @"Couldn't find TestApplication update in test bundle");
 
 	NSError *error = nil;
@@ -262,7 +269,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (id)performWithTestApplicationRequirement:(id (^)(SecRequirementRef requirement))block {
-	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	NSURL *bundleURL = [SQRLTestBundle() URLForResource:@"TestApplication" withExtension:@"app"];
 	XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 	SecStaticCodeRef staticCode = NULL;
@@ -285,7 +292,7 @@ static void SQRLSignalHandler(int sig) {
 }
 
 - (SQRLCodeSignature *)testApplicationSignature {
-	NSURL *bundleURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+	NSURL *bundleURL = [SQRLTestBundle() URLForResource:@"TestApplication" withExtension:@"app"];
 	XCTAssertNotNil(bundleURL, @"Couldn't find TestApplication.app in test bundle");
 
 	NSError *error = nil;
@@ -305,11 +312,11 @@ static void SQRLSignalHandler(int sig) {
 
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
-		expect([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL]).to.beTruthy();
+		expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 
 		__block NSError *error = nil;
-		expect([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error]).to.beTruthy();
-		expect(error).to.beNil();
+		expect(@([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
 
 		[self addCleanupBlock:^{
 			// Remove ShipIt's launchd job so it doesn't relaunch itself.
@@ -317,19 +324,19 @@ static void SQRLSignalHandler(int sig) {
 
 			NSError *lookupError;
 			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
-			expect(stateURL).notTo.beNil();
-			expect(lookupError).to.beNil();
+			expect(stateURL).notTo(beNil());
+			expect(lookupError).to(beNil());
 
 			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
 		}];
 	} else {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
-		expect(installer).notTo.beNil();
+		expect(installer).notTo(beNil());
 
 		NSError *installedError = nil;
 		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
-		expect(installed).to.beTruthy();
-		expect(installedError).to.beNil();
+		expect(@(installed)).to(beTruthy());
+		expect(installedError).to(beNil());
 	}
 }
 
@@ -344,15 +351,15 @@ static void SQRLSignalHandler(int sig) {
 		createInvocation = [NSString stringWithFormat:@"hdiutil create '%@' -fs 'HFS+' -volname '%@' -format UDSP -size 10m -srcfolder '%@' -quiet", destinationURL.path, name, directoryURL.path];
 	}
 
-	expect(system(createInvocation.UTF8String)).to.equal(0);
+	expect(@(system(createInvocation.UTF8String))).to(equal(@0));
 
 	NSString *mountInvocation = [NSString stringWithFormat:@"hdiutil attach '%@.sparseimage' -noverify -noautofsck -readwrite -quiet", destinationURL.path];
-	expect(system(mountInvocation.UTF8String)).to.equal(0);
+	expect(@(system(mountInvocation.UTF8String))).to(equal(@0));
 
 	NSString *path = [NSString stringWithFormat:@"/Volumes/%@", name];
 	[self addCleanupBlock:^{
 		NSString *detachInvocation = [NSString stringWithFormat:@"hdiutil detach '%@' -force -quiet", path];
-		expect(system(detachInvocation.UTF8String)).to.equal(0);
+		expect(@(system(detachInvocation.UTF8String))).to(equal(@0));
 	}];
 
 	return [NSURL fileURLWithPath:path isDirectory:YES];

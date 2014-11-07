@@ -8,7 +8,7 @@
 
 #import "SQRLInstallerOwnedBundle.h"
 
-#import <ReactiveCocoa/EXTKeyPathCoding.h>
+#import "EXTKeyPathCoding.h"
 
 @implementation SQRLInstallerOwnedBundle
 

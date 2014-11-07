@@ -6,15 +6,22 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import <Nimble/Nimble.h>
+#import <Quick/Quick.h>
+#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <Squirrel/Squirrel.h>
+
 #import "SQRLTerminationListener.h"
 
-SpecBegin(SQRLTerminationListener)
+#import "QuickSpec+SQRLFixtures.h"
+
+QuickSpecBegin(SQRLTerminationListenerSpec)
 
 __block SQRLTerminationListener *listener;
 
 beforeEach(^{
 	listener = [[SQRLTerminationListener alloc] initWithURL:self.testApplicationURL bundleIdentifier:self.testApplicationBundle.bundleIdentifier];
-	expect(listener).notTo.beNil();
+	expect(listener).notTo(beNil());
 });
 
 it(@"should complete immediately when the app is not running", ^{
@@ -23,7 +30,7 @@ it(@"should complete immediately when the app is not running", ^{
 		completed = YES;
 	}];
 
-	expect(completed).to.beTruthy();
+	expect(@(completed)).to(beTruthy());
 });
 
 it(@"should wait until one instance terminates", ^{
@@ -37,12 +44,12 @@ it(@"should wait until one instance terminates", ^{
 		completed = YES;
 	}];
 
-	expect(observedApp).will.equal(app);
-	expect(completed).to.beFalsy();
+	expect(observedApp).toEventually(equal(app));
+	expect(@(completed)).to(beFalsy());
 
 	[app forceTerminate];
-	expect(app.terminated).will.beTruthy();
-	expect(completed).will.beTruthy();
+	expect(@(app.terminated)).toEventually(beTruthy());
+	expect(@(completed)).toEventually(beTruthy());
 });
 
 it(@"should wait until multiple instances terminate", ^{
@@ -54,15 +61,15 @@ it(@"should wait until multiple instances terminate", ^{
 		completed = YES;
 	}];
 
-	expect(completed).to.beFalsy();
+	expect(@(completed)).to(beFalsy());
 
 	[app1 forceTerminate];
-	expect(app1.terminated).will.beTruthy();
-	expect(completed).to.beFalsy();
+	expect(@(app1.terminated)).toEventually(beTruthy());
+	expect(@(completed)).to(beFalsy());
 
 	[app2 forceTerminate];
-	expect(app2.terminated).will.beTruthy();
-	expect(completed).will.beTruthy();
+	expect(@(app2.terminated)).toEventually(beTruthy());
+	expect(@(completed)).toEventually(beTruthy());
 });
 
-SpecEnd
+QuickSpecEnd

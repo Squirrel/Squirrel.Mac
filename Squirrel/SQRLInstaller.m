@@ -7,6 +7,17 @@
 //
 
 #import "SQRLInstaller.h"
+
+#import <libkern/OSAtomic.h>
+#import "EXTScope.h"
+#import <ReactiveCocoa/NSEnumerator+RACSequenceAdditions.h>
+#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
+#import <ReactiveCocoa/RACCommand.h>
+#import <ReactiveCocoa/RACSequence.h>
+#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveCocoa/RACSubscriber.h>
+#import <sys/xattr.h>
+
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
@@ -14,10 +25,6 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItRequest.h"
 #import "SQRLTerminationListener.h"
-#import <libkern/OSAtomic.h>
-#import <ReactiveCocoa/EXTScope.h>
-#import <ReactiveCocoa/ReactiveCocoa.h>
-#import <sys/xattr.h>
 #import "SQRLInstallerOwnedBundle.h"
 
 NSString * const SQRLInstallerErrorDomain = @"SQRLInstallerErrorDomain";
@@ -165,7 +172,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 		return [self abortInstall];
 	}];
-	
+
 	return self;
 }
 
@@ -418,7 +425,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			} else {
 				int code = errno;
 				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-				
+
 				const char *desc = strerror(code);
 				if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
 
@@ -470,7 +477,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				// file to begin with.
 				if (code != ENOATTR) {
 					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-					
+
 					const char *desc = strerror(code);
 					if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
 
@@ -526,7 +533,9 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				return NO;
 			}];
 
-			return [enumerator.rac_sequence.signal subscribe:subscriber];
+			return [[enumerator.rac_sequence.signal
+				startWith:directoryURL]
+				subscribe:subscriber];
 		}]
 		flattenMap:^(NSURL *itemURL) {
 			return [[[self
