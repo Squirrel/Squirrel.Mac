@@ -103,7 +103,10 @@ QuickConfigurationBegin(Fixtures)
 		cleanupBlocks = [NSMutableArray array];
 
 		for (NSURL *URL in URLs) {
-			[[NSData data] writeToURL:URL atomically:YES];
+			[NSFileManager.defaultManager createDirectoryAtURL:URL.URLByDeletingLastPathComponent withIntermediateDirectories:YES attributes:nil error:NULL];
+			if (![[NSData data] writeToURL:URL atomically:YES]) {
+				NSLog(@"Could not touch log file at %@", URL);
+			}
 		}
 
 		[readShipIt launch];
