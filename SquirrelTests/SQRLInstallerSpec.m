@@ -94,12 +94,8 @@ it(@"should install an update to another volume", ^{
 describe(@"with backup restoration", ^{
 	__block NSURL *targetURL;
 
-	__block SQRLShipItRequest *request;
-
 	beforeEach(^{
 		targetURL = self.testApplicationURL;
-
-		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO];
 
 		NSURL *copiedTargetURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication Target.app"];
 		expect(@([NSFileManager.defaultManager moveItemAtURL:targetURL toURL:copiedTargetURL error:NULL])).to(beTruthy());
@@ -122,18 +118,18 @@ describe(@"with backup restoration", ^{
 	});
 
 	it(@"should not install an update after too many attempts", ^{
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO];
 		[self installWithRequest:request remote:YES];
 
 		__block NSError *error;
-		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).toEventually(beTruthy());
 		expect(error).to(beNil());
 
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
 	it(@"should relaunch even after failing to install an update", ^{
-		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES];
-
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES];
 		[self installWithRequest:request remote:YES];
 
 		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@1));
