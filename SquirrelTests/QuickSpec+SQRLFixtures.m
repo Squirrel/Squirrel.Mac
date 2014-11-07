@@ -79,8 +79,7 @@ QuickConfigurationBegin(Fixtures)
 
 	NSArray *folders = @[
 		@"com.github.Squirrel.TestApplication.ShipIt",
-		@"otest.ShipIt",
-		@"otest-x86_64.ShipIt",
+		@"com.github.Squirrel.SquirrelTests.ShipIt",
 	];
 
 	RACSequence *URLs = [folders.rac_sequence flattenMap:^(NSString *folder) {

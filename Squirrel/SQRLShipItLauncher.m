@@ -22,8 +22,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 @implementation SQRLShipItLauncher
 
 + (NSString *)shipItJobLabel {
-	NSString *currentAppIdentifier = NSBundle.mainBundle.bundleIdentifier ?: [NSString stringWithFormat:@"%@:%d", NSProcessInfo.processInfo.processName, NSProcessInfo.processInfo.processIdentifier];
-	return [currentAppIdentifier stringByAppendingString:@".ShipIt"];
+	return [SQRLDirectoryManager.currentApplicationManager.applicationIdentifier stringByAppendingString:@".ShipIt"];
 }
 
 + (RACSignal *)shipItJobDictionary {
@@ -64,7 +63,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			#if DEBUG
 			jobDict[@(LAUNCH_JOBKEY_DEBUG)] = @YES;
 			#endif
-			
+
 			return jobDict;
 		}]
 		setNameWithFormat:@"+shipItJobDictionary"];
