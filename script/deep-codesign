@@ -170,6 +170,7 @@ while paths_to_search.size > 0
 
 		Dir.foreach(search_path) do |current_directory_entry|
 			next if current_directory_entry.start_with?(".")
+			File.delete(File.join(search_path, current_directory_entry)) if current_directory_entry.end_with?(".cstemp")
 
 			target = match_path(File.join(search_path, current_directory_entry))
 			next if target.nil?
