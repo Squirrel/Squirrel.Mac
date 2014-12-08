@@ -1546,6 +1546,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					Carthage.checkout/ReactiveCocoa/ReactiveCocoa/extobjc,
+				);
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -1558,6 +1562,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					Carthage.checkout/ReactiveCocoa/ReactiveCocoa/extobjc,
+				);
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -1615,6 +1623,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					Carthage.checkout/ReactiveCocoa/ReactiveCocoa/extobjc,
+				);
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				WRAPPER_EXTENSION = framework;
 			};
@@ -1654,6 +1666,10 @@
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					Carthage.checkout/ReactiveCocoa/ReactiveCocoa/extobjc,
+				);
 				INFOPLIST_FILE = "Squirrel/Squirrel-Info.plist";
 				WRAPPER_EXTENSION = framework;
 			};
