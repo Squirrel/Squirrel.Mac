@@ -113,13 +113,18 @@ To know when an update is ready to be installed, you can subscribe to the
 }];
 ```
 
-## Installing Updates on Demand
+## Installing Updates
 
-Once you've been notified of an available update, you may want to present an interface
-informing the user about the update and offers the ability to install and relaunch.
+While downloaded updates are automatically installed when your application
+terminates, if don't want to wait you can terminate manually the app to begin
+the installation process immediately.
+
+Once an [update available notification](#update-available-notifications) has
+been received, you may want to present an interface informing the user about
+the update and offering the ability to install and relaunch.
 
 To install a downloaded update and automatically relaunch afterward, subscribe to
-`relaunchToInstallUpdate` on `SQRLUpdater`:
+the `relaunchToInstallUpdate` signal on `SQRLUpdater`:
 
 ```objc
 [[self.updater relaunchToInstallUpdate] subscribeError:^(NSError *error) {
