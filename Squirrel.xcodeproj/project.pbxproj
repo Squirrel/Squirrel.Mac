@@ -8,11 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		533076EB17EB688300BDCCE0 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D097B9BC17BB4777006C3FEB /* IOKit.framework */; };
-		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
+		534FF35B17D8E8B90020A51A /* unused-helper in Copy LoginItems */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		534FF36117D8E90A0020A51A /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F60CA7EA179FC4F60069F69A /* Foundation.framework */; };
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
 		534FF36A17D8E90A0020A51A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 534FF36917D8E90A0020A51A /* main.m */; };
-		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; };
+		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
 		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
 		5371815F18A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
@@ -62,7 +62,7 @@
 		D08D4E1C17B451500012B22D /* TestAppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1B17B451500012B22D /* TestAppDelegate.m */; };
 		D08D4E2117B451500012B22D /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E2017B451500012B22D /* Images.xcassets */; };
 		D08D4E4717B451E50012B22D /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
-		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
+		D08D4E4917B451F20012B22D /* Squirrel.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E0C17B451500012B22D /* TestApplication.app */; };
 		D093682417FF732200BA0EAE /* ServiceManagement.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D014ABB917B97403007D79D0 /* ServiceManagement.framework */; };
 		D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */ = {isa = PBXBuildFile; fileRef = D0964B3617F2E01500D88BF7 /* SQRLDownloadedUpdate.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -135,7 +135,7 @@
 		D0AFE3901A00294100C6048F /* SwiftSpec.swift in Sources */ = {isa = PBXBuildFile; fileRef = D0AFE38F1A00294100C6048F /* SwiftSpec.swift */; };
 		D0AFE3931A00297500C6048F /* Quick.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0AFE3921A00297500C6048F /* Quick.framework */; };
 		D0AFE3951A0029A700C6048F /* Nimble.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0AFE3941A0029A700C6048F /* Nimble.framework */; };
-		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; };
+		D0B1DDCE17B487FB0059C355 /* unused-helper in Copy Executables */ = {isa = PBXBuildFile; fileRef = D0B1DDCB17B487D90059C355 /* unused-helper */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		D0C22BDB179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BF2179CC00E00158214 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D0C22BF5179CC00E00158214 /* Squirrel.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BD7179CC00E00158214 /* Squirrel.framework */; };
@@ -156,8 +156,8 @@
 		D4ACA50118DB9F3F00EBD899 /* OHHTTPStubs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4ACA50018DB9F3F00EBD899 /* OHHTTPStubs.framework */; };
 		D4C4909918E46DE900786EFE /* Mantle.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
 		D4C4909B18E46DFE00786EFE /* ReactiveCocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
-		D4C4909E18E46E1000786EFE /* ReactiveCocoa.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; };
-		D4C4909F18E46E1000786EFE /* Mantle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; };
+		D4C4909E18E46E1000786EFE /* ReactiveCocoa.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909A18E46DFE00786EFE /* ReactiveCocoa.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		D4C4909F18E46E1000786EFE /* Mantle.framework in Copy Frameworks */ = {isa = PBXBuildFile; fileRef = D4C4909818E46DE900786EFE /* Mantle.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
 		F6EB2162179CFD93001108CF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB2161179CFD93001108CF /* SystemConfiguration.framework */; };
 		F6EB2180179D0E4D001108CF /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F6EB217F179D0E4D001108CF /* Security.framework */; };
 		F6F2ED8417A33C4900F4D220 /* SQRLCodeSignature.m in Sources */ = {isa = PBXBuildFile; fileRef = F6F2ED8217A33C4900F4D220 /* SQRLCodeSignature.m */; };
@@ -1070,7 +1070,7 @@
 			isa = PBXProject;
 			attributes = {
 				CLASSPREFIX = SQRL;
-				LastUpgradeCheck = 0510;
+				LastUpgradeCheck = 0620;
 				ORGANIZATIONNAME = GitHub;
 			};
 			buildConfigurationList = D0C22BD1179CC00E00158214 /* Build configuration list for PBXProject "Squirrel" */;
@@ -1526,6 +1526,7 @@
 			baseConfigurationReference = D0C22C0B179CC02E00158214 /* Debug.xcconfig */;
 			buildSettings = {
 				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
 			name = Debug;
