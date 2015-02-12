@@ -95,7 +95,7 @@ module Targets
 
 			# Look for an __TEXT,__info_plist section
 			# This contains the CFBundleIdentifier necessary for signing
-			`otool -l #{path}` =~ /__info_plist/
+			`otool -l "#{path}"` =~ /__info_plist/
 		end
 	end
 
