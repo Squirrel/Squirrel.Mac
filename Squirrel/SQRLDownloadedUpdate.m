@@ -40,9 +40,9 @@
 #pragma mark MTLJSONSerializing
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
-	return [super.JSONKeyPathsByPropertyKey mtl_dictionaryByAddingEntriesFromDictionary:@{
+	return @{
 		@keypath(SQRLDownloadedUpdate.new, bundleURL): NSNull.null
-	}];
+	};
 }
 
 @end
