@@ -55,6 +55,7 @@
 		D06B58B518032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */; };
 		D06B58B618032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */; };
 		D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */; };
+		D06F7B101AD72DD30009A3BC /* RACKVOProxy.m in Sources */ = {isa = PBXBuildFile; fileRef = D06F7B0F1AD72DD30009A3BC /* RACKVOProxy.m */; };
 		D08D4E0D17B451500012B22D /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D0C22BDA179CC00E00158214 /* Cocoa.framework */; };
 		D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = D08D4E1117B451500012B22D /* InfoPlist.strings */; };
 		D08D4E1517B451500012B22D /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = D08D4E1417B451500012B22D /* main.m */; };
@@ -314,6 +315,7 @@
 		D06B58B218032B1500656D97 /* RACSignal+SQRLTransactionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "RACSignal+SQRLTransactionExtensions.h"; sourceTree = "<group>"; };
 		D06B58B318032B1500656D97 /* RACSignal+SQRLTransactionExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "RACSignal+SQRLTransactionExtensions.m"; sourceTree = "<group>"; };
 		D06B58D018035B5A00656D97 /* SQRLTerminationListenerSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLTerminationListenerSpec.m; sourceTree = "<group>"; };
+		D06F7B0F1AD72DD30009A3BC /* RACKVOProxy.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = RACKVOProxy.m; path = Carthage/Checkouts/ReactiveCocoa/ReactiveCocoa/RACKVOProxy.m; sourceTree = SOURCE_ROOT; };
 		D08D4E0C17B451500012B22D /* TestApplication.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApplication.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D08D4E1017B451500012B22D /* TestApplication-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "TestApplication-Info.plist"; sourceTree = "<group>"; };
 		D08D4E1217B451500012B22D /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
@@ -722,6 +724,7 @@
 				D0AFE3551A0028A400C6048F /* RACEvent.m */,
 				D0AFE3561A0028A400C6048F /* RACGroupedSignal.m */,
 				D0AFE3571A0028A400C6048F /* RACImmediateScheduler.m */,
+				D06F7B0F1AD72DD30009A3BC /* RACKVOProxy.m */,
 				D09C66341A00535B007D7ED0 /* RACKVOTrampoline.m */,
 				D0AFE3581A0028A400C6048F /* RACMulticastConnection.m */,
 				D09C663A1A00538D007D7ED0 /* RACObjCRuntime.m */,
@@ -1164,6 +1167,7 @@
 				D0AFE37C1A0028B000C6048F /* RACCompoundDisposableProvider.d in Sources */,
 				D0AFE3441A00285000C6048F /* NSValueTransformer+MTLPredefinedTransformerAdditions.m in Sources */,
 				D0AFE38B1A0028EC00C6048F /* RACArraySequence.m in Sources */,
+				D06F7B101AD72DD30009A3BC /* RACKVOProxy.m in Sources */,
 				D0AFE3751A0028A400C6048F /* RACSubject.m in Sources */,
 				D014AC0517B97885007D79D0 /* ShipIt-main.m in Sources */,
 				D0AFE3431A00285000C6048F /* MTLReflection.m in Sources */,
