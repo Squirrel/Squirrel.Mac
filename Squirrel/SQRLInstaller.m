@@ -268,9 +268,14 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
-			return [[[[[[[self
+			return [[[[[[[[self
 				acquireTargetBundleURLForRequest:request]
-				concat:[self installItemToURL:request.targetBundleURL fromURL:updateBundleURL]]
+				then:^{
+					return [self renameIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
+				}]
+				flattenMap:^(NSURL *targetURL) {
+					return [self installItemToURL:targetURL fromURL:updateBundleURL];
+				}]
 				concat:[RACSignal return:request.updateBundleURL]]
 				concat:[RACSignal return:updateBundleURL]]
 				concat:[RACSignal defer:^{
@@ -462,11 +467,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
-	return [[[[[RACSignal
+	return [[[[RACSignal
 		defer:^{
-			return [self renameIfNeededWithTargetURL:targetURL sourceURL:sourceURL];
-		}]
-		flattenMap:^(NSURL *targetURL) {
 			NSLog(@"Rename %@ to %@", sourceURL.path, targetURL.path);
 
 			// rename() is atomic, NSFileManager sucks.
