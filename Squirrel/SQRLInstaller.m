@@ -425,7 +425,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		NSString *targetExecutableName = targetBundle.sqrl_executableName;
 		NSString *sourceExecutableName = sourceBundle.sqrl_executableName;
 
-		NSLog(@"Source exec name: %@, target exec name: %@", sourceExecutableName, targetExecutableName);
+		NSLog(@"JA: Target: %@", targetURL.path);
+		NSLog(@"JA: Source exec name: %@, target exec name: %@", sourceExecutableName, targetExecutableName);
 
 		// If they're already the same then we're good.
 		if (targetExecutableName == nil || [targetExecutableName isEqual:sourceExecutableName]) {
@@ -440,7 +441,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 		NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
 		NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:newAppName isDirectory:YES];
-		NSLog(@"newTarget path: %@", newTargetURL.path);
+		NSLog(@"JA: newTarget path: %@", newTargetURL.path);
 		NSBundle *bundleWithNewName = [NSBundle bundleWithURL:newTargetURL];
 		// If there's already an app at that location and its bundle ID doesn't
 		// match ours, leave it alone.
@@ -448,7 +449,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [RACSignal return:targetURL];
 		}
 
-		NSLog(@"Rename!! %@ to %@", targetURL.path, newTargetURL.path);
+		NSLog(@"JA: Rename!! %@ to %@", targetURL.path, newTargetURL.path);
 		if (rename(targetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
 			return [RACSignal return:newTargetURL];
 		} else {
@@ -469,8 +470,6 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 	return [[[[RACSignal
 		defer:^{
-			NSLog(@"Rename %@ to %@", sourceURL.path, targetURL.path);
-
 			// rename() is atomic, NSFileManager sucks.
 			if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) == 0) {
 				return [RACSignal empty];
