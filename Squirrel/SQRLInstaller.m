@@ -271,6 +271,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [[[[[[[[self
 				acquireTargetBundleURLForRequest:request]
 				then:^{
+					if (!request.allowRename) return [RACSignal return:request.targetBundleURL];
+
 					return [self renameIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
 				}]
 				flattenMap:^(NSURL *targetURL) {
@@ -420,22 +422,15 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 - (RACSignal *)renameIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
 	return [RACSignal defer:^{
-		NSBundle *targetBundle = [NSBundle bundleWithURL:targetURL];
 		NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
-		NSString *targetExecutableName = targetBundle.sqrl_executableName;
+		NSString *targetExecutableName = targetURL.lastPathComponent.stringByDeletingPathExtension;
 		NSString *sourceExecutableName = sourceBundle.sqrl_executableName;
 
 		NSLog(@"JA: Target: %@", targetURL.path);
 		NSLog(@"JA: Source exec name: %@, target exec name: %@", sourceExecutableName, targetExecutableName);
 
 		// If they're already the same then we're good.
-		if (targetExecutableName == nil || [targetExecutableName isEqual:sourceExecutableName]) {
-			return [RACSignal return:targetURL];
-		}
-
-		// If the user renamed the app then leave it alone.
-		NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
-		if (![targetAppName isEqual:targetURL.lastPathComponent]) {
+		if ([targetExecutableName isEqual:sourceExecutableName]) {
 			return [RACSignal return:targetURL];
 		}
 
