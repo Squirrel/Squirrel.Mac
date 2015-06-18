@@ -420,26 +420,31 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		NSString *targetExecutableName = targetBundle.sqrl_executableName;
 		NSString *sourceExecutableName = sourceBundle.sqrl_executableName;
 
-		if (targetExecutableName != nil && ![targetExecutableName isEqual:sourceExecutableName]) {
-			NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
-			if ([targetAppName isEqual:targetURL.lastPathComponent]) {
-				NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
-				NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:newAppName isDirectory:YES];
-				if (rename(targetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
-					return [RACSignal return:newTargetURL];
-				} else {
-					int code = errno;
-					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-
-					const char *desc = strerror(code);
-					if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
-
-					return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
-				}
-			}
+		// If they're already the same then we're good.
+		if (targetExecutableName == nil || [targetExecutableName isEqual:sourceExecutableName]) {
+			return [RACSignal return:targetURL];
 		}
-		
-		return [RACSignal return:targetURL];
+
+		// If the user renamed the app then leave it alone.
+		NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
+		if (![targetAppName isEqual:targetURL.lastPathComponent]) {
+			return [RACSignal return:targetURL];
+		}
+
+		NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
+		NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:newAppName isDirectory:YES];
+
+		if (rename(targetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
+			return [RACSignal return:newTargetURL];
+		} else {
+			int code = errno;
+			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+
+			const char *desc = strerror(code);
+			if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
+
+			return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+		}
 	}];
 }
 
