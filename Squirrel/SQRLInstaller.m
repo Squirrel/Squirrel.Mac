@@ -433,6 +433,12 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 		NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
 		NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:newAppName isDirectory:YES];
+		NSBundle *bundleWithNewName = [NSBundle bundleWithURL:newTargetURL];
+		// If there's already an app at that location and its bundle ID doesn't
+		// match ours, leave it alone.
+		if (bundleWithNewName != nil && ![bundleWithNewName.bundleIdentifier isEqual:sourceBundle.bundleIdentifier]) {
+			return [RACSignal return:targetURL];
+		}
 
 		if (rename(targetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
 			return [RACSignal return:newTargetURL];
