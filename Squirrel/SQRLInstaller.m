@@ -416,17 +416,16 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 - (RACSignal *)renameIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
 	return [RACSignal defer:^{
 		NSBundle *targetBundle = [NSBundle bundleWithURL:targetURL];
-		NSString *targetExecutableName = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
-
 		NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
-		NSString *sourceExecutableName = [sourceBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
-		// Only rename if the existing app is named after its executable.
+		NSString *targetExecutableName = targetBundle.sqrl_executableName;
+		NSString *sourceExecutableName = sourceBundle.sqrl_executableName;
+
 		if (targetExecutableName != nil && ![targetExecutableName isEqual:sourceExecutableName]) {
 			NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
 			if ([targetAppName isEqual:targetURL.lastPathComponent]) {
-				NSURL *oldTargetURL = targetURL;
-				NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:targetAppName isDirectory:YES];
-				if (rename(oldTargetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
+				NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
+				NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:newAppName isDirectory:YES];
+				if (rename(targetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
 					return [RACSignal return:newTargetURL];
 				} else {
 					int code = errno;
