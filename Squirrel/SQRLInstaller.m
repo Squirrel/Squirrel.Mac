@@ -426,36 +426,24 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		NSString *targetExecutableName = targetURL.lastPathComponent.stringByDeletingPathExtension;
 		NSString *sourceExecutableName = sourceBundle.sqrl_executableName;
 
-		NSLog(@"JA: Target: %@", targetURL.path);
-		NSLog(@"JA: Source exec name: %@, target exec name: %@", sourceExecutableName, targetExecutableName);
-
 		// If they're already the same then we're good.
 		if ([targetExecutableName isEqual:sourceExecutableName]) {
 			return [RACSignal return:targetURL];
 		}
 
 		NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
-		NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:newAppName isDirectory:YES];
-		NSLog(@"JA: newTarget path: %@", newTargetURL.path);
-		NSBundle *bundleWithNewName = [NSBundle bundleWithURL:newTargetURL];
-		// If there's already an app at that location and its bundle ID doesn't
-		// match ours, leave it alone.
-		if (bundleWithNewName != nil && ![bundleWithNewName.bundleIdentifier isEqual:sourceBundle.bundleIdentifier]) {
+		NSURL *newTargetURL = [targetURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:newAppName];
+		// If there's already something there then keep using the old name.
+		if ([NSFileManager.defaultManager fileExistsAtPath:newTargetURL.path]) {
 			return [RACSignal return:targetURL];
 		}
 
-		NSLog(@"JA: Rename!! %@ to %@", targetURL.path, newTargetURL.path);
-		if (rename(targetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
-			return [RACSignal return:newTargetURL];
-		} else {
-			int code = errno;
-			NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
-
-			const char *desc = strerror(code);
-			if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
-
-			return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
-		}
+		return [[[self
+			installItemToURL:newTargetURL fromURL:targetURL]
+			concat:[RACSignal return:newTargetURL]]
+			doNext:^(NSURL *newTargetURL) {
+				NSLog(@"Renamed %@ to %@", targetURL, newTargetURL);
+			}];
 	}];
 }
 
