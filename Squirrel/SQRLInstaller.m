@@ -417,6 +417,21 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
+	NSBundle *targetBundle = [NSBundle bundleWithURL:targetURL];
+	NSString *targetExecutableName = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
+
+	NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
+	NSString *sourceExecutableName = [sourceBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
+	// Only rename if the existing app is named after its executable.
+	if (targetExecutableName != nil && ![targetExecutableName isEqual:sourceExecutableName]) {
+		NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
+		if ([targetAppName isEqual:targetURL.lastPathComponent]) {
+			NSURL *oldTargetURL = targetURL;
+			targetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:targetAppName isDirectory:YES];
+			rename(oldTargetURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation);
+		}
+	}
+
 	return [[[[RACSignal
 		defer:^{
 			// rename() is atomic, NSFileManager sucks.
