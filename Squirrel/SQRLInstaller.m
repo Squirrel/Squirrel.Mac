@@ -413,27 +413,46 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 #pragma mark Installation
 
+- (RACSignal *)renameIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
+	return [RACSignal defer:^{
+		NSBundle *targetBundle = [NSBundle bundleWithURL:targetURL];
+		NSString *targetExecutableName = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
+
+		NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
+		NSString *sourceExecutableName = [sourceBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
+		// Only rename if the existing app is named after its executable.
+		if (targetExecutableName != nil && ![targetExecutableName isEqual:sourceExecutableName]) {
+			NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
+			if ([targetAppName isEqual:targetURL.lastPathComponent]) {
+				NSURL *oldTargetURL = targetURL;
+				NSURL *newTargetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:targetAppName isDirectory:YES];
+				if (rename(oldTargetURL.path.fileSystemRepresentation, newTargetURL.path.fileSystemRepresentation) == 0) {
+					return [RACSignal return:newTargetURL];
+				} else {
+					int code = errno;
+					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+
+					const char *desc = strerror(code);
+					if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
+
+					return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
+				}
+			}
+		}
+		
+		return [RACSignal return:targetURL];
+	}];
+}
+
 - (RACSignal *)installItemToURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
-	NSBundle *targetBundle = [NSBundle bundleWithURL:targetURL];
-	NSString *targetExecutableName = [targetBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
-
-	NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
-	NSString *sourceExecutableName = [sourceBundle objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
-	// Only rename if the existing app is named after its executable.
-	if (targetExecutableName != nil && ![targetExecutableName isEqual:sourceExecutableName]) {
-		NSString *targetAppName = [targetExecutableName stringByAppendingPathExtension:@"app"];
-		if ([targetAppName isEqual:targetURL.lastPathComponent]) {
-			NSURL *oldTargetURL = targetURL;
-			targetURL = [[targetURL URLByDeletingLastPathComponent] URLByAppendingPathComponent:targetAppName isDirectory:YES];
-			rename(oldTargetURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation);
-		}
-	}
-
-	return [[[[RACSignal
+	return [[[[[RACSignal
 		defer:^{
+			return [self renameIfNeededWithTargetURL:targetURL sourceURL:sourceURL];
+		}]
+		flattenMap:^(NSURL *targetURL) {
 			// rename() is atomic, NSFileManager sucks.
 			if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) == 0) {
 				return [RACSignal empty];
