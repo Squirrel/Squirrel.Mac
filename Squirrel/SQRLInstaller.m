@@ -273,7 +273,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				then:^{
 					if (!request.allowRename) return [RACSignal return:request.targetBundleURL];
 
-					return [self renameTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
+					return [self renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
 				}]
 				flattenMap:^(NSURL *newTargetURL) {
 					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation allowRename:request.allowRename];
@@ -428,7 +428,14 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 #pragma mark Installation
 
-- (RACSignal *)renameTargetIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
+/// Check if the target should be renamed and provide the renamed URL.
+///
+/// targetURL - The URL for the target. Cannot be nil.
+/// sourceURL - The URL for the source. Cannot be nil.
+///
+/// Returns a signal which will send the URL for the renamed target. If a rename
+/// isn't needed then it will send `targetURL`.
+- (RACSignal *)renamedTargetIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
 	return [RACSignal defer:^{
 		NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
 		NSString *targetExecutableName = targetURL.lastPathComponent.stringByDeletingPathExtension;
@@ -441,7 +448,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 		NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
 		NSURL *newTargetURL = [targetURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:newAppName];
-		// If there's already something there then keep using the old name.
+
+		// If there's already something there then don't rename to it.
 		if ([NSFileManager.defaultManager fileExistsAtPath:newTargetURL.path]) {
 			return [RACSignal return:targetURL];
 		}
