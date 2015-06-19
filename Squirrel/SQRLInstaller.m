@@ -280,7 +280,8 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 					return [[[[[[[self
 						installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
 						then:^{
-							NSLog(@"JA: Rename from %@ to %@", request.targetBundleURL, newTargetURL);
+							if ([request.targetBundleURL isEqual:newTargetURL]) return [RACSignal empty];
+
 							return [self installItemToURL:newTargetURL fromURL:request.targetBundleURL];
 						}]
 						concat:[RACSignal return:request.updateBundleURL]]
