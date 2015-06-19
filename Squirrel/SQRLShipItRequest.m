@@ -47,12 +47,13 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	return self;
 }
 
-- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation {
+- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation allowRename:(BOOL)allowRename {
 	return [self initWithDictionary:@{
 		@keypath(self.updateBundleURL): updateBundleURL,
 		@keypath(self.targetBundleURL): targetBundleURL,
 		@keypath(self.bundleIdentifier): bundleIdentifier ?: NSNull.null,
 		@keypath(self.launchAfterInstallation): @(launchAfterInstallation),
+		@keypath(self.allowRename): @(allowRename),
 	} error:NULL];
 }
 
