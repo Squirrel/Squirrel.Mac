@@ -268,7 +268,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
-			return [[[[[[[[self
+			return [[[[self
 				acquireTargetBundleURLForRequest:request]
 				then:^{
 					if (!request.allowRename) return [RACSignal return:request.targetBundleURL];
@@ -276,20 +276,23 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 					return [self renameIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
 				}]
 				flattenMap:^(NSURL *targetURL) {
-					return [self installItemToURL:targetURL fromURL:updateBundleURL];
-				}]
-				concat:[RACSignal return:request.updateBundleURL]]
-				concat:[RACSignal return:updateBundleURL]]
-				concat:[RACSignal defer:^{
-					return [RACSignal return:self.ownedBundle.temporaryURL];
-				}]]
-				flattenMap:^(NSURL *location) {
-					return [[[self
-						deleteOwnedBundleAtURL:location]
-						doError:^(NSError *error) {
-							NSLog(@"Couldn't remove owned bundle at location %@, error %@", location, error.sqrl_verboseDescription);
+					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:targetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation allowRename:request.allowRename];
+					return [[[[[[self
+						installItemToURL:targetURL fromURL:updateBundleURL]
+						concat:[RACSignal return:request.updateBundleURL]]
+						concat:[RACSignal return:updateBundleURL]]
+						concat:[RACSignal defer:^{
+							return [RACSignal return:self.ownedBundle.temporaryURL];
+						}]]
+						flattenMap:^(NSURL *location) {
+							return [[[self
+								deleteOwnedBundleAtURL:location]
+								doError:^(NSError *error) {
+									NSLog(@"Couldn't remove owned bundle at location %@, error %@", location, error.sqrl_verboseDescription);
+								}]
+								catchTo:[RACSignal empty]];
 						}]
-						catchTo:[RACSignal empty]];
+						concat:[RACSignal return:updatedRequest]];
 				}]
 				doCompleted:^{
 					self.ownedBundle = nil;

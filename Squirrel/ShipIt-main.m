@@ -114,8 +114,8 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 				// Launch regardless of whether installation succeeds or fails.
 				action = [[action
 					deliverOn:RACScheduler.mainThreadScheduler]
-					finally:^{
-						NSURL *bundleURL = request.targetBundleURL;
+					doNext:^(SQRLShipItRequest *finalRequest) {
+						NSURL *bundleURL = finalRequest.targetBundleURL;
 						if (bundleURL == nil) {
 							NSLog(@"Missing target bundle URL, cannot launch application");
 							return;
