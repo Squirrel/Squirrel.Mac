@@ -273,12 +273,16 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				then:^{
 					if (!request.allowRename) return [RACSignal return:request.targetBundleURL];
 
-					return [self renameIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
+					return [self renameTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
 				}]
-				flattenMap:^(NSURL *targetURL) {
-					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:targetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation allowRename:request.allowRename];
-					return [[[[[[self
-						installItemToURL:targetURL fromURL:updateBundleURL]
+				flattenMap:^(NSURL *newTargetURL) {
+					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation allowRename:request.allowRename];
+					return [[[[[[[self
+						installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
+						then:^{
+							NSLog(@"JA: Rename from %@ to %@", request.targetBundleURL, newTargetURL);
+							return [self installItemToURL:newTargetURL fromURL:request.targetBundleURL];
+						}]
 						concat:[RACSignal return:request.updateBundleURL]]
 						concat:[RACSignal return:updateBundleURL]]
 						concat:[RACSignal defer:^{
@@ -423,7 +427,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 #pragma mark Installation
 
-- (RACSignal *)renameIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
+- (RACSignal *)renameTargetIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
 	return [RACSignal defer:^{
 		NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
 		NSString *targetExecutableName = targetURL.lastPathComponent.stringByDeletingPathExtension;
@@ -441,12 +445,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [RACSignal return:targetURL];
 		}
 
-		return [[[self
-			installItemToURL:newTargetURL fromURL:targetURL]
-			concat:[RACSignal return:newTargetURL]]
-			doNext:^(NSURL *newTargetURL) {
-				NSLog(@"Renamed %@ to %@", targetURL, newTargetURL);
-			}];
+		return [RACSignal return:newTargetURL];
 	}];
 }
 
