@@ -25,7 +25,7 @@ beforeEach(^{
 	directoryManager = SQRLDirectoryManager.currentApplicationManager;
 
 	NSURL *updateURL = [self createTestApplicationUpdate];
-	request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO];
+	request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO allowRename:NO];
 	expect(request).notTo(beNil());
 
 	expect(request.targetBundleURL).to(equal(self.testApplicationURL));
