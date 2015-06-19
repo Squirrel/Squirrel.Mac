@@ -529,7 +529,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
+			// Only allow a rename if the user hasn't renamed the app.
 			BOOL allowRename = [appBundle.sqrl_executableName isEqual:currentApplication.bundleURL.lastPathComponent.stringByDeletingPathExtension];
+
 			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO allowRename:allowRename];
 			return [request writeUsingURL:self.shipItStateURL];
 		}]
