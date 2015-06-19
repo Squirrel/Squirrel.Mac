@@ -75,7 +75,7 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 
 			RACSignal *action;
 			if (attempt > SQRLShipItMaximumInstallationAttempts) {
-				action = [[[installer.abortInstallationCommand
+				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
 						NSLog(@"Too many attempts to install, aborting update");
@@ -86,7 +86,8 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 						// Exit successfully so launchd doesn't restart us
 						// again.
 						return [RACSignal empty];
-					}];
+					}]
+					concat:[RACSignal return:request]];
 			} else {
 				action = [[[[installer.installUpdateCommand
 					execute:request]
