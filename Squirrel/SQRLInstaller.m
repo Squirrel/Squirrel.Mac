@@ -271,12 +271,12 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [[[[self
 				acquireTargetBundleURLForRequest:request]
 				then:^{
-					if (!request.allowRename) return [RACSignal return:request.targetBundleURL];
+					if (!request.useUpdateBundleName) return [RACSignal return:request.targetBundleURL];
 
 					return [self renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
 				}]
 				flattenMap:^(NSURL *newTargetURL) {
-					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation allowRename:request.allowRename];
+					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
 					return [[[[[[[self
 						installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
 						then:^{

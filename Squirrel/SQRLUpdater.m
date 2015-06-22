@@ -529,10 +529,11 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
-			// Only allow a rename if the user hasn't renamed the app.
-			BOOL allowRename = [appBundle.sqrl_executableName isEqual:currentApplication.bundleURL.lastPathComponent.stringByDeletingPathExtension];
+			// Only use the update bundle's name if the user hasn't renamed the
+			// app themselves.
+			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:currentApplication.bundleURL.lastPathComponent.stringByDeletingPathExtension];
 
-			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO allowRename:allowRename];
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
 			return [request writeUsingURL:self.shipItStateURL];
 		}]
 		then:^{
@@ -546,7 +547,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[[[[[[SQRLShipItRequest
 		readUsingURL:self.shipItStateURL]
 		map:^(SQRLShipItRequest *request) {
-			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES allowRename:request.allowRename];
+			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES useUpdateBundleName:request.useUpdateBundleName];
 		}]
 		flattenMap:^(SQRLShipItRequest *request) {
 			return [[request
