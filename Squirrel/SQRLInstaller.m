@@ -271,19 +271,22 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [[[[self
 				acquireTargetBundleURLForRequest:request]
 				then:^{
-					if (!request.useUpdateBundleName) return [RACSignal return:request.targetBundleURL];
+					if (!request.useUpdateBundleName) return [RACSignal return:request];
 
-					return [self renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL];
+					return [[self
+						renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL]
+						flattenMap:^(NSURL *newTargetURL) {
+							if ([newTargetURL isEqual:request.targetBundleURL]) return [RACSignal return:request];
+
+							SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
+							return [[self
+								installItemToURL:newTargetURL fromURL:request.targetBundleURL]
+								concat:[RACSignal return:updatedRequest]];
+						}];
 				}]
-				flattenMap:^(NSURL *newTargetURL) {
-					SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
-					return [[[[[[[self
+				flattenMap:^(SQRLShipItRequest *request) {
+					return [[[[[[self
 						installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
-						then:^{
-							if ([request.targetBundleURL isEqual:newTargetURL]) return [RACSignal empty];
-
-							return [self installItemToURL:newTargetURL fromURL:request.targetBundleURL];
-						}]
 						concat:[RACSignal return:request.updateBundleURL]]
 						concat:[RACSignal return:updateBundleURL]]
 						concat:[RACSignal defer:^{
@@ -297,7 +300,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 								}]
 								catchTo:[RACSignal empty]];
 						}]
-						concat:[RACSignal return:updatedRequest]];
+						concat:[RACSignal return:request]];
 				}]
 				doCompleted:^{
 					self.ownedBundle = nil;
