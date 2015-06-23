@@ -262,6 +262,21 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		setNameWithFormat:@"%@ -acquireTargetBundleURLForRequest: %@", self, request];
 }
 
+- (RACSignal *)renameIfNeeded:(SQRLShipItRequest *)request updateBundleURL:(NSURL *)updateBundleURL {
+	if (!request.useUpdateBundleName) return [RACSignal return:request];
+
+	return [[self
+		renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL]
+		flattenMap:^(NSURL *newTargetURL) {
+			if ([newTargetURL isEqual:request.targetBundleURL]) return [RACSignal return:request];
+
+			SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
+			return [[self
+				installItemToURL:newTargetURL fromURL:request.targetBundleURL]
+				concat:[RACSignal return:updatedRequest]];
+		}];
+}
+
 - (RACSignal *)installRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
@@ -269,20 +284,9 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
 			return [[[[self
-				acquireTargetBundleURLForRequest:request]
-				then:^{
-					if (!request.useUpdateBundleName) return [RACSignal return:request];
-
-					return [[self
-						renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL]
-						flattenMap:^(NSURL *newTargetURL) {
-							if ([newTargetURL isEqual:request.targetBundleURL]) return [RACSignal return:request];
-
-							SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
-							return [[self
-								installItemToURL:newTargetURL fromURL:request.targetBundleURL]
-								concat:[RACSignal return:updatedRequest]];
-						}];
+				renameIfNeeded:request updateBundleURL:updateBundleURL]
+				flattenMap:^(SQRLShipItRequest *request) {
+					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
 				}]
 				flattenMap:^(SQRLShipItRequest *request) {
 					return [[[[[[self
