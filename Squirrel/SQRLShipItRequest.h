@@ -73,10 +73,11 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 //                           installing. Can be nil.
 // launchAfterInstallation - Whether the updated application should be launched
 //                           after installation.
+// useUpdateBundleName     - Should the target use the update bundle's name?
 //
 // Returns a request which can be written to disk for ShipIt to read and
 // perform.
-- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation;
+- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName;
 
 // The URL to the downloaded update's app bundle.
 @property (nonatomic, copy, readonly) NSURL *updateBundleURL;
@@ -92,5 +93,8 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 
 // Whether to launch the application after an update is successfully installed.
 @property (nonatomic, assign, readonly) BOOL launchAfterInstallation;
+
+// Whether the app should use the update bundle's name.
+@property (nonatomic, assign, readonly) BOOL useUpdateBundleName;
 
 @end

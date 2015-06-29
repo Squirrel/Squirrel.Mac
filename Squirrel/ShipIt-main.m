@@ -75,7 +75,7 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 
 			RACSignal *action;
 			if (attempt > SQRLShipItMaximumInstallationAttempts) {
-				action = [[[installer.abortInstallationCommand
+				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
 						NSLog(@"Too many attempts to install, aborting update");
@@ -86,7 +86,8 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 						// Exit successfully so launchd doesn't restart us
 						// again.
 						return [RACSignal empty];
-					}];
+					}]
+					concat:[RACSignal return:request]];
 			} else {
 				action = [[[[installer.installUpdateCommand
 					execute:request]
@@ -114,8 +115,8 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 				// Launch regardless of whether installation succeeds or fails.
 				action = [[action
 					deliverOn:RACScheduler.mainThreadScheduler]
-					finally:^{
-						NSURL *bundleURL = request.targetBundleURL;
+					doNext:^(SQRLShipItRequest *finalRequest) {
+						NSURL *bundleURL = finalRequest.targetBundleURL;
 						if (bundleURL == nil) {
 							NSLog(@"Missing target bundle URL, cannot launch application");
 							return;

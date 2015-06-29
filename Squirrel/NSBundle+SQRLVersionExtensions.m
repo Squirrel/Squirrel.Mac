@@ -14,4 +14,8 @@
 	return [self objectForInfoDictionaryKey:(id)kCFBundleVersionKey];
 }
 
+- (NSString *)sqrl_executableName {
+	return [self objectForInfoDictionaryKey:(id)kCFBundleExecutableKey];
+}
+
 @end

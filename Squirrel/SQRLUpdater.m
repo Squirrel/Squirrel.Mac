@@ -528,7 +528,12 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[[RACSignal
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
-			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO];
+			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
+			// Only use the update bundle's name if the user hasn't renamed the
+			// app themselves.
+			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:currentApplication.bundleURL.lastPathComponent.stringByDeletingPathExtension];
+
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
 			return [request writeUsingURL:self.shipItStateURL];
 		}]
 		then:^{
@@ -542,7 +547,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[[[[[[SQRLShipItRequest
 		readUsingURL:self.shipItStateURL]
 		map:^(SQRLShipItRequest *request) {
-			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES];
+			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES useUpdateBundleName:request.useUpdateBundleName];
 		}]
 		flattenMap:^(SQRLShipItRequest *request) {
 			return [[request

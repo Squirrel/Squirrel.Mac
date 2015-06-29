@@ -262,27 +262,49 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		setNameWithFormat:@"%@ -acquireTargetBundleURLForRequest: %@", self, request];
 }
 
+- (RACSignal *)renameIfNeeded:(SQRLShipItRequest *)request updateBundleURL:(NSURL *)updateBundleURL {
+	if (!request.useUpdateBundleName) return [RACSignal return:request];
+
+	return [[self
+		renamedTargetIfNeededWithTargetURL:request.targetBundleURL sourceURL:updateBundleURL]
+		flattenMap:^(NSURL *newTargetURL) {
+			if ([newTargetURL isEqual:request.targetBundleURL]) return [RACSignal return:request];
+
+			SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:newTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
+			return [[self
+				installItemToURL:newTargetURL fromURL:request.targetBundleURL]
+				concat:[RACSignal return:updatedRequest]];
+		}];
+}
+
 - (RACSignal *)installRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
-			return [[[[[[[self
-				acquireTargetBundleURLForRequest:request]
-				concat:[self installItemToURL:request.targetBundleURL fromURL:updateBundleURL]]
-				concat:[RACSignal return:request.updateBundleURL]]
-				concat:[RACSignal return:updateBundleURL]]
-				concat:[RACSignal defer:^{
-					return [RACSignal return:self.ownedBundle.temporaryURL];
-				}]]
-				flattenMap:^(NSURL *location) {
-					return [[[self
-						deleteOwnedBundleAtURL:location]
-						doError:^(NSError *error) {
-							NSLog(@"Couldn't remove owned bundle at location %@, error %@", location, error.sqrl_verboseDescription);
+			return [[[[self
+				renameIfNeeded:request updateBundleURL:updateBundleURL]
+				flattenMap:^(SQRLShipItRequest *request) {
+					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
+				}]
+				flattenMap:^(SQRLShipItRequest *request) {
+					return [[[[[[self
+						installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
+						concat:[RACSignal return:request.updateBundleURL]]
+						concat:[RACSignal return:updateBundleURL]]
+						concat:[RACSignal defer:^{
+							return [RACSignal return:self.ownedBundle.temporaryURL];
+						}]]
+						flattenMap:^(NSURL *location) {
+							return [[[self
+								deleteOwnedBundleAtURL:location]
+								doError:^(NSError *error) {
+									NSLog(@"Couldn't remove owned bundle at location %@, error %@", location, error.sqrl_verboseDescription);
+								}]
+								catchTo:[RACSignal empty]];
 						}]
-						catchTo:[RACSignal empty]];
+						concat:[RACSignal return:request]];
 				}]
 				doCompleted:^{
 					self.ownedBundle = nil;
@@ -412,6 +434,36 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 }
 
 #pragma mark Installation
+
+/// Check if the target should be renamed and provide the renamed URL.
+///
+/// targetURL - The URL for the target. Cannot be nil.
+/// sourceURL - The URL for the source. Cannot be nil.
+///
+/// Returns a signal which will send the URL for the renamed target. If a rename
+/// isn't needed then it will send `targetURL`.
+- (RACSignal *)renamedTargetIfNeededWithTargetURL:(NSURL *)targetURL sourceURL:(NSURL *)sourceURL {
+	return [RACSignal defer:^{
+		NSBundle *sourceBundle = [NSBundle bundleWithURL:sourceURL];
+		NSString *targetExecutableName = targetURL.lastPathComponent.stringByDeletingPathExtension;
+		NSString *sourceExecutableName = sourceBundle.sqrl_executableName;
+
+		// If they're already the same then we're good.
+		if ([targetExecutableName isEqual:sourceExecutableName]) {
+			return [RACSignal return:targetURL];
+		}
+
+		NSString *newAppName = [sourceExecutableName stringByAppendingPathExtension:@"app"];
+		NSURL *newTargetURL = [targetURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:newAppName];
+
+		// If there's already something there then don't rename to it.
+		if ([NSFileManager.defaultManager fileExistsAtPath:newTargetURL.path]) {
+			return [RACSignal return:targetURL];
+		}
+
+		return [RACSignal return:newTargetURL];
+	}];
+}
 
 - (RACSignal *)installItemToURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL {
 	NSParameterAssert(targetURL != nil);

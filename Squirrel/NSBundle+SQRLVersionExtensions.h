@@ -14,4 +14,7 @@
 // Info.plist, or nil if the key is not present.
 @property (nonatomic, copy, readonly) NSString *sqrl_bundleVersion;
 
+/// The value of the `kCFBundleExecutableKey` key.
+@property (nonatomic, copy, readonly) NSString *sqrl_executableName;
+
 @end
