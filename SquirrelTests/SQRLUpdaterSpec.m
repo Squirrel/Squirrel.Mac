@@ -179,6 +179,7 @@ describe(@"updating", ^{
 			writeUpdate(update);
 
 			NSRunningApplication *app = launchWithEnvironment(nil);
+			expect([updateDirectoryURLs toArray]).toEventuallyNot(equal(@[]));
 			expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
 			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
