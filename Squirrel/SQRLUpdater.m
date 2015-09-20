@@ -169,7 +169,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 	@weakify(self);
 
-	_prunedUpdateDirectories = [[[[RACSignal
+	_prunedUpdateDirectories = [[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
 			return [directoryManager applicationSupportURL];
@@ -193,7 +193,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					}
 				}];
 		}]
-		replayLazily]
 		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
 
 	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
