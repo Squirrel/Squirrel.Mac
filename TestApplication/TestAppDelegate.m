@@ -72,6 +72,8 @@
 
 	__block NSUInteger updateCheckCount = 1;
 
+	NSInteger updateRequestCount = [NSProcessInfo.processInfo.environment[@"SQRLUpdateRequestCount"] integerValue];
+
 	[[[[[[[[[[RACSignal
 		defer:^{
 			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
@@ -90,7 +92,7 @@
 
 			return testUpdate.final;
 		}]
-		take:1]
+		take:updateRequestCount]
 		doNext:^(id _) {
 			NSLog(@"***** READY TO INSTALL UPDATE *****");
 		}]
