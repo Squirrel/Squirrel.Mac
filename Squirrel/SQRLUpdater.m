@@ -49,16 +49,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 
-// Lazily removes outdated temporary directories (used for previous updates)
-// upon first subscription.
-//
-// Pruning directories while an update is pending or in progress will result in
-// undefined behavior.
-//
-// Sends each removed directory then completes, or errors, on an unspecified
-// thread.
-@property (nonatomic, strong, readonly) RACSignal *prunedUpdateDirectories;
-
 // Parses an update model from downloaded data.
 //
 // data - JSON data representing an update manifest. This must not be nil.
@@ -169,33 +159,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	BOOL updatesDisabled = (getenv("DISABLE_UPDATE_CHECK") != NULL);
 	@weakify(self);
 
-	_prunedUpdateDirectories = [[[[RACSignal
-		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return [directoryManager applicationSupportURL];
-		}]
-		flattenMap:^(NSURL *appSupportURL) {
-			NSFileManager *manager = [[NSFileManager alloc] init];
-			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
-				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
-				return YES;
-			}];
-
-			return [[enumerator.rac_sequence.signal
-				filter:^(NSURL *enumeratedURL) {
-					NSString *name = enumeratedURL.lastPathComponent;
-					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
-				}]
-				doNext:^(NSURL *directoryURL) {
-					NSError *error = nil;
-					if (![manager removeItemAtURL:directoryURL error:&error]) {
-						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
-					}
-				}];
-		}]
-		replayLazily]
-		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
-
 	_checkForUpdatesCommand = [[RACCommand alloc] initWithEnabled:[RACSignal return:@(!updatesDisabled)] signalBlock:^(id _) {
 		@strongify(self);
 		NSParameterAssert(self.updateRequest != nil);
@@ -205,7 +168,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
 		// Prune old updates before the first update check.
-		return [[[[[[[[self.prunedUpdateDirectories
+		return [[[[[[[[[self
+			pruneUpdateDirectories]
 			catch:^(NSError *error) {
 				NSLog(@"Error pruning old updates: %@", error);
 				return [RACSignal empty];
@@ -500,6 +464,42 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			return directoryManager.shipItStateURL;
 		}]
 		setNameWithFormat:@"%@ -shipItStateURL", self];
+}
+
+/// Lazily removes outdated temporary directories (used for previous updates)
+/// upon subscription.
+///
+/// Pruning directories while an update is pending or in progress will result in
+/// undefined behavior.
+///
+/// Sends each removed directory then completes, or errors, on an unspecified
+/// thread.
+- (RACSignal *)pruneUpdateDirectories {
+	return [[[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [directoryManager applicationSupportURL];
+		}]
+		flattenMap:^(NSURL *appSupportURL) {
+			NSFileManager *manager = [[NSFileManager alloc] init];
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
+				return YES;
+			}];
+
+			return [[enumerator.rac_sequence.signal
+				filter:^(NSURL *enumeratedURL) {
+					NSString *name = enumeratedURL.lastPathComponent;
+					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
+				}]
+				doNext:^(NSURL *directoryURL) {
+					NSError *error = nil;
+					if (![manager removeItemAtURL:directoryURL error:&error]) {
+						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
 }
 
 #pragma mark Installing Updates

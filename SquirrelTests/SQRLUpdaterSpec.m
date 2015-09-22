@@ -178,7 +178,8 @@ describe(@"updating", ^{
 
 			writeUpdate(update);
 
-			NSRunningApplication *app = launchWithEnvironment(nil);
+			NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateRequestCount": @2 });
+			expect([updateDirectoryURLs toArray]).toEventuallyNot(equal(@[]));
 			expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
 			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
