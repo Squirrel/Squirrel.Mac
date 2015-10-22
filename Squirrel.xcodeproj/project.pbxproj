@@ -54,7 +54,7 @@
 		88CA21DE1BD982A3006693B7 /* RACKVOProxy.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21B61BD982A3006693B7 /* RACKVOProxy.m */; };
 		88CA21DF1BD982A3006693B7 /* RACKVOTrampoline.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21B71BD982A3006693B7 /* RACKVOTrampoline.m */; };
 		88CA21E01BD982A3006693B7 /* RACMulticastConnection.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21B81BD982A3006693B7 /* RACMulticastConnection.m */; };
-		88CA21E11BD982A3006693B7 /* RACObjCRuntime.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21B91BD982A3006693B7 /* RACObjCRuntime.m */; };
+		88CA21E11BD982A3006693B7 /* RACObjCRuntime.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21B91BD982A3006693B7 /* RACObjCRuntime.m */; settings = {COMPILER_FLAGS = "-fno-objc-arc"; }; };
 		88CA21E21BD982A3006693B7 /* RACPassthroughSubscriber.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21BA1BD982A3006693B7 /* RACPassthroughSubscriber.m */; };
 		88CA21E31BD982A3006693B7 /* RACQueueScheduler.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21BB1BD982A3006693B7 /* RACQueueScheduler.m */; };
 		88CA21E41BD982A3006693B7 /* RACReplaySubject.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21BC1BD982A3006693B7 /* RACReplaySubject.m */; };
@@ -1416,6 +1416,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				USER_HEADER_SEARCH_PATHS = "Carthage/Checkouts/ReactiveCocoa/**";
 			};
 			name = Debug;
 		};
@@ -1435,6 +1436,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				USER_HEADER_SEARCH_PATHS = "Carthage/Checkouts/ReactiveCocoa/**";
 			};
 			name = Release;
 		};
@@ -1454,6 +1456,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				USER_HEADER_SEARCH_PATHS = "Carthage/Checkouts/ReactiveCocoa/**";
 			};
 			name = Test;
 		};
@@ -1473,6 +1476,7 @@
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
+				USER_HEADER_SEARCH_PATHS = "Carthage/Checkouts/ReactiveCocoa/**";
 			};
 			name = Profile;
 		};
