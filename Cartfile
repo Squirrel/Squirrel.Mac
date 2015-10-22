@@ -1,2 +1,2 @@
 github "Mantle/Mantle" ~> 1.5.3
-github "ReactiveCocoa/ReactiveCocoa" ~> 3.0
+github "ReactiveCocoa/ReactiveCocoa" "swift2"
