@@ -123,7 +123,7 @@ static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *d
 						}
 
 						NSError *error;
-						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:nil error:&error]) {
+						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
 							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
 							return;
 						}
