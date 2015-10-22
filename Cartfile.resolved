@@ -1,5 +1,7 @@
+github "robrix/Box" "1.2.2"
 github "Mantle/Mantle" "1.5.6"
 github "Quick/Nimble" "v2.0.0"
 github "Quick/Quick" "v0.7.0"
-github "ReactiveCocoa/ReactiveCocoa" "v2.5"
 github "jspahrsummers/xcconfigs" "0.8.1"
+github "antitypical/Result" "0.4.5"
+github "ReactiveCocoa/ReactiveCocoa" "v3.0.0"
