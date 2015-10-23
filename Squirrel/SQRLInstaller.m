@@ -10,12 +10,12 @@
 
 #import <libkern/OSAtomic.h>
 #import "EXTScope.h"
-#import "NSEnumerator+RACSequenceAdditions.h"
-#import "NSObject+RACPropertySubscribing.h"
-#import "RACCommand.h"
-#import "RACSequence.h"
-#import "RACSignal+Operations.h"
-#import "RACSubscriber.h"
+#import <ReactiveCocoa/NSEnumerator+RACSequenceAdditions.h>
+#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
+#import <ReactiveCocoa/RACCommand.h>
+#import <ReactiveCocoa/RACSequence.h>
+#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveCocoa/RACSubscriber.h>
 #import <sys/xattr.h>
 
 #import "NSBundle+SQRLVersionExtensions.h"
