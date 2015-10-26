@@ -88,7 +88,7 @@ it(@"should install an update to another volume", ^{
 	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
-	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(20).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 describe(@"with backup restoration", ^{

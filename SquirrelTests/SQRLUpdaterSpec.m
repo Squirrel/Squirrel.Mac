@@ -19,6 +19,8 @@
 #import "SQRLTestUpdate.h"
 #import "TestAppConstants.h"
 
+static const NSTimeInterval UghTimeout = 20;
+
 QuickSpecBegin(SQRLUpdaterSpec)
 
 __block NSURL *JSONURL;
@@ -78,7 +80,7 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(UghTImeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
@@ -284,9 +286,9 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateDownloadingUpdate),
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
-		expect(states).toEventually(equal(expectedStates));
+		expect(states).withTimeout(UghTimeout).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(UghTimeout).toEventually(beTruthy());
 	});
 });
 
