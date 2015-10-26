@@ -13,8 +13,6 @@
 		534FF36717D8E90A0020A51A /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 534FF36517D8E90A0020A51A /* InfoPlist.strings */; };
 		534FF36A17D8E90A0020A51A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 534FF36917D8E90A0020A51A /* main.m */; };
 		534FF37317D8E9370020A51A /* com.github.Squirrel.TestApplication.TestService.xpc in Copy XPCServices */ = {isa = PBXBuildFile; fileRef = 534FF36017D8E90A0020A51A /* com.github.Squirrel.TestApplication.TestService.xpc */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
-		53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = 53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */; };
-		53710D8417D8F5CB00A992DE /* deep-codesign in Resources */ = {isa = PBXBuildFile; fileRef = 53710D7F17D8F5C300A992DE /* deep-codesign */; };
 		5371815F18A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
 		5371816018A29DC8005ED798 /* TestAppConstants.m in Sources */ = {isa = PBXBuildFile; fileRef = 5371815E18A29DC8005ED798 /* TestAppConstants.m */; };
 		5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */ = {isa = PBXBuildFile; fileRef = 5374DCC4187AD0D8006B7056 /* SQRLAuthorization.h */; };
@@ -269,10 +267,8 @@
 		534FF36617D8E90A0020A51A /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		534FF36817D8E90A0020A51A /* TestService-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "TestService-Prefix.pch"; sourceTree = "<group>"; };
 		534FF36917D8E90A0020A51A /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
-		53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDeepCodesignSpec.m; sourceTree = "<group>"; };
 		53710D7D17D8F5C300A992DE /* bootstrap */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = bootstrap; sourceTree = "<group>"; };
 		53710D7E17D8F5C300A992DE /* cibuild */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = cibuild; sourceTree = "<group>"; };
-		53710D7F17D8F5C300A992DE /* deep-codesign */ = {isa = PBXFileReference; lastKnownFileType = text; path = "deep-codesign"; sourceTree = "<group>"; };
 		53710D8017D8F5C300A992DE /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE.md; sourceTree = "<group>"; };
 		53710D8117D8F5C300A992DE /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text; path = README.md; sourceTree = "<group>"; };
 		53710D8217D8F5C300A992DE /* targets.awk */ = {isa = PBXFileReference; lastKnownFileType = text; path = targets.awk; sourceTree = "<group>"; };
@@ -536,7 +532,6 @@
 			children = (
 				53710D7D17D8F5C300A992DE /* bootstrap */,
 				53710D7E17D8F5C300A992DE /* cibuild */,
-				53710D7F17D8F5C300A992DE /* deep-codesign */,
 				53710D8017D8F5C300A992DE /* LICENSE.md */,
 				53710D8117D8F5C300A992DE /* README.md */,
 				53710D8217D8F5C300A992DE /* targets.awk */,
@@ -934,7 +929,6 @@
 			children = (
 				D00F5B8D17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m */,
 				D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */,
-				53710D7317D8F59700A992DE /* SQRLDeepCodesignSpec.m */,
 				D049059A180554BA004E683E /* SQRLDirectoryManagerSpec.m */,
 				D09D244017B595470001FAF8 /* SQRLInstallerSpec.m */,
 				D049059C18055671004E683E /* SQRLShipItRequestSpec.m */,
@@ -1143,7 +1137,6 @@
 				D08D4E4A17B451FD0012B22D /* TestApplication.app in Resources */,
 				D09D244A17B59AB30001FAF8 /* TestApplication 2.1.app in Resources */,
 				D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */,
-				53710D8417D8F5CB00A992DE /* deep-codesign in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1280,7 +1273,6 @@
 				D06B58D118035B5A00656D97 /* SQRLTerminationListenerSpec.m in Sources */,
 				5371815F18A29DC8005ED798 /* TestAppConstants.m in Sources */,
 				D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */,
-				53710D7417D8F59700A992DE /* SQRLDeepCodesignSpec.m in Sources */,
 				D00F5B8E17E82DE6009A4818 /* NSProcessInfoExtensionsSpec.m in Sources */,
 				D049059B180554BA004E683E /* SQRLDirectoryManagerSpec.m in Sources */,
 				5397A69D187DF8610014A477 /* SQRLInstallerOwnedBundle.m in Sources */,
