@@ -231,7 +231,7 @@ QuickConfigurationEnd
 	if (environment != nil) configuration = @{ NSWorkspaceLaunchConfigurationEnvironment: environment };
 
 	NSError *error = nil;
-	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:self.testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide | NSWorkspaceLaunchAsync configuration:configuration error:&error];
+	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:self.testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:configuration error:&error];
 	XCTAssertNotNil(app, @"Could not launch app at %@: %@", self.testApplicationURL, error);
 
 	[self addCleanupBlock:^{
