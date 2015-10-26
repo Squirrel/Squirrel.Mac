@@ -80,7 +80,7 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).withTimeout(UghTImeout).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(UghTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
