@@ -140,7 +140,9 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSTimeInterval delay = 15;
+		[NSThread sleepForTimeInterval:5];
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
+		[NSThread sleepForTimeInterval:5];
 
 		expect(@(app.terminated)).withTimeout(delay + SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
@@ -180,7 +182,12 @@ describe(@"updating", ^{
 
 			writeUpdate(update);
 
+			[NSThread sleepForTimeInterval:5];
+
 			NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateRequestCount": @2 });
+
+			[NSThread sleepForTimeInterval:5];
+
 			expect([updateDirectoryURLs toArray]).toEventuallyNot(equal(@[]));
 			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
@@ -282,7 +289,11 @@ describe(@"state", ^{
 
 		writeUpdate(update);
 
+		[NSThread sleepForTimeInterval:5];
+
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
+
+		[NSThread sleepForTimeInterval:5];
 
 		NSArray *expectedStates = @[
 			@(SQRLUpdaterStateIdle),
