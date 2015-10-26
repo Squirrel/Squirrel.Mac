@@ -33,7 +33,7 @@ it(@"should complete immediately when the app is not running", ^{
 	expect(@(completed)).to(beTruthy());
 });
 
-fit(@"should wait until one instance terminates", ^{
+it(@"should wait until one instance terminates", ^{
 	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
 
 	__block NSRunningApplication *observedApp = nil;
