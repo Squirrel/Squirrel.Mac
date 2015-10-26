@@ -45,21 +45,21 @@ static void SQRLSignalHandler(int sig) {
 
 // Returns an _unlaunched_ task that will follow log files at the given paths,
 // then pipe that output through this process.
-static NSTask *SQRLTailTaskWithPaths(RACSequence *paths) {
-	NSPipe *outputPipe = [NSPipe pipe];
-	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
-
-	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
-		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
-		NSLog(@"\n%@", output);
-	};
-
-	NSTask *task = [[NSTask alloc] init];
-	task.launchPath = @"/usr/bin/tail";
-	task.standardOutput = outputPipe;
-	task.arguments = [[paths startWith:@"-f"] array];
-	return task;
-}
+//static NSTask *SQRLTailTaskWithPaths(RACSequence *paths) {
+//	NSPipe *outputPipe = [NSPipe pipe];
+//	NSFileHandle *outputHandle = outputPipe.fileHandleForReading;
+//
+//	outputHandle.readabilityHandler = ^(NSFileHandle *handle) {
+//		NSString *output = [[NSString alloc] initWithData:handle.availableData encoding:NSUTF8StringEncoding];
+//		NSLog(@"\n%@", output);
+//	};
+//
+//	NSTask *task = [[NSTask alloc] init];
+//	task.launchPath = @"/usr/bin/tail";
+//	task.standardOutput = outputPipe;
+//	task.arguments = [[paths startWith:@"-f"] array];
+//	return task;
+//}
 
 static NSBundle *SQRLTestBundle(void) {
 	return [NSBundle bundleWithIdentifier:@"com.github.SquirrelTests"];
@@ -90,11 +90,11 @@ QuickConfigurationBegin(Fixtures)
 		].rac_sequence;
 	}];
 
-	RACSequence *paths = [URLs map:^(NSURL *URL) {
-		return URL.path;
-	}];
+//	RACSequence *paths = [URLs map:^(NSURL *URL) {
+//		return URL.path;
+//	}];
 
-	NSTask *readShipIt = SQRLTailTaskWithPaths(paths);
+//	NSTask *readShipIt = SQRLTailTaskWithPaths(paths);
 
 	[configuration beforeSuite:^{
 		signal(SIGILL, &SQRLSignalHandler);
@@ -109,13 +109,13 @@ QuickConfigurationBegin(Fixtures)
 			}
 		}
 
-		[readShipIt launch];
+//		[readShipIt launch];
 
-		NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
+//		NSAssert([readShipIt isRunning], @"Could not start task %@", readShipIt);
 	}];
 
 	[configuration afterSuite:^{
-		[readShipIt terminate];
+//		[readShipIt terminate];
 	}];
 
 	// We want to run any enqueued cleanup blocks after _and before_ each spec,
@@ -194,13 +194,13 @@ QuickConfigurationEnd
 		NSURL *testAppLog = [fixtureURL.URLByDeletingLastPathComponent URLByAppendingPathComponent:@"TestApplication.log"];
 		[[NSData data] writeToURL:testAppLog atomically:YES];
 
-		NSTask *readTestApp = SQRLTailTaskWithPaths([RACSequence return:testAppLog.path]);
-		[readTestApp launch];
+//		NSTask *readTestApp = SQRLTailTaskWithPaths([RACSequence return:testAppLog.path]);
+//		[readTestApp launch];
 
-		XCTAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
+//		XCTAssertTrue([readTestApp isRunning], @"Could not start task %@ to read %@", readTestApp, testAppLog);
 
 		[self addCleanupBlock:^{
-			[readTestApp terminate];
+//			[readTestApp terminate];
 		}];
 	}
 
