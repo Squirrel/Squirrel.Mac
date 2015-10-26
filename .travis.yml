@@ -1,0 +1,12 @@
+osx_image: xcode7.1
+language: objective-c
+before_install:
+- brew update
+- brew outdated xctool || brew upgrade xctool
+install: script/bootstrap
+script: script/cibuild
+notifications:
+  email: false
+env:
+  global:
+    secure: L4C3hHzXc/sgL35dIz3kjqIzPWnXCHsFOgbOcz0f249zlnegeKHQdChm4HUDtfrbmKLMYQCIvVfcgPeLaHkCSeHqXUihXLT2LglK+0GX3MBbFzde9x1uln2O68hH1tTmBg2O2i4Dtc4D3e+2tVv3XmhQDZt0znIVO6n9YgevDqw=

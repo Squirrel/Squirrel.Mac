@@ -41,30 +41,26 @@ config ()
     # Individual names can be quoted to avoid word splitting.
     : ${SCHEMES:=Squirrel}
 
-    # A source-able file with information about the Keychain, containing our
-    # code-signing certificate.
-    : ${KEYCHAIN_INFO:=/var/lib/jenkins/config/xcodekeychain}
-
     export XCWORKSPACE
     export XCODEPROJ
     export BOOTSTRAP
     export XCTOOL_OPTIONS
     export SCHEMES
-    export KEYCHAIN_INFO
 }
 
 ##
 ## Code Signing
 ##
 
-unlock_keychain ()
+setup_keychain ()
 {
-    if [ -e "$KEYCHAIN_INFO" ]
-    then
-        # Unlock the keychain so the certificates it contains can be used for building.
-        . "$KEYCHAIN_INFO"
-        security unlock-keychain -p "$XCODE_KEYCHAIN_PASSWORD" "$XCODE_KEYCHAIN"
-    fi
+  KEY_CHAIN=build.keychain
+  security create-keychain -p travis $KEY_CHAIN
+
+  security default-keychain -s $KEY_CHAIN
+  security unlock-keychain -p travis $KEY_CHAIN
+  security set-keychain-settings -t 3600 -u $KEY_CHAIN
+  security import script/certs.p12 -k build.keychain -P $KEY_PASSWORD -T /usr/bin/codesign
 }
 
 ##
@@ -74,7 +70,7 @@ unlock_keychain ()
 main ()
 {
     config
-    unlock_keychain
+    setup_keychain
 
     if [ -f "$BOOTSTRAP" ]
     then

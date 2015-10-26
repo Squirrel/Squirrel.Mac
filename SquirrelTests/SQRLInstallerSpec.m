@@ -88,7 +88,7 @@ it(@"should install an update to another volume", ^{
 	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
-	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 describe(@"with backup restoration", ^{
@@ -133,7 +133,7 @@ describe(@"with backup restoration", ^{
 		[self installWithRequest:request remote:YES];
 
 		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@1));
-		
+
 		__block NSError *error;
 		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
@@ -165,7 +165,7 @@ describe(@"signal handling", ^{
 	void (^verifyUpdate)(void) = ^{
 		// Wait up to the launchd throttle interval, then verify that ShipIt
 		// relaunched and finished installing the update.
-		expect(self.testApplicationBundleVersion).withTimeout(5).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(self.testApplicationBundleVersion).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 		NSError *error;
 		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];

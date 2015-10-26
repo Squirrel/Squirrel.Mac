@@ -73,6 +73,7 @@
 	__block NSUInteger updateCheckCount = 1;
 
 	NSInteger updateRequestCount = [NSProcessInfo.processInfo.environment[@"SQRLUpdateRequestCount"] integerValue];
+	if (updateRequestCount < 1) updateRequestCount = 1;
 
 	[[[[[[[[[[RACSignal
 		defer:^{

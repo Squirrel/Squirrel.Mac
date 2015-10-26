@@ -67,6 +67,8 @@ describe(@"updating", ^{
 	});
 
 	it(@"should use the application's bundled version of Squirrel and update in-place", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSError *error = nil;
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(updateURL),
@@ -78,11 +80,13 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	it(@"should not install a corrupt update", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSURL *codeSignatureURL = [updateURL URLByAppendingPathComponent:@"Contents/_CodeSignature"];
 		expect(@([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL])).to(beTruthy());
 
@@ -94,7 +98,7 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 
 		// Give the update some time to finish installing.
 		[NSThread sleepForTimeInterval:0.2];
@@ -102,6 +106,8 @@ describe(@"updating", ^{
 	});
 
 	it(@"should update to the most recently enqueued job", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(self.testApplicationURL)
 		} error:NULL];
@@ -125,11 +131,13 @@ describe(@"updating", ^{
 
 		writeUpdate(update);
 
-		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	it(@"should use the application's bundled version of Squirrel and update in-place after a significant delay", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+		
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(updateURL),
 			@"final": @YES
@@ -140,7 +148,7 @@ describe(@"updating", ^{
 		NSTimeInterval delay = 15;
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
-		expect(@(app.terminated)).withTimeout(delay + 5).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(delay + SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
@@ -167,6 +175,8 @@ describe(@"updating", ^{
 		});
 
 		it(@"should remove downloaded archives after updating", ^{
+			SKIP_IF_RUNNING_ON_TRAVIS
+
 			NSError *error = nil;
 			SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 				@"updateURL": zipUpdate(updateURL),
@@ -180,7 +190,7 @@ describe(@"updating", ^{
 
 			NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateRequestCount": @2 });
 			expect([updateDirectoryURLs toArray]).toEventuallyNot(equal(@[]));
-			expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
+			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 			expect([updateDirectoryURLs toArray]).toEventually(equal(@[]));
@@ -243,6 +253,8 @@ static RACSignal * (^stateNotificationListener)(void) = ^ {
 
 describe(@"state", ^{
 	it(@"should transition through idle, checking and idle, when there is no update", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSMutableArray *states = [NSMutableArray array];
 		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
 			[states addObject:state];
@@ -257,10 +269,12 @@ describe(@"state", ^{
 		];
 		expect(states).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSMutableArray *states = [NSMutableArray array];
 		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
 			[states addObject:state];
@@ -284,9 +298,9 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateDownloadingUpdate),
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
-		expect(states).toEventually(equal(expectedStates));
+		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 	});
 });
 
