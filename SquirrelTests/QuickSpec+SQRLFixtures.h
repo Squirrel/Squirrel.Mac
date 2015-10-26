@@ -11,6 +11,9 @@
 #import <ReactiveCocoa/ReactiveCocoa.h>
 #import <Squirrel/Squirrel.h>
 
+/// See https://github.com/Squirrel/Squirrel.Mac/pull/154#issuecomment-151287744
+#define SKIP_IF_RUNNING_ON_TRAVIS if (self.runningOnTravis) return;
+
 // The short version string for the `testApplicationBundle`.
 extern NSString * const SQRLTestApplicationOriginalShortVersionString;
 
@@ -57,6 +60,9 @@ extern const NSTimeInterval SQRLLongTimeout;
 
 // A directory manager for finding URLs that apply to ShipIt.
 @property (nonatomic, strong, readonly) SQRLDirectoryManager *shipItDirectoryManager;
+
+/// Are the tests currently being run on Travis?
+@property (nonatomic, readonly, assign, getter = isRunningOnTravis) BOOL runningOnTravis;
 
 // Launches a new copy of TestApplication.app from the `testApplicationBundle`.
 //

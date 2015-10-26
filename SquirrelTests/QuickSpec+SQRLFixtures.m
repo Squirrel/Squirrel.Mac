@@ -326,6 +326,10 @@ QuickConfigurationEnd
 	return [NSURL fileURLWithPath:path isDirectory:YES];
 }
 
+- (BOOL)isRunningOnTravis {
+	return NSProcessInfo.processInfo.environment[@"TRAVIS"] != nil;
+}
+
 @end
 
 #pragma clang diagnostic pop

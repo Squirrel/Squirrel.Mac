@@ -67,6 +67,8 @@ describe(@"updating", ^{
 	});
 
 	it(@"should use the application's bundled version of Squirrel and update in-place", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSError *error = nil;
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(updateURL),
@@ -83,6 +85,8 @@ describe(@"updating", ^{
 	});
 
 	it(@"should not install a corrupt update", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSURL *codeSignatureURL = [updateURL URLByAppendingPathComponent:@"Contents/_CodeSignature"];
 		expect(@([NSFileManager.defaultManager removeItemAtURL:codeSignatureURL error:NULL])).to(beTruthy());
 
@@ -102,6 +106,8 @@ describe(@"updating", ^{
 	});
 
 	it(@"should update to the most recently enqueued job", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(self.testApplicationURL)
 		} error:NULL];
@@ -130,6 +136,8 @@ describe(@"updating", ^{
 	});
 
 	it(@"should use the application's bundled version of Squirrel and update in-place after a significant delay", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+		
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(updateURL),
 			@"final": @YES
@@ -167,6 +175,8 @@ describe(@"updating", ^{
 		});
 
 		it(@"should remove downloaded archives after updating", ^{
+			SKIP_IF_RUNNING_ON_TRAVIS
+
 			NSError *error = nil;
 			SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 				@"updateURL": zipUpdate(updateURL),
@@ -243,6 +253,8 @@ static RACSignal * (^stateNotificationListener)(void) = ^ {
 
 describe(@"state", ^{
 	it(@"should transition through idle, checking and idle, when there is no update", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSMutableArray *states = [NSMutableArray array];
 		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
 			[states addObject:state];
@@ -261,6 +273,8 @@ describe(@"state", ^{
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
+		SKIP_IF_RUNNING_ON_TRAVIS
+
 		NSMutableArray *states = [NSMutableArray array];
 		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
 			[states addObject:state];
