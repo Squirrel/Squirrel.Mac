@@ -57,7 +57,9 @@ it(@"should wait until one instance terminates", ^{
 it(@"should wait until multiple instances terminate", ^{
 	[NSThread sleepForTimeInterval:5];
 	NSRunningApplication *app1 = [self launchTestApplicationWithEnvironment:nil];
+	[NSThread sleepForTimeInterval:5];
 	NSRunningApplication *app2 = [self launchTestApplicationWithEnvironment:nil];
+	[NSThread sleepForTimeInterval:5];
 
 	__block BOOL completed = NO;
 	[[listener waitForTermination] subscribeCompleted:^{

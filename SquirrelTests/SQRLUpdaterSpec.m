@@ -108,6 +108,8 @@ describe(@"updating", ^{
 
 		writeUpdate(update);
 
+		[NSThread sleepForTimeInterval:5];
+
 		NSRunningApplication *app = launchWithEnvironment(nil);
 
 		// Now that Test Application is launched, it's going to keep checking the
@@ -116,7 +118,7 @@ describe(@"updating", ^{
 		//
 		// This exercises ShipIt's ability to discard previous commands and
 		// install an even newer update.
-		[NSThread sleepForTimeInterval:0.3];
+		[NSThread sleepForTimeInterval:3];
 
 		update = [SQRLTestUpdate modelWithDictionary:@{
 			@"updateURL": zipUpdate(updateURL),
@@ -248,7 +250,11 @@ describe(@"state", ^{
 			[states addObject:state];
 		}];
 
+		[NSThread sleepForTimeInterval:5];
+
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
+
+		[NSThread sleepForTimeInterval:5];
 
 		NSArray *expectedStates = @[
 			@(SQRLUpdaterStateIdle),
