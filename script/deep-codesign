@@ -1,0 +1,203 @@
+#!/usr/bin/env ruby
+
+def exit_error(description)
+	puts "{ \"error\": \"#{description}\" }"
+	exit 1
+end
+
+module Targets
+	class Object
+		def self.match(path)
+			!File.symlink?(path)
+		end
+
+		attr_reader :path
+
+		def initialize(path)
+			@path = path
+		end
+
+		def search_directories
+			[]
+		end
+	end
+
+	class Bundle < Object
+		def self.match(path)
+			return false unless super
+
+			return false unless match = File.extname(path).match(/\.(.+)/)
+			return match[1] == extension
+		end
+
+		def contents_directories
+			[ "Contents" ]
+		end
+
+		def suffix_directories
+			[
+				"Frameworks",
+				"SharedFrameworks",
+				"XPCServices",
+				"PlugIns",
+				"Support",
+				"SharedSupport",
+				File.join("Library", "LoginItems"),
+				File.join("Library", "LaunchServices"),
+			]
+		end
+
+		def search_directories
+			contents_directories.product(suffix_directories).map do |combination|
+				File.join(*combination)
+			end
+		end
+	end
+
+	class VersionedBundle < Bundle
+		def contents_directories
+			contents_directories = []
+			versions_directory = File.join(@path, "Versions")
+			Dir.foreach(versions_directory) do |current_version|
+				next if current_version.start_with?('.')
+
+				full_path = File.join(versions_directory, current_version)
+				next if File.symlink?(full_path)
+
+				contents_directories << File.join("Versions", current_version)
+			end
+			contents_directories
+		end
+	end
+
+	class App < Bundle
+		def self.extension
+			"app"
+		end
+	end
+
+	class Framework < VersionedBundle
+		def self.extension
+			"framework"
+		end
+	end
+
+	class XPCService < Bundle
+		def self.extension
+			"xpc"
+		end
+	end
+
+	class Tool < Object
+		def self.match(path)
+			return false unless super
+			return false unless File.executable?(path)
+
+			# Look for an __TEXT,__info_plist section
+			# This contains the CFBundleIdentifier necessary for signing
+			`otool -l "#{path}"` =~ /__info_plist/
+		end
+	end
+
+	def self.all_targets
+		[ App, Framework, XPCService, Tool ]
+	end
+end
+
+module Codesign
+	class Task
+		def self.sign(target, identity, timestamp)
+			arguments = [ "--sign", identity, "--force", "--preserve-metadata=identifier,entitlements,requirements", "--verbose", target.path ]
+			arguments.unshift("--timestamp=none") if not timestamp
+			codesign_with_arguments(arguments)
+		end
+
+		protected
+
+		def self.codesign_with_arguments(arguments)
+			$stdout.flush
+
+			pid = fork
+			if pid.nil?
+				exec("/usr/bin/xcrun", *([ "codesign" ].concat(arguments)))
+			else
+				Process.wait(pid)
+				exit_error("codesign failed") unless $?.exitstatus == 0
+			end
+		end
+	end
+end
+
+codesign_identity = ENV['CODE_SIGN_IDENTITY']
+unless codesign_identity
+	exit_error("No codesign identity provided")
+end
+
+build_dir = ENV['CONFIGURATION_BUILD_DIR']
+product_name = ENV['FULL_PRODUCT_NAME']
+unless build_dir && product_name
+	exit_error("Path to built product not provided")
+end
+
+input_path = File.realpath(File.join(build_dir, product_name))
+unless File.exists?(input_path)
+	exit_error("Built product doesn't exist at path provided")
+end
+
+targets = [ ]
+
+def match_path(path)
+	Targets.all_targets.each do |target|
+		return target.new(path) if target.match(path)
+	end
+	nil
+end
+
+root_target = match_path input_path
+if root_target.nil?
+	exit_error("Built product is not a known file structure, cannot deep codesign")
+end
+
+# Recursion base case can't use build_dir because there can be >1 product
+paths_to_search = root_target.search_directories.map do |current_dir|
+	File.join(root_target.path, current_dir)
+end
+
+while paths_to_search.size > 0
+	new_search_paths = []
+	paths_to_search.each do |search_path|
+		next unless File.directory?(search_path)
+
+		Dir.foreach(search_path) do |current_directory_entry|
+			next if current_directory_entry.start_with?(".")
+			File.delete(File.join(search_path, current_directory_entry)) if current_directory_entry.end_with?(".cstemp")
+
+			target = match_path(File.join(search_path, current_directory_entry))
+			next if target.nil?
+
+			targets << target
+
+			new_search_paths << target.search_directories.map do |current_search_directory|
+				File.join(target.path, current_search_directory)
+			end
+		end
+	end
+	paths_to_search = new_search_paths.flatten
+end
+
+puts "Signing these targets:"
+puts "="*22
+print "\n"
+
+# Sort into nested-most first, outer targets might include inner targets
+# in their ResourceRules
+targets = targets.sort_by do |target|
+	target.path.size
+end
+targets.reverse!
+
+use_timestamp = ENV["CONFIGURATION"] == "Release"
+targets.each do |target|
+	puts "=> #{target.path}"
+	Codesign::Task.sign(target, codesign_identity, use_timestamp)
+end
