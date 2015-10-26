@@ -21,6 +21,10 @@ extern NSString * const SQRLTestApplicationUpdatedShortVersionString;
 // The Info.plist key associated with a bundle's short version string.
 extern NSString * const SQRLBundleShortVersionStringKey;
 
+/// The longer timeout we should use for things that take a long time. This is
+/// especially needed on slower machines (e.g., Travis CI).
+extern const NSTimeInterval SQRLLongTimeout;
+
 @class SQRLCodeSignature;
 @class SQRLDirectoryManager;
 @class SQRLShipItRequest;

@@ -19,8 +19,6 @@
 #import "SQRLTestUpdate.h"
 #import "TestAppConstants.h"
 
-static const NSTimeInterval UghTimeout = 20;
-
 QuickSpecBegin(SQRLUpdaterSpec)
 
 __block NSURL *JSONURL;
@@ -80,7 +78,7 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).withTimeout(UghTimeout).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
@@ -96,7 +94,7 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
-		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 
 		// Give the update some time to finish installing.
 		[NSThread sleepForTimeInterval:0.2];
@@ -127,7 +125,7 @@ describe(@"updating", ^{
 
 		writeUpdate(update);
 
-		expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
@@ -142,7 +140,7 @@ describe(@"updating", ^{
 		NSTimeInterval delay = 15;
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
-		expect(@(app.terminated)).withTimeout(delay + 5).toEventually(beTruthy());
+		expect(@(app.terminated)).withTimeout(delay + SQRLLongTimeout).toEventually(beTruthy());
 		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
@@ -182,7 +180,7 @@ describe(@"updating", ^{
 
 			NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateRequestCount": @2 });
 			expect([updateDirectoryURLs toArray]).toEventuallyNot(equal(@[]));
-			expect(@(app.terminated)).withTimeout(5).toEventually(beTruthy());
+			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 			expect([updateDirectoryURLs toArray]).toEventually(equal(@[]));
@@ -259,7 +257,7 @@ describe(@"state", ^{
 		];
 		expect(states).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).withTimeout(5).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
@@ -286,9 +284,9 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateDownloadingUpdate),
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
-		expect(states).withTimeout(UghTimeout).toEventually(equal(expectedStates));
+		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
 
-		expect(@(testApplication.terminated)).withTimeout(UghTimeout).toEventually(beTruthy());
+		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 	});
 });
 

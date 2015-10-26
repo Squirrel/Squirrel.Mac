@@ -23,6 +23,8 @@ NSString * const SQRLTestApplicationOriginalShortVersionString = @"1.0";
 NSString * const SQRLTestApplicationUpdatedShortVersionString = @"2.1";
 NSString * const SQRLBundleShortVersionStringKey = @"CFBundleShortVersionString";
 
+const NSTimeInterval SQRLLongTimeout = 20;
+
 static void SQRLKillAllTestApplications(void) {
 	// Forcibly kill all copies of the TestApplication that may be running.
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"];

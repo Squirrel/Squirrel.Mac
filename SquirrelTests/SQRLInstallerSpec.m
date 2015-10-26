@@ -88,7 +88,7 @@ it(@"should install an update to another volume", ^{
 	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
-	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(20).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 describe(@"with backup restoration", ^{
@@ -128,11 +128,15 @@ describe(@"with backup restoration", ^{
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
-	it(@"should relaunch even after failing to install an update", ^{
+	fit(@"should relaunch even after failing to install an update", ^{
+		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@0));
+
 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES useUpdateBundleName:NO];
 		[self installWithRequest:request remote:YES];
 
 		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@1));
+		NSLog(@"%@", [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"]);
+		[NSThread sleepForTimeInterval:2];
 		
 		__block NSError *error;
 		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
@@ -165,7 +169,7 @@ describe(@"signal handling", ^{
 	void (^verifyUpdate)(void) = ^{
 		// Wait up to the launchd throttle interval, then verify that ShipIt
 		// relaunched and finished installing the update.
-		expect(self.testApplicationBundleVersion).withTimeout(20).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(self.testApplicationBundleVersion).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 		NSError *error;
 		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error];
