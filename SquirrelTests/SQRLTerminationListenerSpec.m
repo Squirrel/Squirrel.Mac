@@ -34,6 +34,8 @@ it(@"should complete immediately when the app is not running", ^{
 });
 
 it(@"should wait until one instance terminates", ^{
+	[NSThread sleepForTimeInterval:5];
+
 	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
 
 	__block NSRunningApplication *observedApp = nil;
@@ -53,6 +55,7 @@ it(@"should wait until one instance terminates", ^{
 });
 
 it(@"should wait until multiple instances terminate", ^{
+	[NSThread sleepForTimeInterval:5];
 	NSRunningApplication *app1 = [self launchTestApplicationWithEnvironment:nil];
 	NSRunningApplication *app2 = [self launchTestApplicationWithEnvironment:nil];
 
