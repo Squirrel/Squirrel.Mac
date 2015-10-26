@@ -1570,6 +1570,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
@@ -1587,6 +1588,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
@@ -1652,6 +1654,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
@@ -1698,6 +1701,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
 				FRAMEWORK_VERSION = A;
