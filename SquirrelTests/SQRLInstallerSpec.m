@@ -128,16 +128,12 @@ describe(@"with backup restoration", ^{
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
-	fit(@"should relaunch even after failing to install an update", ^{
-		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@0));
-
+	it(@"should relaunch even after failing to install an update", ^{
 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES useUpdateBundleName:NO];
 		[self installWithRequest:request remote:YES];
 
 		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@1));
-		NSLog(@"%@", [NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"]);
-		[NSThread sleepForTimeInterval:2];
-		
+
 		__block NSError *error;
 		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
