@@ -145,7 +145,6 @@
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */; };
 		D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */; };
-		D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */ = {isa = PBXBuildFile; fileRef = D0D97E4417B58FC400301C72 /* ResourceRules.plist */; };
 		D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */; };
 		D0EDBEDD17B0DB3E0058BC3C /* QuickSpec+SQRLFixtures.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEDC17B0DB3E0058BC3C /* QuickSpec+SQRLFixtures.m */; };
 		D0EDBEE117B0E3650058BC3C /* SQRLCodeSignatureSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0EDBEE017B0E3650058BC3C /* SQRLCodeSignatureSpec.m */; };
@@ -425,7 +424,6 @@
 		D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdaterSpec.m; sourceTree = "<group>"; };
 		D0D2B6231804E903000EA901 /* SQRLDirectoryManager.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLDirectoryManager.h; sourceTree = "<group>"; };
 		D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDirectoryManager.m; sourceTree = "<group>"; };
-		D0D97E4417B58FC400301C72 /* ResourceRules.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = ResourceRules.plist; sourceTree = "<group>"; };
 		D0EDBE9A17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "NSError+SQRLVerbosityExtensions.h"; path = "Squirrel/NSError+SQRLVerbosityExtensions.h"; sourceTree = SOURCE_ROOT; };
 		D0EDBE9B17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = "NSError+SQRLVerbosityExtensions.m"; path = "Squirrel/NSError+SQRLVerbosityExtensions.m"; sourceTree = SOURCE_ROOT; };
 		D0EDBEDB17B0DB3E0058BC3C /* QuickSpec+SQRLFixtures.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "QuickSpec+SQRLFixtures.h"; sourceTree = "<group>"; };
@@ -623,7 +621,6 @@
 		D08D4E0F17B451500012B22D /* Supporting Files */ = {
 			isa = PBXGroup;
 			children = (
-				D0D97E4417B58FC400301C72 /* ResourceRules.plist */,
 				D0B1DDCB17B487D90059C355 /* unused-helper */,
 				D08D4E1017B451500012B22D /* TestApplication-Info.plist */,
 				D08D4E1117B451500012B22D /* InfoPlist.strings */,
@@ -1118,7 +1115,6 @@
 				D08D4E1317B451500012B22D /* InfoPlist.strings in Resources */,
 				D08D4E2117B451500012B22D /* Images.xcassets in Resources */,
 				D08D4E1917B451500012B22D /* Credits.rtf in Resources */,
-				D0D97E4517B58FC400301C72 /* ResourceRules.plist in Resources */,
 				D03BE98D17B6174500458593 /* MainMenu.xib in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1474,7 +1470,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1491,7 +1486,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1508,7 +1502,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1525,7 +1518,6 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Developer ID Application";
-				CODE_SIGN_RESOURCE_RULES_PATH = TestApplication/ResourceRules.plist;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
