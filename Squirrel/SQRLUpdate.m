@@ -74,7 +74,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 + (NSValueTransformer *)releaseDateJSONTransformer {
 	// ISO 8601 Time Zone with ':'
-	NSString * const ISO8601DateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZZZ";
+	NSString * const ISO8601DateFormat = @"yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZZZ";
 
 	return [MTLValueTransformer reversibleTransformerWithForwardBlock:^ NSDate * (NSString *dateString) {
 		if (![dateString isKindOfClass:NSString.class]) return nil;
