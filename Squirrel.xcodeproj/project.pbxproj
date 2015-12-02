@@ -27,6 +27,8 @@
 		53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */ = {isa = PBXBuildFile; fileRef = 53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */; };
 		88CA21971BD980FC006693B7 /* MTLEXTRuntimeExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21941BD980FC006693B7 /* MTLEXTRuntimeExtensions.m */; };
 		88CA21981BD980FC006693B7 /* MTLEXTScope.m in Sources */ = {isa = PBXBuildFile; fileRef = 88CA21961BD980FC006693B7 /* MTLEXTScope.m */; };
+		A535B4C91C0E7DD50047953D /* NSURLConnection+RACStreamSupport.h in Headers */ = {isa = PBXBuildFile; fileRef = A535B4C71C0E7DD50047953D /* NSURLConnection+RACStreamSupport.h */; };
+		A535B4CA1C0E7DD50047953D /* NSURLConnection+RACStreamSupport.m in Sources */ = {isa = PBXBuildFile; fileRef = A535B4C81C0E7DD50047953D /* NSURLConnection+RACStreamSupport.m */; };
 		D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */ = {isa = PBXBuildFile; fileRef = D000218D17BACEFF0050109A /* SQRLZipArchiver.m */; };
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
@@ -290,6 +292,8 @@
 		88CA21941BD980FC006693B7 /* MTLEXTRuntimeExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLEXTRuntimeExtensions.m; path = Carthage/Checkouts/Mantle/Mantle/extobjc/MTLEXTRuntimeExtensions.m; sourceTree = SOURCE_ROOT; };
 		88CA21951BD980FC006693B7 /* MTLEXTScope.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = MTLEXTScope.h; path = Carthage/Checkouts/Mantle/Mantle/extobjc/MTLEXTScope.h; sourceTree = SOURCE_ROOT; };
 		88CA21961BD980FC006693B7 /* MTLEXTScope.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = MTLEXTScope.m; path = Carthage/Checkouts/Mantle/Mantle/extobjc/MTLEXTScope.m; sourceTree = SOURCE_ROOT; };
+		A535B4C71C0E7DD50047953D /* NSURLConnection+RACStreamSupport.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSURLConnection+RACStreamSupport.h"; sourceTree = "<group>"; };
+		A535B4C81C0E7DD50047953D /* NSURLConnection+RACStreamSupport.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSURLConnection+RACStreamSupport.m"; sourceTree = "<group>"; };
 		D000218C17BACEFF0050109A /* SQRLZipArchiver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLZipArchiver.h; sourceTree = "<group>"; };
 		D000218D17BACEFF0050109A /* SQRLZipArchiver.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiver.m; sourceTree = "<group>"; };
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
@@ -551,6 +555,8 @@
 		D00F5B8217E82CFB009A4818 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				A535B4C71C0E7DD50047953D /* NSURLConnection+RACStreamSupport.h */,
+				A535B4C81C0E7DD50047953D /* NSURLConnection+RACStreamSupport.m */,
 				D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */,
 				D00F5B8A17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m */,
 			);
@@ -958,6 +964,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5397A5CE187D92810014A477 /* SQRLShipItRequest.h in Headers */,
+				A535B4C91C0E7DD50047953D /* NSURLConnection+RACStreamSupport.h in Headers */,
 				5374DCC6187AD0D8006B7056 /* SQRLAuthorization.h in Headers */,
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
@@ -1248,6 +1255,7 @@
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
+				A535B4CA1C0E7DD50047953D /* NSURLConnection+RACStreamSupport.m in Sources */,
 				5397A5CF187D92810014A477 /* SQRLShipItRequest.m in Sources */,
 				D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */,
 				5374DCC7187AD0D8006B7056 /* SQRLAuthorization.m in Sources */,
