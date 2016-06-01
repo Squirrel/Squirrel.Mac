@@ -29,10 +29,10 @@
 //                 on-disk locations for. This must not be nil.
 - (instancetype)initWithApplicationIdentifier:(NSString *)appIdentifier;
 
-// Finds or creates an Application Support folder.
+// Finds or creates an storage folder.
 //
 // Returns a signal which synchronously sends a URL then completes, or errors.
-- (RACSignal *)applicationSupportURL;
+- (RACSignal *)storageURL;
 
 // Determines where archived `SQRLShipItState` should be saved.
 //
