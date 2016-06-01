@@ -364,8 +364,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				}]
 				flatten]
 				flattenMap:^(NSData *data) {
-					if (data.length == 0) return [RACSignal empty];
-
 					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
 
 					NSError *error = nil; 
