@@ -29,7 +29,7 @@
 //                 on-disk locations for. This must not be nil.
 - (instancetype)initWithApplicationIdentifier:(NSString *)appIdentifier;
 
-// Finds or creates an storage folder.
+// Finds or creates a storage folder.
 //
 // Returns a signal which synchronously sends a URL then completes, or errors.
 - (RACSignal *)storageURL;
