@@ -159,7 +159,7 @@ describe(@"updating", ^{
 		beforeEach(^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication.ShipIt"];
 
-			appSupportURL = [[directoryManager applicationSupportURL] first];
+			appSupportURL = [[directoryManager storageURL] first];
 			expect(appSupportURL).notTo(beNil());
 
 			updateDirectoryURLs = [[RACSignal

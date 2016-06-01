@@ -37,7 +37,7 @@ it(@"should send an Application Support URL", ^{
 	SQRLDirectoryManager *manager = SQRLDirectoryManager.currentApplicationManager;
 
 	NSError *error = nil;
-	NSURL *appSupportURL = [[manager applicationSupportURL] firstOrDefault:nil success:NULL error:&error];
+	NSURL *appSupportURL = [[manager storageURL] firstOrDefault:nil success:NULL error:&error];
 	expect(appSupportURL).notTo(beNil());
 	expect(error).to(beNil());
 
