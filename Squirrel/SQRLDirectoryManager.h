@@ -39,4 +39,14 @@
 // Returns a signal which synchronously sends a URL then completes, or errors.
 - (RACSignal *)shipItStateURL;
 
+// Determines where ShipIt's stdout log should be saved.
+//
+// Returns a signal which synchronously sends a URL then completes, or errors.
+- (RACSignal *)shipItStdoutURL;
+
+// Determines where ShipIt's stderr log should be saved.
+//
+// Returns a signal which synchronously sends a URL then completes, or errors.
+- (RACSignal *)shipItStderrURL;
+
 @end
