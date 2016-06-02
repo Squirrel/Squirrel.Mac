@@ -47,11 +47,11 @@
 
 #pragma mark Folder URLs
 
-- (RACSignal *)applicationSupportURL {
+- (RACSignal *)storageURL {
 	return [[RACSignal
 		defer:^{
 			NSError *error = nil;
-			NSURL *folderURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
+			NSURL *folderURL = [NSFileManager.defaultManager URLForDirectory:NSCachesDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:&error];
 			if (folderURL == nil) {
 				return [RACSignal error:error];
 			}
@@ -63,12 +63,12 @@
 
 			return [RACSignal return:folderURL];
 		}]
-		setNameWithFormat:@"%@ -applicationSupportURL", self];
+		setNameWithFormat:@"%@ -storageURL", self];
 }
 
 - (RACSignal *)shipItStateURL {
 	return [[[self
-		applicationSupportURL]
+		storageURL]
 		map:^(NSURL *folderURL) {
 			return [folderURL URLByAppendingPathComponent:@"ShipItState.plist"];
 		}]

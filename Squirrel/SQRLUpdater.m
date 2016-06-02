@@ -385,10 +385,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return [directoryManager applicationSupportURL];
+			return [directoryManager storageURL];
 		}]
-		flattenMap:^(NSURL *appSupportURL) {
-			NSURL *updateDirectoryTemplate = [appSupportURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
+		flattenMap:^(NSURL *storageURL) {
+			NSURL *updateDirectoryTemplate = [storageURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
 			@onExit {
 				free(updateDirectoryCString);
@@ -478,12 +478,12 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return [directoryManager applicationSupportURL];
+			return [directoryManager storageURL];
 		}]
-		flattenMap:^(NSURL *appSupportURL) {
+		flattenMap:^(NSURL *storageURL) {
 			NSFileManager *manager = [[NSFileManager alloc] init];
-			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:appSupportURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
-				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, appSupportURL, error);
+			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:storageURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, storageURL, error);
 				return YES;
 			}];
 
