@@ -40,6 +40,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 @property (atomic, readwrite) SQRLUpdaterState state;
 
+/// The etag of the currently downloaded update, nil if no update has been
+/// downloaded.
+@property (atomic, copy) NSString *etag;
+
 // The code signature for the running application, used to check updates before
 // sending them to ShipIt.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
@@ -329,12 +333,20 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			NSURL *zipDownloadURL = update.updateURL;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
+			if (self.etag != nil) {
+				[zipDownloadRequest setValue:self.etag forHTTPHeaderField:@"If-None-Match"];
+			}
 
 			return [[[[NSURLConnection
 				rac_sendAsynchronousRequest:zipDownloadRequest]
 				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (id)response;
+
+						if (httpResponse.statusCode == 304 /* Not Modified */) {
+							return [RACSignal empty];
+						}
+
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
@@ -344,6 +356,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
 						}
+
+						self.etag = httpResponse.allHeaderFields[@"ETag"];
 					}
 
 					return [RACSignal return:bodyData];
