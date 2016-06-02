@@ -536,6 +536,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		[handle seekToFileOffset:fileLength - MAX_LENGTH];
 		NSData *mostRecentData = [handle readDataToEndOfFile];
 		[handle truncateFileAtOffset:0];
+		[handle seekToFileOffset:0];
 		[handle writeData:mostRecentData];
 
 		return [RACSignal empty];
