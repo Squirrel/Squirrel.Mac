@@ -524,7 +524,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Like truncation, but backwards.
 - (RACSignal *)backwardTruncateFile:(NSURL *)fileURL {
 	return [RACSignal defer:^{
-		static const NSInteger MAX_LENGTH = 1024 * 8;
+		static const NSInteger MAX_LENGTH = 1024 * 1024 * 8;
 
 		NSError *error;
 		NSFileHandle *handle = [NSFileHandle fileHandleForWritingToURL:fileURL error:&error];
