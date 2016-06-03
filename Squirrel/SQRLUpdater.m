@@ -18,11 +18,13 @@
 #import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
 #import "SQRLShipItRequest.h"
+#import "NSURLConnection+RACStreamSupport.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
+NSString * const SQRLUpdaterDestinationURLErrorKey = @"SQRLUpdaterDestinationURLErrorKey";
 NSString * const SQRLUpdaterJSONObjectErrorKey = @"SQRLUpdaterJSONObjectErrorKey";
 
 const NSInteger SQRLUpdaterErrorMissingUpdateBundle = 2;
@@ -323,18 +325,20 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	NSParameterAssert(update != nil);
 	NSParameterAssert(downloadDirectory != nil);
 
-	return [[[[[RACSignal
+	return [[[RACSignal
 		defer:^{
 			NSURL *zipDownloadURL = update.updateURL;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
+			
+			[zipDownloadRequest setTimeoutInterval:1200];
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 			if (self.etag != nil) {
 				[zipDownloadRequest setValue:self.etag forHTTPHeaderField:@"If-None-Match"];
 			}
 
 			return [[[[NSURLConnection
-				rac_sendAsynchronousRequest:zipDownloadRequest]
-				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
+					   rac_startAsynchronousRequest:zipDownloadRequest into:[downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent]]
+				reduceEach:^(NSURLResponse *response, NSURL *destination) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (id)response;
 
@@ -346,7 +350,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
 								NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-								SQRLUpdaterServerDataErrorKey: bodyData,
+								SQRLUpdaterDestinationURLErrorKey: destination,
 							};
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
@@ -355,31 +359,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						self.etag = httpResponse.allHeaderFields[@"ETag"];
 					}
 
-					return [RACSignal return:bodyData];
+					return [RACSignal return:destination];
 				}]
 				flatten]
-				flattenMap:^(NSData *data) {
-					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
-
-					NSError *error = nil; 
-					if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
-						return [RACSignal return:zipOutputURL];
-					} else {
-						return [RACSignal error:error];
-					}
-				}];
-		}]
-		doNext:^(NSURL *zipOutputURL) {
-			NSLog(@"Download completed to: %@", zipOutputURL);
-		}]
-		flattenMap:^(NSURL *zipOutputURL) {
-			return [[SQRLZipArchiver
-				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
-				doCompleted:^{
-					NSError *error = nil;
-					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
-						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
-					}
+				flattenMap:^(NSURL *zipOutputURL) {
+					NSLog(@"Download completed to: %@", zipOutputURL);
+					return [[SQRLZipArchiver
+							 unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
+							doCompleted:^{
+								NSError *error = nil;
+								if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
+									NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
+								}
+							}];
 				}];
 		}]
 		then:^{
