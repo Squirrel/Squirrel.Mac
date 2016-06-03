@@ -171,13 +171,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-		// Prune old updates before the first update check.
-		return [[[[[[[[[self
-			pruneUpdateDirectories]
-			catch:^(NSError *error) {
-				NSLog(@"Error pruning old updates: %@", error);
-				return [RACSignal empty];
-			}]
+		return [[[[[[[[self
+			performHousekeeping]
 			then:^{
 				self.state = SQRLUpdaterStateCheckingForUpdate;
 
@@ -480,6 +475,15 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		setNameWithFormat:@"%@ -shipItStateURL", self];
 }
 
+- (RACSignal *)performHousekeeping {
+	return [[RACSignal
+		merge:@[ [self pruneUpdateDirectories], [self truncateLogs] ]]
+		catch:^(NSError *error) {
+			NSLog(@"Error doing housekeeping: %@", error);
+			return [RACSignal empty];
+		}];
+}
+
 /// Lazily removes outdated temporary directories (used for previous updates)
 /// upon subscription.
 ///
@@ -514,6 +518,39 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				}];
 		}]
 		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
+}
+
+
+// Like truncation, but backwards.
+- (RACSignal *)backwardTruncateFile:(NSURL *)fileURL {
+	return [RACSignal defer:^{
+		static const NSInteger MAX_LENGTH = 1024 * 1024 * 8;
+
+		NSError *error;
+		NSFileHandle *handle = [NSFileHandle fileHandleForWritingToURL:fileURL error:&error];
+		if (handle == nil) return [RACSignal error:error];
+
+		unsigned long long fileLength = [handle seekToEndOfFile];
+		if (fileLength <= MAX_LENGTH) return [RACSignal empty];
+
+		[handle seekToFileOffset:fileLength - MAX_LENGTH];
+		NSData *mostRecentData = [handle readDataToEndOfFile];
+		[handle truncateFileAtOffset:0];
+		[handle writeData:mostRecentData];
+
+		return [RACSignal empty];
+	}];
+}
+
+- (RACSignal *)truncateLogs {
+	return [[RACSignal
+		defer:^{
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [RACSignal zip:@[ [directoryManager shipItStdoutURL], [directoryManager shipItStderrURL] ]];
+		}]
+		reduceEach:^(NSURL *stdoutURL, NSURL *stderrURL) {
+			return [RACSignal merge:@[ [self backwardTruncateFile:stdoutURL], [self backwardTruncateFile:stderrURL] ]];
+		}];
 }
 
 #pragma mark Installing Updates

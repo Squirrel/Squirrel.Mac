@@ -75,6 +75,24 @@
 		setNameWithFormat:@"%@ -shipItStateURL", self];
 }
 
+- (RACSignal *)shipItStdoutURL {
+	return [[[self
+		storageURL]
+		map:^(NSURL *folderURL) {
+			return [folderURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
+		}]
+		setNameWithFormat:@"%@ -shipItStdoutURL", self];
+}
+
+- (RACSignal *)shipItStderrURL {
+	return [[[self
+		storageURL]
+		map:^(NSURL *folderURL) {
+			return [folderURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
+		}]
+		setNameWithFormat:@"%@ -shipItStderrURL", self];
+}
+
 #pragma mark NSObject
 
 - (NSString *)description {

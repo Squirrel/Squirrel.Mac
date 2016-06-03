@@ -31,9 +31,9 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	return [[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:jobLabel];
-			return [directoryManager storageURL];
+			return [RACSignal zip:@[ [directoryManager shipItStdoutURL], [directoryManager shipItStderrURL] ]];
 		}]
-		map:^(NSURL *storageURL) {
+		reduceEach:^(NSURL *stdoutURL, NSURL *stderrURL) {
 			NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 			NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
@@ -57,8 +57,8 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			[arguments addObject:jobLabel];
 
 			jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
-			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = [storageURL URLByAppendingPathComponent:@"ShipIt_stdout.log"].path;
-			jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = [storageURL URLByAppendingPathComponent:@"ShipIt_stderr.log"].path;
+			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = stdoutURL.path;
+			jobDict[@(LAUNCH_JOBKEY_STANDARDERRORPATH)] = stderrURL.path;
 
 			return jobDict;
 		}]
