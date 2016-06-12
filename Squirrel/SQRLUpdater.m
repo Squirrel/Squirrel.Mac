@@ -495,6 +495,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (RACSignal *)pruneUpdateDirectories {
 	return [[[RACSignal
 		defer:^{
+			// If we already have updates downloaded we don't wanna prune them.
+			if (self.state == SQRLUpdaterStateAwaitingRelaunch) return [RACSignal empty];
+
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
 			return [directoryManager storageURL];
 		}]
