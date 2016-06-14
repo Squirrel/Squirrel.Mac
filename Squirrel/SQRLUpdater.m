@@ -330,11 +330,43 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
 }
 
+- (RACSignal *)unarchiveAndPrepareData:(NSData *)data withName:(NSString *)name intoDirectory:(NSURL *)downloadDirectory {
+	return [[[[[RACSignal
+		defer:^{
+			NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:name];
+			NSError *error = nil;
+			if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
+				return [RACSignal return:zipOutputURL];
+			} else {
+				return [RACSignal error:error];
+			}
+		}]
+		doNext:^(NSURL *zipOutputURL) {
+			NSLog(@"Download completed to: %@", zipOutputURL);
+		}]
+		flattenMap:^(NSURL *zipOutputURL) {
+			return [[[[SQRLZipArchiver
+				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
+				ignoreValues]
+				concat:[RACSignal return:zipOutputURL]]
+				doCompleted:^{
+					NSError *error = nil;
+					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
+						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
+					}
+				}];
+		}]
+		flattenMap:^(NSURL *zipOutputURL) {
+			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
+		}]
+		setNameWithFormat:@"%@ -unarchiveAndPrepareData:withName: %@ intoDirectory: %@", self, name, downloadDirectory];
+}
+
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
 	NSParameterAssert(update != nil);
 	NSParameterAssert(downloadDirectory != nil);
 
-	return [[[[[RACSignal
+	return [[RACSignal
 		defer:^{
 			NSURL *zipDownloadURL = update.updateURL;
 			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
@@ -343,7 +375,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				[zipDownloadRequest setValue:self.etag forHTTPHeaderField:@"If-None-Match"];
 			}
 
-			return [[[[NSURLConnection
+			return [[[NSURLConnection
 				rac_sendAsynchronousRequest:zipDownloadRequest]
 				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
@@ -366,45 +398,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						self.etag = httpResponse.allHeaderFields[@"ETag"];
 					}
 
-					return [RACSignal return:bodyData];
+					return [self unarchiveAndPrepareData:bodyData withName:zipDownloadURL.lastPathComponent intoDirectory:downloadDirectory];
 				}]
-				flatten]
-				flattenMap:^(NSData *data) {
-					if (data == nil) return [RACSignal return:nil];
-
-					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
-
-					NSError *error = nil; 
-					if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
-						return [RACSignal return:zipOutputURL];
-					} else {
-						return [RACSignal error:error];
-					}
-				}];
-		}]
-		doNext:^(NSURL *zipOutputURL) {
-			if (zipOutputURL == nil) return;
-
-			NSLog(@"Download completed to: %@", zipOutputURL);
-		}]
-		flattenMap:^(NSURL *zipOutputURL) {
-			if (zipOutputURL == nil) return [RACSignal return:nil];
-
-			return [[[[SQRLZipArchiver
-				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
-				ignoreValues]
-				concat:[RACSignal return:zipOutputURL]]
-				doCompleted:^{
-					NSError *error = nil;
-					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
-						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
-					}
-				}];
-		}]
-		flattenMap:^(NSURL *zipOutputURL) {
-			if (zipOutputURL == nil) return [RACSignal return:nil];
-
-			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
+				flatten];
 		}]
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
