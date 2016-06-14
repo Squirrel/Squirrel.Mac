@@ -304,16 +304,27 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[self
 		uniqueTemporaryDirectoryForUpdate]
 		flattenMap:^(NSURL *downloadDirectory) {
+			void (^cleanUp)(void) = ^{
+				NSError *error;
+				if (![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&error]) {
+					NSLog(@"Error removing temporary download directory at %@: %@", downloadDirectory, error.sqrl_verboseDescription);
+				}
+			};
+
 			return [[[self
 				downloadBundleForUpdate:update intoDirectory:downloadDirectory]
 				flattenMap:^(NSBundle *updateBundle) {
+					// If the bundle is nil it means our conditional GET told us
+					// we already downloaded the update. So just clean up.
+					if (updateBundle == nil) {
+						cleanUp();
+						return [RACSignal empty];
+					}
+
 					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
 				}]
 				doError:^(id _) {
-					NSError *error = nil;
-					if (![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&error]) {
-						NSLog(@"Error removing temporary download directory at %@: %@", downloadDirectory, error.sqrl_verboseDescription);
-					}
+					cleanUp();
 				}];
 		}]
 		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
@@ -339,7 +350,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						NSHTTPURLResponse *httpResponse = (id)response;
 
 						if (httpResponse.statusCode == 304 /* Not Modified */) {
-							return [RACSignal empty];
+							return [RACSignal return:nil];
 						}
 
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
@@ -359,6 +370,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				}]
 				flatten]
 				flattenMap:^(NSData *data) {
+					if (data == nil) return [RACSignal return:nil];
+
 					NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
 
 					NSError *error = nil; 
@@ -370,11 +383,17 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				}];
 		}]
 		doNext:^(NSURL *zipOutputURL) {
+			if (zipOutputURL == nil) return;
+
 			NSLog(@"Download completed to: %@", zipOutputURL);
 		}]
 		flattenMap:^(NSURL *zipOutputURL) {
-			return [[SQRLZipArchiver
+			if (zipOutputURL == nil) return [RACSignal return:nil];
+
+			return [[[[SQRLZipArchiver
 				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
+				ignoreValues]
+				concat:[RACSignal return:zipOutputURL]]
 				doCompleted:^{
 					NSError *error = nil;
 					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
@@ -382,7 +401,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					}
 				}];
 		}]
-		then:^{
+		flattenMap:^(NSURL *zipOutputURL) {
+			if (zipOutputURL == nil) return [RACSignal return:nil];
+
 			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
 		}]
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
