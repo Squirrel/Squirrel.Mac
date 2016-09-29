@@ -6,6 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
+#import <sys/xattr.h>
 #import "SQRLUpdater.h"
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
@@ -52,6 +53,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 //
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+
+/// Was the app quarantined when we tried checking for updates?
+@property (atomic, assign) BOOL wasQuarantined;
 
 // Parses an update model from downloaded data.
 //
@@ -171,9 +175,14 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
-		return [[[[[[[[self
+		return [[[[[[[[[self
 			performHousekeeping]
 			then:^{
+				return [self unquarantineApp];
+			}]
+			then:^{
+				if (self.wasQuarantined) return [RACSignal empty];
+
 				self.state = SQRLUpdaterStateCheckingForUpdate;
 
 				return [NSURLConnection rac_sendAsynchronousRequest:request];
@@ -239,6 +248,18 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 }
 
 #pragma mark Checking for Updates
+
+- (RACSignal *)unquarantineApp {
+	return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+		const char *path = targetURL.path.fileSystemRepresentation;
+		int result = removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW);
+		self.wasQuarantined = result == 0;
+
+		[subscriber sendCompleted];
+		return nil;
+	}];
+}
 
 - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
 	@weakify(self);
