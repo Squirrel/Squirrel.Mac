@@ -54,8 +54,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 
-/// Was the app quarantined when we tried checking for updates?
-@property (atomic, assign) BOOL wasQuarantined;
+/// Was the app quarantined when we tried checking for updates? Will be nil if
+/// we haven't checked yet.
+@property (atomic, copy) NSNumber *wasQuarantined;
 
 // Parses an update model from downloaded data.
 //
@@ -180,8 +181,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			then:^{
 				return [self unquarantineApp];
 			}]
-			then:^{
-				if (self.wasQuarantined) return [RACSignal empty];
+			flattenMap:^(NSNumber *quarantined) {
+				// If we were quarantined then we can't check for updates until
+				// the app is relaunched.
+				if (quarantined.boolValue) return [RACSignal empty];
 
 				self.state = SQRLUpdaterStateCheckingForUpdate;
 
@@ -251,11 +254,14 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 - (RACSignal *)unquarantineApp {
 	return [RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-		NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
-		const char *path = targetURL.path.fileSystemRepresentation;
-		int result = removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW);
-		self.wasQuarantined = result == 0;
+		if (self.wasQuarantined == nil) {
+			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+			const char *path = targetURL.path.fileSystemRepresentation;
+			int result = removexattr(path, "com.apple.quarantine", XATTR_NOFOLLOW);
+			self.wasQuarantined = @(result == 0);
+		}
 
+		[subscriber sendNext:self.wasQuarantined];
 		[subscriber sendCompleted];
 		return nil;
 	}];
