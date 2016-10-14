@@ -20,6 +20,7 @@
 #import "SQRLShipItRequest.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import <sys/mount.h>
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
@@ -490,6 +491,14 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			return directoryManager.shipItStateURL;
 		}]
 		setNameWithFormat:@"%@ -shipItStateURL", self];
+}
+
+/// Is the host app running on a read-only volume?
+- (BOOL)isRunningOnReadOnlyVolume {
+	struct statfs statfsInfo;
+	NSURL *bundleURL = NSRunningApplication.currentApplication.bundleURL;
+	statfs(bundleURL.fileSystemRepresentation, &statfsInfo);
+	return (statfsInfo.f_flags & MNT_RDONLY) != 0;
 }
 
 - (RACSignal *)performHousekeeping {
