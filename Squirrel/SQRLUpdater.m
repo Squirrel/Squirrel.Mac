@@ -172,6 +172,11 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		NSMutableURLRequest *request = [self.updateRequest mutableCopy];
 		[request setValue:@"application/json" forHTTPHeaderField:@"Accept"];
 
+		BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
+		if (readOnlyVolume) {
+			return [RACSignal empty];
+		}
+
 		return [[[[[[[[self
 			performHousekeeping]
 			then:^{
