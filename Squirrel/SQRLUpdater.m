@@ -34,7 +34,7 @@ const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 
 /// The application's being run on a read-only volume.
-const NSInteger SQRLUpdaterErrorReadOnlyVolume = 7;
+const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 
 // The prefix used when creating temporary directories for updates. This will be
 // followed by a random string of characters.
