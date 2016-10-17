@@ -510,8 +510,13 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (BOOL)isRunningOnReadOnlyVolume {
 	struct statfs statfsInfo;
 	NSURL *bundleURL = NSRunningApplication.currentApplication.bundleURL;
-	statfs(bundleURL.fileSystemRepresentation, &statfsInfo);
-	return (statfsInfo.f_flags & MNT_RDONLY) != 0;
+	int result = statfs(bundleURL.fileSystemRepresentation, &statfsInfo);
+	if (result == 0) {
+		return (statfsInfo.f_flags & MNT_RDONLY) != 0;
+	} else {
+		// If we can't even check if the volume is read-only, assume it is.
+		return true;
+	}
 }
 
 - (RACSignal *)performHousekeeping {
