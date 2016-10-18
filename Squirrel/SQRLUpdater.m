@@ -20,6 +20,7 @@
 #import "SQRLShipItRequest.h"
 #import <ReactiveCocoa/EXTScope.h>
 #import <ReactiveCocoa/ReactiveCocoa.h>
+#import <sys/mount.h>
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
@@ -31,6 +32,9 @@ const NSInteger SQRLUpdaterErrorRetrievingCodeSigningRequirement = 4;
 const NSInteger SQRLUpdaterErrorInvalidServerResponse = 5;
 const NSInteger SQRLUpdaterErrorInvalidJSON = 6;
 const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
+
+/// The application's being run on a read-only volume.
+const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 
 // The prefix used when creating temporary directories for updates. This will be
 // followed by a random string of characters.
@@ -193,6 +197,16 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 					if (httpResponse.statusCode == 204 /* No Content */) {
 						return [RACSignal empty];
+					}
+
+					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
+					if (readOnlyVolume) {
+						NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
+						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
+						};
+						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
+						return [RACSignal error:error];
 					}
 				}
 
@@ -490,6 +504,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			return directoryManager.shipItStateURL;
 		}]
 		setNameWithFormat:@"%@ -shipItStateURL", self];
+}
+
+/// Is the host app running on a read-only volume?
+- (BOOL)isRunningOnReadOnlyVolume {
+	struct statfs statfsInfo;
+	NSURL *bundleURL = NSRunningApplication.currentApplication.bundleURL;
+	int result = statfs(bundleURL.fileSystemRepresentation, &statfsInfo);
+	if (result == 0) {
+		return (statfsInfo.f_flags & MNT_RDONLY) != 0;
+	} else {
+		// If we can't even check if the volume is read-only, assume it is.
+		return true;
+	}
 }
 
 - (RACSignal *)performHousekeeping {
