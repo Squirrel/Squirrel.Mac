@@ -388,6 +388,11 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			if (self.etag != nil) {
 				[zipDownloadRequest setValue:self.etag forHTTPHeaderField:@"If-None-Match"];
 			}
+			// Add auth headers from initial request, so that file downloads get authenticated
+			NSDictionary *HTTPHeaders = self.updateRequest.allHTTPHeaderFields;
+			for (NSString *headerField in HTTPHeaders) {
+				[zipDownloadRequest setValue:HTTPHeaders[headerField] forHTTPHeaderField:headerField];
+			}
 
 			return [[[NSURLConnection
 				rac_sendAsynchronousRequest:zipDownloadRequest]
