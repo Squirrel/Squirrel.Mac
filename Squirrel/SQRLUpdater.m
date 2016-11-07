@@ -144,11 +144,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 }
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest {
+	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
+		return [NSURLRequest requestWithURL:downloadURL];
+	}];
+}
+
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(RequestForDownload)requestForDownload {
 	NSParameterAssert(updateRequest != nil);
+	NSParameterAssert(requestForDownload != nil);
 
 	self = [super init];
 	if (self == nil) return nil;
 
+	_requestForDownload = [requestForDownload copy];
 	_updateRequest = [updateRequest copy];
 	_updateClass = SQRLUpdate.class;
 
@@ -383,13 +391,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[RACSignal
 		defer:^{
 			NSURL *zipDownloadURL = update.updateURL;
-			NSMutableURLRequest *zipDownloadRequest = [NSMutableURLRequest requestWithURL:zipDownloadURL];
-
-			// Add auth headers from initial request, so that file downloads get authenticated
-			NSDictionary *HTTPHeaders = self.updateRequest.allHTTPHeaderFields;
-			for (NSString *headerField in HTTPHeaders) {
-				[zipDownloadRequest setValue:HTTPHeaders[headerField] forHTTPHeaderField:headerField];
-			}
+			NSMutableURLRequest *zipDownloadRequest = [self.requestForDownload(zipDownloadURL) mutableCopy];
 
 			[zipDownloadRequest setValue:@"application/zip" forHTTPHeaderField:@"Accept"];
 			if (self.etag != nil) {
