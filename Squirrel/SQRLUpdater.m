@@ -149,7 +149,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	}];
 }
 
-- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(RequestForDownload)requestForDownload {
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
 	NSParameterAssert(updateRequest != nil);
 	NSParameterAssert(requestForDownload != nil);
 

@@ -24,7 +24,7 @@ typedef enum : NSUInteger {
 } SQRLUpdaterState;
 
 // Block for providing download requests given a download url
-typedef NSURLRequest * (^RequestForDownload)(NSURL *);
+typedef NSURLRequest * (^SQRLRequestForDownload)(NSURL *);
 
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
@@ -102,7 +102,7 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 //
 // If initialized with -initWithUpdateRequest: this block will
 // return a generic NSURLRequest with the provided url.
-@property (nonatomic, copy) RequestForDownload requestForDownload;
+@property (nonatomic, copy) SQRLRequestForDownload requestForDownload;
 
 // The `SQRLUpdate` subclass to instantiate with the server's response.
 //
@@ -133,7 +133,7 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 //                      updateRequest param.
 //
 // Returns the initialized `SQRLUpdater`.
-- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(RequestForDownload)requestForDownload;
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload;
 
 // Executes `checkForUpdatesCommand` (if enabled) every `interval` seconds.
 //
