@@ -23,6 +23,9 @@ typedef enum : NSUInteger {
        SQRLUpdaterStateAwaitingRelaunch,
 } SQRLUpdaterState;
 
+// Block for providing download requests given a download url
+typedef NSURLRequest * (^SQRLRequestForDownload)(NSURL *);
+
 // The domain for errors originating within SQRLUpdater.
 extern NSString * const SQRLUpdaterErrorDomain;
 
@@ -92,6 +95,15 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // This property must never be set to nil.
 @property (atomic, copy) NSURLRequest *updateRequest;
 
+// The block used for fetching a given download request
+//
+// The default value is the argument that was originally passed to
+// -initWithUpdateRequest:requestForDownload:.
+//
+// If initialized with -initWithUpdateRequest: this block will
+// return a generic NSURLRequest with the provided url.
+@property (nonatomic, copy) SQRLRequestForDownload requestForDownload;
+
 // The `SQRLUpdate` subclass to instantiate with the server's response.
 //
 // By default, this is `SQRLUpdate` itself, but it can be set to a custom
@@ -110,6 +122,18 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 //
 // Returns the initialized `SQRLUpdater`.
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest;
+
+// Initializes an updater that will send the given request to check for updates
+// and passes a block to provide requests for the update downloads.
+//
+// updateRequest - Same as with initWithUpdateRequest
+// requestForDownload - Once the update url is found for the update download, allow
+//                      providing custom requests that can be costomized as desired.
+//                      Useful for including `Authorization` headers just like the
+//                      updateRequest param.
+//
+// Returns the initialized `SQRLUpdater`.
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload;
 
 // Executes `checkForUpdatesCommand` (if enabled) every `interval` seconds.
 //
