@@ -61,7 +61,7 @@ and Mantle.framework are copied into.
 Once Squirrel is added to your project, you need to configure and start it.
 
 ```objc
-#import <Squirrel/Squirrel.h>
+# import <Squirrel/Squirrel.h>
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
 	NSURLComponents *components = [[NSURLComponents alloc] init];
