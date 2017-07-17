@@ -15,7 +15,6 @@
 
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
-#import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
 #import "SQRLInstaller+Private.h"
 #import "SQRLTerminationListener.h"
@@ -58,9 +57,7 @@ static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
 		setNameWithFormat:@"waitForTerminationIfNecessary"];
 }
 
-static void installRequest(RACSignal *readRequestSignal, SQRLDirectoryManager *directoryManager) {
-	NSString *applicationIdentifier = directoryManager.applicationIdentifier;
-
+static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
 	[[[[[readRequestSignal
 		flattenMap:^(SQRLShipItRequest *request) {
 			return waitForTerminationIfNecessary(request);
@@ -148,15 +145,15 @@ int main(int argc, const char * argv[]) {
 			NSLog(@"ShipIt quitting");
 		});
 
-		if (argc < 2) {
-			NSLog(@"Missing launchd job label for ShipIt");
+		if (argc < 3) {
+			NSLog(@"Missing launchd job label or state path for ShipIt");
 			return EXIT_FAILURE;
 		}
 
 		char const *jobLabel = argv[1];
-		SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@(jobLabel)];
-
-		installRequest([SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL], directoryManager);
+		const char *statePath = argv[2];
+		NSURL *shipItStateURL = [NSURL fileURLWithPath:@(statePath)];
+		installRequest([SQRLShipItRequest readUsingURL:[RACSignal return:shipItStateURL]], @(jobLabel));
 
 		dispatch_main();
 	}
