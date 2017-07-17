@@ -244,20 +244,27 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	_shipItLauncher = [[[RACSignal
 		defer:^{
+			@strongify(self);
+
 			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
 
-			NSNumber *targetWritable = nil;
-			NSError *targetWritableError = nil;
-			BOOL gotWritable = [targetURL getResourceValue:&targetWritable forKey:NSURLIsWritableKey error:&targetWritableError];
-
-			// If we can't determine whether it can be written, assume nonprivileged and
-			// wait for another, more canonical error.
-			return [SQRLShipItLauncher launchPrivileged:(gotWritable && !targetWritable.boolValue)];
+			BOOL targetWritable = [self canWriteToURL:targetURL];
+			BOOL parentWritable = [self canWriteToURL:targetURL.URLByDeletingLastPathComponent];
+			return [SQRLShipItLauncher launchPrivileged:!targetWritable || !parentWritable];
 		}]
 		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;
+}
+
+- (BOOL)canWriteToURL:(NSURL *)fileURL {
+	NSNumber *writable = nil;
+	NSError *writableError = nil;
+	BOOL gotWritable = [fileURL getResourceValue:&writable forKey:NSURLIsWritableKey error:&writableError];
+	// If we can't determine whether it can be written, assume nonprivileged and
+	// wait for another, more canonical error.
+	return !gotWritable || writable.boolValue;
 }
 
 #pragma mark Checking for Updates
