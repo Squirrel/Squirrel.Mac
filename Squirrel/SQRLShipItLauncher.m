@@ -31,9 +31,13 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 	return [[[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:jobLabel];
-			return [RACSignal zip:@[ [directoryManager shipItStdoutURL], [directoryManager shipItStderrURL] ]];
+			return [RACSignal zip:@[
+				[directoryManager shipItStdoutURL],
+				[directoryManager shipItStderrURL],
+				[directoryManager shipItStateURL]
+			]];
 		}]
-		reduceEach:^(NSURL *stdoutURL, NSURL *stderrURL) {
+		reduceEach:^(NSURL *stdoutURL, NSURL *stderrURL, NSURL *shipItStateURL) {
 			NSBundle *squirrelBundle = [NSBundle bundleForClass:self.class];
 			NSAssert(squirrelBundle != nil, @"Could not open Squirrel.framework bundle");
 
@@ -55,6 +59,12 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 			// Pass in the service name so ShipIt knows how to broadcast itself.
 			[arguments addObject:jobLabel];
+
+			// We need to pass the path to ShipIt rather than having ShipIt
+			// calculate the path itself. This is because ShipIt may run as a
+			// different user if it had to escalate to be able to replace the
+			// bundle.
+			[arguments addObject:shipItStateURL.path];
 
 			jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = stdoutURL.path;
