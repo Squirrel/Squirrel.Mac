@@ -1078,7 +1078,8 @@
 				ORGANIZATIONNAME = GitHub;
 				TargetAttributes = {
 					D08D4E0B17B451500012B22D = {
-						ProvisioningStyle = Manual;
+						DevelopmentTeam = C4RRYD56A6;
+						ProvisioningStyle = Automatic;
 					};
 					D0C22BEE179CC00E00158214 = {
 						LastSwiftMigration = 0830;
@@ -1478,7 +1479,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = C4RRYD56A6;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1496,7 +1497,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = C4RRYD56A6;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1514,7 +1515,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = C4RRYD56A6;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1532,7 +1533,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = C4RRYD56A6;
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
