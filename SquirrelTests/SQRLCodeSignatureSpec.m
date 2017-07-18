@@ -88,7 +88,7 @@ describe(@"main executable changes", ^{
 
 		expect(error).notTo(beNil());
 		expect(error.domain).to(equal(SQRLCodeSignatureErrorDomain));
-		expect(@(error.code)).to(equal(@(SQRLCodeSignatureErrorCouldNotCreateStaticCode)));
+		expect(@(error.code)).to(equal(@(SQRLCodeSignatureErrorDidNotPass)));
 	});
 
 	it(@"should fail to verify a bundle with a corrupt executable", ^{
