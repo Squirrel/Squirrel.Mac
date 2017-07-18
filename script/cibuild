@@ -142,6 +142,8 @@ build_scheme ()
     echo "*** Building and testing $scheme..."
     echo
 
+    run_xcodebuild -scheme "$scheme" build-for-testing >/dev/null || exit $?
+
     local sdkflag=
     local action=test
 
@@ -173,7 +175,7 @@ build_scheme ()
         action=build
     fi
 
-    run_xctool $sdkflag -scheme "$scheme" $action
+    run_xctool $sdkflag -scheme "$scheme" run-tests
 }
 
 export -f build_scheme
