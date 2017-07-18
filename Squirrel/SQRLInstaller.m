@@ -22,7 +22,6 @@
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
 #import "SQRLCodeSignature.h"
-#import "SQRLDirectoryManager.h"
 #import "SQRLShipItRequest.h"
 #import "SQRLTerminationListener.h"
 #import "SQRLInstallerOwnedBundle.h"
