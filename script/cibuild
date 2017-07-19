@@ -99,34 +99,6 @@ find_pattern ()
     ls -d $1 2>/dev/null | head -n 1
 }
 
-run_xctool ()
-{
-    if [ -n "$XCWORKSPACE" ]
-    then
-        xctool -workspace "$XCWORKSPACE" $XCTOOL_OPTIONS "$@" 2>&1
-    elif [ -n "$XCODEPROJ" ]
-    then
-        xctool -project "$XCODEPROJ" $XCTOOL_OPTIONS "$@" 2>&1
-    else
-        echo "*** No workspace or project file found."
-        exit 1
-    fi
-}
-
-run_xcodebuild ()
-{
-    if [ -n "$XCWORKSPACE" ]
-    then
-        xcodebuild -workspace "$XCWORKSPACE" $XCTOOL_OPTIONS "$@" 2>&1
-    elif [ -n "$XCODEPROJ" ]
-    then
-        xcodebuild -project "$XCODEPROJ" $XCTOOL_OPTIONS "$@" 2>&1
-    else
-        echo "*** No workspace or project file found."
-        exit 1
-    fi
-}
-
 parse_build ()
 {
     awk -f "$SCRIPT_DIR/xctool.awk" 2>&1 >/dev/null
@@ -134,19 +106,16 @@ parse_build ()
 
 build_scheme ()
 {
-    local scheme=$1
+    echo "*** Cleaning Squirrel..."
+    xcodebuild -scheme Squirrel -workspace Squirrel.xcworkspace clean >/dev/null || exit $?
 
-    echo "*** Cleaning $scheme..."
-    run_xcodebuild -scheme "$scheme" clean >/dev/null || exit $?
-
-    echo "*** Building and testing $scheme..."
+    echo "*** Building Squirrel..."
     echo
 
-    xcodebuild test -scheme Squirrel -workspace Squirrel.xcworkspace
+    xcodebuild -scheme Squirrel -workspace Squirrel.xcworkspace build >/dev/null || exit $?
 }
 
 export -f build_scheme
-export -f run_xctool
 export -f parse_build
 
 main
