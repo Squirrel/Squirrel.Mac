@@ -117,6 +117,15 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		setNameWithFormat:@"+shipItAuthorization"];
 }
 
++ (BOOL)isShipItRunning {
+	NSTask *checkShipItRunningTask = [[NSTask alloc] init];
+	checkShipItRunningTask.launchPath=@"/usr/bin/pgrep";
+	checkShipItRunningTask.arguments = @[@"ShipIt"];
+	[checkShipItRunningTask launch];
+	[checkShipItRunningTask waitUntilExit];
+	return checkShipItRunningTask.terminationStatus == 0;
+}
+
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
 	return [[[RACSignal
 		zip:@[
@@ -141,10 +150,30 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 				return [RACSignal error:CFBridgingRelease(cfError)];
 			}
 
+            // wait for ShipIt to start.
+            sleep(1);
+
+            if (![self isShipItRunning]) {
+				// ShipIt not running, possible something wrong with SumJobSubmit
+				// running manually
+				NSLog(@"ShipIt is not running. try to launch");
+				NSTask *launchctlTask = [[NSTask alloc] init];
+				launchctlTask.launchPath = @"/bin/launchctl";
+				launchctlTask.arguments = @[@"start", self.shipItJobLabel];
+				[launchctlTask launch];
+				[launchctlTask waitUntilExit];
+				if (launchctlTask.terminationStatus == 0) {
+					NSLog(@"ShipIt is running");
+				} else {
+					NSLog(@"ShipIt is failed to launch %d", launchctlTask.terminationStatus);
+				}
+			}
+
 			return [RACSignal empty];
 		}]
 		flatten]
 		setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];
 }
+
 
 @end
