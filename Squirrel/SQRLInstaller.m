@@ -402,7 +402,20 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			if (rmdir(temporaryDirectoryURL.path.fileSystemRepresentation) == 0) {
 				return [RACSignal empty];
 			} else {
-				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+				int code = errno;
+				NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+
+				const char *desc = strerror(code);
+				if (desc != NULL) {
+					userInfo[NSLocalizedDescriptionKey] = @(desc);
+				} else {
+					userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Unknown POSIX error", @"");
+				}
+
+				userInfo[NSLocalizedFailureReasonErrorKey] = [NSString stringWithFormat:NSLocalizedString(@"Couldn't remove temp dir \"%@\"", @""), temporaryDirectoryURL.path];
+				userInfo[NSURLErrorKey] = temporaryDirectoryURL;
+
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:userInfo]];
 			}
 		}]
 		setNameWithFormat:@"%@ -deleteOwnedBundleAtURL: %@", self, bundleURL];
@@ -531,7 +544,14 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 					NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
 
 					const char *desc = strerror(code);
-					if (desc != NULL) userInfo[NSLocalizedDescriptionKey] = @(desc);
+					if (desc != NULL) {
+						userInfo[NSLocalizedDescriptionKey] = @(desc);
+					} else {
+						userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Unknown POSIX error", @"");
+					}
+
+					userInfo[NSLocalizedFailureReasonErrorKey] = [NSString stringWithFormat:NSLocalizedString(@"Couldn't remove quarantine attribute from \"%@\". This most likely means the file is read-only.", @""), URL.path];
+					userInfo[NSURLErrorKey] = URL;
 
 					return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
 				}
