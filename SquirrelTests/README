@@ -1,0 +1,47 @@
+
+***
+Test updates via release server or cdn-based updates
+***
+
+Control test behavior via env variables:
+
+SQUIRREL_TEST_LOCAL_SERVER=True
+SQUIRREL_LOCAL_SERVER_URL=http://localhost:8123/update/osx/1.0.1-stable/stable
+
+SQUIRREL_TEST_LOCAL_CDN=True
+SQUIRREL_CDN_URL=@"http://localhost/RELEASES.json"
+
+
+
+Test Setup:
+Create a fake dmg release file
+
+Release Server:
+git clone https://github.com/ArekSredzki/electron-release-server.git
+
+refer to their doc, here is a short summary:
+- install a local PostgreSQL, any default setup will do it
+- edit config/local.js to match your PostgreSQL setup
+- npm start
+
+point your browser to the server and upload your release dmg file
+
+CDN:
+setup a local webserver such as apache or nginx and copy your dmg file there
+create a RELEASE.json file like this:
+
+{
+  "currentRelease" : "1.0.1",
+  "releases" : [
+    {
+      "version" : "1.0.1",
+      "updateTo" : {
+        "pub_date" : "2017-03-09T15:24:55-05:00",
+        "notes" : "the next release via CDN",
+        "name" : "TestApplication_1.0.1",
+        "url" : "http:\/\/localhost/TestApplication_1.0.1.dmg",
+        "version" : "0.0.145-alpha"
+      }
+    }
+  ]
+}

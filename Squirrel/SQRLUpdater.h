@@ -160,6 +160,9 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 // wrong before termination. The signal will never complete.
 - (RACSignal *)relaunchToInstallUpdate;
 
+- (BOOL)isRunningOnReadOnlyVolume;
+- (RACSignal *)updateFromJSONData:(NSData *)data;
+
 @end
 
 @interface SQRLUpdater (Unavailable)

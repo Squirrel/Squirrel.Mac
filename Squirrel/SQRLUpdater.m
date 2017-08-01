@@ -40,6 +40,13 @@ const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
+/// Type of method used to download the release
+typedef enum {
+	TEXTFILE=1,
+	JSONFILE,
+	RELEASESERVER
+} Method;
+
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -124,6 +131,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Returns a signal which completes or errors on a background thread.
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update;
 
+- (NSData*) readPlainTextFile:(NSString*)contentString fromUrl:(NSURL*)url;
+
 @end
 
 @implementation SQRLUpdater
@@ -149,19 +158,92 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	}];
 }
 
+- (NSData*)readPlainTextFile:(NSString*) contentString fromUrl:(NSURL*) url
+{
+	if ([contentString length] <= 0) {
+		return nil;
+	}
+
+	NSURL *plainURL = [[NSURL alloc] initWithScheme:[url scheme]
+											 host:[url host]
+											 path:[url path]];
+
+	//! read last line, and call updateFromJSONData
+	NSArray* lines = [contentString componentsSeparatedByString: @"\n"];
+	NSUInteger lineCount = [lines count];
+
+	NSString* lastLine = lines[lineCount-2];
+
+	//! parse lastLine
+
+	NSArray *array = [lastLine componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+	array = [array filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF != ''"]];
+
+	NSString *absoluteString = [plainURL absoluteString];
+
+	NSString* newPath = [absoluteString substringToIndex:[absoluteString length] - 8];
+
+	uint timestamp = [array[2] intValue];
+
+	NSDate* date = [NSDate dateWithTimeIntervalSince1970:timestamp];
+	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
+	[formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZZ"];
+	NSString *dateString = [formatter stringFromDate:date];
+
+	//! filename
+
+	NSDictionary *newReleaseJSON = @{
+									 @"version": array[0],
+									 @"name": array[0],
+									 @"notes": @"-notes-",
+									 @"pub_date": dateString,
+									 @"url": [NSString stringWithFormat:@"%@/%@", newPath, array[1] ]
+									 };
+
+	NSData *releasesDATA = [[NSJSONSerialization dataWithJSONObject:newReleaseJSON options:NSJSONWritingPrettyPrinted error:NULL] copy];
+
+	//! feed it with simple fake JSON
+	return releasesDATA;
+}
+
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
+	//! foo.bar/releases.json?version=1.0
+	NSString *version = nil;
+	NSURLComponents* url = [[NSURLComponents alloc] initWithURL:updateRequest.URL resolvingAgainstBaseURL:FALSE];
+	NSArray* queryItems = url.queryItems;
+	Method mtd = RELEASESERVER;
+	for(NSURLQueryItem* obj in queryItems) {
+		if([obj.name isEqualToString:@"version"]) {
+			version = obj.value;
+		}
+		if([obj.name isEqualToString:@"method"]) {
+			NSString* method = obj.value;
+			if([method isEqualToString:@"Text"])
+				mtd = TEXTFILE;
+			if([method isEqualToString:@"JSON"])
+				mtd = JSONFILE;
+			if([method isEqualToString:@"ReleaseServer"])
+				mtd = RELEASESERVER;
+
+		}
+	}
+
+	//! download simple file
+
 	NSParameterAssert(updateRequest != nil);
 	NSParameterAssert(requestForDownload != nil);
 
 	self = [super init];
 	if (self == nil) return nil;
 
-	_requestForDownload = [requestForDownload copy];
-	_updateRequest = [updateRequest copy];
-	_updateClass = SQRLUpdate.class;
+	//! if ends with json, use the new way
 
+	_requestForDownload = [requestForDownload copy];
+	_updateRequest = [NSURLRequest requestWithURL:updateRequest.URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
+	_updateClass = SQRLUpdate.class;
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
+
 	if (_signature == nil) {
 #if DEBUG
 		NSLog(@"Could not get code signature for running application, application updates are disabled: %@", error);
@@ -185,22 +267,28 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 		return [[[[[[[[self
 			performHousekeeping]
+
+			//! get file from server
 			then:^{
 				self.state = SQRLUpdaterStateCheckingForUpdate;
 
 				return [NSURLConnection rac_sendAsynchronousRequest:request];
 			}]
+
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
-					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-						NSDictionary *errorInfo = @{
-							NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-							NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-							SQRLUpdaterServerDataErrorKey: bodyData,
-						};
-						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
-						return [RACSignal error:error];
+
+					if(mtd == RELEASESERVER) {
+						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+							NSDictionary *errorInfo = @{
+														NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+														NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+														SQRLUpdaterServerDataErrorKey: bodyData,
+														};
+							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+							return [RACSignal error:error];
+						}
 					}
 
 					if (httpResponse.statusCode == 204 /* No Content */) {
@@ -210,14 +298,53 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
 					if (readOnlyVolume) {
 						NSDictionary *errorInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
-						};
+													NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
+													NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
+													};
 						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
 						return [RACSignal error:error];
 					}
-				}
 
+					if(mtd == TEXTFILE) {
+						NSString *contentString = [[NSString alloc] initWithData:bodyData encoding:NSUTF8StringEncoding];
+
+						NSData* bodyData = [self readPlainTextFile:contentString fromUrl:updateRequest.URL];
+						return [RACSignal return:bodyData];
+
+					}
+
+					if(mtd == JSONFILE) {
+						NSError *error = nil;
+						NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
+
+						NSString *currentRelease = dict[@"currentRelease"];
+						if(currentRelease) {
+							//! if CDN points to the currently running version as the latest version, bail out
+							if([currentRelease isEqualToString:version]) {
+								NSLog(@"The running client is already the latest version.");
+								return [RACSignal empty];
+							}
+
+							if ([version compare:currentRelease options:NSNumericSearch] == NSOrderedDescending) {
+								// currentRelease is lower than version.
+								// Might be a new version for testing that is not deployed yet
+								// no roll back
+								NSLog(@"The running client is newer than the latest deployed release. Not downgrading.");
+								return [RACSignal empty];
+							}
+
+							//! @todo find latest
+							NSArray *releases = dict[@"releases"];
+							for(id obj in releases) {
+								if([currentRelease isEqualToString:obj[@"version"]]) {
+									bodyData = [[NSJSONSerialization dataWithJSONObject:obj[@"updateTo"]
+																				options:0 error:&error] copy];
+									break;
+								}
+							}
+						}
+					}
+				}
 				return [RACSignal return:bodyData];
 			}]
 			flatten]
@@ -254,7 +381,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		}]
 		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];
-	
+
 	return self;
 }
 
@@ -382,6 +509,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					NSError *error = nil;
 					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
 						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
+					} else {
+						[self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
+
 					}
 				}];
 		}]
@@ -414,7 +544,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						if (httpResponse.statusCode == 304 /* Not Modified */) {
 							return [RACSignal return:nil];
 						}
-
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
@@ -424,7 +553,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
 						}
-
 						self.etag = httpResponse.allHeaderFields[@"ETag"];
 					}
 
@@ -493,8 +621,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					NSLog(@"Could not open application bundle at %@", URL);
 					return NO;
 				}
-
-				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
+				return [bundle.bundleIdentifier isEqual:bundle.bundleIdentifier];
 			}];
 
 			if (updateBundleURL != nil) {
@@ -678,5 +805,4 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		replay]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
-
 @end
