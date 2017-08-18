@@ -42,8 +42,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 /// Type of method used to download the release
 typedef enum {
-	TEXTFILE=1,
-	JSONFILE,
+	JSONFILE=1,
 	RELEASESERVER
 } Method;
 
@@ -131,8 +130,6 @@ typedef enum {
 // Returns a signal which completes or errors on a background thread.
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update;
 
-- (NSData*) readPlainTextFile:(NSString*)contentString fromUrl:(NSURL*)url;
-
 @end
 
 @implementation SQRLUpdater
@@ -158,54 +155,6 @@ typedef enum {
 	}];
 }
 
-- (NSData*)readPlainTextFile:(NSString*) contentString fromUrl:(NSURL*) url
-{
-	if ([contentString length] <= 0) {
-		return nil;
-	}
-
-	NSURL *plainURL = [[NSURL alloc] initWithScheme:[url scheme]
-											 host:[url host]
-											 path:[url path]];
-
-	//! read last line, and call updateFromJSONData
-	NSArray* lines = [contentString componentsSeparatedByString: @"\n"];
-	NSUInteger lineCount = [lines count];
-
-	NSString* lastLine = lines[lineCount-2];
-
-	//! parse lastLine
-
-	NSArray *array = [lastLine componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-	array = [array filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF != ''"]];
-
-	NSString *absoluteString = [plainURL absoluteString];
-
-	NSString* newPath = [absoluteString substringToIndex:[absoluteString length] - 8];
-
-	uint timestamp = [array[2] intValue];
-
-	NSDate* date = [NSDate dateWithTimeIntervalSince1970:timestamp];
-	NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-	[formatter setDateFormat:@"yyyy-MM-dd'T'HH:mm:ssZZZZZ"];
-	NSString *dateString = [formatter stringFromDate:date];
-
-	//! filename
-
-	NSDictionary *newReleaseJSON = @{
-									 @"version": array[0],
-									 @"name": array[0],
-									 @"notes": @"-notes-",
-									 @"pub_date": dateString,
-									 @"url": [NSString stringWithFormat:@"%@/%@", newPath, array[1] ]
-									 };
-
-	NSData *releasesDATA = [[NSJSONSerialization dataWithJSONObject:newReleaseJSON options:NSJSONWritingPrettyPrinted error:NULL] copy];
-
-	//! feed it with simple fake JSON
-	return releasesDATA;
-}
-
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
 	//! foo.bar/releases.json?version=1.0
 	NSString *version = nil;
@@ -218,8 +167,6 @@ typedef enum {
 		}
 		if([obj.name isEqualToString:@"method"]) {
 			NSString* method = obj.value;
-			if([method isEqualToString:@"Text"])
-				mtd = TEXTFILE;
 			if([method isEqualToString:@"JSON"])
 				mtd = JSONFILE;
 			if([method isEqualToString:@"ReleaseServer"])
@@ -303,14 +250,6 @@ typedef enum {
 													};
 						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
 						return [RACSignal error:error];
-					}
-
-					if(mtd == TEXTFILE) {
-						NSString *contentString = [[NSString alloc] initWithData:bodyData encoding:NSUTF8StringEncoding];
-
-						NSData* bodyData = [self readPlainTextFile:contentString fromUrl:updateRequest.URL];
-						return [RACSignal return:bodyData];
-
 					}
 
 					if(mtd == JSONFILE) {
