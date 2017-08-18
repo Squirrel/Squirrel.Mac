@@ -108,18 +108,6 @@ describe(@"checkForUpdatesCommand", ^{
 		return [OHHTTPStubsResponse responseWithData:jsonData statusCode:200 responseTime:0 headers:nil];
 	}];
 
-	OHHTTPStubs *stubsText = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
-		return [request.URL.absoluteString isEqualToString:@"http://localhost/RELEASES?method=Text"];
-	} withStubResponse:^(NSURLRequest *request) {
-		NSString *newReleaseText = [NSString stringWithFormat:@""
-			"0.0.145-alphaTXT hipchatng-0.0.145TXT.zip 1489091095"
-			"1.4.2 BananaInternal-darwin-x64-1.6.2.zip 1499784486"
-			"1.5.7 BananaInternal-darwin-x64-1.5.7.zip 1499783424"
-		];
-
-		return [OHHTTPStubsResponse responseWithFile:newReleaseText statusCode:200 responseTime:0 headers:nil];
-	}];
-
 	OHHTTPStubs *stubsReleaseServer = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
 		return [request.URL.absoluteString isEqualToString:@"http://localhost:8123/update/osx/1.0.1-stable/stable?method=ReleaseServer"];
 	} withStubResponse:^(NSURLRequest *request) {
@@ -140,7 +128,6 @@ describe(@"checkForUpdatesCommand", ^{
 	[self addCleanupBlock:^{
 		[OHHTTPStubs removeRequestHandler:stubsJson];
 		[OHHTTPStubs removeRequestHandler:stubsReleaseServer];
-		[OHHTTPStubs removeRequestHandler:stubsText];
 	}];
 
 	BOOL testLocalServer = [[[[NSProcessInfo processInfo]environment]objectForKey:@"SQUIRREL_TEST_LOCAL_SERVER"] boolValue];
@@ -153,15 +140,9 @@ describe(@"checkForUpdatesCommand", ^{
 	if(!localCdnURL) {
 		localCdnURL = @"http://localhost/RELEASES.json?method=Json";
 	}
-	BOOL testLocalCdnTxt = [[[[NSProcessInfo processInfo]environment]objectForKey:@"SQUIRREL_TEST_LOCAL_CDN_TXT"] boolValue];
-	NSString* localCdnTxtURL = [[[NSProcessInfo processInfo]environment]objectForKey:@"SQUIRREL_CDN_TXT_URL"];
-	if(!localCdnTxtURL) {
-		localCdnTxtURL = @"http://localhost/RELEASES?method=Text";
-	}
 
 	NSLog(@"testLocalServer %d %@", testLocalServer, localServerURL);
 	NSLog(@"testLocalCdn %d %@", testLocalCdn, localCdnURL);
-	NSLog(@"testLocalCdnTxt %d %@", testLocalCdnTxt, localCdnTxtURL);
 
 	__block SQRLUpdater *updater = nil;
 	__block NSURLRequest *localRequest = nil;
@@ -216,34 +197,6 @@ describe(@"checkForUpdatesCommand", ^{
 			NSError *error = nil;
 			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
 			
-			//! now check the results
-			expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
-			expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
-			expect( (BOOL) result ).to(beTrue());
-		}
-	});
-
-	it(@"Squirrel should work with a CDN, text based", ^{
-
-		if(testLocalCdnTxt) {
-			updateFromJSONDataIsCalled = false;
-
-			//! setup the updater
-			localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:localCdnTxtURL]];
-			updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
-
-			//! replace updateFromJSONData() and isRunningOnReadOnlyVolume() methods
-			method_setImplementation(class_getInstanceMethod([SQRLUpdater class]
-															 , @selector(updateFromJSONData:))
-									 , (IMP) updateFromJSONDataImp);
-
-			method_setImplementation(class_getInstanceMethod([SQRLUpdater class]
-															 , @selector(isRunningOnReadOnlyVolume))
-									 , (IMP) isRunningOnReadOnlyVolumeImp);
-
-			NSError *error = nil;
-			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
-
 			//! now check the results
 			expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
 			expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
