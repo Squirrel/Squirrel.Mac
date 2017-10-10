@@ -40,11 +40,11 @@ const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
-/// Type of method used to download the release
+/// Type of mode used to download the release
 typedef enum {
 	JSONFILE=1,
 	RELEASESERVER
-} Method;
+} Mode;
 
 @interface SQRLUpdater ()
 
@@ -157,22 +157,12 @@ typedef enum {
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
 	//! foo.bar/releases.json?version=1.0
-	NSString *version = nil;
-	NSURLComponents* url = [[NSURLComponents alloc] initWithURL:updateRequest.URL resolvingAgainstBaseURL:FALSE];
-	NSArray* queryItems = url.queryItems;
-	Method mtd = RELEASESERVER;
-	for(NSURLQueryItem* obj in queryItems) {
-		if([obj.name isEqualToString:@"version"]) {
-			version = obj.value;
-		}
-		if([obj.name isEqualToString:@"method"]) {
-			NSString* method = obj.value;
-			if([method isEqualToString:@"JSON"])
-				mtd = JSONFILE;
-			if([method isEqualToString:@"ReleaseServer"])
-				mtd = RELEASESERVER;
 
-		}
+	NSString* version = getenv("VERSION") ? @(getenv("VERSION")) : @"";
+
+	Mode mode = RELEASESERVER;
+	if(getenv("MODE")) {
+		mode = [@(getenv("MODE")) isEqualToString:@"JSONFILE"] ? JSONFILE : RELEASESERVER;
 	}
 
 	//! download simple file
@@ -182,8 +172,6 @@ typedef enum {
 
 	self = [super init];
 	if (self == nil) return nil;
-
-	//! if ends with json, use the new way
 
 	_requestForDownload = [requestForDownload copy];
 	_updateRequest = [NSURLRequest requestWithURL:updateRequest.URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
@@ -226,7 +214,7 @@ typedef enum {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
 
-					if(mtd == RELEASESERVER) {
+					if(mode == RELEASESERVER) {
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
 														NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
@@ -252,7 +240,7 @@ typedef enum {
 						return [RACSignal error:error];
 					}
 
-					if(mtd == JSONFILE) {
+					if(mode == JSONFILE) {
 						NSError *error = nil;
 						NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
 
@@ -274,9 +262,9 @@ typedef enum {
 
 							//! @todo find latest
 							NSArray *releases = dict[@"releases"];
-							for(id obj in releases) {
-								if([currentRelease isEqualToString:obj[@"version"]]) {
-									bodyData = [[NSJSONSerialization dataWithJSONObject:obj[@"updateTo"]
+							for(NSDictionary* release in releases) {
+								if([currentRelease isEqualToString:release[@"version"]]) {
+									bodyData = [[NSJSONSerialization dataWithJSONObject:release[@"updateTo"]
 																				options:0 error:&error] copy];
 									break;
 								}
@@ -448,9 +436,6 @@ typedef enum {
 					NSError *error = nil;
 					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
 						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
-					} else {
-						[self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
-
 					}
 				}];
 		}]
@@ -560,7 +545,7 @@ typedef enum {
 					NSLog(@"Could not open application bundle at %@", URL);
 					return NO;
 				}
-				return [bundle.bundleIdentifier isEqual:bundle.bundleIdentifier];
+				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
 			}];
 
 			if (updateBundleURL != nil) {
