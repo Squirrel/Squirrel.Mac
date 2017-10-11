@@ -175,7 +175,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	_updateClass = SQRLUpdate.class;
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
-
 	if (_signature == nil) {
 #if DEBUG
 		NSLog(@"Could not get code signature for running application, application updates are disabled: %@", error);
@@ -206,7 +205,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 				return [NSURLConnection rac_sendAsynchronousRequest:request];
 			}]
-
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
@@ -214,10 +212,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					if(mode == RELEASESERVER) {
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
-														NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-														NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-														SQRLUpdaterServerDataErrorKey: bodyData,
-														};
+									NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+									NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+									SQRLUpdaterServerDataErrorKey: bodyData,
+							};
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
 						}
@@ -230,9 +228,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
 					if (readOnlyVolume) {
 						NSDictionary *errorInfo = @{
-													NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
-													NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
-													};
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
+						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
+						};
 						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
 						return [RACSignal error:error];
 					}
@@ -305,7 +303,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		}]
 		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];
-
+	
 	return self;
 }
 
@@ -465,6 +463,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						if (httpResponse.statusCode == 304 /* Not Modified */) {
 							return [RACSignal return:nil];
 						}
+
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
@@ -474,6 +473,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
 						}
+
 						self.etag = httpResponse.allHeaderFields[@"ETag"];
 					}
 
@@ -542,6 +542,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 					NSLog(@"Could not open application bundle at %@", URL);
 					return NO;
 				}
+
 				return [bundle.bundleIdentifier isEqual:NSRunningApplication.currentApplication.bundleIdentifier];
 			}];
 
@@ -726,4 +727,5 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		replay]
 		setNameWithFormat:@"%@ -relaunchToInstallUpdate", self];
 }
+
 @end
