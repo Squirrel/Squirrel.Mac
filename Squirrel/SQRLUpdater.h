@@ -152,6 +152,20 @@ typedef enum {
 //                      updateRequest param.
 //
 // Returns the initialized `SQRLUpdater`.
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload;
+
+// Initializes an updater that will send the given request to check for updates
+// and passes a block to provide requests for the update downloads.
+//
+// updateRequest - Same as with initWithUpdateRequest
+// requestForDownload - Once the update url is found for the update download, allow
+//                      providing custom requests that can be costomized as desired.
+//                      Useful for including `Authorization` headers just like the
+//                      updateRequest param.
+// forVersion         - currently running version
+// useMode            - either RELEASESERVER or JSONFILE
+//
+// Returns the initialized `SQRLUpdater`.
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload forVersion:(NSString*) version useMode:(SQRLUpdaterMode) mode;
 
 // Executes `checkForUpdatesCommand` (if enabled) every `interval` seconds.
