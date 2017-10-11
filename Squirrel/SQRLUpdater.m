@@ -146,13 +146,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest {
 	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
 		return [NSURLRequest requestWithURL:downloadURL];
-	} forVersion:@"" useMode:RELEASESERVER];
+	}];
 }
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest forVersion: (NSString*) version {
 	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
 		return [NSURLRequest requestWithURL:downloadURL];
 	} forVersion:version useMode:JSONFILE];
+}
+
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
+	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
+		return [NSURLRequest requestWithURL:downloadURL];
+	} forVersion:@"" useMode:RELEASESERVER];
 }
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload
