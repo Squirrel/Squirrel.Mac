@@ -99,7 +99,7 @@ describe(@"checkForUpdatesCommand", ^{
 										 @"name": @"my-stub-release",
 										 @"notes": @"mock release for automated tests, json",
 										 @"pub_date": @"2017-03-09T15:24:55-05:00",
-										 @"url": @"http://localhost/hipchatng-0.0.145.zip"
+										 @"url": @"http://localhost/myapp-0.0.145.zip"
 										 };
 
 		NSError * err;
@@ -116,7 +116,7 @@ describe(@"checkForUpdatesCommand", ^{
 										 @"name": @"my-stub-release",
 										 @"notes": @"mock release for automated tests, release server",
 										 @"pub_date": @"2017-03-09T15:24:55-05:00",
-										 @"url": @"http://localhost/hipchatng-0.0.145.zip"
+										 @"url": @"http://localmyappng-0.0.145.zip"
 										 };
 
 		NSError * err;

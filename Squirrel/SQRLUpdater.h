@@ -67,6 +67,12 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 @class RACDisposable;
 @class RACSignal;
 
+/// Type of mode used to download the release
+typedef enum {
+	JSONFILE=1,
+	RELEASESERVER
+} SQRLUpdaterMode;
+
 // Checks for, downloads, and installs updates.
 @interface SQRLUpdater : NSObject
 
@@ -124,6 +130,19 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest;
 
 // Initializes an updater that will send the given request to check for updates
+// on a CDN reading a release file in json format.
+//
+// updateRequest - A request to send to check for updates. This request can be
+//                 customized as desired, like by including an `Authorization`
+//                 header to authenticate with a private update server, or
+//                 pointing to a local URL for testing. This must not be nil.
+// forVersion    - the currently installed version
+//
+// Returns the initialized `SQRLUpdater`.
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest
+					   forVersion:(NSString*)version;
+
+// Initializes an updater that will send the given request to check for updates
 // and passes a block to provide requests for the update downloads.
 //
 // updateRequest - Same as with initWithUpdateRequest
@@ -133,7 +152,7 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 //                      updateRequest param.
 //
 // Returns the initialized `SQRLUpdater`.
-- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload;
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload forVersion:(NSString*) version useMode:(SQRLUpdaterMode) mode;
 
 // Executes `checkForUpdatesCommand` (if enabled) every `interval` seconds.
 //
