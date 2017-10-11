@@ -69,11 +69,6 @@
             isEnabled = "YES">
          </EnvironmentVariable>
          <EnvironmentVariable
-            key = "SQUIRREL_TEST_LOCAL_CDN_TXT"
-            value = "True"
-            isEnabled = "YES">
-         </EnvironmentVariable>
-         <EnvironmentVariable
             key = "SQUIRREL_TEST_LOCAL_CDN"
             value = "True"
             isEnabled = "YES">
