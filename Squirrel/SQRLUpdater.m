@@ -40,12 +40,6 @@ const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
-/// Type of mode used to download the release
-typedef enum {
-	JSONFILE=1,
-	RELEASESERVER
-} Mode;
-
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -152,23 +146,26 @@ typedef enum {
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest {
 	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
 		return [NSURLRequest requestWithURL:downloadURL];
-	}];
+	} forVersion:@"" useMode:RELEASESERVER];
 }
 
-- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
-	//! foo.bar/releases.json?version=1.0
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest forVersion: (NSString*) version {
+	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
+		return [NSURLRequest requestWithURL:downloadURL];
+	} forVersion:version useMode:JSONFILE];
+}
 
-	NSString* version = getenv("VERSION") ? @(getenv("VERSION")) : @"";
-
-	Mode mode = RELEASESERVER;
-	if(getenv("MODE")) {
-		mode = [@(getenv("MODE")) isEqualToString:@"JSONFILE"] ? JSONFILE : RELEASESERVER;
-	}
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload
+				 forVersion:(NSString*) version useMode:(SQRLUpdaterMode) mode {
 
 	//! download simple file
 
 	NSParameterAssert(updateRequest != nil);
 	NSParameterAssert(requestForDownload != nil);
+
+	if(mode == JSONFILE) {
+		NSParameterAssert(version != nil);
+	}
 
 	self = [super init];
 	if (self == nil) return nil;
