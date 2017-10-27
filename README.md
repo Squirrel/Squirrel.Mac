@@ -66,7 +66,7 @@ Once Squirrel is added to your project, you need to configure and start it.
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
 	NSURLComponents *components = [[NSURLComponents alloc] init];
 
-	components.scheme = @"http";
+	components.scheme = @"https";
 	components.host = @"mycompany.com";
 	components.path = @"/myapp/latest";
 
@@ -156,7 +156,7 @@ to the update request provided:
 
 ```json
 {
-	"url": "http://mycompany.com/myapp/releases/myrelease",
+	"url": "https://mycompany.example.com/myapp/releases/myrelease",
 	"name": "My Release Name",
 	"notes": "Theses are some release notes innit",
 	"pub_date": "2013-09-18T12:29:53+01:00"
