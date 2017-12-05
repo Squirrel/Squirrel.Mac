@@ -68,6 +68,16 @@
             value = "com.github.Squirrel.SquirrelTests"
             isEnabled = "YES">
          </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SQUIRREL_TEST_LOCAL_CDN"
+            value = "True"
+            isEnabled = "YES">
+         </EnvironmentVariable>
+         <EnvironmentVariable
+            key = "SQUIRREL_TEST_LOCAL_SERVER"
+            value = "True"
+            isEnabled = "YES">
+         </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
       </AdditionalOptions>
