@@ -158,7 +158,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
 	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
 		return [NSURLRequest requestWithURL:downloadURL];
-	} forVersion:@"" useMode:RELEASESERVER];
+	} forVersion:nil useMode:RELEASESERVER];
 }
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload
@@ -177,7 +177,12 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	if (self == nil) return nil;
 
 	_requestForDownload = [requestForDownload copy];
-	_updateRequest = [NSURLRequest requestWithURL:updateRequest.URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
+	NSMutableURLRequest* mutableUpdateRequest = [updateRequest mutableCopy];
+	if (mode == JSONFILE) {
+		mutableUpdateRequest.cachePolicy = NSURLRequestReloadIgnoringCacheData;
+		mutableUpdateRequest.timeoutInterval = 60.0;
+	}
+	_updateRequest = mutableUpdateRequest;
 	_updateClass = SQRLUpdate.class;
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
@@ -245,6 +250,16 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						NSError *error = nil;
 						NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
 
+						if (dict == nil) {
+							NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+							userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+							userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
+							userInfo[SQRLUpdaterServerDataErrorKey] = data;
+							if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+							return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
+						}
+
 						NSString *currentRelease = dict[@"currentRelease"];
 						if(currentRelease) {
 							//! if CDN points to the currently running version as the latest version, bail out
@@ -265,13 +280,22 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 							NSArray *releases = dict[@"releases"];
 							for(NSDictionary* release in releases) {
 								if([currentRelease isEqualToString:release[@"version"]]) {
-									bodyData = [[NSJSONSerialization dataWithJSONObject:release[@"updateTo"]
-																				options:0 error:&error] copy];
+									bodyData = [NSJSONSerialization dataWithJSONObject:release[@"updateTo"]
+																				options:0 error:&error];
 									break;
 								}
 							}
 						}
 					}
+				}
+				if (bodyData == nil) {
+					NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+					userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+					userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
+					userInfo[SQRLUpdaterServerDataErrorKey] = data;
+					if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+					return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
 				}
 				return [RACSignal return:bodyData];
 			}]
