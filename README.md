@@ -149,7 +149,7 @@ If no update is required your server must respond with a status code of
 [204 No Content](http://tools.ietf.org/html/rfc2616#section-10.2.5). Squirrel
 will check for an update again at the interval you specify.
 
-## Update JSON Format
+## Update Server JSON Format
 
 When an update is available, Squirrel expects the following schema in response
 to the update request provided:
@@ -171,6 +171,40 @@ will be added to the `Accept` header so that your server can return the
 appropriate format.
 
 "pub_date" if present must be formatted according to ISO 8601.
+
+## Update File JSON Format
+
+The alternate update technique uses a plain JSON file meaning you can store your
+update metadata on S3 or another static file store. The format of this file is
+detailed below:
+
+```json
+{
+	"currentRelease": "1.2.3",
+	"releases": [
+		{
+			"version": "1.2.1",
+			"updateTo": {
+				"version": "1.2.1",
+				"pub_date": "2013-09-18T12:29:53+01:00",
+				"notes": "Theses are some release notes innit",
+				"name": "1.2.1",
+				"url": "https://mycompany.example.com/myapp/releases/myrelease"
+			}
+		},
+		{
+			"version": "1.2.3",
+			"updateTo": {
+				"version": "1.2.3",
+				"pub_date": "2014-09-18T12:29:53+01:00",
+				"notes": "Theses are some more release notes innit",
+				"name": "1.2.3",
+				"url": "https://mycompany.example.com/myapp/releases/myrelease3"
+			}
+		},
+	]
+}
+```
 
 # User Interface
 
