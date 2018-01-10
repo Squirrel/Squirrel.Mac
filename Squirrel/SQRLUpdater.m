@@ -169,7 +169,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	NSParameterAssert(updateRequest != nil);
 	NSParameterAssert(requestForDownload != nil);
 
-	if(mode == JSONFILE) {
+	if (mode == JSONFILE) {
 		NSParameterAssert(version != nil);
 	}
 
@@ -184,7 +184,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		mutableUpdateRequest.timeoutInterval = 60.0;
 	}
 	_updateRequest = mutableUpdateRequest;
-	_updateRequest = [NSURLRequest requestWithURL:updateRequest.URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
 	_updateClass = SQRLUpdate.class;
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
@@ -222,22 +221,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
 
-					if(mode == RELEASESERVER) {
-						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-							NSDictionary *errorInfo = @{
-									NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-									NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-									SQRLUpdaterServerDataErrorKey: bodyData,
-							};
-							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
-							return [RACSignal error:error];
-						}
-					}
-
-					if (httpResponse.statusCode == 204 /* No Content */) {
-						return [RACSignal empty];
-					}
-
 					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
 					if (readOnlyVolume) {
 						NSDictionary *errorInfo = @{
@@ -248,7 +231,21 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 						return [RACSignal error:error];
 					}
 
-					if(mode == JSONFILE) {
+					if (mode == RELEASESERVER) {
+						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+							NSDictionary *errorInfo = @{
+									NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+									NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+									SQRLUpdaterServerDataErrorKey: bodyData,
+							};
+							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
+							return [RACSignal error:error];
+						}
+
+						if (httpResponse.statusCode == 204 /* No Content */) {
+							return [RACSignal empty];
+						}
+					} else if (mode == JSONFILE) {
 						NSError *error = nil;
 						NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
 
