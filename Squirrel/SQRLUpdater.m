@@ -164,6 +164,15 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload
 				 forVersion:(NSString*) version useMode:(SQRLUpdaterMode) mode {
 
+	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL)  {
+		return [NSURLRequest requestWithURL:downloadURL];
+	} forVersion:version useMode:mode requestTimeout:60.0];
+
+}
+
+- (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload
+				 forVersion:(NSString*) version useMode:(SQRLUpdaterMode) mode requestTimeout:(int) timeout {
+
 	//! download simple file
 
 	NSParameterAssert(updateRequest != nil);
@@ -178,10 +187,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	_requestForDownload = [requestForDownload copy];
 	NSMutableURLRequest* mutableUpdateRequest = [updateRequest mutableCopy];
+	mutableUpdateRequest.timeoutInterval = timeout;
 
 	if (mode == JSONFILE) {
 		mutableUpdateRequest.cachePolicy = NSURLRequestReloadIgnoringCacheData;
-		mutableUpdateRequest.timeoutInterval = 60.0;
 	}
 	_updateRequest = mutableUpdateRequest;
 	_updateRequest = [NSURLRequest requestWithURL:updateRequest.URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
