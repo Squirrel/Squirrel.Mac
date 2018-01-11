@@ -181,10 +181,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	if (mode == JSONFILE) {
 		mutableUpdateRequest.cachePolicy = NSURLRequestReloadIgnoringCacheData;
-		mutableUpdateRequest.timeoutInterval = 60.0;
 	}
 	_updateRequest = mutableUpdateRequest;
-	_updateRequest = [NSURLRequest requestWithURL:updateRequest.URL cachePolicy:NSURLRequestReloadIgnoringCacheData timeoutInterval:60.0];
 	_updateClass = SQRLUpdate.class;
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
@@ -285,17 +283,17 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 									break;
 								}
 							}
+							if (bodyData == nil) {
+								NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+								userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+								userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
+								userInfo[SQRLUpdaterServerDataErrorKey] = bodyData;
+								if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+								return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
+							}
 						}
 					}
-				}
-				if (bodyData == nil) {
-					NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
-					userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
-					userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
-					userInfo[SQRLUpdaterServerDataErrorKey] = bodyData;
-					if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-					return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
 				}
 				return [RACSignal return:bodyData];
 			}]
