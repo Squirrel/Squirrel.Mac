@@ -231,6 +231,20 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 					NSHTTPURLResponse *httpResponse = (id)response;
 
+					if (httpResponse.statusCode == 204 /* No Content */) {
+						return [RACSignal empty];
+					}
+
+					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
+					if (readOnlyVolume) {
+						NSDictionary *errorInfo = @{
+													NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
+													NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
+													};
+						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
+						return [RACSignal error:error];
+					}
+
 					if(mode == RELEASESERVER) {
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 							NSDictionary *errorInfo = @{
@@ -241,23 +255,7 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 							return [RACSignal error:error];
 						}
-					}
-
-					if (httpResponse.statusCode == 204 /* No Content */) {
-						return [RACSignal empty];
-					}
-
-					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
-					if (readOnlyVolume) {
-						NSDictionary *errorInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
-						};
-						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
-						return [RACSignal error:error];
-					}
-
-					if(mode == JSONFILE) {
+					} else if(mode == JSONFILE) {
 						NSError *error = nil;
 						NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
 
