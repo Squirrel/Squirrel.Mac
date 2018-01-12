@@ -181,7 +181,6 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
 	if (mode == JSONFILE) {
 		mutableUpdateRequest.cachePolicy = NSURLRequestReloadIgnoringCacheData;
-		mutableUpdateRequest.timeoutInterval = 60.0;
 	}
 	_updateRequest = mutableUpdateRequest;
 	_updateClass = SQRLUpdate.class;
