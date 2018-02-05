@@ -201,7 +201,7 @@ detailed below:
 				"name": "1.2.3",
 				"url": "https://mycompany.example.com/myapp/releases/myrelease3"
 			}
-		},
+		}
 	]
 }
 ```
