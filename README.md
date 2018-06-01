@@ -47,7 +47,7 @@ version as Squirrel.
 
 Otherwise, add a target dependency and Copy Files build phase entry for the
 ReactiveCocoa.framework target included in Squirrel's repository, in
-External/ReactiveCocoa.
+`Carthage/Checkouts/ReactiveCocoa`.
 
 Similarly, ensure your application includes Mantle, or copies in the Squirrel
 version.
