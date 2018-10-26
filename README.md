@@ -140,7 +140,7 @@ Your server should determine whether an update is required based on the
 
 If an update is required your server should respond with a status code of
 [200 OK](http://tools.ietf.org/html/rfc2616#section-10.2.1) and include the
-[update JSON](#update-json-format) in the body. Squirrel **will** download and
+[update JSON](#update-server-json-format) in the body. Squirrel **will** download and
 install this update, even if the version of the update is the same as the
 currently running version. To save redundantly downloading the same version
 multiple times your server must not inform the client to update.
