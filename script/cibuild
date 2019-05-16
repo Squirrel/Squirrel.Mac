@@ -112,7 +112,7 @@ build_scheme ()
     echo "*** Building Squirrel..."
     echo
 
-    xcodebuild -scheme Squirrel -workspace Squirrel.xcworkspace build -configuration Release >/dev/null || exit $?
+    xcodebuild -scheme Squirrel -workspace Squirrel.xcworkspace build >/dev/null || exit $?
 }
 
 export -f build_scheme
