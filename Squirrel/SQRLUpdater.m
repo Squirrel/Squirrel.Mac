@@ -36,6 +36,8 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 /// The application's being run on a read-only volume.
 const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 
+const NSTimeInterval SQURLUpdaterZipDownloadTimeoutSeconds = 20 * 60;
+
 // The prefix used when creating temporary directories for updates. This will be
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
@@ -481,6 +483,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			if (self.etag != nil) {
 				[zipDownloadRequest setValue:self.etag forHTTPHeaderField:@"If-None-Match"];
 			}
+
+			[zipDownloadRequest setTimeoutInterval:SQURLUpdaterZipDownloadTimeoutSeconds];
 
 			return [[[NSURLConnection
 				rac_sendAsynchronousRequest:zipDownloadRequest]
