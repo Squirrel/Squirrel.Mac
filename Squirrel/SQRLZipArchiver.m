@@ -54,7 +54,7 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
 	_dittoTask = [[NSTask alloc] init];
 	_dittoTask.launchPath = @"/usr/bin/ditto";
-	_dittoTask.environment = @{ @"DITTOABORT": @1 };
+	_dittoTask.environment = @{ @"DITTOABORT": @"1" };
 	_dittoTask.standardError = self.standardErrorPipe;
 
 	@weakify(self);

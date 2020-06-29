@@ -517,7 +517,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		setNameWithFormat:@"%@ -installItemAtURL: %@ fromURL: %@", self, targetURL, sourceURL];
 }
 
-#pragma Quarantine Bit Removal
+#pragma mark Quarantine Bit Removal
 
 - (RACSignal *)clearQuarantineForDirectory:(NSURL *)directory {
 	NSParameterAssert(directory != nil);
