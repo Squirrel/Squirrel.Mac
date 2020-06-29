@@ -127,6 +127,9 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		setNameWithFormat:@"+shipItAuthorization"];
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+
 + (RACSignal *)launchPrivileged:(BOOL)privileged {
 	return [[[RACSignal
 		zip:@[
@@ -156,5 +159,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 		flatten]
 		setNameWithFormat:@"+launchPrivileged: %i", (int)privileged];
 }
+
+#pragma clang diagnostic pop
 
 @end
