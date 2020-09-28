@@ -110,22 +110,40 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 
 			if (request.launchAfterInstallation) {
 				// Launch regardless of whether installation succeeds or fails.
-				action = [[action
-					deliverOn:RACScheduler.mainThreadScheduler]
+				action = [action
 					doNext:^(SQRLShipItRequest *finalRequest) {
-						NSURL *bundleURL = finalRequest.targetBundleURL;
-						if (bundleURL == nil) {
-							NSLog(@"Missing target bundle URL, cannot launch application");
-							return;
-						}
+						NSLog(@"Attempting to launch app");
+						dispatch_sync(dispatch_get_main_queue(), ^{
+							NSLog(@"On main thread and launching: %@", finalRequest.targetBundleURL);
+							NSURL *bundleURL = finalRequest.targetBundleURL;
+							if (bundleURL == nil) {
+								NSLog(@"Missing target bundle URL, cannot launch application");
+								return;
+							}
 
-						NSError *error;
-						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
-							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
-							return;
-						}
+							NSLog(@"Bundle URL is valid");
 
-						NSLog(@"Application launched at %@", bundleURL);
+							NSError *error;
+							if (@available(macOS 11.0, *)) {
+								NSLog(@"Attempting to launch app on 11.0 or higher");
+
+								NSTask *task = [[NSTask alloc] init];
+								[task setLaunchPath: @"/usr/bin/open"];
+								[task setArguments: [NSArray arrayWithObjects: bundleURL.path, nil]];
+								[task launch];
+								[task waitUntilExit];
+
+								NSLog(@"Application launched at %@", bundleURL);
+							} else {
+								NSLog(@"Attempting to launch app on lower than 11.0");
+								if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
+									NSLog(@"Could not launch application at %@: %@", bundleURL, error);
+									return;
+								}
+
+								NSLog(@"Application launched at %@", bundleURL);
+							}
+						});
 					}];
 			}
 
