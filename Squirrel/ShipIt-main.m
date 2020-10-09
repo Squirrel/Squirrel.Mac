@@ -112,46 +112,46 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 
 			if (request.launchAfterInstallation) {
 				// Launch regardless of whether installation succeeds or fails.
-				action = [action
+				action = [[action
+					deliverOn:RACScheduler.mainThreadScheduler]
 					doNext:^(SQRLShipItRequest *finalRequest) {
-						NSLog(@"Attempting to launch app");
-						dispatch_sync(dispatch_get_main_queue(), ^{
-							NSLog(@"On main thread and launching: %@", finalRequest.targetBundleURL);
-							NSURL *bundleURL = finalRequest.targetBundleURL;
-							if (bundleURL == nil) {
-								NSLog(@"Missing target bundle URL, cannot launch application");
+						NSLog(@"On main thread and launching: %@", finalRequest.targetBundleURL);
+						NSURL *bundleURL = finalRequest.targetBundleURL;
+						if (bundleURL == nil) {
+							NSLog(@"Missing target bundle URL, cannot launch application");
+							return;
+						}
+
+						NSLog(@"Bundle URL is valid");
+
+						NSError *error;
+						// Temporary workaround, on Big Sur and higher the executable
+						// using NSWorkspace needs to actually exist on disk, at this point
+						// this executable no longer exists on disk so we need to launch the
+						// new one (which should be in the exact same spot) and ask for it
+						// to launch the new app bundle URL
+						if (@available(macOS 11.0, *)) {
+							NSLog(@"Attempting to launch app on 11.0 or higher");
+
+							NSString *exe = NSProcessInfo.processInfo.arguments[0];
+							NSLog(@"Launching new ShipIt at %@ with instructions to launch %@", exe, bundleURL);
+
+							NSTask *task = [[NSTask alloc] init];
+							[task setLaunchPath: exe];
+							[task setArguments: @[launchSignal, bundleURL.path]];
+							[task launch];
+							[task waitUntilExit];
+
+							NSLog(@"New ShipIt exited");
+						} else {
+							NSLog(@"Attempting to launch app on lower than 11.0");
+							if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
+								NSLog(@"Could not launch application at %@: %@", bundleURL, error);
 								return;
 							}
 
-							NSLog(@"Bundle URL is valid");
-
-							NSError *error;
-							// Temporary workaround, on Big Sur and higher the executable
-							// using NSWorkspace needs to actually exist on disk, at this point
-							// this executable no longer exists on disk so we need to launch the
-							// new one (which should be in the exact same spot) and ask for it
-							// to launch the new app bundle URL
-							if (@available(macOS 11.0, *)) {
-								NSLog(@"Attempting to launch app on 11.0 or higher");
-
-								NSTask *task = [[NSTask alloc] init];
-								NSString *exe = NSProcessInfo.processInfo.arguments[0];
-								[task setLaunchPath: exe];
-								[task setArguments: @[launchSignal, bundleURL.path]];
-								[task launch];
-								[task waitUntilExit];
-
-								NSLog(@"New ShipIt launched at %@ with instructions to launch %@", exe, bundleURL);
-							} else {
-								NSLog(@"Attempting to launch app on lower than 11.0");
-								if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
-									NSLog(@"Could not launch application at %@: %@", bundleURL, error);
-									return;
-								}
-
-								NSLog(@"Application launched at %@", bundleURL);
-							}
-						});
+							NSLog(@"Application launched at %@", bundleURL);
+						}
 					}];
 			}
 
