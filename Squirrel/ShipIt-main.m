@@ -27,6 +27,8 @@
 // updating will abort.
 static const NSUInteger SQRLShipItMaximumInstallationAttempts = 3;
 
+static NSString * launchSignal = @"___launch___";
+
 // The domain for errors generated here.
 static NSString * const SQRLShipItErrorDomain = @"SQRLShipItErrorDomain";
 
@@ -113,19 +115,43 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 				action = [[action
 					deliverOn:RACScheduler.mainThreadScheduler]
 					doNext:^(SQRLShipItRequest *finalRequest) {
+						NSLog(@"On main thread and launching: %@", finalRequest.targetBundleURL);
 						NSURL *bundleURL = finalRequest.targetBundleURL;
 						if (bundleURL == nil) {
 							NSLog(@"Missing target bundle URL, cannot launch application");
 							return;
 						}
 
-						NSError *error;
-						if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
-							NSLog(@"Could not launch application at %@: %@", bundleURL, error);
-							return;
-						}
+						NSLog(@"Bundle URL is valid");
 
-						NSLog(@"Application launched at %@", bundleURL);
+						NSError *error;
+						// Temporary workaround, on Big Sur and higher the executable
+						// using NSWorkspace needs to actually exist on disk, at this point
+						// this executable no longer exists on disk so we need to launch the
+						// new one (which should be in the exact same spot) and ask for it
+						// to launch the new app bundle URL
+						if (@available(macOS 11.0, *)) {
+							NSLog(@"Attempting to launch app on 11.0 or higher");
+
+							NSString *exe = NSProcessInfo.processInfo.arguments[0];
+							NSLog(@"Launching new ShipIt at %@ with instructions to launch %@", exe, bundleURL);
+
+							NSTask *task = [[NSTask alloc] init];
+							[task setLaunchPath: exe];
+							[task setArguments: @[launchSignal, bundleURL.path]];
+							[task launch];
+							[task waitUntilExit];
+
+							NSLog(@"New ShipIt exited");
+						} else {
+							NSLog(@"Attempting to launch app on lower than 11.0");
+							if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:bundleURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
+								NSLog(@"Could not launch application at %@: %@", bundleURL, error);
+								return;
+							}
+
+							NSLog(@"Application launched at %@", bundleURL);
+						}
 					}];
 			}
 
@@ -153,9 +179,21 @@ int main(int argc, const char * argv[]) {
 		char const *jobLabel = argv[1];
 		const char *statePath = argv[2];
 		NSURL *shipItStateURL = [NSURL fileURLWithPath:@(statePath)];
-		installRequest([SQRLShipItRequest readUsingURL:[RACSignal return:shipItStateURL]], @(jobLabel));
 
-		dispatch_main();
+		if (strcmp(jobLabel, [launchSignal UTF8String]) == 0) {
+			NSLog(@"Detected this as a launch request");
+			NSError *error;
+			if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:shipItStateURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
+				NSLog(@"Could not launch application at %@: %@", shipItStateURL, error);
+			} else {
+				NSLog(@"Successfully launched application at %@", shipItStateURL);
+			}
+			exit(EXIT_SUCCESS);
+		} else {
+			NSLog(@"Detected this as an install request");
+			installRequest([SQRLShipItRequest readUsingURL:[RACSignal return:shipItStateURL]], @(jobLabel));
+			dispatch_main();
+		}
 	}
 
 	return EXIT_SUCCESS;
