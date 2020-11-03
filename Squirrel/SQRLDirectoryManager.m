@@ -66,31 +66,52 @@
 		setNameWithFormat:@"%@ -storageURL", self];
 }
 
-- (RACSignal *)shipItStateURL {
+// Returns a signal to a URL with the given filename and job name inside of the storage folder
+//
+// filename - The name of the file in the storage folder to return in this URL
+// jobname - The name to give the returned RACSignal
+// ensureWritable - If set to true, we will append an integer to the end of the filename in order to find a writeable URL.
+// 		This fixes an issue wherein the stdout and stderr files may have been owned by root, and thus prevented ShipIt from launching.
+- (RACSignal *)URLForFileNamed:(NSString *)filename withJobNamed:(NSString *)jobname ensureWritable:(BOOL)ensureWritable {
 	return [[[self
-		storageURL]
-		map:^(NSURL *folderURL) {
-			return [folderURL URLByAppendingPathComponent:@"ShipItState.plist"];
-		}]
-		setNameWithFormat:@"%@ -shipItStateURL", self];
+			  storageURL]
+			 map:^(NSURL *folderURL) {
+				 NSURL *fileURL = [folderURL URLByAppendingPathComponent:filename];
+				 if (ensureWritable) {
+
+					 int attempts = 0;
+					 while (attempts < 100) {
+
+						 NSNumber *writable = nil;
+						 NSError *writableError = nil;
+						 BOOL gotWritable = [fileURL getResourceValue:&writable forKey:NSURLIsWritableKey error:&writableError];
+
+						 if (!gotWritable || writable.boolValue) {
+							 return fileURL;
+						 }
+
+						 attempts++;
+						 fileURL = [folderURL URLByAppendingPathComponent:[NSString stringWithFormat:@"%@.%i", filename, attempts]];
+					 }
+					 
+					 NSLog(@"Error: Unable to find writable log file after 100 attempts.");
+				 }
+
+				 return fileURL;
+			 }]
+			setNameWithFormat:@"%@ -%@", self, jobname];
+}
+
+- (RACSignal *)shipItStateURL {
+	return [self URLForFileNamed:@"ShipItState.plist" withJobNamed:@"shipItStateURL" ensureWritable:false];
 }
 
 - (RACSignal *)shipItStdoutURL {
-	return [[[self
-		storageURL]
-		map:^(NSURL *folderURL) {
-			return [folderURL URLByAppendingPathComponent:@"ShipIt_stdout.log"];
-		}]
-		setNameWithFormat:@"%@ -shipItStdoutURL", self];
+	return [self URLForFileNamed:@"ShipIt_stdout.log" withJobNamed:@"shipItStdoutURL" ensureWritable:true];
 }
 
 - (RACSignal *)shipItStderrURL {
-	return [[[self
-		storageURL]
-		map:^(NSURL *folderURL) {
-			return [folderURL URLByAppendingPathComponent:@"ShipIt_stderr.log"];
-		}]
-		setNameWithFormat:@"%@ -shipItStderrURL", self];
+	return [self URLForFileNamed:@"ShipIt_stderr.log" withJobNamed:@"shipItStderrURL" ensureWritable:true];
 }
 
 #pragma mark NSObject
