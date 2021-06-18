@@ -63,6 +63,7 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 		if (self == nil) return;
 
 		[self->_taskTerminated sendNext:@(task.terminationStatus)];
+		[self.standardErrorPipe.fileHandleForReading closeFile];
 	};
 
 	RACSubject *errorDataChunks = [[RACSubject subject] setNameWithFormat:@"errorDataChunks"];
