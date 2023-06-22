@@ -181,14 +181,30 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	id archiveData = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
 	if (![archiveData isKindOfClass:NSData.class]) return nil;
 
-	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchiveObjectWithData:archiveData];
-	if (![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) return nil;
+	NSError *error;
+	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchivedObjectOfClass:[SQRLInstallerOwnedBundle class]
+																																						fromData:archiveData
+																																						  error:&error];
+	if (error) {
+		NSLog(@"Couldn't unarchive ownedBundle - %@", error.localizedDescription);
+		return nil;
+	}
 
 	return ownedBundle;
 }
 
 - (void)setOwnedBundle:(SQRLInstallerOwnedBundle *)ownedBundle {
-	NSData *archiveData = (ownedBundle == nil ? nil : [NSKeyedArchiver archivedDataWithRootObject:ownedBundle]);
+	NSData *archiveData = nil;
+	if (ownedBundle != nil) {
+		NSError *error;
+		archiveData = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle
+													requiringSecureCoding:NO
+																					error:&error];
+
+		if (error)
+			NSLog(@"Couldn't archive ownedBundle - %@", error.localizedDescription);
+	}
+
 	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFPropertyListRef)archiveData, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 	CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 }
