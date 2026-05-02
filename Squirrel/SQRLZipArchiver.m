@@ -153,7 +153,17 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 		setNameWithFormat:@"-launchWithArguments: %@", arguments];
 
 	self.dittoTask.arguments = arguments;
-	[self.dittoTask launch];
+
+	NSError *launchError = nil;
+
+	if (![self.dittoTask launchAndReturnError:&launchError]) {
+		NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+		userInfo[NSLocalizedDescriptionKey] = launchError.localizedDescription;
+
+		NSLog(@"Starting ditto task failed with error: %@", launchError.localizedDescription);
+
+		return [RACSignal error:[NSError errorWithDomain:SQRLZipArchiverErrorDomain code:SQRLZipArchiverShellTaskFailed userInfo:userInfo]];
+	}
 
 	return signal;
 }
