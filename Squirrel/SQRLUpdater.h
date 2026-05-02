@@ -117,6 +117,10 @@ typedef enum {
 // documentation for more information.
 @property (atomic, strong) Class updateClass;
 
+// Publicly exposed for testing purposes, compares two version strings to see if it's
+// allowed.  This assumes that the ElectronSquirrelPreventDowngrades flag is enabled.
++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion;
+
 // Initializes an updater that will send the given request to check for updates.
 //
 // This is the designated initializer for this class.

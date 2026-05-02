@@ -42,6 +42,18 @@ const NSTimeInterval SQURLUpdaterZipDownloadTimeoutSeconds = 20 * 60;
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
+BOOL isVersionStandard(NSString* version) {
+	NSCharacterSet *alphaNums = [NSCharacterSet decimalDigitCharacterSet];
+
+	NSArray* versionParts = [version componentsSeparatedByString:@"."];
+	BOOL versionBad = [versionParts count] != 3;
+	for (NSString* part in versionParts) {
+		versionBad = versionBad || [alphaNums isSupersetOfSet:[NSCharacterSet characterSetWithCharactersInString:part]];
+	}
+
+	return !versionBad;
+}
+
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -58,6 +70,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 //
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+
++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion;
 
 // Parses an update model from downloaded data.
 //
@@ -370,6 +384,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		takeUntil:self.rac_willDeallocSignal]
 		publish]
 		connect];
+}
+
++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion {
+	return [currentVersion compare:targetVersion options:NSNumericSearch] != NSOrderedDescending;
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
@@ -711,6 +729,50 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[[self.signature
 		verifyBundleAtURL:updateBundle.bundleURL]
 		then:^{
+			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
+			BOOL preventDowngrades = [[appBundle objectForInfoDictionaryKey:@"ElectronSquirrelPreventDowngrades"] boolValue];
+
+			if (preventDowngrades == YES) {
+				NSString* currentVersion = [appBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+				NSString* updateVersion = [updateBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+				if (!currentVersion || !updateVersion) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is missing a valid version string in either the current bundle or the target bundle", nil),
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (!isVersionStandard(currentVersion)) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update from '%@' which is not a valid version string", nil), currentVersion],
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (!isVersionStandard(updateVersion)) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update to '%@' which is not a valid version string", nil), updateVersion],
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (![SQRLUpdater isVersionAllowedForUpdate:updateVersion from:currentVersion]) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update from '%@' to '%@' which appears to be a downgrade", nil), currentVersion, updateVersion],
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+			}
+
 			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
 			return [RACSignal return:downloadedUpdate];
 		}]

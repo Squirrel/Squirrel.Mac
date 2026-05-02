@@ -631,4 +631,18 @@ describe(@"state", ^{
 	});
 });
 
+describe(@"+isVersionAllowedForUpdate:from:", ^{
+	it(@"should compare version numbers correctly", ^{
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"2.0.0" from:@"1.0.0"])).to(beTruthy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.0.10" from:@"1.0.1"])).to(beTruthy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.0.1" from:@"1.0.10"])).to(beFalsy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.32.0" from:@"1.31.1"])).to(beTruthy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"0.32.0" from:@"1.31.1"])).to(beFalsy());
+	});
+
+	it(@"should allow updating to the same version", ^{
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.2.3" from:@"1.2.3"])).to(beTruthy());
+	});
+});
+
 QuickSpecEnd
