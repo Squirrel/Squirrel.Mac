@@ -11,9 +11,12 @@ cd "$SCRIPT_DIR/.."
 exec xcodebuild \
   -workspace Squirrel.xcworkspace \
   -scheme Squirrel \
+  -destination "platform=macOS,arch=$(uname -m)" \
   test \
   GCC_TREAT_WARNINGS_AS_ERRORS=NO \
   MACOSX_DEPLOYMENT_TARGET=10.13 \
   CODE_SIGN_IDENTITY=- \
   DEVELOPMENT_TEAM= \
+  ONLY_ACTIVE_ARCH=YES \
+  VALID_ARCHS="arm64 x86_64" \
   "$@"
