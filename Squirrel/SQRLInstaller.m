@@ -249,6 +249,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		] reduce:^(NSURL *directoryURL, SQRLCodeSignature *codeSignature) {
 			NSURL *targetBundleURL = request.targetBundleURL;
 			NSURL *newBundleURL = [directoryURL URLByAppendingPathComponent:targetBundleURL.lastPathComponent];
+			[NSFileManager.defaultManager createDirectoryAtURL:newBundleURL withIntermediateDirectories:FALSE attributes:nil error:nil];
 
 			return [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:request.targetBundleURL temporaryURL:newBundleURL codeSignature:codeSignature];
 		}]
@@ -481,10 +482,50 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	NSParameterAssert(targetURL != nil);
 	NSParameterAssert(sourceURL != nil);
 
+	NSLog(@"Moving bundle from %@ to %@", sourceURL, targetURL);
+
+	// If both the sourceURL and the targetURL exist we can try to skip a permissions check
+	// by moving Thing.app/Contents directly.  This allows us to update applications without
+	// permission to write files into the parent directory of Thing.app
+	//
+	// There is no known case where these directories don't exist but in order to handle
+	// edge cases / race conditions we'll handle it anyway.
+	//
+	// This exists check is non-atomic with the rename call below but that's OK
+	BOOL canRenameContentsDirectly = FALSE;
+	// For now while this is tested at scale this new option is behind a user default, this
+	// can be set by applications wishing to test this feature at runtime.  If it causes issues
+	// it can be opted out by individual users by setting this key to false explicitly.
+	// Once this has bene tested at scale it will become the default for all Squirrel.Mac
+	// users.
+	NSUserDefaults *defaults = [[NSUserDefaults alloc] init];
+	[defaults addSuiteNamed:_applicationIdentifier];
+	// In cases where this code is being executed under the ShipIt executable it's running
+	// under an application identifier equal to {parent_identifier}.ShipIt
+	// In this case we need to use the true parent identifier too as that is 99% of the time
+	// where the key will be set.
+	if ([_applicationIdentifier hasSuffix:@".ShipIt"]) {
+		[defaults addSuiteNamed:[_applicationIdentifier substringToIndex:[_applicationIdentifier length] - 7]];
+	}
+
+	if ([defaults boolForKey:@"SquirrelMacEnableDirectContentsWrite"]) {
+		canRenameContentsDirectly = [NSFileManager.defaultManager fileExistsAtPath:targetURL.path] && [NSFileManager.defaultManager fileExistsAtPath:sourceURL.path];
+
+		if (canRenameContentsDirectly) {
+			NSLog(@"Moving bundles via 'Contents' folder rename");
+		} else {
+			NSLog(@"Moving bundles directly as one of source / target does not exist.  This is unexpected.");
+		}
+	} else {
+		NSLog(@"Moving bundles directly as SquirrelMacEnableDirectContentsWrite is disabled for app: %@", _applicationIdentifier);
+	}
+	NSURL *targetContentsURL = canRenameContentsDirectly ? [targetURL URLByAppendingPathComponent:@"Contents"] : targetURL;
+	NSURL *sourceContentsURL = canRenameContentsDirectly ? [sourceURL URLByAppendingPathComponent:@"Contents"] : sourceURL;
+
 	return [[[[RACSignal
 		defer:^{
 			// rename() is atomic, NSFileManager sucks.
-			if (rename(sourceURL.path.fileSystemRepresentation, targetURL.path.fileSystemRepresentation) == 0) {
+			if (rename(sourceContentsURL.path.fileSystemRepresentation, targetContentsURL.path.fileSystemRepresentation) == 0) {
 				return [RACSignal empty];
 			} else {
 				int code = errno;
@@ -497,24 +538,24 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			}
 		}]
 		doCompleted:^{
-			NSLog(@"Moved bundle from %@ to %@", sourceURL, targetURL);
+			NSLog(@"Moved bundle contents from %@ to %@", sourceContentsURL, targetContentsURL);
 		}]
 		catch:^(NSError *error) {
 			if (![error.domain isEqual:NSPOSIXErrorDomain] || error.code != EXDEV) return [RACSignal error:error];
 
 			// If the locations lie on two different volumes, remove the
 			// destination by hand, then perform a move.
-			[NSFileManager.defaultManager removeItemAtURL:targetURL error:NULL];
+			[NSFileManager.defaultManager removeItemAtURL:targetContentsURL error:NULL];
 
-			if ([NSFileManager.defaultManager moveItemAtURL:sourceURL toURL:targetURL error:&error]) {
-				NSLog(@"Moved bundle across volumes from %@ to %@", sourceURL, targetURL);
+			if ([NSFileManager.defaultManager moveItemAtURL:sourceContentsURL toURL:targetContentsURL error:&error]) {
+				NSLog(@"Moved bundle contents across volumes from %@ to %@", sourceContentsURL, targetContentsURL);
 				return [RACSignal empty];
 			} else {
-				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't move bundle %@ across volumes to %@", nil), sourceURL, targetURL];
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't move bundle contents %@ across volumes to %@", nil), sourceContentsURL, targetContentsURL];
 				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:error]];
 			}
 		}]
-		setNameWithFormat:@"%@ -installItemAtURL: %@ fromURL: %@", self, targetURL, sourceURL];
+		setNameWithFormat:@"%@ -installItemAtURL: %@ fromURL: %@", self, targetContentsURL, sourceContentsURL];
 }
 
 #pragma mark Quarantine Bit Removal
