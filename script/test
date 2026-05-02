@@ -5,9 +5,10 @@ set -eo pipefail
 SCRIPT_DIR=$(dirname "$0")
 cd "$SCRIPT_DIR/.."
 
-# The dependency projects (ReactiveCocoa, Mantle, etc.) ship with their own
-# xcconfigs that enable -Werror and target ancient macOS. Override at the
-# command line so they apply workspace-wide.
+# The dependency projects (ReactiveObjC, Mantle, etc.) ship with their own
+# xcconfigs that enable -Werror, target ancient macOS, and Mantle's Debug
+# config sets --digest-algorithm=sha1. Override at the command line so they
+# apply workspace-wide.
 exec xcodebuild \
   -workspace Squirrel.xcworkspace \
   -scheme Squirrel \
@@ -19,4 +20,5 @@ exec xcodebuild \
   DEVELOPMENT_TEAM= \
   ONLY_ACTIVE_ARCH=YES \
   VALID_ARCHS="arm64 x86_64" \
+  OTHER_CODE_SIGN_FLAGS=--timestamp=none \
   "$@"

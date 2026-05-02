@@ -8,7 +8,7 @@
 
 #import <Nimble/Nimble.h>
 #import <Quick/Quick.h>
-#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveObjC/ReactiveObjC.h>
 #import <Squirrel/Squirrel.h>
 
 /// See https://github.com/Squirrel/Squirrel.Mac/pull/154#issuecomment-151287744

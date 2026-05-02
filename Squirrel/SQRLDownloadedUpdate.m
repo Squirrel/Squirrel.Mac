@@ -7,7 +7,7 @@
 //
 
 #import "SQRLDownloadedUpdate.h"
-#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveObjC/ReactiveObjC.h>
 
 @interface SQRLDownloadedUpdate ()
 

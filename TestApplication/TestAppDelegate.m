@@ -10,8 +10,8 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLTestUpdate.h"
-#import <ReactiveCocoa/EXTScope.h>
-#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveObjC/EXTScope.h>
+#import <ReactiveObjC/ReactiveObjC.h>
 #import "TestAppConstants.h"
 
 @interface TestAppDelegate ()
@@ -106,7 +106,7 @@
 			NSString *delayString = NSProcessInfo.processInfo.environment[@"SQRLUpdateDelay"];
 			if (delayString == nil) return [RACSignal empty];
 
-			return [[RACSignal interval:delayString.doubleValue onScheduler:RACScheduler.mainThreadScheduler] take:1];
+			return (RACSignal *)[[RACSignal interval:delayString.doubleValue onScheduler:RACScheduler.mainThreadScheduler] take:1];
 		}]
 		subscribeCompleted:^{
 			[NSApp terminate:self];

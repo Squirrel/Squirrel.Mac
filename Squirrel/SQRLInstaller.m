@@ -9,13 +9,13 @@
 #import "SQRLInstaller.h"
 
 #import <libkern/OSAtomic.h>
-#import "EXTScope.h"
-#import <ReactiveCocoa/NSEnumerator+RACSequenceAdditions.h>
-#import <ReactiveCocoa/NSObject+RACPropertySubscribing.h>
-#import <ReactiveCocoa/RACCommand.h>
-#import <ReactiveCocoa/RACSequence.h>
-#import <ReactiveCocoa/RACSignal+Operations.h>
-#import <ReactiveCocoa/RACSubscriber.h>
+#import <ReactiveObjC/EXTScope.h>
+#import <ReactiveObjC/NSEnumerator+RACSequenceAdditions.h>
+#import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
+#import <ReactiveObjC/RACCommand.h>
+#import <ReactiveObjC/RACSequence.h>
+#import <ReactiveObjC/RACSignal+Operations.h>
+#import <ReactiveObjC/RACSubscriber.h>
 #import <sys/xattr.h>
 
 #import "NSBundle+SQRLVersionExtensions.h"

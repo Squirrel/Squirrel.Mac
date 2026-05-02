@@ -8,10 +8,10 @@
 
 #import <Foundation/Foundation.h>
 
-#import "EXTScope.h"
-#import <ReactiveCocoa/RACCommand.h>
-#import <ReactiveCocoa/RACSignal+Operations.h>
-#import <ReactiveCocoa/RACScheduler.h>
+#import <ReactiveObjC/EXTScope.h>
+#import <ReactiveObjC/RACCommand.h>
+#import <ReactiveObjC/RACSignal+Operations.h>
+#import <ReactiveObjC/RACScheduler.h>
 
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"

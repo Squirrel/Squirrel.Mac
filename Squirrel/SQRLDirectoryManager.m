@@ -8,7 +8,7 @@
 
 #import "SQRLDirectoryManager.h"
 
-#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveObjC/RACSignal+Operations.h>
 
 @implementation SQRLDirectoryManager
 
