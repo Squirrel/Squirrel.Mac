@@ -35,7 +35,7 @@ RACSignal * updateFromJSONDataImp(id self, SEL _cmd, NSData * data)
 
 	NSLog(@"updateFromJSONDataImp called with %@", str);
 	updateFromJSONDataIsCalled = true;
-	return false;
+	return [RACSignal empty];
 }
 
 QuickSpecBegin(SQRLUpdaterSpec)
@@ -84,54 +84,15 @@ beforeEach(^{
 
 describe(@"checkForUpdatesCommand", ^{
 
-	/** 
+	/**
 	 control test behavior via env variables:
-	 
+
 	 SQUIRREL_TEST_LOCAL_SERVER=True
 	 SQUIRREL_LOCAL_SERVER_URL=http://localhost:8123/update/osx/1.0.1-stable/stable
 	 SQUIRREL_TEST_LOCAL_CDN=True
 	 SQUIRREL_CDN_URL=@"http://localhost/RELEASES.json"
 
 	 */
-
-	OHHTTPStubs *stubsJson = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
-		return [request.URL.absoluteString isEqualToString:@"http://localhost/RELEASES.json?method=Json"];
-	} withStubResponse:^(NSURLRequest *request) {
-		NSDictionary *newReleaseJSON = @{
-										 @"version": @"0.0.145",
-										 @"name": @"my-stub-release",
-										 @"notes": @"mock release for automated tests, json",
-										 @"pub_date": @"2017-03-09T15:24:55-05:00",
-										 @"url": @"http://localhost/myapp-0.0.145.zip"
-										 };
-
-		NSError * err;
-		NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:newReleaseJSON options:0 error:&err];
-
-		return [OHHTTPStubsResponse responseWithData:jsonData statusCode:200 responseTime:0 headers:nil];
-	}];
-
-	OHHTTPStubs *stubsReleaseServer = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
-		return [request.URL.absoluteString isEqualToString:@"http://localhost:8123/update/osx/1.0.1-stable/stable?method=ReleaseServer"];
-	} withStubResponse:^(NSURLRequest *request) {
-		NSDictionary *newReleaseJSON = @{
-										 @"version": @"0.0.145",
-										 @"name": @"my-stub-release",
-										 @"notes": @"mock release for automated tests, release server",
-										 @"pub_date": @"2017-03-09T15:24:55-05:00",
-										 @"url": @"http://localmyappng-0.0.145.zip"
-										 };
-
-		NSError * err;
-		NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:newReleaseJSON options:0 error:&err];
-
-		return [OHHTTPStubsResponse responseWithData:jsonData statusCode:200 responseTime:0 headers:nil];
-	}];
-
-	[self addCleanupBlock:^{
-		[OHHTTPStubs removeRequestHandler:stubsJson];
-		[OHHTTPStubs removeRequestHandler:stubsReleaseServer];
-	}];
 
 	BOOL testLocalServer = [[[[NSProcessInfo processInfo]environment]objectForKey:@"SQUIRREL_TEST_LOCAL_SERVER"] boolValue];
 	NSString* localServerURL = [[[NSProcessInfo processInfo]environment]objectForKey:@"SQUIRREL_LOCAL_SERVER_URL"];
@@ -147,64 +108,91 @@ describe(@"checkForUpdatesCommand", ^{
 	NSLog(@"testLocalServer %d %@", testLocalServer, localServerURL);
 	NSLog(@"testLocalCdn %d %@", testLocalCdn, localCdnURL);
 
-	__block SQRLUpdater *updater = nil;
-	__block NSURLRequest *localRequest = nil;
+	beforeEach(^{
+		updateFromJSONDataIsCalled = false;
+
+		// Short-circuit updateFromJSONData: so the test only verifies the
+		// HTTP fetch path, and force isRunningOnReadOnlyVolume to NO since
+		// the xctest CLI host has no bundleURL. Both implementations are
+		// restored after each example so later in-process specs are
+		// unaffected.
+		Method updateFromJSON = class_getInstanceMethod(SQRLUpdater.class, @selector(updateFromJSONData:));
+		IMP originalUpdateFromJSON = method_setImplementation(updateFromJSON, (IMP)updateFromJSONDataImp);
+
+		Method readOnly = class_getInstanceMethod(SQRLUpdater.class, @selector(isRunningOnReadOnlyVolume));
+		IMP originalReadOnly = method_setImplementation(readOnly, (IMP)isRunningOnReadOnlyVolumeImp);
+
+		[self addCleanupBlock:^{
+			method_setImplementation(updateFromJSON, originalUpdateFromJSON);
+			method_setImplementation(readOnly, originalReadOnly);
+		}];
+
+		OHHTTPStubs *stubsJson = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://localhost/RELEASES.json?method=Json"];
+		} withStubResponse:^(NSURLRequest *request) {
+			NSDictionary *newReleaseJSON = @{
+											 @"version": @"0.0.145",
+											 @"name": @"my-stub-release",
+											 @"notes": @"mock release for automated tests, json",
+											 @"pub_date": @"2017-03-09T15:24:55-05:00",
+											 @"url": @"http://localhost/myapp-0.0.145.zip"
+											 };
+
+			NSError * err;
+			NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:newReleaseJSON options:0 error:&err];
+
+			return [OHHTTPStubsResponse responseWithData:jsonData statusCode:200 responseTime:0 headers:nil];
+		}];
+
+		OHHTTPStubs *stubsReleaseServer = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://localhost:8123/update/osx/1.0.1-stable/stable?method=ReleaseServer"];
+		} withStubResponse:^(NSURLRequest *request) {
+			NSDictionary *newReleaseJSON = @{
+											 @"version": @"0.0.145",
+											 @"name": @"my-stub-release",
+											 @"notes": @"mock release for automated tests, release server",
+											 @"pub_date": @"2017-03-09T15:24:55-05:00",
+											 @"url": @"http://localmyappng-0.0.145.zip"
+											 };
+
+			NSError * err;
+			NSData * jsonData = [NSJSONSerialization  dataWithJSONObject:newReleaseJSON options:0 error:&err];
+
+			return [OHHTTPStubsResponse responseWithData:jsonData statusCode:200 responseTime:0 headers:nil];
+		}];
+
+		[self addCleanupBlock:^{
+			[OHHTTPStubs removeRequestHandler:stubsJson];
+			[OHHTTPStubs removeRequestHandler:stubsReleaseServer];
+		}];
+	});
 
 	it(@"Squirrel should work with a release server", ^{
-		
-		if(testLocalServer) {
+		if(!testLocalServer) return;
 
-			updateFromJSONDataIsCalled = false;
-			
-			//! setup the updater
-			localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:localServerURL]];
-			updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
-			
-			//! replace updateFromJSONData() and isRunningOnReadOnlyVolume() methods
-			method_setImplementation(class_getInstanceMethod([SQRLUpdater class]
-															 , @selector(updateFromJSONData:))
-									 , (IMP) updateFromJSONDataImp);
-			
-			method_setImplementation(class_getInstanceMethod([SQRLUpdater class]
-															 , @selector(isRunningOnReadOnlyVolume))
-									 , (IMP) isRunningOnReadOnlyVolumeImp);
-			
-			NSError *error = nil;
-			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
-			
-			//! now check the results
-			expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
-			expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
-			expect( (BOOL) result ).to(beTrue());
-		}
+		NSURLRequest *localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:localServerURL]];
+		SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
+
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+		expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
+		expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
+		expect( (BOOL) result ).to(beTrue());
 	});
 
 	it(@"Squirrel should work with a CDN", ^{
+		if(!testLocalCdn) return;
 
-		if(testLocalCdn) {
-			updateFromJSONDataIsCalled = false;
-			
-			//! setup the updater
-			localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:localCdnURL]];
-			updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
-			
-			//! replace updateFromJSONData() and isRunningOnReadOnlyVolume() methods
-			method_setImplementation(class_getInstanceMethod([SQRLUpdater class]
-															 , @selector(updateFromJSONData:))
-									 , (IMP) updateFromJSONDataImp);
+		NSURLRequest *localRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:localCdnURL]];
+		SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:localRequest];
 
-			method_setImplementation(class_getInstanceMethod([SQRLUpdater class]
-															 , @selector(isRunningOnReadOnlyVolume))
-									 , (IMP) isRunningOnReadOnlyVolumeImp);
-			
-			NSError *error = nil;
-			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
-			
-			//! now check the results
-			expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
-			expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
-			expect( (BOOL) result ).to(beTrue());
-		}
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+		expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
+		expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
+		expect( (BOOL) result ).to(beTrue());
 	});
 
 });
