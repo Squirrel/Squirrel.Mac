@@ -45,10 +45,11 @@ QuickSpecBegin(SQRLUpdaterSpec)
 __block NSURL *JSONURL;
 
 void (^writeUpdate)(SQRLUpdate *) = ^(SQRLUpdate *update) {
-	NSDictionary *updateInfo = [MTLJSONAdapter JSONDictionaryFromModel:update];
-	expect(updateInfo).notTo(beNil());
-
 	NSError *error = nil;
+	NSDictionary *updateInfo = [MTLJSONAdapter JSONDictionaryFromModel:update error:&error];
+	expect(updateInfo).notTo(beNil());
+	expect(error).to(beNil());
+
 	NSData *JSON = [NSJSONSerialization dataWithJSONObject:updateInfo options:NSJSONWritingPrettyPrinted error:&error];
 	expect(JSON).notTo(beNil());
 	expect(error).to(beNil());

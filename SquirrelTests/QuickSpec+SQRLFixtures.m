@@ -200,11 +200,16 @@ QuickConfigurationEnd
 		}
 
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		// SMJobRemove is deprecated but has no test-suitable replacement
+		// (SMAppService requires registration via the same API).
 		CFErrorRef error = NULL;
+		#pragma clang diagnostic push
+		#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 		if (!SMJobRemove(kSMDomainUserLaunchd, CFSTR("com.github.Squirrel.TestApplication.ShipIt"), NULL, true, &error)) {
 			NSLog(@"Could not remove ShipIt job after tests: %@", error);
 			if (error != NULL) CFRelease(error);
 		}
+		#pragma clang diagnostic pop
 	}];
 
 	return app;
@@ -281,7 +286,10 @@ QuickConfigurationEnd
 
 		[self addCleanupBlock:^{
 			// Remove ShipIt's launchd job so it doesn't relaunch itself.
+			#pragma clang diagnostic push
+			#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+			#pragma clang diagnostic pop
 
 			NSError *lookupError;
 			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];

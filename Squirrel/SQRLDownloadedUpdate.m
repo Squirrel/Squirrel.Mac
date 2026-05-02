@@ -37,12 +37,4 @@
 	} error:NULL];
 }
 
-#pragma mark MTLJSONSerializing
-
-+ (NSDictionary *)JSONKeyPathsByPropertyKey {
-	return @{
-		@keypath(SQRLDownloadedUpdate.new, bundleURL): NSNull.null
-	};
-}
-
 @end
