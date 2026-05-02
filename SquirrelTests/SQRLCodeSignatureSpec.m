@@ -170,6 +170,47 @@ describe(@"resource changes", ^{
 	});
 });
 
+describe(@"nested code changes", ^{
+	__block NSURL *shipItURL;
+	__block NSURL *frameworkBinaryURL;
+
+	beforeEach(^{
+		shipItURL = [bundle.bundleURL URLByAppendingPathComponent:@"Contents/Frameworks/Squirrel.framework/Versions/A/Resources/ShipIt"];
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:shipItURL.path])).to(beTruthy());
+
+		frameworkBinaryURL = [bundle.bundleURL URLByAppendingPathComponent:@"Contents/Frameworks/Squirrel.framework/Versions/A/Squirrel"];
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:frameworkBinaryURL.path])).to(beTruthy());
+	});
+
+	// kSecCSStrictValidate
+	it(@"should fail to verify when a nested executable is replaced with a symlink", ^{
+		expect(@([NSFileManager.defaultManager removeItemAtURL:shipItURL error:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager createSymbolicLinkAtURL:shipItURL withDestinationURL:[NSURL fileURLWithPath:@"/bin/ls"] error:NULL])).to(beTruthy());
+
+		NSError *error = nil;
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
+		expect(@(success)).to(beFalsy());
+
+		expect(error.domain).to(equal(SQRLCodeSignatureErrorDomain));
+		expect(@(error.code)).to(equal(@(SQRLCodeSignatureErrorDidNotPass)));
+	});
+
+	// kSecCSCheckNestedCode
+	it(@"should fail to verify when a nested framework binary is tampered", ^{
+		NSFileHandle *handle = [NSFileHandle fileHandleForWritingAtPath:frameworkBinaryURL.path];
+		[handle seekToEndOfFile];
+		[handle writeData:[@"corrupt" dataUsingEncoding:NSUTF8StringEncoding]];
+		[handle closeFile];
+
+		NSError *error = nil;
+		BOOL success = [[self.testApplicationSignature verifyBundleAtURL:bundle.bundleURL] waitUntilCompleted:&error];
+		expect(@(success)).to(beFalsy());
+
+		expect(error.domain).to(equal(SQRLCodeSignatureErrorDomain));
+		expect(@(error.code)).to(equal(@(SQRLCodeSignatureErrorDidNotPass)));
+	});
+});
+
 describe(@"framework changes", ^{
 	__block NSURL *frameworkURL;
 
