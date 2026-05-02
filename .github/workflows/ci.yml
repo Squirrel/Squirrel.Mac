@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build & Test
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+
+      - name: Build
+        run: |
+          xcodebuild \
+            -workspace Squirrel.xcworkspace \
+            -scheme Squirrel \
+            build \
+            GCC_TREAT_WARNINGS_AS_ERRORS=NO \
+            MACOSX_DEPLOYMENT_TARGET=10.13 \
+            CODE_SIGN_IDENTITY=- \
+            DEVELOPMENT_TEAM= \
+            | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
+
+      - name: Test
+        run: |
+          script/test | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
