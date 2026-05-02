@@ -6,7 +6,7 @@
 //  Copyright (c) 2013 GitHub. All rights reserved.
 //
 
-#import <ReactiveCocoa/RACSignal.h>
+#import <ReactiveObjC/RACSignal.h>
 
 @interface RACSignal (SQRLTransactionExtensions)
 

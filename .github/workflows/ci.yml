@@ -36,6 +36,7 @@ jobs:
             DEVELOPMENT_TEAM= \
             ONLY_ACTIVE_ARCH=YES \
             VALID_ARCHS="arm64 x86_64" \
+            OTHER_CODE_SIGN_FLAGS=--timestamp=none \
             | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
 
       - name: Test

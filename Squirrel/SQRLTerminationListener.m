@@ -8,13 +8,13 @@
 
 #import "SQRLTerminationListener.h"
 
-#import "EXTKeyPathCoding.h"
-#import <ReactiveCocoa/NSArray+RACSequenceAdditions.h>
-#import <ReactiveCocoa/RACDisposable.h>
-#import <ReactiveCocoa/RACScheduler.h>
-#import <ReactiveCocoa/RACSequence.h>
-#import <ReactiveCocoa/RACSignal+Operations.h>
-#import <ReactiveCocoa/RACSubscriber.h>
+#import <ReactiveObjC/EXTKeyPathCoding.h>
+#import <ReactiveObjC/NSArray+RACSequenceAdditions.h>
+#import <ReactiveObjC/RACDisposable.h>
+#import <ReactiveObjC/RACScheduler.h>
+#import <ReactiveObjC/RACSequence.h>
+#import <ReactiveObjC/RACSignal+Operations.h>
+#import <ReactiveObjC/RACSubscriber.h>
 
 @interface SQRLTerminationListener ()
 

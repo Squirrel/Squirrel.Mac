@@ -7,9 +7,9 @@
 //
 
 #import "SQRLShipItLauncher.h"
-#import "EXTScope.h"
+#import <ReactiveObjC/EXTScope.h>
 #import "SQRLDirectoryManager.h"
-#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveObjC/ReactiveObjC.h>
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>

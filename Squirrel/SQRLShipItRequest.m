@@ -8,8 +8,8 @@
 
 #import "SQRLShipItRequest.h"
 
-#import "EXTKeyPathCoding.h"
-#import <ReactiveCocoa/RACSignal+Operations.h>
+#import <ReactiveObjC/EXTKeyPathCoding.h>
+#import <ReactiveObjC/RACSignal+Operations.h>
 
 NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
 
@@ -60,7 +60,13 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 #pragma mark Serialization
 
 + (NSDictionary *)JSONKeyPathsByPropertyKey {
-	return @{};
+	return @{
+		@keypath(SQRLShipItRequest.new, updateBundleURL): @keypath(SQRLShipItRequest.new, updateBundleURL),
+		@keypath(SQRLShipItRequest.new, targetBundleURL): @keypath(SQRLShipItRequest.new, targetBundleURL),
+		@keypath(SQRLShipItRequest.new, bundleIdentifier): @keypath(SQRLShipItRequest.new, bundleIdentifier),
+		@keypath(SQRLShipItRequest.new, launchAfterInstallation): @keypath(SQRLShipItRequest.new, launchAfterInstallation),
+		@keypath(SQRLShipItRequest.new, useUpdateBundleName): @keypath(SQRLShipItRequest.new, useUpdateBundleName),
+	};
 }
 
 + (NSValueTransformer *)updateBundleURLJSONTransformer {

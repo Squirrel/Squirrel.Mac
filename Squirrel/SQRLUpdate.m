@@ -7,7 +7,7 @@
 //
 
 #import "SQRLUpdate.h"
-#import <ReactiveCocoa/ReactiveCocoa.h>
+#import <ReactiveObjC/ReactiveObjC.h>
 
 NSString * const SQRLUpdateJSONURLKey = @"url";
 NSString * const SQRLUpdateJSONReleaseNotesKey = @"notes";
