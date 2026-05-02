@@ -49,6 +49,21 @@ it(@"should install an update using ShipIt", ^{
 	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
+it(@"should round-trip the owned bundle through CFPreferences", ^{
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+	SQRLInstallerOwnedBundle *original = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:self.testApplicationURL temporaryURL:updateURL codeSignature:self.testApplicationSignature];
+
+	[installer setValue:original forKey:@"ownedBundle"];
+
+	SQRLInstallerOwnedBundle *restored = [installer valueForKey:@"ownedBundle"];
+	expect(restored).notTo(beNil());
+	expect(restored.originalURL).to(equal(original.originalURL));
+	expect(restored.temporaryURL).to(equal(original.temporaryURL));
+
+	[installer setValue:nil forKey:@"ownedBundle"];
+	expect([installer valueForKey:@"ownedBundle"]).to(beNil());
+});
+
 it(@"should install an update in process", ^{
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
 

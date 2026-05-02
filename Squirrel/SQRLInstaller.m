@@ -185,14 +185,40 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	id archiveData = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
 	if (![archiveData isKindOfClass:NSData.class]) return nil;
 
-	SQRLInstallerOwnedBundle *ownedBundle = [NSKeyedUnarchiver unarchiveObjectWithData:archiveData];
-	if (![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) return nil;
+	// unarchivedObjectOfClass:fromData:error: sets secureCoding to true and we don't
+	// archive data with secureCoding enabled - use our own unarchiver to work around that.
+	NSError *error;
+	NSKeyedUnarchiver *unarchiver = [[NSKeyedUnarchiver alloc] initForReadingFromData:archiveData
+                                                                              error:&error];
+	unarchiver.requiresSecureCoding = NO;
+	SQRLInstallerOwnedBundle *ownedBundle = [unarchiver decodeObjectForKey:NSKeyedArchiveRootObjectKey];
+	[unarchiver finishDecoding];
+
+	if (error) {
+		NSLog(@"Error while unarchiving ownedBundle - %@", error.localizedDescription);
+		return nil;
+	}
+
+	if (!ownedBundle || ![ownedBundle isKindOfClass:SQRLInstallerOwnedBundle.class]) {
+		NSLog(@"Unknown error while unarchiving ownedBundle - did not conform to SQRLInstallerOwnedBundle");
+		return nil;
+	}
 
 	return ownedBundle;
 }
 
 - (void)setOwnedBundle:(SQRLInstallerOwnedBundle *)ownedBundle {
-	NSData *archiveData = (ownedBundle == nil ? nil : [NSKeyedArchiver archivedDataWithRootObject:ownedBundle]);
+	NSData *archiveData = nil;
+	if (ownedBundle != nil) {
+		NSError *error;
+		archiveData = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle
+													requiringSecureCoding:NO
+																					error:&error];
+
+		if (error)
+			NSLog(@"Couldn't archive ownedBundle - %@", error.localizedDescription);
+	}
+
 	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFPropertyListRef)archiveData, (__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 	CFPreferencesSynchronize((__bridge CFStringRef)self.applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 }
