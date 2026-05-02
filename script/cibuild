@@ -49,28 +49,12 @@ config ()
 }
 
 ##
-## Code Signing
-##
-
-setup_keychain ()
-{
-  KEY_CHAIN=build.keychain
-  security create-keychain -p travis $KEY_CHAIN
-
-  security default-keychain -s $KEY_CHAIN
-  security unlock-keychain -p travis $KEY_CHAIN
-  security set-keychain-settings -t 3600 -u $KEY_CHAIN
-  security import script/certs.p12 -k build.keychain -P $KEY_PASSWORD -T /usr/bin/codesign
-}
-
-##
 ## Build Process
 ##
 
 main ()
 {
     config
-    setup_keychain
 
     if [ -f "$BOOTSTRAP" ]
     then
