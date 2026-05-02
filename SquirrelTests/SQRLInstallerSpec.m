@@ -88,6 +88,38 @@ describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
 	});
 });
 
+it(@"should refuse to install when the target bundle path traverses a symlink", ^{
+	NSURL *symlinkURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"symlinked.app"];
+	expect(@([NSFileManager.defaultManager createSymbolicLinkAtURL:symlinkURL withDestinationURL:self.testApplicationURL error:NULL])).to(beTruthy());
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:symlinkURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+	NSError *error = nil;
+	BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(installed)).to(beFalsy());
+	expect(error.domain).to(equal(SQRLInstallerErrorDomain));
+	expect(@(error.code)).to(equal(@(SQRLInstallerErrorInvalidState)));
+});
+
+it(@"should abort the install if the target application is still running", ^{
+	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+	expect(@(app.isTerminated)).to(beFalsy());
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+	NSError *error = nil;
+	BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(installed)).to(beFalsy());
+	expect(error.domain).to(equal(SQRLInstallerErrorDomain));
+	expect(@(error.code)).to(equal(@(SQRLInstallerErrorAppStillRunning)));
+
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+});
+
 it(@"should install an update and relaunch", ^{
 	NSString *bundleIdentifier = @"com.github.Squirrel.TestApplication";
 	NSArray *apps = [NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier];

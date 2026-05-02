@@ -9,6 +9,9 @@
 #import "SQRLInstaller.h"
 
 #import <libkern/OSAtomic.h>
+#import <mach-o/dyld.h>
+#import <sys/param.h>
+#import <unistd.h>
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/NSEnumerator+RACSequenceAdditions.h>
 #import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
@@ -36,6 +39,7 @@ const NSInteger SQRLInstallerErrorMissingInstallationData = -5;
 const NSInteger SQRLInstallerErrorInvalidState = -6;
 const NSInteger SQRLInstallerErrorMovingAcrossVolumes = -7;
 const NSInteger SQRLInstallerErrorChangingPermissions = -8;
+const NSInteger SQRLInstallerErrorAppStillRunning = -9;
 
 NSString * const SQRLShipItInstallationAttemptsKey = @"SQRLShipItInstallationAttempts";
 NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
@@ -280,12 +284,70 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 - (RACSignal *)installRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
+	// Resolve the target bundle path exactly once and use the canonical URL for
+	// every step of the install chain. The request is read from disk, so the
+	// path it carries is untrusted; every downstream step that re-resolves it
+	// must see the same location that validation saw.
+	NSURL *resolvedTargetURL = request.targetBundleURL.URLByResolvingSymlinksInPath.URLByStandardizingPath;
+	if (![resolvedTargetURL.path isEqual:request.targetBundleURL.URLByStandardizingPath.path]) {
+		NSDictionary *errorInfo = @{
+			NSLocalizedDescriptionKey: NSLocalizedString(@"Target bundle path is not canonical", nil),
+			NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The target bundle path must not traverse symbolic links.", nil),
+		};
+		return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:errorInfo]];
+	}
+	request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:resolvedTargetURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:request.launchAfterInstallation useUpdateBundleName:request.useUpdateBundleName];
+
+	// When running privileged, the target must be the app bundle that contains
+	// this installer. This pins the install to a location whose ancestors the
+	// user that wrote the request cannot modify.
+	if (geteuid() == 0) {
+		NSString *expectedTargetPath = nil;
+		char rawPath[PATH_MAX] = {0};
+		char canonicalPath[PATH_MAX] = {0};
+		uint32_t rawPathSize = sizeof(rawPath);
+		if (_NSGetExecutablePath(rawPath, &rawPathSize) == 0 && realpath(rawPath, canonicalPath) != NULL) {
+			NSArray<NSString *> *components = @(canonicalPath).pathComponents;
+			for (NSInteger i = (NSInteger)components.count - 1; i >= 0; i--) {
+				if ([components[(NSUInteger)i] hasSuffix:@".app"]) {
+					NSURL *expectedURL = [NSURL fileURLWithPath:[NSString pathWithComponents:[components subarrayWithRange:NSMakeRange(0, (NSUInteger)i + 1)]]];
+					expectedTargetPath = expectedURL.URLByStandardizingPath.path;
+					break;
+				}
+			}
+		}
+		if (expectedTargetPath == nil || ![resolvedTargetURL.path isEqual:expectedTargetPath]) {
+			NSLog(@"Privileged install rejected: target %@ does not match installer bundle %@", resolvedTargetURL.path, expectedTargetPath);
+			NSDictionary *errorInfo = @{
+				NSLocalizedDescriptionKey: NSLocalizedString(@"Target bundle does not match installer location", nil),
+				NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"When running with elevated privileges, the target bundle must be the application that contains this installer.", nil),
+			};
+			return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorInvalidState userInfo:errorInfo]];
+		}
+	}
+
 	return [[[[self
 		prepareAndValidateUpdateBundleURLForRequest:request]
 		flattenMap:^(NSURL *updateBundleURL) {
 			return [[[[self
 				renameIfNeeded:request updateBundleURL:updateBundleURL]
 				flattenMap:^(SQRLShipItRequest *request) {
+					// Final validation that the application is not running again;
+					NSArray *apps = nil;
+					if (request.bundleIdentifier != nil) {
+						apps = [[NSRunningApplication runningApplicationsWithBundleIdentifier:request.bundleIdentifier] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSRunningApplication *app, NSDictionary *bindings) {
+							return [[[app bundleURL] URLByStandardizingPath] isEqual:request.targetBundleURL];
+						}]];
+					}
+					if ([apps count] != 0) {
+						NSLog(@"Aborting update attempt because there are %lu running instances of the target app", [apps count]);
+						NSDictionary *errorInfo = @{
+							NSLocalizedDescriptionKey: NSLocalizedString(@"App Still Running Error", nil),
+							NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"All instances of the target application should be quit during the update process", nil),
+						};
+						return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorAppStillRunning userInfo:errorInfo]];
+					}
+
 					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
 				}]
 				flattenMap:^(SQRLShipItRequest *request) {

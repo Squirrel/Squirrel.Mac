@@ -158,8 +158,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 			return action;
 		}]
 		subscribeError:^(NSError *error) {
-			NSLog(@"Installation error: %@", error);
-			exit(EXIT_FAILURE);
+			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
+				NSLog(@"Installation cancelled: %@", error);
+				clearInstallationAttempts(applicationIdentifier);
+				exit(EXIT_SUCCESS);
+			} else {
+				NSLog(@"Installation error: %@", error);
+				exit(EXIT_FAILURE);
+			}
 		} completed:^{
 			exit(EXIT_SUCCESS);
 		}];

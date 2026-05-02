@@ -37,6 +37,9 @@ extern const NSInteger SQRLInstallerErrorMovingAcrossVolumes;
 // There was an error changing the file permissions of the update.
 extern const NSInteger SQRLInstallerErrorChangingPermissions;
 
+// There was a running instance of the app just prior to the update attempt
+extern const NSInteger SQRLInstallerErrorAppStillRunning;
+
 @class RACCommand;
 
 // Performs the installation of an update, saving its intermediate state to user
