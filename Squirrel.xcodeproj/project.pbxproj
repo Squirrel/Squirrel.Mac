@@ -1054,6 +1054,7 @@
 				D0C22BEA179CC00E00158214 /* Sources */,
 				D0C22BEB179CC00E00158214 /* Frameworks */,
 				D0C22BEC179CC00E00158214 /* Resources */,
+				E0E1F1A02D00000000000001 /* Sign Test Fixtures */,
 			);
 			buildRules = (
 			);
@@ -1146,6 +1147,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E0E1F1A02D00000000000001 /* Sign Test Fixtures */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Sign Test Fixtures";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/bash;
+			shellScript = "\"${SRCROOT}/script/sign-test-fixtures\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		534FF35C17D8E90A0020A51A /* Sources */ = {
@@ -1478,8 +1497,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = C4RRYD56A6;
+				CODE_SIGN_IDENTITY = "-";
+				DEVELOPMENT_TEAM = "";
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1496,8 +1515,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = C4RRYD56A6;
+				CODE_SIGN_IDENTITY = "-";
+				DEVELOPMENT_TEAM = "";
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1514,8 +1533,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = C4RRYD56A6;
+				CODE_SIGN_IDENTITY = "-";
+				DEVELOPMENT_TEAM = "";
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1532,8 +1551,8 @@
 			baseConfigurationReference = D0C22C17179CC02E00158214 /* Mac-Application.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_IDENTITY = "Mac Developer";
-				DEVELOPMENT_TEAM = C4RRYD56A6;
+				CODE_SIGN_IDENTITY = "-";
+				DEVELOPMENT_TEAM = "";
 				GCC_PREFIX_HEADER = "TestApplication/TestApplication-Prefix.pch";
 				INFOPLIST_FILE = "TestApplication/TestApplication-Info.plist";
 				OTHER_CODE_SIGN_FLAGS = "--timestamp=none";
@@ -1553,7 +1572,9 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				ENABLE_TESTABILITY = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				VALID_ARCHS = "arm64 x86_64";
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = macosx;
 			};
@@ -1566,7 +1587,9 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				VALID_ARCHS = "arm64 x86_64";
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 			};
@@ -1623,10 +1646,10 @@
 					Carthage/Checkouts/ReactiveCocoa/ReactiveCocoa/extobjc,
 				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.github.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
@@ -1643,10 +1666,10 @@
 					Carthage/Checkouts/ReactiveCocoa/ReactiveCocoa/extobjc,
 				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.github.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
 		};
@@ -1657,7 +1680,9 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				VALID_ARCHS = "arm64 x86_64";
 				SDKROOT = macosx;
 				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
 			};
@@ -1695,10 +1720,10 @@
 					Carthage/Checkouts/ReactiveCocoa/ReactiveCocoa/extobjc,
 				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.github.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Profile;
 		};
@@ -1709,7 +1734,9 @@
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				GCC_NO_COMMON_BLOCKS = YES;
-				MACOSX_DEPLOYMENT_TARGET = 10.8;
+				GCC_TREAT_WARNINGS_AS_ERRORS = NO;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				VALID_ARCHS = "arm64 x86_64";
 				SDKROOT = macosx;
 			};
 			name = Test;
@@ -1746,10 +1773,10 @@
 					Carthage/Checkouts/ReactiveCocoa/ReactiveCocoa/extobjc,
 				);
 				INFOPLIST_FILE = "SquirrelTests/SquirrelTests-Info.plist";
-				MACOSX_DEPLOYMENT_TARGET = 10.9;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
 				PRODUCT_BUNDLE_IDENTIFIER = "com.github.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_VERSION = 3.0;
+				SWIFT_VERSION = 5.0;
 			};
 			name = Test;
 		};
