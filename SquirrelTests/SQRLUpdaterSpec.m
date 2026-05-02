@@ -29,12 +29,14 @@ bool isRunningOnReadOnlyVolumeImp(id self, SEL _cmd)
 
 //! we don't want updateFromJSONData to be executed. It is enough to know if it was called
 bool updateFromJSONDataIsCalled = false;
+NSDictionary *updateFromJSONDataLastBody = nil;
 RACSignal * updateFromJSONDataImp(id self, SEL _cmd, NSData * data)
 {
 	NSString* str = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 
 	NSLog(@"updateFromJSONDataImp called with %@", str);
 	updateFromJSONDataIsCalled = true;
+	updateFromJSONDataLastBody = [NSJSONSerialization JSONObjectWithData:data options:0 error:NULL];
 	return [RACSignal empty];
 }
 
@@ -110,6 +112,7 @@ describe(@"checkForUpdatesCommand", ^{
 
 	beforeEach(^{
 		updateFromJSONDataIsCalled = false;
+		updateFromJSONDataLastBody = nil;
 
 		// Short-circuit updateFromJSONData: so the test only verifies the
 		// HTTP fetch path, and force isRunningOnReadOnlyVolume to NO since
@@ -193,6 +196,149 @@ describe(@"checkForUpdatesCommand", ^{
 		expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
 		expect( (BOOL) updateFromJSONDataIsCalled ).to(beTrue());
 		expect( (BOOL) result ).to(beTrue());
+	});
+
+	it(@"should treat a 204 No Content response as no update available", ^{
+		OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://fake/no-update"];
+		} withStubResponse:^(NSURLRequest *request) {
+			return [OHHTTPStubsResponse responseWithData:NSData.data statusCode:204 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{ [OHHTTPStubs removeRequestHandler:stubs]; }];
+
+		NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://fake/no-update"]];
+		SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
+
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+		expect(@(result)).to(beTruthy());
+		expect(error).to(beNil());
+		expect((BOOL)updateFromJSONDataIsCalled).to(beFalse());
+		expect((int)updater.state).toEventually(equal((int)SQRLUpdaterStateIdle));
+	});
+
+	it(@"should pass through custom headers from the update request", ^{
+		__block NSString *seenHeader = nil;
+		OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://fake/with-headers"];
+		} withStubResponse:^(NSURLRequest *request) {
+			seenHeader = request.allHTTPHeaderFields[@"X-Test"];
+			return [OHHTTPStubsResponse responseWithData:NSData.data statusCode:204 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{ [OHHTTPStubs removeRequestHandler:stubs]; }];
+
+		NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:@"http://fake/with-headers"]];
+		[request setValue:@"this-is-a-test" forHTTPHeaderField:@"X-Test"];
+		SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
+
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+		expect(@(result)).to(beTruthy());
+		expect(seenHeader).to(equal(@"this-is-a-test"));
+	});
+
+	describe(@"JSONFILE mode", ^{
+		OHHTTPStubsResponse * (^jsonResponse)(NSDictionary *) = ^(NSDictionary *body) {
+			NSData *data = [NSJSONSerialization dataWithJSONObject:body options:0 error:NULL];
+			return [OHHTTPStubsResponse responseWithData:data statusCode:200 responseTime:0 headers:nil];
+		};
+
+		SQRLUpdater * (^makeUpdater)(NSString *) = ^(NSString *currentVersion) {
+			NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://fake/releases.json"]];
+			return [[SQRLUpdater alloc] initWithUpdateRequest:request forVersion:currentVersion];
+		};
+
+		it(@"should pick the matching release's updateTo when currentRelease is newer than the running version", ^{
+			NSDictionary *updateTo = @{
+				@"version": @"2.0.0",
+				@"url": @"http://fake/app-2.0.0.zip",
+				@"name": @"v2",
+			};
+			OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+				return [request.URL.absoluteString isEqualToString:@"http://fake/releases.json"];
+			} withStubResponse:^(NSURLRequest *request) {
+				return jsonResponse(@{
+					@"currentRelease": @"2.0.0",
+					@"releases": @[
+						@{ @"version": @"1.5.0", @"updateTo": @{ @"url": @"http://fake/wrong" } },
+						@{ @"version": @"2.0.0", @"updateTo": updateTo },
+					],
+				});
+			}];
+			[self addCleanupBlock:^{ [OHHTTPStubs removeRequestHandler:stubs]; }];
+
+			SQRLUpdater *updater = makeUpdater(@"1.0.0");
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+			expect(@(result)).to(beTruthy());
+			expect((BOOL)updateFromJSONDataIsCalled).to(beTrue());
+			expect(updateFromJSONDataLastBody).to(equal(updateTo));
+		});
+
+		it(@"should not download when currentRelease equals the running version", ^{
+			OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+				return [request.URL.absoluteString isEqualToString:@"http://fake/releases.json"];
+			} withStubResponse:^(NSURLRequest *request) {
+				return jsonResponse(@{
+					@"currentRelease": @"1.0.0",
+					@"releases": @[
+						@{ @"version": @"1.0.0", @"updateTo": @{ @"url": @"http://fake/wrong" } },
+					],
+				});
+			}];
+			[self addCleanupBlock:^{ [OHHTTPStubs removeRequestHandler:stubs]; }];
+
+			SQRLUpdater *updater = makeUpdater(@"1.0.0");
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+			expect(@(result)).to(beTruthy());
+			expect(error).to(beNil());
+			expect((BOOL)updateFromJSONDataIsCalled).to(beFalse());
+		});
+
+		it(@"should not download when currentRelease is older than the running version", ^{
+			OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+				return [request.URL.absoluteString isEqualToString:@"http://fake/releases.json"];
+			} withStubResponse:^(NSURLRequest *request) {
+				return jsonResponse(@{
+					@"currentRelease": @"0.1.0",
+					@"releases": @[
+						@{ @"version": @"0.1.0", @"updateTo": @{ @"url": @"http://fake/wrong" } },
+					],
+				});
+			}];
+			[self addCleanupBlock:^{ [OHHTTPStubs removeRequestHandler:stubs]; }];
+
+			SQRLUpdater *updater = makeUpdater(@"1.0.0");
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+			expect(@(result)).to(beTruthy());
+			expect(error).to(beNil());
+			expect((BOOL)updateFromJSONDataIsCalled).to(beFalse());
+		});
+
+		it(@"should error when the JSON file is invalid", ^{
+			OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+				return [request.URL.absoluteString isEqualToString:@"http://fake/releases.json"];
+			} withStubResponse:^(NSURLRequest *request) {
+				return [OHHTTPStubsResponse responseWithData:[@"not json" dataUsingEncoding:NSUTF8StringEncoding] statusCode:200 responseTime:0 headers:nil];
+			}];
+			[self addCleanupBlock:^{ [OHHTTPStubs removeRequestHandler:stubs]; }];
+
+			SQRLUpdater *updater = makeUpdater(@"1.0.0");
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+			expect(@(result)).to(beFalsy());
+			expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
+			expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidServerBody)));
+			expect((BOOL)updateFromJSONDataIsCalled).to(beFalse());
+		});
 	});
 
 });
@@ -390,6 +536,35 @@ describe(@"response handling", ^{
 		expect(@(result)).to(beFalsy());
 		expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
 		expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidServerBody)));
+	});
+
+	it(@"should return an error when the download endpoint responds with non-2xx", ^{
+		__block BOOL downloadHit = NO;
+		OHHTTPStubs *stubsCheck = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL isEqual:localRequest.URL];
+		} withStubResponse:^(NSURLRequest *request) {
+			NSDictionary *body = @{ @"url": @"http://fake/download.zip" };
+			NSData *json = [NSJSONSerialization dataWithJSONObject:body options:0 error:NULL];
+			return [OHHTTPStubsResponse responseWithData:json statusCode:200 responseTime:0 headers:nil];
+		}];
+		OHHTTPStubs *stubsDownload = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://fake/download.zip"];
+		} withStubResponse:^(NSURLRequest *request) {
+			downloadHit = YES;
+			return [OHHTTPStubsResponse responseWithData:[@"nope" dataUsingEncoding:NSUTF8StringEncoding] statusCode:/* Server Error */ 500 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{
+			[OHHTTPStubs removeRequestHandler:stubsCheck];
+			[OHHTTPStubs removeRequestHandler:stubsDownload];
+		}];
+
+		NSError *error = nil;
+		BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+		expect(@(result)).to(beFalsy());
+		expect(@(downloadHit)).to(beTruthy());
+		expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
+		expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidServerResponse)));
+		expect(error.localizedDescription).to(contain(@"Update download failed"));
 	});
 });
 
