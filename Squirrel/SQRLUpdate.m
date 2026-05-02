@@ -76,7 +76,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 	// ISO 8601 Time Zone with ':'
 	NSString * const ISO8601DateFormat = @"yyyy'-'MM'-'dd'T'HH':'mm':'ssZZZZZ";
 
-	return [MTLValueTransformer reversibleTransformerWithForwardBlock:^ NSDate * (NSString *dateString) {
+	return [MTLValueTransformer transformerUsingForwardBlock:^ NSDate * (NSString *dateString, BOOL *success, NSError **error) {
 		if (![dateString isKindOfClass:NSString.class]) return nil;
 
 		NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
@@ -104,7 +104,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 		formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
 		return [formatter dateFromString:dateString];
-	} reverseBlock:^ NSString * (NSDate *date) {
+	} reverseBlock:^ NSString * (NSDate *date, BOOL *success, NSError **error) {
 		if (![date isKindOfClass:NSDate.class]) return nil;
 
 		NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
