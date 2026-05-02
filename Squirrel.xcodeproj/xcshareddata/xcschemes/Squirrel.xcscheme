@@ -71,12 +71,12 @@
          <EnvironmentVariable
             key = "SQUIRREL_TEST_LOCAL_CDN"
             value = "True"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
          <EnvironmentVariable
             key = "SQUIRREL_TEST_LOCAL_SERVER"
             value = "True"
-            isEnabled = "YES">
+            isEnabled = "NO">
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>

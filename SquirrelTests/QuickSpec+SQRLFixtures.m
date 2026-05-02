@@ -57,7 +57,7 @@ static NSURL *baseTemporaryDirectoryURL = nil;
 
 QuickConfigurationBegin(Fixtures)
 
-+ (void)configure:(Configuration *)configuration {
++ (void)configure:(QCKConfiguration *)configuration {
 	NSURL *appSupportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
 	NSAssert(appSupportURL != nil, @"Could not find Application Support folder");
 
@@ -74,7 +74,7 @@ QuickConfigurationBegin(Fixtures)
 		].rac_sequence;
 	}];
 
-	[configuration beforeSuite:^{
+	qck_beforeSuite(^{
 		signal(SIGILL, &SQRLSignalHandler);
 		NSSetUncaughtExceptionHandler(&SQRLUncaughtExceptionHandler);
 
@@ -86,7 +86,7 @@ QuickConfigurationBegin(Fixtures)
 				NSLog(@"Could not touch log file at %@", URL);
 			}
 		}
-	}];
+	});
 
 	// We want to run any enqueued cleanup blocks after _and before_ each spec,
 	// in case beforeSuites (for example) use the fixtures.
@@ -99,11 +99,11 @@ QuickConfigurationBegin(Fixtures)
 		[cleanupBlocks removeAllObjects];
 	};
 
-	[configuration beforeEach:^{
+	[configuration beforeEachWithMetadata:^(ExampleMetadata *metadata) {
 		runCleanupBlocks();
 	}];
 
-	[configuration afterEach:^{
+	[configuration afterEachWithMetadata:^(ExampleMetadata *metadata) {
 		runCleanupBlocks();
 		SQRLKillAllTestApplications();
 	}];

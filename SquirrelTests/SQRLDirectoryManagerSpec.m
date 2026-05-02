@@ -18,7 +18,10 @@ QuickSpecBegin(SQRLDirectoryManagerSpec)
 __block NSString *otestIdentifier;
 
 beforeEach(^{
-	otestIdentifier = NSProcessInfo.processInfo.environment[@"FORCE_APP_IDENTIFIER"];
+	// Under modern XCTest the host process is xctest, which has its own
+	// bundle identifier. Older test runners had no identifier and fell
+	// through to the FORCE_APP_IDENTIFIER environment variable.
+	otestIdentifier = NSBundle.mainBundle.bundleIdentifier ?: NSProcessInfo.processInfo.environment[@"FORCE_APP_IDENTIFIER"];
 	expect(otestIdentifier).notTo(beNil());
 });
 

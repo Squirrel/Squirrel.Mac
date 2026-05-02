@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -eo pipefail
+
+SCRIPT_DIR=$(dirname "$0")
+cd "$SCRIPT_DIR/.."
+
+# The dependency projects (ReactiveCocoa, Mantle, etc.) ship with their own
+# xcconfigs that enable -Werror and target ancient macOS. Override at the
+# command line so they apply workspace-wide.
+exec xcodebuild \
+  -workspace Squirrel.xcworkspace \
+  -scheme Squirrel \
+  test \
+  GCC_TREAT_WARNINGS_AS_ERRORS=NO \
+  MACOSX_DEPLOYMENT_TARGET=10.13 \
+  CODE_SIGN_IDENTITY=- \
+  DEVELOPMENT_TEAM= \
+  "$@"
