@@ -10,6 +10,7 @@
 #import <ReactiveObjC/EXTScope.h>
 #import "SQRLDirectoryManager.h"
 #import <ReactiveObjC/ReactiveObjC.h>
+#import <xpc/xpc.h>
 #import <Security/Security.h>
 #import <ServiceManagement/ServiceManagement.h>
 #import <launch.h>
@@ -57,7 +58,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			NSMutableArray *arguments = [[NSMutableArray alloc] init];
 			[arguments addObject:[squirrelBundle URLForResource:@"ShipIt" withExtension:nil].path];
 
-			// Pass in the service name so ShipIt knows how to broadcast itself.
+			// Pass in the job label so ShipIt can identify itself.
 			[arguments addObject:jobLabel];
 
 			// We need to pass the path to ShipIt rather than having ShipIt
@@ -152,6 +153,23 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 
 			if (!SMJobSubmit(domain, (__bridge CFDictionaryRef)jobDictionary, authorization, &cfError)) {
 				return [RACSignal error:CFBridgingRelease(cfError)];
+			}
+
+			// Trigger an on-demand launch by sending a message to the job's
+			// Mach service. When loginwindow begins a restart (e.g. for a
+			// pending macOS update) it puts the per-user launchd domain into
+			// on-demand-only mode, which defers RunAtLoad/KeepAlive spawns
+			// but still honors real IPC demand. The system domain is not
+			// affected, so this is only needed for the unprivileged path.
+			if (!privileged) {
+				xpc_connection_t trigger = xpc_connection_create_mach_service(self.shipItJobLabel.UTF8String, NULL, 0);
+				xpc_connection_set_event_handler(trigger, ^(xpc_object_t __unused event) {});
+				xpc_connection_resume(trigger);
+				xpc_connection_send_message(trigger, xpc_dictionary_create(NULL, NULL, 0));
+				// send_message is async; keep the connection alive until the
+				// message is actually on the wire so ARC releasing `trigger`
+				// at end-of-scope can't drop it first.
+				xpc_connection_send_barrier(trigger, ^{ (void)trigger; });
 			}
 
 			return [RACSignal empty];
