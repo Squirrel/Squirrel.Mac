@@ -15,16 +15,50 @@ concurrency:
 
 jobs:
   test:
-    name: Build & Test
-    runs-on: macos-latest
+    name: Build & Test (${{ matrix.os }}, Xcode ${{ matrix.xcode }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Latest minor of each major Xcode per runner image
+        include:
+          # macos-14 (arm64)
+          - { os: macos-14, xcode: '15.4' }
+          - { os: macos-14, xcode: '16.2' }
+          # macos-15 (arm64)
+          - { os: macos-15, xcode: '16.4' }
+          - { os: macos-15, xcode: '26.3' }
+          # macos-15-intel (x86_64)
+          - { os: macos-15-intel, xcode: '16.4' }
+          - { os: macos-15-intel, xcode: '26.3' }
+          # macos-26 (arm64)
+          - { os: macos-26, xcode: '26.4' }
+          # macos-26-intel (x86_64)
+          - { os: macos-26-intel, xcode: '26.4' }
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           submodules: recursive
 
+      - name: Patch vendored xcconfigs for arm64
+        # The vendored xcconfigs (jspahrsummers/xcconfigs 0.x) pin
+        # VALID_ARCHS = x86_64 in Mac-Base.xcconfig. Project-level
+        # overrides handle the build, but some Xcode versions resolve
+        # -destination from the raw xcconfig before overrides apply and
+        # refuse arch=arm64. Patch every copy under Carthage in place.
+        run: |
+          find Carthage -name 'Mac-Base.xcconfig' -print0 | \
+            xargs -0 sed -i '' 's/^VALID_ARCHS = x86_64$/VALID_ARCHS = arm64 x86_64/'
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s "/Applications/Xcode_${{ matrix.xcode }}.app"
+          xcodebuild -version
+
       - name: Build
         run: |
+          set -o pipefail
           xcodebuild \
             -workspace Squirrel.xcworkspace \
             -scheme Squirrel \
@@ -37,8 +71,22 @@ jobs:
             ONLY_ACTIVE_ARCH=YES \
             VALID_ARCHS="arm64 x86_64" \
             OTHER_CODE_SIGN_FLAGS=--timestamp=none \
-            | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
+            | xcbeautify --renderer github-actions
 
       - name: Test
         run: |
-          script/test | xcbeautify --renderer github-actions && exit ${PIPESTATUS[0]}
+          set -o pipefail
+          # shellcheck disable=SC2266 # script/test is a path, not the `test` builtin
+          script/test | xcbeautify --renderer github-actions
+
+  ci-green:
+    name: ci-green
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: All matrix cells succeeded
+        if: needs.test.result != 'success'
+        run: |
+          echo "::error::matrix result was '${{ needs.test.result }}'"
+          exit 1
