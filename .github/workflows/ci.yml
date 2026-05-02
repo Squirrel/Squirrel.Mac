@@ -41,13 +41,15 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Patch ReactiveObjC for arm64
-        # ReactiveObjC's nested xcconfigs pin VALID_ARCHS = x86_64; some Xcode
-        # versions resolve destinations from project files (CLI overrides do
-        # not apply yet) and refuse arch=arm64.
+      - name: Patch vendored xcconfigs for arm64
+        # The vendored xcconfigs (jspahrsummers/xcconfigs 0.x) pin
+        # VALID_ARCHS = x86_64 in Mac-Base.xcconfig. Project-level
+        # overrides handle the build, but some Xcode versions resolve
+        # -destination from the raw xcconfig before overrides apply and
+        # refuse arch=arm64. Patch every copy under Carthage in place.
         run: |
-          sed -i '' 's/^VALID_ARCHS = x86_64$/VALID_ARCHS = arm64 x86_64/' \
-            "Carthage/Checkouts/ReactiveObjC/Carthage/Checkouts/xcconfigs/Mac OS X/Mac-Base.xcconfig"
+          find Carthage -name 'Mac-Base.xcconfig' -print0 | \
+            xargs -0 sed -i '' 's/^VALID_ARCHS = x86_64$/VALID_ARCHS = arm64 x86_64/'
 
       - name: Select Xcode
         run: |
