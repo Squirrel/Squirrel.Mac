@@ -193,6 +193,13 @@ QuickConfigurationEnd
 	NSRunningApplication *app = [NSWorkspace.sharedWorkspace launchApplicationAtURL:self.testApplicationURL options:NSWorkspaceLaunchWithoutAddingToRecents | NSWorkspaceLaunchWithoutActivation | NSWorkspaceLaunchNewInstance | NSWorkspaceLaunchAndHide configuration:configuration error:&error];
 	XCTAssertNotNil(app, @"Could not launch app at %@: %@", self.testApplicationURL, error);
 
+	// launchApplicationAtURL: is async; on slow hosts the app may not have
+	// checked in with Launch Services yet, so callers that immediately query
+	// runningApplicationsWithBundleIdentifier: see nothing and assume it has
+	// already terminated. Wait for the app to finish launching before
+	// returning so tests observe a stable starting state.
+	expect(@(app.finishedLaunching)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+
 	[self addCleanupBlock:^{
 		if (!app.terminated) {
 			[app terminate];
