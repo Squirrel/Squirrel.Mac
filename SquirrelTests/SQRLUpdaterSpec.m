@@ -340,6 +340,33 @@ describe(@"checkForUpdatesCommand", ^{
 			expect((BOOL)updateFromJSONDataIsCalled).to(beFalse());
 		});
 
+		it(@"should pick the matching release's updateTo when reading the manifest from a file:// URL", ^{
+			NSDictionary *updateTo = @{
+				@"version": @"2.0.0",
+				@"url": @"http://fake/app-2.0.0.zip",
+				@"name": @"v2",
+			};
+			NSDictionary *manifest = @{
+				@"currentRelease": @"2.0.0",
+				@"releases": @[
+					@{ @"version": @"2.0.0", @"updateTo": updateTo },
+				],
+			};
+			NSURL *manifestURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"releases.json"];
+			NSData *manifestData = [NSJSONSerialization dataWithJSONObject:manifest options:0 error:NULL];
+			expect(@([manifestData writeToURL:manifestURL atomically:YES])).to(beTruthy());
+
+			NSURLRequest *request = [NSURLRequest requestWithURL:manifestURL];
+			SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:request forVersion:@"1.0.0"];
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+
+			expect(@(result)).to(beTruthy());
+			expect(error).to(beNil());
+			expect((BOOL)updateFromJSONDataIsCalled).to(beTrue());
+			expect(updateFromJSONDataLastBody).to(equal(updateTo));
+		});
+
 		it(@"should error when the JSON file is invalid", ^{
 			OHHTTPStubs *stubs = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
 				return [request.URL.absoluteString isEqualToString:@"http://fake/releases.json"];
