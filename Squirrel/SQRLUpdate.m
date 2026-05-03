@@ -93,17 +93,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 			if (date != nil) return date;
 		}
 
-		// If neither match, try removing the ':' in the time zone
-		static NSRegularExpression *timeZoneSuffix = nil;
-		static dispatch_once_t timeZoneSuffixPredicate = 0;
-		dispatch_once(&timeZoneSuffixPredicate, ^ {
-			timeZoneSuffix = [NSRegularExpression regularExpressionWithPattern:@"([-+])([0-9]{2}):([0-9]{2})$" options:0 error:NULL];
-		});
-
-		dateString = [timeZoneSuffix stringByReplacingMatchesInString:dateString options:0 range:NSMakeRange(0, dateString.length) withTemplate:@"$1$2$3"];
-
-		formatter.dateFormat = @"yyyy'-'MM'-'DD'T'HH':'mm':'ssZZZ"; // RFC 822 Time Zone no ':', 10.7 support
-		return [formatter dateFromString:dateString];
+		return nil;
 	} reverseBlock:^ NSString * (NSDate *date, BOOL *success, NSError **error) {
 		if (![date isKindOfClass:NSDate.class]) return nil;
 

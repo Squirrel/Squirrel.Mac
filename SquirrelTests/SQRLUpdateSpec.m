@@ -53,4 +53,14 @@ it(@"should parse ISO 8601 dates", ^{
 	expect(update.releaseDate).to(equal([NSDate dateWithTimeIntervalSince1970:1379506627]));
 });
 
+it(@"should parse ISO 8601 dates with a colon-free time zone offset", ^{
+	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"pub_date": @"2013-09-18T13:17:07-0700" } error:NULL];
+	expect(update.releaseDate).to(equal([NSDate dateWithTimeIntervalSince1970:1379535427]));
+});
+
+it(@"should parse ISO 8601 dates with a Z time zone designator", ^{
+	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"pub_date": @"2013-09-18T12:17:07Z" } error:NULL];
+	expect(update.releaseDate).to(equal([NSDate dateWithTimeIntervalSince1970:1379506627]));
+});
+
 QuickSpecEnd
