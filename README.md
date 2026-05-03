@@ -174,37 +174,61 @@ appropriate format.
 
 ## Update File JSON Format
 
-The alternate update technique uses a plain JSON file meaning you can store your
-update metadata on S3 or another static file store. The format of this file is
-detailed below:
+The alternate update technique uses a static JSON file, so you can host update
+metadata on S3, a CDN, or any static file server — no dynamic backend required.
+
+> **Electron users:** you must opt in to this mode with
+> `autoUpdater.setFeedURL({ url: '…', serverType: 'json' })`. Without
+> `serverType: 'json'`, Squirrel parses the response as the
+> [server format](#update-server-json-format) above and you'll get
+> `SQRLUpdaterErrorDomain code 6` ("invalid JSON response").
+
+### How Squirrel decides to update
+
+1. Fetch the file and read `currentRelease`.
+2. Compare it to the running app's version
+   (`CFBundleShortVersionString` — `app.getVersion()` in Electron) using a
+   numeric string comparison.
+3. If `currentRelease` is equal to or lower than the running version, do
+   nothing.
+4. Otherwise, look through `releases` for the entry whose `version` equals
+   `currentRelease`, and use that entry's `updateTo` as the download payload
+   (same shape as the [server format](#update-server-json-format)).
+
+That's it. `releases` is **not** a "from → to" migration map — only the entry
+matching `currentRelease` is ever used. Including older releases is optional
+(useful if you also serve release notes from this file); a single entry is fine.
+
+### Minimal example
 
 ```json
 {
-	"currentRelease": "1.2.3",
-	"releases": [
-		{
-			"version": "1.2.1",
-			"updateTo": {
-				"version": "1.2.1",
-				"pub_date": "2013-09-18T12:29:53+01:00",
-				"notes": "Theses are some release notes innit",
-				"name": "1.2.1",
-				"url": "https://mycompany.example.com/myapp/releases/myrelease"
-			}
-		},
-		{
-			"version": "1.2.3",
-			"updateTo": {
-				"version": "1.2.3",
-				"pub_date": "2014-09-18T12:29:53+01:00",
-				"notes": "Theses are some more release notes innit",
-				"name": "1.2.3",
-				"url": "https://mycompany.example.com/myapp/releases/myrelease3"
-			}
-		}
-	]
+  "currentRelease": "1.2.3",
+  "releases": [
+    {
+      "version": "1.2.3",
+      "updateTo": {
+        "version": "1.2.3",
+        "url": "https://mycompany.example.com/myapp/releases/MyApp-1.2.3.zip",
+        "name": "1.2.3",
+        "notes": "Bug fixes and performance improvements.",
+        "pub_date": "2024-09-18T12:29:53+01:00"
+      }
+    }
+  ]
 }
 ```
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `currentRelease` | ✅ | The latest available version. The only value compared against the running app. |
+| `releases[].version` | ✅ | Lookup key. Squirrel uses the entry where this equals `currentRelease`. |
+| `releases[].updateTo` | ✅ | The download payload for that version. Same shape as the [server format](#update-server-json-format). |
+| `updateTo.url` | ✅ | Direct URL to the `.zip` for that version. |
+| `updateTo.version` | — | Echoed into the `update-downloaded` event; conventionally the same as the outer `version`. |
+| `updateTo.name` / `notes` / `pub_date` | — | Surfaced to your app for display. `pub_date` must be ISO 8601 if present. |
+
+Point the updater directly at this file's URL — there's no required filename.
 
 # User Interface
 
