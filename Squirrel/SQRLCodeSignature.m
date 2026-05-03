@@ -124,7 +124,7 @@ const NSInteger SQRLCodeSignatureErrorCouldNotCreateStaticCode = -2;
 		}
 		
 		CFErrorRef validityError = NULL;
-		result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckAllArchitectures, (__bridge SecRequirementRef)self.requirement, &validityError);
+		result = SecStaticCodeCheckValidityWithErrors(staticCode, kSecCSCheckNestedCode | kSecCSStrictValidate | kSecCSCheckAllArchitectures, (__bridge SecRequirementRef)self.requirement, &validityError);
 		@onExit {
 			if (validityError != NULL) CFRelease(validityError);
 		};
