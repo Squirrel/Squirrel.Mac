@@ -503,7 +503,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 				userInfo[NSLocalizedFailureReasonErrorKey] = [NSString stringWithFormat:NSLocalizedString(@"Couldn't remove temp dir \"%@\"", @""), temporaryDirectoryURL.path];
 				userInfo[NSURLErrorKey] = temporaryDirectoryURL;
 
-				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:userInfo]];
+				return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo]];
 			}
 		}]
 		setNameWithFormat:@"%@ -deleteOwnedBundleAtURL: %@", self, bundleURL];
