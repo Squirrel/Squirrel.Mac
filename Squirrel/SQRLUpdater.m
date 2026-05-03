@@ -42,6 +42,18 @@ const NSTimeInterval SQURLUpdaterZipDownloadTimeoutSeconds = 20 * 60;
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 
+BOOL isVersionStandard(NSString* version) {
+	NSCharacterSet *alphaNums = [NSCharacterSet decimalDigitCharacterSet];
+
+	NSArray* versionParts = [version componentsSeparatedByString:@"."];
+	BOOL versionBad = [versionParts count] != 3;
+	for (NSString* part in versionParts) {
+		versionBad = versionBad || [alphaNums isSupersetOfSet:[NSCharacterSet characterSetWithCharactersInString:part]];
+	}
+
+	return !versionBad;
+}
+
 @interface SQRLUpdater ()
 
 @property (atomic, readwrite) SQRLUpdaterState state;
@@ -58,6 +70,8 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 //
 // Sends completed or error.
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+
++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion;
 
 // Parses an update model from downloaded data.
 //
@@ -325,11 +339,16 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		defer:^{
 			@strongify(self);
 
-			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL;
+			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL.URLByResolvingSymlinksInPath;
 
 			BOOL targetWritable = [self canWriteToURL:targetURL];
 			BOOL parentWritable = [self canWriteToURL:targetURL.URLByDeletingLastPathComponent];
-			return [SQRLShipItLauncher launchPrivileged:!targetWritable || !parentWritable];
+			BOOL launchPrivileged = !targetWritable || !parentWritable;
+			if ([[NSUserDefaults standardUserDefaults] boolForKey:@"SquirrelMacEnableDirectContentsWrite"]) {
+				// If SquirrelMacEnableDirectContentsWrite is enabled we don't care if the parent directory is writeable or not
+				launchPrivileged = !targetWritable;
+			}
+			return [SQRLShipItLauncher launchPrivileged:launchPrivileged];
 		}]
 		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];
@@ -365,6 +384,10 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 		takeUntil:self.rac_willDeallocSignal]
 		publish]
 		connect];
+}
+
++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion {
+	return [currentVersion compare:targetVersion options:NSNumericSearch] != NSOrderedDescending;
 }
 
 - (RACSignal *)updateFromJSONData:(NSData *)data {
@@ -519,11 +542,19 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 #pragma mark File Management
 
 - (RACSignal *)uniqueTemporaryDirectoryForUpdate {
-	return [[[RACSignal
+	// Clean up any orphaned update directories before creating a new one.
+	// This prevents disk usage from growing when checkForUpdates() is called
+	// multiple times without the app restarting. The currently staged update
+	// (referenced by ShipItState.plist) is always preserved so quitAndInstall
+	// remains safe to call while a new check is in progress.
+	return [[[[[self
+		pruneOrphanedUpdateDirectories]
+		ignoreValues]
+		concat:[RACSignal
 		defer:^{
 			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
 			return [directoryManager storageURL];
-		}]
+		}]]
 		flattenMap:^(NSURL *storageURL) {
 			NSURL *updateDirectoryTemplate = [storageURL URLByAppendingPathComponent:[SQRLUpdaterUniqueTemporaryDirectoryPrefix stringByAppendingString:@"XXXXXXX"]];
 			char *updateDirectoryCString = strdup(updateDirectoryTemplate.path.fileSystemRepresentation);
@@ -643,25 +674,68 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 			return [directoryManager storageURL];
 		}]
 		flattenMap:^(NSURL *storageURL) {
-			NSFileManager *manager = [[NSFileManager alloc] init];
-			NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:storageURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
-				NSLog(@"Error enumerating item %@ within directory %@: %@", URL, storageURL, error);
-				return YES;
-			}];
-
-			return [[enumerator.rac_sequence.signal
-				filter:^(NSURL *enumeratedURL) {
-					NSString *name = enumeratedURL.lastPathComponent;
-					return [name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix];
-				}]
-				doNext:^(NSURL *directoryURL) {
-					NSError *error = nil;
-					if (![manager removeItemAtURL:directoryURL error:&error]) {
-						NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
-					}
-				}];
+			return [self removeUpdateDirectoriesInStorageURL:storageURL excludingURL:nil];
 		}]
 		setNameWithFormat:@"%@ -prunedUpdateDirectories", self];
+}
+
+/// Lazily removes orphaned temporary directories upon subscription, always
+/// preserving the directory currently referenced by ShipItState.plist so that
+/// quitAndInstall remains safe to call mid-check.
+///
+/// Safe to call in any state. Sends each removed directory then completes on
+/// an unspecified thread. Errors reading the staged request are swallowed
+/// (treated as "nothing staged").
+- (RACSignal *)pruneOrphanedUpdateDirectories {
+	return [[[[[SQRLShipItRequest
+		readUsingURL:self.shipItStateURL]
+		map:^(SQRLShipItRequest *request) {
+			// The request holds the URL to the staged .app bundle; its parent
+			// is the update.XXXXXXX directory we must preserve.
+			return [request.updateBundleURL URLByDeletingLastPathComponent];
+		}]
+		catch:^(NSError *error) {
+			// No staged request (or unreadable) — nothing to preserve.
+			return [RACSignal return:nil];
+		}]
+		flattenMap:^(NSURL *stagedDirectoryURL) {
+			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
+			return [[directoryManager storageURL]
+				flattenMap:^(NSURL *storageURL) {
+					return [self removeUpdateDirectoriesInStorageURL:storageURL excludingURL:stagedDirectoryURL];
+				}];
+		}]
+		setNameWithFormat:@"%@ -pruneOrphanedUpdateDirectories", self];
+}
+
+/// Shared enumerate-and-delete logic for update temp directories.
+///
+/// storageURL  - The Squirrel storage root to enumerate. Must not be nil.
+/// excludedURL - Directory to skip (compared by standardized path). May be nil.
+- (RACSignal *)removeUpdateDirectoriesInStorageURL:(NSURL *)storageURL excludingURL:(NSURL *)excludedURL {
+	NSParameterAssert(storageURL != nil);
+
+	NSFileManager *manager = [[NSFileManager alloc] init];
+	NSDirectoryEnumerator *enumerator = [manager enumeratorAtURL:storageURL includingPropertiesForKeys:nil options:NSDirectoryEnumerationSkipsSubdirectoryDescendants errorHandler:^(NSURL *URL, NSError *error) {
+		NSLog(@"Error enumerating item %@ within directory %@: %@", URL, storageURL, error);
+		return YES;
+	}];
+
+	NSString *excludedPath = excludedURL.URLByStandardizingPath.path;
+
+	return [[enumerator.rac_sequence.signal
+		filter:^(NSURL *enumeratedURL) {
+			NSString *name = enumeratedURL.lastPathComponent;
+			if (![name hasPrefix:SQRLUpdaterUniqueTemporaryDirectoryPrefix]) return NO;
+			if (excludedPath != nil && [enumeratedURL.URLByStandardizingPath.path isEqualToString:excludedPath]) return NO;
+			return YES;
+		}]
+		doNext:^(NSURL *directoryURL) {
+			NSError *error = nil;
+			if (![manager removeItemAtURL:directoryURL error:&error]) {
+				NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
+			}
+		}];
 }
 
 
@@ -706,6 +780,50 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[[self.signature
 		verifyBundleAtURL:updateBundle.bundleURL]
 		then:^{
+			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
+			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
+			BOOL preventDowngrades = [[appBundle objectForInfoDictionaryKey:@"ElectronSquirrelPreventDowngrades"] boolValue];
+
+			if (preventDowngrades == YES) {
+				NSString* currentVersion = [appBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+				NSString* updateVersion = [updateBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+				if (!currentVersion || !updateVersion) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is missing a valid version string in either the current bundle or the target bundle", nil),
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (!isVersionStandard(currentVersion)) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update from '%@' which is not a valid version string", nil), currentVersion],
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (!isVersionStandard(updateVersion)) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update to '%@' which is not a valid version string", nil), updateVersion],
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if (![SQRLUpdater isVersionAllowedForUpdate:updateVersion from:currentVersion]) {
+					NSDictionary *errorInfo = @{
+						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
+						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update from '%@' to '%@' which appears to be a downgrade", nil), currentVersion, updateVersion],
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+			}
+
 			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
 			return [RACSignal return:downloadedUpdate];
 		}]
@@ -723,12 +841,13 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 	return [[[[RACSignal
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
-			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
+			NSURL *targetBundleURL = currentApplication.bundleURL.URLByResolvingSymlinksInPath;
+			NSBundle *appBundle = [NSBundle bundleWithURL:targetBundleURL];
 			// Only use the update bundle's name if the user hasn't renamed the
 			// app themselves.
-			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:currentApplication.bundleURL.lastPathComponent.stringByDeletingPathExtension];
+			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:targetBundleURL.lastPathComponent.stringByDeletingPathExtension];
 
-			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:currentApplication.bundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:targetBundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
 			return [request writeUsingURL:self.shipItStateURL];
 		}]
 		then:^{

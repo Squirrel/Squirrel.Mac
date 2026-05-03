@@ -21,6 +21,10 @@
 #import "TestAppConstants.h"
 #import <objc/objc-class.h>
 
+@interface SQRLUpdater (SQRLTestingHooks)
+- (RACSignal *)removeUpdateDirectoriesInStorageURL:(NSURL *)storageURL excludingURL:(NSURL *)excludedURL;
+@end
+
 //! force Updater to believe we are not on readonly, to continue downloading the release
 bool isRunningOnReadOnlyVolumeImp(id self, SEL _cmd)
 {
@@ -459,17 +463,12 @@ describe(@"updating", ^{
 				}];
 		});
 
-		// Disabled: pruneUpdateDirectories intentionally skips while the
-		// updater is in SQRLUpdaterStateAwaitingRelaunch (see 7dffc4b /
-		// Squirrel#174), so the staged update directory is expected to
-		// remain on disk until the next cold update check.
-		xit(@"should remove downloaded archives after updating", ^{
+		it(@"should keep the update directory count bounded across repeated checks", ^{
 			SKIP_IF_RUNNING_ON_TRAVIS
 
 			NSError *error = nil;
 			SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
 				@"updateURL": zipUpdate(updateURL),
-				@"final": @YES
 			} error:&error];
 
 			expect(update).notTo(beNil());
@@ -477,12 +476,45 @@ describe(@"updating", ^{
 
 			writeUpdate(update);
 
-			NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateRequestCount": @"2" });
+			NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateRequestCount": @"3" });
 			expect([updateDirectoryURLs toArray]).toEventuallyNot(equal(@[]));
 			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
-			expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 
-			expect([updateDirectoryURLs toArray]).withTimeout(SQRLLongTimeout).toEventually(equal(@[]));
+			// pruneOrphanedUpdateDirectories runs before each download and
+			// preserves only the directory referenced by the current
+			// ShipItState, so after N checks at most 2 directories remain
+			// (the most recently staged + the one created during the final
+			// check).
+			expect(@([[updateDirectoryURLs toArray] count])).to(beLessThanOrEqualTo(@2));
+		});
+
+		it(@"should remove orphaned update directories while preserving the excluded one", ^{
+			NSURL *storageURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"prune-storage"];
+			expect(@([NSFileManager.defaultManager createDirectoryAtURL:storageURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+
+			NSURL *staged = nil;
+			for (int i = 0; i < 4; i++) {
+				NSURL *dir = [storageURL URLByAppendingPathComponent:[NSString stringWithFormat:@"update.ORPHAN%d", i]];
+				expect(@([NSFileManager.defaultManager createDirectoryAtURL:dir withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+				if (i == 2) staged = dir;
+			}
+			// Non-prefixed directory must be left alone.
+			NSURL *unrelated = [storageURL URLByAppendingPathComponent:@"ShipItState.plist"];
+			[NSData.data writeToURL:unrelated atomically:YES];
+
+			SQRLUpdater *updater = [SQRLUpdater alloc];
+			BOOL ok = [[updater removeUpdateDirectoriesInStorageURL:storageURL excludingURL:staged] asynchronouslyWaitUntilCompleted:NULL];
+			expect(@(ok)).to(beTruthy());
+
+			NSArray *remaining = [NSFileManager.defaultManager contentsOfDirectoryAtURL:storageURL includingPropertiesForKeys:nil options:0 error:NULL];
+			NSPredicate *isUpdateDir = [NSPredicate predicateWithBlock:^BOOL(NSURL *url, NSDictionary *bindings) {
+				return [url.lastPathComponent hasPrefix:@"update."];
+			}];
+			NSArray *remainingUpdateDirs = [remaining filteredArrayUsingPredicate:isUpdateDir];
+
+			expect(@(remainingUpdateDirs.count)).to(equal(@1));
+			expect([remainingUpdateDirs.firstObject lastPathComponent]).to(equal(staged.lastPathComponent));
+			expect(@([NSFileManager.defaultManager fileExistsAtPath:unrelated.path])).to(beTruthy());
 		});
 	});
 });
@@ -628,6 +660,20 @@ describe(@"state", ^{
 		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
 
 		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+	});
+});
+
+describe(@"+isVersionAllowedForUpdate:from:", ^{
+	it(@"should compare version numbers correctly", ^{
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"2.0.0" from:@"1.0.0"])).to(beTruthy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.0.10" from:@"1.0.1"])).to(beTruthy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.0.1" from:@"1.0.10"])).to(beFalsy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.32.0" from:@"1.31.1"])).to(beTruthy());
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"0.32.0" from:@"1.31.1"])).to(beFalsy());
+	});
+
+	it(@"should allow updating to the same version", ^{
+		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"1.2.3" from:@"1.2.3"])).to(beTruthy());
 	});
 });
 

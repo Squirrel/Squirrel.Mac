@@ -19,6 +19,8 @@
 
 #import "QuickSpec+SQRLFixtures.h"
 
+#import <sys/xattr.h>
+
 QuickSpecBegin(SQRLInstallerSpec)
 
 mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
@@ -47,12 +49,90 @@ it(@"should install an update using ShipIt", ^{
 	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
+it(@"should round-trip the owned bundle through CFPreferences", ^{
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+	SQRLInstallerOwnedBundle *original = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:self.testApplicationURL temporaryURL:updateURL codeSignature:self.testApplicationSignature];
+
+	[installer setValue:original forKey:@"ownedBundle"];
+
+	SQRLInstallerOwnedBundle *restored = [installer valueForKey:@"ownedBundle"];
+	expect(restored).notTo(beNil());
+	expect(restored.originalURL).to(equal(original.originalURL));
+	expect(restored.temporaryURL).to(equal(original.temporaryURL));
+
+	[installer setValue:nil forKey:@"ownedBundle"];
+	expect([installer valueForKey:@"ownedBundle"]).to(beNil());
+});
+
 it(@"should install an update in process", ^{
 	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
 
 	[self installWithRequest:request remote:NO];
 
 	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+});
+
+describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
+	beforeEach(^{
+		// SQRLInstaller adds the running application's identifier (and that
+		// identifier minus a trailing .ShipIt) as search suites, but
+		// `[[NSUserDefaults alloc] init]` already includes the host app's
+		// domain — so writing via standardUserDefaults is sufficient when
+		// running the installer in-process.
+		[NSUserDefaults.standardUserDefaults setBool:YES forKey:@"SquirrelMacEnableDirectContentsWrite"];
+
+		[self addCleanupBlock:^{
+			[NSUserDefaults.standardUserDefaults removeObjectForKey:@"SquirrelMacEnableDirectContentsWrite"];
+		}];
+	});
+
+	it(@"should install an update by replacing Contents and leave the .app directory itself untouched", ^{
+		const char *xattrName = "com.github.Squirrel.spec-id";
+		NSString *marker = NSProcessInfo.processInfo.globallyUniqueString;
+		expect(@(setxattr(self.testApplicationURL.fileSystemRepresentation, xattrName, marker.UTF8String, strlen(marker.UTF8String), 0, 0))).to(equal(@0));
+
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+		[self installWithRequest:request remote:NO];
+
+		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+
+		NSMutableData *buf = [NSMutableData dataWithLength:256];
+		ssize_t len = getxattr(self.testApplicationURL.fileSystemRepresentation, xattrName, buf.mutableBytes, buf.length, 0, 0);
+		expect(@(len)).to(beGreaterThan(@0));
+		expect([[NSString alloc] initWithBytes:buf.bytes length:(NSUInteger)len encoding:NSUTF8StringEncoding]).to(equal(marker));
+	});
+});
+
+it(@"should refuse to install when the target bundle path traverses a symlink", ^{
+	NSURL *symlinkURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"symlinked.app"];
+	expect(@([NSFileManager.defaultManager createSymbolicLinkAtURL:symlinkURL withDestinationURL:self.testApplicationURL error:NULL])).to(beTruthy());
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:symlinkURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+	NSError *error = nil;
+	BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(installed)).to(beFalsy());
+	expect(error.domain).to(equal(SQRLInstallerErrorDomain));
+	expect(@(error.code)).to(equal(@(SQRLInstallerErrorInvalidState)));
+});
+
+it(@"should abort the install if the target application is still running", ^{
+	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+	expect(@(app.isTerminated)).to(beFalsy());
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+	NSError *error = nil;
+	BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(installed)).to(beFalsy());
+	expect(error.domain).to(equal(SQRLInstallerErrorDomain));
+	expect(@(error.code)).to(equal(@(SQRLInstallerErrorAppStillRunning)));
+
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 });
 
 it(@"should install an update and relaunch", ^{
