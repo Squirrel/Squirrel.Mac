@@ -195,9 +195,9 @@ metadata on S3, a CDN, or any static file server — no dynamic backend required
    `currentRelease`, and use that entry's `updateTo` as the download payload
    (same shape as the [server format](#update-server-json-format)).
 
-That's it. `releases` is **not** a "from → to" migration map — only the entry
-matching `currentRelease` is ever used. Including older releases is optional
-(useful if you also serve release notes from this file); a single entry is fine.
+Only the entry matching `currentRelease` is ever used. Including older
+releases is optional (useful if you also serve release notes from this
+file); a single entry is fine.
 
 ### Minimal example
 
