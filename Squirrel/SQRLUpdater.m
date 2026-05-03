@@ -335,9 +335,16 @@ BOOL isVersionStandard(NSString* version) {
 			deliverOn:RACScheduler.mainThreadScheduler];
 	}];
 
-	_shipItLauncher = [[[RACSignal
+	__block BOOL shipItSubmitted = NO;
+	_shipItLauncher = [[RACSignal
 		defer:^{
 			@strongify(self);
+
+			// replayLazily would cache a terminal error (e.g. the user
+			// cancelling the auth prompt, or a transient SMJobSubmit failure)
+			// and replay it to every future check. Memoize success only so
+			// errors retry on the next subscription.
+			if (shipItSubmitted) return [RACSignal empty];
 
 			NSURL *targetURL = NSRunningApplication.currentApplication.bundleURL.URLByResolvingSymlinksInPath;
 
@@ -348,9 +355,11 @@ BOOL isVersionStandard(NSString* version) {
 				// If SquirrelMacEnableDirectContentsWrite is enabled we don't care if the parent directory is writeable or not
 				launchPrivileged = !targetWritable;
 			}
-			return [SQRLShipItLauncher launchPrivileged:launchPrivileged];
+			return [[SQRLShipItLauncher launchPrivileged:launchPrivileged]
+				doCompleted:^{
+					shipItSubmitted = YES;
+				}];
 		}]
-		replayLazily]
 		setNameWithFormat:@"shipItLauncher"];
 	
 	return self;

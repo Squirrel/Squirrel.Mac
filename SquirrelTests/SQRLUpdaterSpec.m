@@ -12,6 +12,7 @@
 #import <Squirrel/Squirrel.h>
 
 #import "SQRLDirectoryManager.h"
+#import "SQRLShipItLauncher.h"
 #import "SQRLUpdater.h"
 #import "SQRLZipArchiver.h"
 
@@ -23,7 +24,17 @@
 
 @interface SQRLUpdater (SQRLTestingHooks)
 - (RACSignal *)removeUpdateDirectoriesInStorageURL:(NSURL *)storageURL excludingURL:(NSURL *)excludedURL;
+@property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 @end
+
+//! controllable stub for +[SQRLShipItLauncher launchPrivileged:]
+static int launchPrivilegedCallCount = 0;
+static RACSignal *(^launchPrivilegedStub)(BOOL) = nil;
+RACSignal * launchPrivilegedImp(id self, SEL _cmd, BOOL privileged)
+{
+	launchPrivilegedCallCount++;
+	return launchPrivilegedStub != nil ? launchPrivilegedStub(privileged) : [RACSignal empty];
+}
 
 //! force Updater to believe we are not on readonly, to continue downloading the release
 bool isRunningOnReadOnlyVolumeImp(id self, SEL _cmd)
@@ -660,6 +671,62 @@ describe(@"state", ^{
 		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
 
 		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+	});
+});
+
+describe(@"shipItLauncher", ^{
+	__block IMP originalLaunchPrivileged;
+	__block Method launchPrivilegedMethod;
+	__block SQRLUpdater *updater;
+
+	beforeEach(^{
+		launchPrivilegedCallCount = 0;
+		launchPrivilegedStub = nil;
+
+		launchPrivilegedMethod = class_getClassMethod(SQRLShipItLauncher.class, @selector(launchPrivileged:));
+		originalLaunchPrivileged = method_setImplementation(launchPrivilegedMethod, (IMP)launchPrivilegedImp);
+
+		NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://fake/"]];
+		updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
+	});
+
+	afterEach(^{
+		method_setImplementation(launchPrivilegedMethod, originalLaunchPrivileged);
+		launchPrivilegedStub = nil;
+	});
+
+	it(@"should not re-submit the launchd job after a successful launch", ^{
+		launchPrivilegedStub = ^(BOOL privileged) { return [RACSignal empty]; };
+
+		NSError *error = nil;
+		BOOL success = [updater.shipItLauncher waitUntilCompleted:&error];
+		expect(@(success)).to(beTruthy());
+		expect(error).to(beNil());
+		expect(@(launchPrivilegedCallCount)).to(equal(@1));
+
+		success = [updater.shipItLauncher waitUntilCompleted:&error];
+		expect(@(success)).to(beTruthy());
+		expect(@(launchPrivilegedCallCount)).to(equal(@1));
+	});
+
+	it(@"should retry the launch on the next subscription after an error", ^{
+		NSError *cancelled = [NSError errorWithDomain:NSOSStatusErrorDomain code:-60006 userInfo:nil];
+		launchPrivilegedStub = ^(BOOL privileged) { return [RACSignal error:cancelled]; };
+
+		NSError *error = nil;
+		BOOL success = [updater.shipItLauncher waitUntilCompleted:&error];
+		expect(@(success)).to(beFalsy());
+		expect(error).to(equal(cancelled));
+		expect(@(launchPrivilegedCallCount)).to(equal(@1));
+
+		// User re-authorizes / transient SMJobSubmit failure clears.
+		launchPrivilegedStub = ^(BOOL privileged) { return [RACSignal empty]; };
+
+		error = nil;
+		success = [updater.shipItLauncher waitUntilCompleted:&error];
+		expect(@(success)).to(beTruthy());
+		expect(error).to(beNil());
+		expect(@(launchPrivilegedCallCount)).to(equal(@2));
 	});
 });
 
