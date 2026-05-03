@@ -39,7 +39,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          submodules: recursive
+          submodules: false
+
+      - name: Init submodules
+        # Recursive init pulls 15 nested clones; only 8 are used by the
+        # build (the rest are Mantle's / ReactiveObjC's / Quick's own
+        # test deps).
+        run: |
+          git submodule update --init --depth 1 \
+            Carthage/Checkouts/Mantle \
+            Carthage/Checkouts/Nimble \
+            Carthage/Checkouts/Quick \
+            Carthage/Checkouts/ReactiveObjC \
+            Carthage/Checkouts/xcconfigs \
+            External/OHHTTPStubs
+          git -C Carthage/Checkouts/Mantle submodule update --init --depth 1 \
+            Carthage/Checkouts/xcconfigs
+          git -C Carthage/Checkouts/ReactiveObjC submodule update --init --depth 1 \
+            Carthage/Checkouts/xcconfigs
 
       - name: Patch vendored xcconfigs for arm64
         # The vendored xcconfigs (jspahrsummers/xcconfigs 0.x) pin
@@ -56,6 +73,19 @@ jobs:
           sudo xcode-select -s "/Applications/Xcode_${{ matrix.xcode }}.app"
           xcodebuild -version
 
+      - name: Compute dep cache key
+        id: dep-key
+        run: |
+          echo "key=${{ matrix.os }}-xcode${{ matrix.xcode }}-$(git submodule status --recursive | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache DerivedData
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
+        with:
+          path: DerivedData
+          key: deriveddata-${{ steps.dep-key.outputs.key }}-${{ github.sha }}
+          restore-keys: |
+            deriveddata-${{ steps.dep-key.outputs.key }}-
+
       - name: Build
         run: |
           set -o pipefail
@@ -63,6 +93,7 @@ jobs:
             -workspace Squirrel.xcworkspace \
             -scheme Squirrel \
             -destination "platform=macOS,arch=$(uname -m)" \
+            -derivedDataPath DerivedData \
             build \
             GCC_TREAT_WARNINGS_AS_ERRORS=NO \
             MACOSX_DEPLOYMENT_TARGET=10.13 \
@@ -77,7 +108,11 @@ jobs:
         run: |
           set -o pipefail
           # shellcheck disable=SC2266 # script/test is a path, not the `test` builtin
-          script/test | xcbeautify --renderer github-actions
+          script/test -derivedDataPath DerivedData | xcbeautify --renderer github-actions
+
+      - name: Prune DerivedData before cache save
+        run: |
+          rm -rf DerivedData/Logs DerivedData/Index.noindex DerivedData/ModuleCache.noindex/Session.modulevalidation
 
   ci-green:
     name: ci-green
