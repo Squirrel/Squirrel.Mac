@@ -21,6 +21,10 @@
 
 #import <sys/xattr.h>
 
+@interface SQRLInstaller (SQRLTestingHooks)
+- (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
+@end
+
 QuickSpecBegin(SQRLInstallerSpec)
 
 mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
@@ -303,6 +307,56 @@ describe(@"signal handling", ^{
 		}
 
 		verifyUpdate();
+	});
+});
+
+describe(@"-deleteOwnedBundleAtURL:", ^{
+	__block SQRLInstaller *installer;
+	__block NSURL *parentURL;
+	__block NSURL *bundleURL;
+
+	beforeEach(^{
+		installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:@"com.github.SquirrelTests"];
+		parentURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:NSProcessInfo.processInfo.globallyUniqueString isDirectory:YES];
+		bundleURL = [parentURL URLByAppendingPathComponent:@"Test.app" isDirectory:YES];
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:parentURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+	});
+
+	it(@"should remove the bundle and its parent directory", ^{
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:bundleURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+
+		NSError *error = nil;
+		BOOL success = [[installer deleteOwnedBundleAtURL:bundleURL] asynchronouslyWaitUntilCompleted:&error];
+
+		expect(@(success)).to(beTruthy());
+		expect(error).to(beNil());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:bundleURL.path])).to(beFalsy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:parentURL.path])).to(beFalsy());
+	});
+
+	it(@"should remove the parent directory when the bundle is already gone", ^{
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:bundleURL.path])).to(beFalsy());
+
+		NSError *error = nil;
+		BOOL success = [[installer deleteOwnedBundleAtURL:bundleURL] asynchronouslyWaitUntilCompleted:&error];
+
+		expect(@(success)).to(beTruthy());
+		expect(error).to(beNil());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:parentURL.path])).to(beFalsy());
+	});
+
+	it(@"should report the rmdir errno when the parent directory is not empty", ^{
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:bundleURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+		NSURL *siblingURL = [parentURL URLByAppendingPathComponent:@"stray-file"];
+		expect(@([[NSData data] writeToURL:siblingURL atomically:YES])).to(beTruthy());
+
+		NSError *error = nil;
+		BOOL success = [[installer deleteOwnedBundleAtURL:bundleURL] asynchronouslyWaitUntilCompleted:&error];
+
+		expect(@(success)).to(beFalsy());
+		expect(error.domain).to(equal(NSPOSIXErrorDomain));
+		expect(@(error.code)).to(equal(@(ENOTEMPTY)));
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:siblingURL.path])).to(beTruthy());
 	});
 });
 

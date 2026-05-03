@@ -477,6 +477,10 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			NSError *error;
 			if ([NSFileManager.defaultManager removeItemAtURL:bundleURL error:&error]) {
 				return [RACSignal empty];
+			} else if ([error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError) {
+				// The bundle was already moved into place by installItemToURL:;
+				// proceed so the parent mkdtemp directory still gets removed.
+				return [RACSignal empty];
 			} else {
 				return [RACSignal error:error];
 			}
