@@ -48,7 +48,7 @@ BOOL isVersionStandard(NSString* version) {
 	NSArray* versionParts = [version componentsSeparatedByString:@"."];
 	BOOL versionBad = [versionParts count] != 3;
 	for (NSString* part in versionParts) {
-		versionBad = versionBad || [alphaNums isSupersetOfSet:[NSCharacterSet characterSetWithCharactersInString:part]];
+		versionBad = versionBad || part.length == 0 || ![alphaNums isSupersetOfSet:[NSCharacterSet characterSetWithCharactersInString:part]];
 	}
 
 	return !versionBad;

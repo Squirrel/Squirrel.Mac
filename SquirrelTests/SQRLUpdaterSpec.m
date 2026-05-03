@@ -27,6 +27,8 @@
 @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
 @end
 
+extern BOOL isVersionStandard(NSString* version);
+
 //! controllable stub for +[SQRLShipItLauncher launchPrivileged:]
 static int launchPrivilegedCallCount = 0;
 static RACSignal *(^launchPrivilegedStub)(BOOL) = nil;
@@ -727,6 +729,35 @@ describe(@"shipItLauncher", ^{
 		expect(@(success)).to(beTruthy());
 		expect(error).to(beNil());
 		expect(@(launchPrivilegedCallCount)).to(equal(@2));
+	});
+});
+
+describe(@"isVersionStandard", ^{
+	it(@"should accept simple Major.Minor.Patch version strings", ^{
+		expect(@(isVersionStandard(@"1.2.3"))).to(beTruthy());
+		expect(@(isVersionStandard(@"0.0.0"))).to(beTruthy());
+		expect(@(isVersionStandard(@"10.20.30"))).to(beTruthy());
+		expect(@(isVersionStandard(@"100.0.1"))).to(beTruthy());
+	});
+
+	it(@"should reject version strings without exactly three parts", ^{
+		expect(@(isVersionStandard(@"1.2"))).to(beFalsy());
+		expect(@(isVersionStandard(@"1.2.3.4"))).to(beFalsy());
+		expect(@(isVersionStandard(@"1"))).to(beFalsy());
+		expect(@(isVersionStandard(@""))).to(beFalsy());
+	});
+
+	it(@"should reject version strings with non-numeric parts", ^{
+		expect(@(isVersionStandard(@"1.2.3-beta"))).to(beFalsy());
+		expect(@(isVersionStandard(@"a.b.c"))).to(beFalsy());
+		expect(@(isVersionStandard(@"1.2.x"))).to(beFalsy());
+		expect(@(isVersionStandard(@"v1.2.3"))).to(beFalsy());
+	});
+
+	it(@"should reject version strings with empty parts", ^{
+		expect(@(isVersionStandard(@"1..3"))).to(beFalsy());
+		expect(@(isVersionStandard(@".."))).to(beFalsy());
+		expect(@(isVersionStandard(@".2.3"))).to(beFalsy());
 	});
 });
 
