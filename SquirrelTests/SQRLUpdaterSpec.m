@@ -761,6 +761,22 @@ describe(@"isVersionStandard", ^{
 	});
 });
 
+describe(@"-initWithUpdateRequest:requestForDownload:", ^{
+	it(@"should use the provided requestForDownload block", ^{
+		NSURLRequest *updateRequest = [NSURLRequest requestWithURL:[NSURL URLWithString:@"http://fake/update-check"]];
+		SQRLUpdater *updater = [[SQRLUpdater alloc] initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
+			NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:downloadURL];
+			[request setValue:@"Bearer test-token" forHTTPHeaderField:@"Authorization"];
+			return request;
+		}];
+
+		NSURL *downloadURL = [NSURL URLWithString:@"http://fake/app.zip"];
+		NSURLRequest *downloadRequest = updater.requestForDownload(downloadURL);
+		expect(downloadRequest.URL).to(equal(downloadURL));
+		expect([downloadRequest valueForHTTPHeaderField:@"Authorization"]).to(equal(@"Bearer test-token"));
+	});
+});
+
 describe(@"+isVersionAllowedForUpdate:from:", ^{
 	it(@"should compare version numbers correctly", ^{
 		expect(@([SQRLUpdater isVersionAllowedForUpdate:@"2.0.0" from:@"1.0.0"])).to(beTruthy());
