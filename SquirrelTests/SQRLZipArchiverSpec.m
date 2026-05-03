@@ -15,6 +15,11 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLZipArchiver.h"
 
+@interface SQRLZipArchiver (SQRLTestingHooks)
+@property (nonatomic, strong, readonly) NSTask *dittoTask;
+- (RACSignal *)launchWithArguments:(NSArray *)arguments;
+@end
+
 QuickSpecBegin(SQRLZipArchiverSpec)
 
 it(@"should extract a zip archive created by the Finder", ^{
@@ -31,6 +36,19 @@ it(@"should extract a zip archive created by the Finder", ^{
 	success = [[self.testApplicationSignature verifyBundleAtURL:extractedAppURL] waitUntilCompleted:&error];
 	expect(@(success)).to(beTruthy());
 	expect(error).to(beNil());
+});
+
+it(@"should error (not throw) when the ditto task fails to launch", ^{
+	SQRLZipArchiver *archiver = [[SQRLZipArchiver alloc] init];
+	archiver.dittoTask.launchPath = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"does-not-exist"].path;
+
+	NSError *error = nil;
+	BOOL success = [[archiver launchWithArguments:@[ @"-xk", @"/nope.zip", self.temporaryDirectoryURL.path ]] asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(success)).to(beFalsy());
+	expect(error.domain).to(equal(SQRLZipArchiverErrorDomain));
+	expect(@(error.code)).to(equal(@(SQRLZipArchiverShellTaskFailed)));
+	expect(error.userInfo[NSLocalizedDescriptionKey]).notTo(beNil());
 });
 
 it(@"should fail to extract a nonexistent zip archive", ^{
