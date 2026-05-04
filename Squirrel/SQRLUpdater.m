@@ -231,71 +231,71 @@ BOOL isVersionStandard(NSString* version) {
 				return [NSURLConnection rac_sendAsynchronousRequest:request];
 			}]
 			reduceEach:^(NSURLResponse *response, NSData *bodyData) {
-				if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+				BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
+				if (readOnlyVolume) {
+					NSDictionary *errorInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
+					};
+					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
+					return [RACSignal error:error];
+				}
+
+				if ([response isKindOfClass:NSHTTPURLResponse.class] && mode == RELEASESERVER) {
 					NSHTTPURLResponse *httpResponse = (id)response;
 
-					BOOL readOnlyVolume = [self isRunningOnReadOnlyVolume];
-					if (readOnlyVolume) {
+					if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
 						NSDictionary *errorInfo = @{
-						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update while running on a read-only volume", nil),
-						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application is on a read-only volume. Please move the application and try again. If you're on macOS Sierra or later, you'll need to move the application out of the Downloads directory. See https://github.com/Squirrel/Squirrel.Mac/issues/182 for more information.", nil),
+								NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
+								NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
+								SQRLUpdaterServerDataErrorKey: bodyData,
 						};
-						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorReadOnlyVolume userInfo:errorInfo];
+						NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
 						return [RACSignal error:error];
 					}
 
-					if (mode == RELEASESERVER) {
-						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
-							NSDictionary *errorInfo = @{
-									NSLocalizedDescriptionKey: NSLocalizedString(@"Update check failed", nil),
-									NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
-									SQRLUpdaterServerDataErrorKey: bodyData,
-							};
-							NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:errorInfo];
-							return [RACSignal error:error];
-						}
+					if (httpResponse.statusCode == 204 /* No Content */) {
+						return [RACSignal empty];
+					}
+				}
 
-						if (httpResponse.statusCode == 204 /* No Content */) {
+				if (mode == JSONFILE) {
+					NSError *error = nil;
+					NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
+
+					if (dict == nil) {
+						NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
+						userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
+						userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
+						userInfo[SQRLUpdaterServerDataErrorKey] = bodyData;
+						if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
+
+						return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
+					}
+
+					NSString *currentRelease = dict[@"currentRelease"];
+					if(currentRelease) {
+						//! if CDN points to the currently running version as the latest version, bail out
+						if([currentRelease isEqualToString:version]) {
+							NSLog(@"The running client is already the latest version.");
 							return [RACSignal empty];
 						}
-					} else if (mode == JSONFILE) {
-						NSError *error = nil;
-						NSDictionary *dict = [NSJSONSerialization JSONObjectWithData:bodyData options:0 error:&error];
 
-						if (dict == nil) {
-							NSMutableDictionary *userInfo = [error.userInfo mutableCopy] ?: [NSMutableDictionary dictionary];
-							userInfo[NSLocalizedDescriptionKey] = NSLocalizedString(@"Update check failed", nil);
-							userInfo[NSLocalizedRecoverySuggestionErrorKey] = NSLocalizedString(@"The server sent an invalid response. Try again later.", nil);
-							userInfo[SQRLUpdaterServerDataErrorKey] = bodyData;
-							if (error != nil) userInfo[NSUnderlyingErrorKey] = error;
-
-							return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerBody userInfo:userInfo]];
+						if ([version compare:currentRelease options:NSNumericSearch] == NSOrderedDescending) {
+							// currentRelease is lower than version.
+							// Might be a new version for testing that is not deployed yet
+							// no roll back
+							NSLog(@"The running client is newer than the latest deployed release. Not downgrading.");
+							return [RACSignal empty];
 						}
 
-						NSString *currentRelease = dict[@"currentRelease"];
-						if(currentRelease) {
-							//! if CDN points to the currently running version as the latest version, bail out
-							if([currentRelease isEqualToString:version]) {
-								NSLog(@"The running client is already the latest version.");
-								return [RACSignal empty];
-							}
-
-							if ([version compare:currentRelease options:NSNumericSearch] == NSOrderedDescending) {
-								// currentRelease is lower than version.
-								// Might be a new version for testing that is not deployed yet
-								// no roll back
-								NSLog(@"The running client is newer than the latest deployed release. Not downgrading.");
-								return [RACSignal empty];
-							}
-
-							//! @todo find latest
-							NSArray *releases = dict[@"releases"];
-							for(NSDictionary* release in releases) {
-								if([currentRelease isEqualToString:release[@"version"]]) {
-									bodyData = [NSJSONSerialization dataWithJSONObject:release[@"updateTo"]
-																				options:0 error:&error];
-									break;
-								}
+						//! @todo find latest
+						NSArray *releases = dict[@"releases"];
+						for(NSDictionary* release in releases) {
+							if([currentRelease isEqualToString:release[@"version"]]) {
+								bodyData = [NSJSONSerialization dataWithJSONObject:release[@"updateTo"]
+																			options:0 error:&error];
+								break;
 							}
 						}
 					}
@@ -655,8 +655,8 @@ BOOL isVersionStandard(NSString* version) {
 }
 
 - (RACSignal *)performHousekeeping {
-	return [[RACSignal
-		merge:@[ [self pruneUpdateDirectories], [self truncateLogs] ]]
+	return [[self
+		pruneUpdateDirectories]
 		catch:^(NSError *error) {
 			NSLog(@"Error doing housekeeping: %@", error);
 			return [RACSignal empty];
@@ -742,39 +742,6 @@ BOOL isVersionStandard(NSString* version) {
 			if (![manager removeItemAtURL:directoryURL error:&error]) {
 				NSLog(@"Error removing old update directory at %@: %@", directoryURL, error.sqrl_verboseDescription);
 			}
-		}];
-}
-
-
-// Like truncation, but backwards.
-- (RACSignal *)backwardTruncateFile:(NSURL *)fileURL {
-	return [RACSignal defer:^{
-		static const NSInteger MAX_LENGTH = 1024 * 1024 * 8;
-
-		NSError *error;
-		NSFileHandle *handle = [NSFileHandle fileHandleForWritingToURL:fileURL error:&error];
-		if (handle == nil) return [RACSignal error:error];
-
-		unsigned long long fileLength = [handle seekToEndOfFile];
-		if (fileLength <= MAX_LENGTH) return [RACSignal empty];
-
-		[handle seekToFileOffset:fileLength - MAX_LENGTH];
-		NSData *mostRecentData = [handle readDataToEndOfFile];
-		[handle truncateFileAtOffset:0];
-		[handle writeData:mostRecentData];
-
-		return [RACSignal empty];
-	}];
-}
-
-- (RACSignal *)truncateLogs {
-	return [[RACSignal
-		defer:^{
-			SQRLDirectoryManager *directoryManager = [[SQRLDirectoryManager alloc] initWithApplicationIdentifier:SQRLShipItLauncher.shipItJobLabel];
-			return [RACSignal zip:@[ [directoryManager shipItStdoutURL], [directoryManager shipItStderrURL] ]];
-		}]
-		reduceEach:^(NSURL *stdoutURL, NSURL *stderrURL) {
-			return [RACSignal merge:@[ [self backwardTruncateFile:stdoutURL], [self backwardTruncateFile:stderrURL] ]];
 		}];
 }
 

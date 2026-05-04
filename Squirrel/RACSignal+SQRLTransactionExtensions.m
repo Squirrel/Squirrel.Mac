@@ -52,7 +52,7 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 
 	[NSProcessInfo.processInfo disableSuddenTermination];
 
-	IOPMAssertionID powerAssertion;
+	IOPMAssertionID powerAssertion = kIOPMNullAssertionID;
 	IOReturn result = IOPMAssertionCreateWithDescription(kIOPMAssertionTypePreventSystemSleep, (__bridge CFStringRef)name, (__bridge CFStringRef)description, NULL, NULL, SQRLTransactionPowerAssertionTimeout, kIOPMAssertionTimeoutActionLog, &powerAssertion);
 	if (result != kIOReturnSuccess) {
 		NSLog(@"Could not install power assertion: %li", (long)result);
@@ -79,9 +79,11 @@ static RACDisposable *SQRLCreateTransaction(NSString *name, NSString *descriptio
 		}
 		[SQRLTransactionLock() unlock];
 
-		IOReturn result = IOPMAssertionRelease(powerAssertion);
-		if (result != kIOReturnSuccess) {
-			NSLog(@"Could not release power assertion: %li", (long)result);
+		if (powerAssertion != kIOPMNullAssertionID) {
+			IOReturn result = IOPMAssertionRelease(powerAssertion);
+			if (result != kIOReturnSuccess) {
+				NSLog(@"Could not release power assertion: %li", (long)result);
+			}
 		}
 
 		[NSProcessInfo.processInfo enableSuddenTermination];
