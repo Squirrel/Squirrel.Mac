@@ -46,7 +46,7 @@ it(@"should install an update using ShipIt", ^{
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 it(@"should round-trip the owned bundle through CFPreferences", ^{
@@ -69,7 +69,7 @@ it(@"should install an update in process", ^{
 
 	[self installWithRequest:request remote:NO];
 
-	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
@@ -94,7 +94,7 @@ describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
 		[self installWithRequest:request remote:NO];
 
-		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 		NSMutableData *buf = [NSMutableData dataWithLength:256];
 		ssize_t len = getxattr(self.testApplicationURL.fileSystemRepresentation, xattrName, buf.mutableBytes, buf.length, 0, 0);
@@ -144,8 +144,8 @@ it(@"should install an update and relaunch", ^{
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
-	expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count)).toEventually(equal(@1));
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:bundleIdentifier].count)).withTimeout(SQRLLongTimeout).toEventually(equal(@1));
 });
 
 it(@"should install an update from another volume", ^{
@@ -156,7 +156,7 @@ it(@"should install an update from another volume", ^{
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 it(@"should install an update to another volume", ^{
@@ -168,7 +168,7 @@ it(@"should install an update to another volume", ^{
 	[self installWithRequest:request remote:YES];
 
 	NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
-	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 describe(@"with backup restoration", ^{
@@ -202,7 +202,7 @@ describe(@"with backup restoration", ^{
 		[self installWithRequest:request remote:YES];
 
 		__block NSError *error;
-		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).toEventually(beTruthy());
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
 
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
@@ -212,7 +212,7 @@ describe(@"with backup restoration", ^{
 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:YES useUpdateBundleName:NO];
 		[self installWithRequest:request remote:YES];
 
-		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).toEventually(equal(@1));
+		expect(@([NSRunningApplication runningApplicationsWithBundleIdentifier:@"com.github.Squirrel.TestApplication"].count)).withTimeout(SQRLLongTimeout).toEventually(equal(@1));
 
 		__block NSError *error;
 		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
@@ -233,7 +233,7 @@ it(@"should disallow writing the updated application except by the owner", ^{
 
 	[self installWithRequest:request remote:YES];
 
-	expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 
 	expect(@(modeOfURL(self.testApplicationURL))).to(equal(@0755));
 	expect(@(modeOfURL([self.testApplicationURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"]))).to(equal(@0755));
@@ -260,7 +260,8 @@ describe(@"signal handling", ^{
 
 		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
 
-		[self installWithRequest:request remote:YES];
+		// Submit without waiting so the test can signal ShipIt mid-install.
+		[self submitShipItRequest:request];
 
 		// Apply a random delay before sending the termination signal, to
 		// fuzz out race conditions.

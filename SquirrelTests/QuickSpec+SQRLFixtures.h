@@ -87,7 +87,20 @@ extern const NSTimeInterval SQRLLongTimeout;
 - (NSURL *)createTestApplicationUpdate;
 
 // Runs the installer in process or submits ShipIt's launchd job to start it up.
+//
+// When `remote` is YES, this blocks until the ShipIt launchd job has exited so
+// callers can assert on the install result synchronously. Use
+// -submitShipItRequest: directly for tests that need to interact with ShipIt
+// while it's running.
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote;
+
+// Writes the request to ShipIt's state file and submits the launchd job
+// without waiting for ShipIt to run.
+- (void)submitShipItRequest:(SQRLShipItRequest *)request;
+
+// Polls launchd until the given job has run and exited (LastExitStatus is set
+// and PID is absent).
+- (void)waitForShipItJobToExitWithLabel:(NSString *)jobLabel;
 
 // Creates a disk image, then mounts it.
 //
