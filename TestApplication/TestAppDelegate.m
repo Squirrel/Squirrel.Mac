@@ -67,7 +67,7 @@
 	[RACObserve(self.updater, state) subscribeNext:^(NSNumber *state) {
 		NSLog(@"State transition: %@", state);
 
-		[NSDistributedNotificationCenter.defaultCenter postNotificationName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil userInfo:@{ SQRLTestAppUpdaterStateKey: state }];
+		[NSDistributedNotificationCenter.defaultCenter postNotificationName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil userInfo:@{ SQRLTestAppUpdaterStateKey: state } deliverImmediately:YES];
 	}];
 
 	__block NSUInteger updateCheckCount = 1;
