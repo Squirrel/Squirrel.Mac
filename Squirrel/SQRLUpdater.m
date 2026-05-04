@@ -172,9 +172,7 @@ BOOL isVersionStandard(NSString* version) {
 }
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload {
-	return [self initWithUpdateRequest:updateRequest requestForDownload:^(NSURL *downloadURL) {
-		return [NSURLRequest requestWithURL:downloadURL];
-	} forVersion:nil useMode:RELEASESERVER];
+	return [self initWithUpdateRequest:updateRequest requestForDownload:requestForDownload forVersion:nil useMode:RELEASESERVER];
 }
 
 - (id)initWithUpdateRequest:(NSURLRequest *)updateRequest requestForDownload:(SQRLRequestForDownload)requestForDownload
