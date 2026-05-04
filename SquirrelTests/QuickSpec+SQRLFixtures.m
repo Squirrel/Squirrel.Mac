@@ -283,28 +283,52 @@ QuickConfigurationEnd
 	return manager;
 }
 
+- (void)submitShipItRequest:(SQRLShipItRequest *)request {
+	expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
+
+	__block NSError *error = nil;
+	expect(@([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error])).to(beTruthy());
+	expect(error).to(beNil());
+
+	[self addCleanupBlock:^{
+		// Remove ShipIt's launchd job so it doesn't relaunch itself.
+		#pragma clang diagnostic push
+		#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+		SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
+		#pragma clang diagnostic pop
+
+		NSError *lookupError;
+		NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
+		expect(stateURL).notTo(beNil());
+		expect(lookupError).to(beNil());
+
+		[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+	}];
+}
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+static NSNumber *SQRLShipItLastExitStatus(NSString *jobLabel) {
+	NSDictionary *job = CFBridgingRelease(SMJobCopyDictionary(kSMDomainUserLaunchd, (__bridge CFStringRef)jobLabel));
+	if (job == nil || job[@"PID"] != nil) return nil;
+	return job[@"LastExitStatus"];
+}
+#pragma clang diagnostic pop
+
+- (void)waitForShipItJobToExitWithLabel:(NSString *)jobLabel {
+	// launchPrivileged: only submits the launchd job and triggers an on-demand
+	// spawn — it does not wait for ShipIt to actually run. Block until launchd
+	// reports the job has exited so callers can assert on the install result
+	// synchronously instead of racing Nimble's default 1s poll timeout.
+	// LastExitStatus only appears once the process has run and exited, which
+	// avoids the brief no-PID window before launchd spawns it.
+	expect(SQRLShipItLastExitStatus(jobLabel)).withTimeout(SQRLLongTimeout).toEventuallyNot(beNil());
+}
+
 - (void)installWithRequest:(SQRLShipItRequest *)request remote:(BOOL)remote {
 	if (remote) {
-		expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
-
-		__block NSError *error = nil;
-		expect(@([[SQRLShipItLauncher launchPrivileged:NO] waitUntilCompleted:&error])).to(beTruthy());
-		expect(error).to(beNil());
-
-		[self addCleanupBlock:^{
-			// Remove ShipIt's launchd job so it doesn't relaunch itself.
-			#pragma clang diagnostic push
-			#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-			SMJobRemove(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel, NULL, true, NULL);
-			#pragma clang diagnostic pop
-
-			NSError *lookupError;
-			NSURL *stateURL = [[self.shipItDirectoryManager shipItStateURL] firstOrDefault:nil success:NULL error:&lookupError];
-			expect(stateURL).notTo(beNil());
-			expect(lookupError).to(beNil());
-
-			[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
-		}];
+		[self submitShipItRequest:request];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
 	} else {
 		SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
 		expect(installer).notTo(beNil());

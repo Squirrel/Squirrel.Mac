@@ -383,7 +383,8 @@ describe(@"updating", ^{
 
 		NSRunningApplication *app = launchWithEnvironment(nil);
 		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
-		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	it(@"should not install a corrupt update", ^{
@@ -434,7 +435,8 @@ describe(@"updating", ^{
 		writeUpdate(update);
 
 		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
-		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	it(@"should use the application's bundled version of Squirrel and update in-place after a significant delay", ^{
@@ -451,7 +453,8 @@ describe(@"updating", ^{
 		NSRunningApplication *app = launchWithEnvironment(@{ @"SQRLUpdateDelay": [NSString stringWithFormat:@"%f", delay] });
 
 		expect(@(app.terminated)).withTimeout(delay + SQRLLongTimeout).toEventually(beTruthy());
-		expect(self.testApplicationBundleVersion).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+		[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 
 	describe(@"cleaning up", ^{
