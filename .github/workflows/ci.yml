@@ -15,26 +15,19 @@ concurrency:
 
 jobs:
   test:
-    name: Build & Test (${{ matrix.os }}, Xcode ${{ matrix.xcode }})
+    name: Build & Test (${{ matrix.name }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        # Latest minor of each major Xcode per runner image
+        # Newest Xcode available on each runner image. macOS coverage is
+        # what we care about; we don't need a separate cell per Xcode.
         include:
-          # macos-14 (arm64)
-          - { os: macos-14, xcode: '15.4' }
-          - { os: macos-14, xcode: '16.2' }
-          # macos-15 (arm64)
-          - { os: macos-15, xcode: '16.4' }
-          - { os: macos-15, xcode: '26.3' }
-          # macos-15-intel (x86_64)
-          - { os: macos-15-intel, xcode: '16.4' }
-          - { os: macos-15-intel, xcode: '26.3' }
-          # macos-26 (arm64)
-          - { os: macos-26, xcode: '26.4' }
-          # macos-26-intel (x86_64)
-          - { os: macos-26-intel, xcode: '26.4' }
+          - { os: macos-14,       xcode: '16.2', name: 'macOS 14 arm64'  }
+          - { os: macos-15,       xcode: '26.3', name: 'macOS 15 arm64'  }
+          - { os: macos-15-intel, xcode: '26.3', name: 'macOS 15 x86_64' }
+          - { os: macos-26,       xcode: '26.4', name: 'macOS 26 arm64'  }
+          - { os: macos-26-intel, xcode: '26.4', name: 'macOS 26 x86_64' }
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
