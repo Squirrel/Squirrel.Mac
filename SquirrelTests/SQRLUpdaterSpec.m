@@ -663,15 +663,17 @@ describe(@"state", ^{
 		}];
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
+		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 
+		// The app has run to completion; every state notification has been
+		// posted (with deliverImmediately:YES). Allow notifyd a moment to
+		// deliver any in-flight notifications before asserting the sequence.
 		NSArray *expectedStates = @[
 			@(SQRLUpdaterStateIdle),
 			@(SQRLUpdaterStateCheckingForUpdate),
 			@(SQRLUpdaterStateIdle),
 		];
-		expect(states).toEventually(equal(expectedStates));
-
-		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
@@ -693,7 +695,11 @@ describe(@"state", ^{
 		writeUpdate(update);
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
+		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 
+		// The app has run to completion; every state notification has been
+		// posted (with deliverImmediately:YES). Allow notifyd a moment to
+		// deliver any in-flight notifications before asserting the sequence.
 		NSArray *expectedStates = @[
 			@(SQRLUpdaterStateIdle),
 			@(SQRLUpdaterStateCheckingForUpdate),
@@ -701,8 +707,6 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
 		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
-
-		expect(@(testApplication.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 	});
 });
 
