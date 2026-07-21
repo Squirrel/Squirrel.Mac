@@ -64,6 +64,26 @@ it(@"should fail to extract a nonexistent zip archive", ^{
 	expect(error.userInfo[SQRLZipArchiverExitCodeErrorKey]).notTo(equal(0));
 });
 
+it(@"should bound error output retained from a failed task", ^{
+	SQRLZipArchiver *archiver = [[SQRLZipArchiver alloc] init];
+	archiver.dittoTask.launchPath = @"/bin/sh";
+
+	NSError *error = nil;
+	BOOL success = [[archiver
+		launchWithArguments:@[
+			@"-c",
+			@"/usr/bin/yes x | /usr/bin/head -c 2097152 >&2; exit 1",
+		]]
+		asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(success)).to(beFalsy());
+	expect(error.domain).to(equal(SQRLZipArchiverErrorDomain));
+
+	NSString *errorString = error.userInfo[NSLocalizedDescriptionKey];
+	expect(errorString).notTo(beNil());
+	expect(@(errorString.length)).to(beLessThanOrEqualTo(@(1024 * 1024)));
+});
+
 it(@"should create a zip archive readable by itself", ^{
 	NSURL *zipURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication.zip"];
 

@@ -14,6 +14,11 @@ NSString * const SQRLZipArchiverErrorDomain = @"SQRLZipArchiverErrorDomain";
 NSString * const SQRLZipArchiverExitCodeErrorKey = @"SQRLZipArchiverExitCodeErrorKey";
 const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
+// `ditto` writes diagnostics for input it cannot process. Keep the retained
+// untrusted output bounded so a failed archive operation cannot exhaust memory.
+static const NSUInteger kSQRLZipArchiverMaximumStandardErrorDataLength =
+	1024 * 1024;
+
 @interface SQRLZipArchiver () {
 	RACSubject *_taskTerminated;
 }
@@ -30,8 +35,8 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 // A pipe used for reading error logging from `dittoTask`.
 @property (nonatomic, strong, readonly) NSPipe *standardErrorPipe;
 
-// Sends an NSData representing the error logging from `dittoTask` once the task
-// has terminated.
+// Sends up to 1 MiB of error logging from `dittoTask` once the task has
+// terminated.
 @property (nonatomic, strong, readonly) RACSignal *standardErrorData;
 
 // Launches the receiver's `dittoTask` with the given command line arguments.
@@ -68,19 +73,29 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
 	RACSubject *errorDataChunks = [[RACSubject subject] setNameWithFormat:@"errorDataChunks"];
 	self.standardErrorPipe.fileHandleForReading.readabilityHandler = ^(NSFileHandle *handle) {
-		[errorDataChunks sendNext:handle.availableData];
+		NSData *data = handle.availableData;
+		if (data.length == 0) {
+			handle.readabilityHandler = nil;
+			return;
+		}
+
+		[errorDataChunks sendNext:data];
 	};
 
-	_standardErrorData = [[[[[[errorDataChunks
+	_standardErrorData = [[[[[errorDataChunks
 		takeUntil:self.taskTerminated]
-		collect]
-		flattenMap:^(NSArray *chunks) {
-			NSMutableData *combined = [NSMutableData data];
-			for (NSData *data in chunks) {
-				[combined appendData:data];
+		aggregateWithStartFactory:^id {
+			return [NSMutableData data];
+		} reduce:^id(NSMutableData *combined, NSData *data) {
+			if (combined.length >= kSQRLZipArchiverMaximumStandardErrorDataLength || data.length == 0) {
+				return combined;
 			}
 
-			return [RACSignal return:combined];
+			NSUInteger remainingLength =
+				kSQRLZipArchiverMaximumStandardErrorDataLength - combined.length;
+			NSUInteger appendLength = MIN(data.length, remainingLength);
+			[combined appendBytes:data.bytes length:appendLength];
+			return combined;
 		}]
 		repeat]
 		takeUntil:self.rac_willDeallocSignal]
