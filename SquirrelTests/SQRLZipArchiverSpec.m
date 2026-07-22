@@ -67,12 +67,16 @@ it(@"should fail to extract a nonexistent zip archive", ^{
 it(@"should bound error output retained from a failed task", ^{
 	SQRLZipArchiver *archiver = [[SQRLZipArchiver alloc] init];
 	archiver.dittoTask.launchPath = @"/bin/sh";
+	NSString *command = [NSString stringWithFormat:@"%@%@%@",
+		@"/usr/bin/yes x | /usr/bin/head -c 1048575 >&2; ",
+		@"printf '\\360\\237\\230\\200' >&2; ",
+		@"/usr/bin/yes x | /usr/bin/head -c 1048576 >&2; exit 1"];
 
 	NSError *error = nil;
 	BOOL success = [[archiver
 		launchWithArguments:@[
 			@"-c",
-			@"/usr/bin/yes x | /usr/bin/head -c 2097152 >&2; exit 1",
+			command,
 		]]
 		asynchronouslyWaitUntilCompleted:&error];
 
@@ -81,6 +85,7 @@ it(@"should bound error output retained from a failed task", ^{
 
 	NSString *errorString = error.userInfo[NSLocalizedDescriptionKey];
 	expect(errorString).notTo(beNil());
+	expect(@(errorString.length)).to(beGreaterThan(@(512 * 1024)));
 	expect(@(errorString.length)).to(beLessThanOrEqualTo(@(1024 * 1024)));
 });
 

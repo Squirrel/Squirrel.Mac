@@ -16,8 +16,29 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
 // `ditto` writes diagnostics for input it cannot process. Keep the retained
 // untrusted output bounded so a failed archive operation cannot exhaust memory.
-static const NSUInteger kSQRLZipArchiverMaximumStandardErrorDataLength =
-	1024 * 1024;
+static const NSUInteger SQRLZipArchiverMaximumStandardErrorDataLength = 1024 * 1024;
+
+static NSUInteger SQRLUTF8TruncationBoundary(const uint8_t *bytes, NSUInteger length) {
+	NSUInteger codePointStart = length;
+	while (codePointStart > 0 && (bytes[codePointStart - 1] & 0xC0) == 0x80) {
+		codePointStart--;
+	}
+
+	if (codePointStart == 0) return 0;
+
+	codePointStart--;
+	uint8_t leadingByte = bytes[codePointStart];
+	NSUInteger codePointLength = 1;
+	if ((leadingByte & 0xE0) == 0xC0) {
+		codePointLength = 2;
+	} else if ((leadingByte & 0xF0) == 0xE0) {
+		codePointLength = 3;
+	} else if ((leadingByte & 0xF8) == 0xF0) {
+		codePointLength = 4;
+	}
+
+	return codePointStart + codePointLength <= length ? length : codePointStart;
+}
 
 @interface SQRLZipArchiver () {
 	RACSubject *_taskTerminated;
@@ -82,20 +103,33 @@ static const NSUInteger kSQRLZipArchiverMaximumStandardErrorDataLength =
 		[errorDataChunks sendNext:data];
 	};
 
-	_standardErrorData = [[[[[errorDataChunks
+	_standardErrorData = [[[[[[errorDataChunks
 		takeUntil:self.taskTerminated]
 		aggregateWithStartFactory:^id {
-			return [NSMutableData data];
-		} reduce:^id(NSMutableData *combined, NSData *data) {
-			if (combined.length >= kSQRLZipArchiverMaximumStandardErrorDataLength || data.length == 0) {
-				return combined;
+			return [@{
+				@"data": [NSMutableData data],
+				@"truncated": @NO,
+			} mutableCopy];
+		} reduce:^id(NSMutableDictionary *aggregate, NSData *data) {
+			if ([aggregate[@"truncated"] boolValue]) {
+				return aggregate;
 			}
 
+			NSMutableData *combined = aggregate[@"data"];
 			NSUInteger remainingLength =
-				kSQRLZipArchiverMaximumStandardErrorDataLength - combined.length;
+				SQRLZipArchiverMaximumStandardErrorDataLength - combined.length;
 			NSUInteger appendLength = MIN(data.length, remainingLength);
 			[combined appendBytes:data.bytes length:appendLength];
-			return combined;
+
+			if (appendLength < data.length) {
+				combined.length = SQRLUTF8TruncationBoundary(combined.bytes, combined.length);
+				aggregate[@"truncated"] = @YES;
+			}
+
+			return aggregate;
+		}]
+		map:^id(NSDictionary *aggregate) {
+			return aggregate[@"data"];
 		}]
 		repeat]
 		takeUntil:self.rac_willDeallocSignal]
