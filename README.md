@@ -159,7 +159,9 @@ to the update request provided:
 	"url": "https://mycompany.example.com/myapp/releases/myrelease",
 	"name": "My Release Name",
 	"notes": "Theses are some release notes innit",
-	"pub_date": "2013-09-18T12:29:53+01:00"
+	"pub_date": "2013-09-18T12:29:53+01:00",
+	"sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+	"size": 104857600
 }
 ```
 
@@ -171,6 +173,16 @@ will be added to the `Accept` header so that your server can return the
 appropriate format.
 
 "pub_date" if present must be formatted according to ISO 8601.
+
+"sha256" (hex) and "size" (bytes), if present, describe the ZIP at "url"; a
+download that does not match them is discarded before it is opened and the
+check fails with `SQRLUpdaterErrorInvalidUpdatePackage`.
+
+The ZIP is streamed to disk. If the transfer is interrupted (network loss,
+sleep, the app quitting) and the server answered with an `ETag` or
+`Last-Modified` and honours `Range`, the next check continues from where it
+stopped instead of starting over, including after a relaunch. Progress is
+available on `SQRLUpdater.downloadProgress`.
 
 ## Update File JSON Format
 
@@ -227,6 +239,7 @@ file); a single entry is fine.
 | `updateTo.url` | ✅ | Direct URL to the `.zip` for that version. |
 | `updateTo.version` | — | Echoed into the `update-downloaded` event; conventionally the same as the outer `version`. |
 | `updateTo.name` / `notes` / `pub_date` | — | Surfaced to your app for display. `pub_date` must be ISO 8601 if present. |
+| `updateTo.sha256` / `size` | — | Digest (hex) and byte size of the `.zip`; a download that does not match is rejected. |
 
 Point the updater directly at this file's URL — there's no required filename.
 

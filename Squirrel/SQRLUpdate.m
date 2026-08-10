@@ -65,6 +65,8 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 		@keypath(SQRLUpdate.new, releaseName): @"name",
 		@keypath(SQRLUpdate.new, releaseDate): @"pub_date",
 		@keypath(SQRLUpdate.new, updateURL): @"url",
+		@keypath(SQRLUpdate.new, packageDigest): @"sha256",
+		@keypath(SQRLUpdate.new, packageSize): @"size",
 	};
 }
 
@@ -105,6 +107,27 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 }
 
 #pragma mark NSKeyValueCoding
+
+- (BOOL)validatePackageDigest:(NSString **)stringPtr error:(NSError **)error {
+	if (*stringPtr == nil) return YES;
+	if (![self validateString:*stringPtr forKey:@keypath(self.packageDigest) error:error]) return NO;
+
+	*stringPtr = [*stringPtr lowercaseString];
+	return YES;
+}
+
+- (BOOL)validatePackageSize:(NSNumber **)sizePtr error:(NSError **)error {
+	if (*sizePtr == nil || [*sizePtr isKindOfClass:NSNumber.class]) return YES;
+
+	if (error != NULL) {
+		NSDictionary *userInfo = @{
+			NSLocalizedDescriptionKey: NSLocalizedString(@"Validation failed", nil),
+			NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"An invalid size was given to SQRLUpdate: %@", nil), *sizePtr]
+		};
+		*error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSKeyValueValidationError userInfo:userInfo];
+	}
+	return NO;
+}
 
 - (BOOL)validateReleaseName:(NSString **)stringPtr error:(NSError **)error {
 	if (![self validateString:*stringPtr forKey:@keypath(self.releaseName) error:error]) {

@@ -43,6 +43,22 @@ it(@"should validate release name and notes", ^{
 	expect(update.releaseNotes).to(beNil());
 });
 
+it(@"should parse the package digest and size", ^{
+	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"sha256": @"ABCDEF", @"size": @1234 } error:NULL];
+	expect(update.packageDigest).to(equal(@"abcdef"));
+	expect(update.packageSize).to(equal(@1234));
+
+	update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update" } error:NULL];
+	expect(update).notTo(beNil());
+	expect(update.packageDigest).to(beNil());
+	expect(update.packageSize).to(beNil());
+
+	NSError *error = nil;
+	update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"size": @"big" } error:&error];
+	expect(update).to(beNil());
+	expect(error).notTo(beNil());
+});
+
 it(@"should parse Central style dates", ^{
 	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"pub_date": @"Tue Sep 17 10:24:27 -0700 2013" } error:NULL];
 	expect(update.releaseDate).to(equal([NSDate dateWithTimeIntervalSince1970:1379438667]));

@@ -99,6 +99,15 @@ NSRunningApplication * (^launchWithEnvironment)(NSDictionary *) = ^(NSDictionary
 
 beforeEach(^{
 	JSONURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.json"];
+
+	// OHHTTPStubs registers a process-wide NSURLProtocol, which NSURLSession
+	// only consults for the shared session; hand it to the download sessions.
+	NSURLSessionConfiguration *configuration = NSURLSessionConfiguration.defaultSessionConfiguration;
+	configuration.protocolClasses = [@[ NSClassFromString(@"OHHTTPStubsProtocol") ] arrayByAddingObjectsFromArray:configuration.protocolClasses];
+	SQRLDownloader.sessionConfiguration = configuration;
+	[self addCleanupBlock:^{
+		SQRLDownloader.sessionConfiguration = nil;
+	}];
 });
 
 
@@ -641,6 +650,37 @@ describe(@"response handling", ^{
 		expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
 		expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidServerResponse)));
 		expect(error.localizedDescription).to(contain(@"Update download failed"));
+	});
+
+	it(@"should reject a package that does not match the declared digest or size", ^{
+		NSData *package = [@"not the bytes you are looking for" dataUsingEncoding:NSUTF8StringEncoding];
+		__block NSDictionary *declared = nil;
+		OHHTTPStubs *stubsCheck = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL isEqual:localRequest.URL];
+		} withStubResponse:^(NSURLRequest *request) {
+			NSMutableDictionary *body = [@{ @"url": @"http://fake/download.zip" } mutableCopy];
+			[body addEntriesFromDictionary:declared];
+			NSData *json = [NSJSONSerialization dataWithJSONObject:body options:0 error:NULL];
+			return [OHHTTPStubsResponse responseWithData:json statusCode:200 responseTime:0 headers:nil];
+		}];
+		OHHTTPStubs *stubsDownload = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://fake/download.zip"];
+		} withStubResponse:^(NSURLRequest *request) {
+			return [OHHTTPStubsResponse responseWithData:package statusCode:200 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{
+			[OHHTTPStubs removeRequestHandler:stubsCheck];
+			[OHHTTPStubs removeRequestHandler:stubsDownload];
+		}];
+
+		for (NSDictionary *mismatch in @[ @{ @"size": @(package.length + 1) }, @{ @"size": @(package.length), @"sha256": [@"" stringByPaddingToLength:64 withString:@"0" startingAtIndex:0] } ]) {
+			declared = mismatch;
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+			expect(@(result)).to(beFalsy());
+			expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
+			expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidUpdatePackage)));
+		}
 	});
 });
 

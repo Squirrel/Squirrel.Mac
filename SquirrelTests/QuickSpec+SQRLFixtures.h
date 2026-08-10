@@ -113,6 +113,17 @@ extern const NSTimeInterval SQRLLongTimeout;
 // automatically be unmounted and deleted at the end of the example.
 - (NSURL *)createAndMountDiskImageNamed:(NSString *)name fromDirectory:(NSURL *)directoryURL;
 
+// Starts an HTTP server (TestServer.py) for the files in `directoryURL`. It
+// answers byte ranges with an ETag, and `?drop=<n>` cuts the first transfer of
+// a file short after n bytes.
+//
+// requestLogURL - If not NULL, set to a file that gains one line per request:
+//                 "GET <path> Range=<header or -> If-Range=<header or ->".
+//
+// Returns the server's base URL. The server is stopped at the end of the
+// example.
+- (NSURL *)startTestServerForDirectory:(NSURL *)directoryURL requestLog:(NSURL **)requestLogURL;
+
 // Add a block to cleanup after each example has run
 //
 // Blocks are run in reverse order, i.e. LIFO
