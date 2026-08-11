@@ -53,6 +53,7 @@ static NSString * const SQRLDownloaderResumeDataKey = @"resumeData";
 @property (nonatomic, assign) int64_t bytesResumed;
 @property (nonatomic, assign) BOOL startedFromResumeData;
 @property (nonatomic, assign) BOOL retriedFresh;
+@property (nonatomic, assign) BOOL receivedBytes;
 @property (nonatomic, assign) BOOL cancelled;
 
 // Entered when a task starts, left when its completion (including any resume
@@ -144,10 +145,12 @@ static NSURLSessionConfiguration *SQRLDownloaderSessionConfiguration = nil;
 
 	NSDictionary *stored = [NSDictionary dictionaryWithContentsOfURL:self.resumeDataURL];
 	NSData *resumeData = stored[SQRLDownloaderResumeDataKey];
-	if (![stored[SQRLDownloaderResumeURLKey] isEqual:self.request.URL.absoluteString] || ![resumeData isKindOfClass:NSData.class]) {
-		[self clearStoredResumeData];
-		return nil;
-	}
+
+	// Taken, not read: while this attempt owns the partial file nothing on disk
+	// may point another downloader (or a relaunch after a crash) at it. It is
+	// written again if this attempt stops short.
+	[self clearStoredResumeData];
+	if (![stored[SQRLDownloaderResumeURLKey] isEqual:self.request.URL.absoluteString] || ![resumeData isKindOfClass:NSData.class]) return nil;
 
 	return resumeData;
 }
@@ -208,10 +211,12 @@ static NSURLSessionConfiguration *SQRLDownloaderSessionConfiguration = nil;
 - (void)startTaskWithResumeData:(NSData *)resumeData {
 	dispatch_group_enter(self.completionGroup);
 
-	self.startedFromResumeData = (resumeData != nil);
+	NSURLSessionDownloadTask *resumed = resumeData != nil ? [self.session downloadTaskWithResumeData:resumeData] : nil;
+	self.startedFromResumeData = (resumed != nil);
+	self.receivedBytes = NO;
 	self.bytesResumed = 0;
 	self.moveError = nil;
-	self.task = self.startedFromResumeData ? [self.session downloadTaskWithResumeData:resumeData] : [self.session downloadTaskWithRequest:self.request];
+	self.task = resumed ?: [self.session downloadTaskWithRequest:self.request];
 	[self.task resume];
 }
 
@@ -238,6 +243,7 @@ static NSURLSessionConfiguration *SQRLDownloaderSessionConfiguration = nil;
 }
 
 - (void)URLSession:(NSURLSession *)session downloadTask:(NSURLSessionDownloadTask *)downloadTask didWriteData:(int64_t)bytesWritten totalBytesWritten:(int64_t)totalBytesWritten totalBytesExpectedToWrite:(int64_t)totalBytesExpectedToWrite {
+	self.receivedBytes = YES;
 	[self sendProgressWithBytesReceived:totalBytesWritten bytesExpected:totalBytesExpectedToWrite];
 }
 
@@ -254,19 +260,27 @@ static NSURLSessionConfiguration *SQRLDownloaderSessionConfiguration = nil;
 - (void)URLSession:(NSURLSession *)session task:(NSURLSessionTask *)task didCompleteWithError:(NSError *)error {
 	if (task != self.task) return;
 
-	if (error != nil) {
-		NSData *resumeData = error.userInfo[NSURLSessionDownloadTaskResumeData];
-		[self storeResumeData:resumeData];
-
-		// Resume data the session refused (stale temporary file, format it no
-		// longer reads): don't lose this attempt to it, start over once.
-		if (resumeData == nil && self.startedFromResumeData && !self.retriedFresh && !self.cancelled) {
+	// A resumed attempt that got no further than where it started says nothing
+	// about the payload: the session refused the data, the ranged request was
+	// reset or could not be decoded, or it was answered rather than served
+	// (403/416 from an expired signed URL, 304). Forget the resume data and
+	// ask from the start, once; never hand such an answer up as the download.
+	NSInteger statusCode = [task.response isKindOfClass:NSHTTPURLResponse.class] ? [(NSHTTPURLResponse *)task.response statusCode] : 200;
+	BOOL resumeWentNowhere = self.startedFromResumeData && !self.cancelled && (error != nil ? !self.receivedBytes : statusCode < 200 || statusCode > 299);
+	if (resumeWentNowhere) {
+		if (!self.retriedFresh) {
 			self.retriedFresh = YES;
 			dispatch_group_leave(self.completionGroup);
 			[self startTaskWithResumeData:nil];
 			return;
 		}
+		error = error ?: [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCannotLoadFromNetwork userInfo:@{ NSURLErrorKey: self.request.URL }];
+		[self finishWithError:error];
+		return;
+	}
 
+	if (error != nil) {
+		[self storeResumeData:error.userInfo[NSURLSessionDownloadTaskResumeData]];
 		[self finishWithError:error];
 		return;
 	}

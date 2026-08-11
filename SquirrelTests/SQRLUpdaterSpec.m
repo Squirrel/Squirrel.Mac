@@ -10,6 +10,7 @@
 #import <Quick/Quick.h>
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <Squirrel/Squirrel.h>
+#import <CommonCrypto/CommonDigest.h>
 
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
@@ -724,9 +725,20 @@ describe(@"state", ^{
 			[states addObject:state];
 		}];
 
+		// Declares the archive's real digest and size, so reaching
+		// AwaitingRelaunch also shows a matching package is accepted.
+		NSURL *zipURL = zipUpdate([self createTestApplicationUpdate]);
+		NSData *zip = [NSData dataWithContentsOfURL:zipURL];
+		unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+		CC_SHA256(zip.bytes, (CC_LONG)zip.length, digest);
+		NSMutableString *hex = [NSMutableString string];
+		for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) [hex appendFormat:@"%02x", digest[i]];
+
 		NSError *error;
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
-			@"updateURL": zipUpdate([self createTestApplicationUpdate]),
+			@"updateURL": zipURL,
+			@"packageDigest": hex,
+			@"packageSize": @(zip.length),
 			@"final": @YES,
 		} error:&error];
 		expect(update).notTo(beNil());

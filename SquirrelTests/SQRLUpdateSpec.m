@@ -43,20 +43,21 @@ it(@"should validate release name and notes", ^{
 	expect(update.releaseNotes).to(beNil());
 });
 
-it(@"should parse the package digest and size", ^{
-	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"sha256": @"ABCDEF", @"size": @1234 } error:NULL];
-	expect(update.packageDigest).to(equal(@"abcdef"));
+it(@"should parse the package digest and size, ignoring values it cannot use", ^{
+	NSString *digest = @"E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855";
+	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"sha256": digest, @"size": @1234 } error:NULL];
+	expect(update.packageDigest).to(equal(digest.lowercaseString));
 	expect(update.packageSize).to(equal(@1234));
 
-	update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update" } error:NULL];
-	expect(update).notTo(beNil());
-	expect(update.packageDigest).to(beNil());
-	expect(update.packageSize).to(beNil());
+	for (NSDictionary *odd in @[ @{}, @{ @"sha256": @"abcdef", @"size": @0 }, @{ @"sha256": @42, @"size": @"big" }, @{ @"sha256": [@"sha256:" stringByAppendingString:digest], @"size": @-1 } ]) {
+		NSMutableDictionary *JSON = [odd mutableCopy];
+		JSON[@"url"] = @"http://example.com/update";
 
-	NSError *error = nil;
-	update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"size": @"big" } error:&error];
-	expect(update).to(beNil());
-	expect(error).notTo(beNil());
+		update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:JSON error:NULL];
+		expect(update).notTo(beNil());
+		expect(update.packageDigest).to(beNil());
+		expect(update.packageSize).to(beNil());
+	}
 });
 
 it(@"should parse Central style dates", ^{

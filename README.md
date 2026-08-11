@@ -174,15 +174,25 @@ appropriate format.
 
 "pub_date" if present must be formatted according to ISO 8601.
 
-"sha256" (hex) and "size" (bytes), if present, describe the ZIP at "url"; a
-download that does not match them is discarded before it is opened and the
-check fails with `SQRLUpdaterErrorInvalidUpdatePackage`.
+"sha256" (64 hex digits) and "size" (a positive byte count), if present,
+describe the ZIP at "url"; a download that does not match them is discarded
+before it is opened and the check fails with
+`SQRLUpdaterErrorInvalidUpdatePackage`. Values of any other type or shape are
+logged and ignored rather than failing the check.
 
 The ZIP is streamed to disk. If the transfer is interrupted (network loss,
 sleep, the app quitting) and the server answered with an `ETag` or
 `Last-Modified` and honours `Range`, the next check continues from where it
-stopped instead of starting over, including after a relaunch. Progress is
-available on `SQRLUpdater.downloadProgress`.
+stopped instead of starting over; a resumed request the server refuses or
+resets falls back to a full download. Progress is available on
+`SQRLUpdater.downloadProgress`. Resuming after a relaunch relies on
+`NSApplicationWillTerminateNotification`; a host that quits without posting it
+(Electron does not) should call
+`+[SQRLDownloader cancelAllWritingResumeDataWithTimeout:]` from its own quit
+path. Downloads run in their own `NSURLSession`, so an `NSURLProtocol`
+registered with `+registerClass:` sees the update check but not the download;
+set `SQRLDownloader.sessionConfiguration` (with its `protocolClasses`) to
+intercept both.
 
 ## Update File JSON Format
 

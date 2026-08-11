@@ -8,9 +8,13 @@
 # Prints "PORT <n>" once listening. Every request is appended to <request-log>
 # as "<METHOD> <path> Range=<header or -> If-Range=<header or ->".
 #
-#   GET /<file>?drop=<n>   the first request for <file> is closed after <n>
-#                          body bytes; later requests are served in full.
+#   GET /<file>?drop=<n>   the first request for this exact URL is closed
+#                          after <n> body bytes; later ones (the resume) are
+#                          served in full, which the `dropped` set tracks.
 #   GET /<file>?slow=<ms>  each 64 KiB of body is followed by a <ms> pause.
+#   ...&ranged=403|reset   a request carrying Range is answered 403, or has
+#                          its connection closed before any response.
+#   ...&ranged=slow        only requests carrying Range get the ?slow pause.
 
 import hashlib
 import http.server
@@ -41,6 +45,15 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.send_error(404)
             return
 
+        ranged = query.get("ranged", [""])[0]
+        if self.headers.get("Range") and ranged == "403":
+            self.send_error(403)
+            return
+        if self.headers.get("Range") and ranged == "reset":
+            self.connection.shutdown(socket.SHUT_RDWR)
+            self.close_connection = True
+            return
+
         size = os.path.getsize(path)
         with open(path, "rb") as f:
             etag = '"%s"' % hashlib.sha1(f.read()).hexdigest()
@@ -60,9 +73,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
         limit = None
         pause = int(query.get("slow", ["0"])[0]) / 1000.0
+        if ranged == "slow" and not self.headers.get("Range"):
+            pause = 0
         drop = int(query.get("drop", ["0"])[0])
-        if drop and url.path not in dropped:
-            dropped.add(url.path)
+        if drop and self.path not in dropped:
+            dropped.add(self.path)
             limit = drop
 
         sent = 0

@@ -494,6 +494,9 @@ BOOL isVersionStandard(NSString* version) {
 					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
 				}]
 				doError:^(id _) {
+					// The archive behind that ETag never became a prepared
+					// update, so a 304 for it must not read as "already have it".
+					self.etag = nil;
 					cleanUp();
 				}];
 		}]
@@ -532,7 +535,8 @@ BOOL isVersionStandard(NSString* version) {
 
 			[zipDownloadRequest setTimeoutInterval:SQURLUpdaterZipDownloadTimeoutSeconds];
 
-			NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:zipDownloadURL.lastPathComponent];
+			// A fixed name: the URL is the server's, the directory is ours.
+			NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:@"update.zip"];
 			NSURL *resumeDataURL = [downloadDirectory.URLByDeletingLastPathComponent URLByAppendingPathComponent:SQRLUpdaterResumeDataFileName];
 			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:zipDownloadRequest resumeDataURL:resumeDataURL];
 			[downloader.progress subscribeNext:^(SQRLDownloadProgress *progress) {
@@ -606,19 +610,19 @@ BOOL isVersionStandard(NSString* version) {
 			}
 
 			if (update.packageDigest != nil) {
-				NSError *error;
-				NSFileHandle *handle = [NSFileHandle fileHandleForReadingFromURL:packageURL error:&error];
-				if (handle == nil) return [RACSignal error:error];
+				NSInputStream *stream = [NSInputStream inputStreamWithURL:packageURL];
+				[stream open];
 
 				CC_SHA256_CTX context;
 				CC_SHA256_Init(&context);
-				for (;;) {
-					@autoreleasepool {
-						NSData *chunk = [handle readDataOfLength:1024 * 1024];
-						if (chunk.length == 0) break;
-						CC_SHA256_Update(&context, chunk.bytes, (CC_LONG)chunk.length);
-					}
+				uint8_t buffer[256 * 1024];
+				NSInteger read;
+				while ((read = [stream read:buffer maxLength:sizeof(buffer)]) > 0) {
+					CC_SHA256_Update(&context, buffer, (CC_LONG)read);
 				}
+				NSError *readError = read < 0 ? stream.streamError : nil;
+				[stream close];
+				if (readError != nil) return [RACSignal error:readError];
 
 				unsigned char digest[CC_SHA256_DIGEST_LENGTH];
 				CC_SHA256_Final(digest, &context);

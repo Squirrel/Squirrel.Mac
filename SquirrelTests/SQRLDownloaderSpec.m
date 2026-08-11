@@ -96,6 +96,46 @@ it(@"should continue an interrupted transfer from where it stopped", ^{
 	expect(@([NSFileManager.defaultManager fileExistsAtPath:resumeDataURL.path])).to(beFalsy());
 });
 
+it(@"should go back to a plain GET when the resumed request is refused or reset", ^{
+	for (NSString *ranged in @[ @"403", @"reset" ]) {
+		NSString *path = [NSString stringWithFormat:@"payload.zip?drop=1048576&ranged=%@", ranged];
+		[[downloaderForPath(path) downloadToURL:destinationURL] waitUntilCompleted:NULL];
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:resumeDataURL.path])).to(beTruthy());
+
+		NSError *error;
+		RACTuple *result = [[downloaderForPath(path) downloadToURL:destinationURL] firstOrDefault:nil success:NULL error:&error];
+		expect(error).to(beNil());
+		expect(@([(NSHTTPURLResponse *)result.first statusCode])).to(equal(@200));
+		expect([NSData dataWithContentsOfURL:destinationURL]).to(equal(payload));
+
+		NSArray *log = requestLog();
+		expect(log[log.count - 2]).to(beginWith(@"GET /payload.zip Range=bytes="));
+		expect(log.lastObject).to(equal(@"GET /payload.zip Range=- If-Range=-"));
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:resumeDataURL.path])).to(beFalsy());
+	}
+});
+
+it(@"should hold no resume data on disk while a resumed download owns the partial file", ^{
+	NSString *path = @"payload.zip?drop=1048576&slow=20&ranged=slow";
+	[[downloaderForPath(path) downloadToURL:destinationURL] waitUntilCompleted:NULL];
+	expect(@([NSFileManager.defaultManager fileExistsAtPath:resumeDataURL.path])).to(beTruthy());
+
+	__block BOOL done = NO;
+	SQRLDownloader *downloader = downloaderForPath(path);
+	[[downloader downloadToURL:destinationURL] subscribeError:^(NSError *error) {
+		done = YES;
+	} completed:^{
+		done = YES;
+	}];
+
+	expect(@([[downloader.progress take:2] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+	expect(@(done)).to(beFalsy());
+	expect(@([NSFileManager.defaultManager fileExistsAtPath:resumeDataURL.path])).to(beFalsy());
+
+	expect(@(done)).withTimeout(30).toEventually(beTruthy());
+	expect([NSData dataWithContentsOfURL:destinationURL]).to(equal(payload));
+});
+
 it(@"should keep resume data when the download is disposed of", ^{
 	SQRLDownloader *downloader = downloaderForPath(@"payload.zip?slow=20");
 	RACDisposable *disposable = [[downloader downloadToURL:destinationURL] subscribeCompleted:^{}];
