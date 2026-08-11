@@ -10,6 +10,7 @@
 #import <Quick/Quick.h>
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <Squirrel/Squirrel.h>
+#import <CommonCrypto/CommonDigest.h>
 
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
@@ -99,6 +100,15 @@ NSRunningApplication * (^launchWithEnvironment)(NSDictionary *) = ^(NSDictionary
 
 beforeEach(^{
 	JSONURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.json"];
+
+	// OHHTTPStubs registers a process-wide NSURLProtocol, which NSURLSession
+	// only consults for the shared session; hand it to the download sessions.
+	NSURLSessionConfiguration *configuration = NSURLSessionConfiguration.defaultSessionConfiguration;
+	configuration.protocolClasses = [@[ NSClassFromString(@"OHHTTPStubsProtocol") ] arrayByAddingObjectsFromArray:configuration.protocolClasses];
+	SQRLDownloader.sessionConfiguration = configuration;
+	[self addCleanupBlock:^{
+		SQRLDownloader.sessionConfiguration = nil;
+	}];
 });
 
 
@@ -642,6 +652,37 @@ describe(@"response handling", ^{
 		expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidServerResponse)));
 		expect(error.localizedDescription).to(contain(@"Update download failed"));
 	});
+
+	it(@"should reject a package that does not match the declared digest or size", ^{
+		NSData *package = [@"not the bytes you are looking for" dataUsingEncoding:NSUTF8StringEncoding];
+		__block NSDictionary *declared = nil;
+		OHHTTPStubs *stubsCheck = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL isEqual:localRequest.URL];
+		} withStubResponse:^(NSURLRequest *request) {
+			NSMutableDictionary *body = [@{ @"url": @"http://fake/download.zip" } mutableCopy];
+			[body addEntriesFromDictionary:declared];
+			NSData *json = [NSJSONSerialization dataWithJSONObject:body options:0 error:NULL];
+			return [OHHTTPStubsResponse responseWithData:json statusCode:200 responseTime:0 headers:nil];
+		}];
+		OHHTTPStubs *stubsDownload = [OHHTTPStubs shouldStubRequestsPassingTest:^(NSURLRequest *request) {
+			return [request.URL.absoluteString isEqualToString:@"http://fake/download.zip"];
+		} withStubResponse:^(NSURLRequest *request) {
+			return [OHHTTPStubsResponse responseWithData:package statusCode:200 responseTime:0 headers:nil];
+		}];
+		[self addCleanupBlock:^{
+			[OHHTTPStubs removeRequestHandler:stubsCheck];
+			[OHHTTPStubs removeRequestHandler:stubsDownload];
+		}];
+
+		for (NSDictionary *mismatch in @[ @{ @"size": @(package.length + 1) }, @{ @"size": @(package.length), @"sha256": [@"" stringByPaddingToLength:64 withString:@"0" startingAtIndex:0] } ]) {
+			declared = mismatch;
+			NSError *error = nil;
+			BOOL result = [[updater.checkForUpdatesCommand execute:nil] asynchronouslyWaitUntilCompleted:&error];
+			expect(@(result)).to(beFalsy());
+			expect(error.domain).to(equal(SQRLUpdaterErrorDomain));
+			expect(@(error.code)).to(equal(@(SQRLUpdaterErrorInvalidUpdatePackage)));
+		}
+	});
 });
 
 static RACSignal * (^stateNotificationListener)(void) = ^ {
@@ -684,9 +725,20 @@ describe(@"state", ^{
 			[states addObject:state];
 		}];
 
+		// Declares the archive's real digest and size, so reaching
+		// AwaitingRelaunch also shows a matching package is accepted.
+		NSURL *zipURL = zipUpdate([self createTestApplicationUpdate]);
+		NSData *zip = [NSData dataWithContentsOfURL:zipURL];
+		unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+		CC_SHA256(zip.bytes, (CC_LONG)zip.length, digest);
+		NSMutableString *hex = [NSMutableString string];
+		for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) [hex appendFormat:@"%02x", digest[i]];
+
 		NSError *error;
 		SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
-			@"updateURL": zipUpdate([self createTestApplicationUpdate]),
+			@"updateURL": zipURL,
+			@"packageDigest": hex,
+			@"packageSize": @(zip.length),
 			@"final": @YES,
 		} error:&error];
 		expect(update).notTo(beNil());

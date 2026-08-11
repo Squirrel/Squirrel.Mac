@@ -65,11 +65,35 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 		@keypath(SQRLUpdate.new, releaseName): @"name",
 		@keypath(SQRLUpdate.new, releaseDate): @"pub_date",
 		@keypath(SQRLUpdate.new, updateURL): @"url",
+		@keypath(SQRLUpdate.new, packageDigest): @"sha256",
+		@keypath(SQRLUpdate.new, packageSize): @"size",
 	};
 }
 
 + (NSValueTransformer *)updateURLJSONTransformer {
 	return [NSValueTransformer valueTransformerForName:MTLURLValueTransformerName];
+}
+
+// `sha256` and `size` are advisory: a value of the wrong type or shape is
+// logged and dropped rather than failing the update, so a feed that emits
+// them oddly for some other consumer keeps updating (unverified, as before).
++ (NSValueTransformer *)packageDigestJSONTransformer {
+	return [MTLValueTransformer transformerUsingForwardBlock:^ id (id digest, BOOL *success, NSError **error) {
+		NSRegularExpression *hex64 = [NSRegularExpression regularExpressionWithPattern:@"\\A[0-9a-f]{64}\\z" options:NSRegularExpressionCaseInsensitive error:NULL];
+		if ([digest isKindOfClass:NSString.class] && [hex64 numberOfMatchesInString:digest options:0 range:NSMakeRange(0, [digest length])] == 1) return [digest lowercaseString];
+
+		NSLog(@"Ignoring update \"sha256\" that is not 64 hex digits: %@", digest);
+		return nil;
+	}];
+}
+
++ (NSValueTransformer *)packageSizeJSONTransformer {
+	return [MTLValueTransformer transformerUsingForwardBlock:^ id (id size, BOOL *success, NSError **error) {
+		if ([size isKindOfClass:NSNumber.class] && [size longLongValue] > 0) return size;
+
+		NSLog(@"Ignoring update \"size\" that is not a positive number: %@", size);
+		return nil;
+	}];
 }
 
 + (NSValueTransformer *)releaseDateJSONTransformer {

@@ -119,6 +119,34 @@ QuickConfigurationEnd
 	[cleanupBlocks addObject:[block copy]];
 }
 
+#pragma mark Test Server
+
+- (NSURL *)startTestServerForDirectory:(NSURL *)directoryURL requestLog:(NSURL **)requestLogURL {
+	NSURL *scriptURL = [SQRLTestBundle() URLForResource:@"TestServer" withExtension:@"py"];
+	XCTAssertNotNil(scriptURL, @"Couldn't find TestServer.py in test bundle");
+
+	NSURL *logURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:[NSProcessInfo.processInfo.globallyUniqueString stringByAppendingPathExtension:@"log"]];
+	[NSData.data writeToURL:logURL atomically:YES];
+	if (requestLogURL != NULL) *requestLogURL = logURL;
+
+	NSTask *task = [[NSTask alloc] init];
+	task.launchPath = @"/usr/bin/python3";
+	task.arguments = @[ scriptURL.path, directoryURL.path, logURL.path ];
+	task.standardOutput = [NSPipe pipe];
+	[task launch];
+
+	[self addCleanupBlock:^{
+		[task terminate];
+		[task waitUntilExit];
+	}];
+
+	NSData *lineData = [[task.standardOutput fileHandleForReading] availableData];
+	NSString *line = [[NSString alloc] initWithData:lineData encoding:NSUTF8StringEncoding];
+	XCTAssertTrue([line hasPrefix:@"PORT "], @"TestServer.py did not report a port: %@", line);
+
+	return [NSURL URLWithString:[NSString stringWithFormat:@"http://127.0.0.1:%d/", [line substringFromIndex:5].intValue]];
+}
+
 #pragma mark Temporary Directory
 
 - (NSURL *)baseTemporaryDirectoryURL {

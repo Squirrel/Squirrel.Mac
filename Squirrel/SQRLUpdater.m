@@ -14,12 +14,14 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLDownloadedUpdate.h"
+#import "SQRLDownloader.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLUpdate.h"
 #import "SQRLZipArchiver.h"
 #import "SQRLShipItRequest.h"
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/ReactiveObjC.h>
+#import <CommonCrypto/CommonDigest.h>
 #import <sys/mount.h>
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
@@ -36,11 +38,24 @@ const NSInteger SQRLUpdaterErrorInvalidServerBody = 7;
 /// The application's being run on a read-only volume.
 const NSInteger SQRLUpdaterErrorReadOnlyVolume = 8;
 
+const NSInteger SQRLUpdaterErrorInvalidUpdatePackage = 9;
+
 const NSTimeInterval SQURLUpdaterZipDownloadTimeoutSeconds = 20 * 60;
 
 // The prefix used when creating temporary directories for updates. This will be
 // followed by a random string of characters.
 static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
+
+// Kept in the storage directory, beside the per-attempt update directories, so
+// an interrupted package download can continue on a later check or launch.
+static NSString * const SQRLUpdaterResumeDataFileName = @"download.resumedata";
+
+// How much of an error response body to attach to the error.
+static const NSUInteger SQRLUpdaterServerDataErrorLimit = 64 * 1024;
+
+// How long -[NSApplication terminate:] may wait for an in-flight download to
+// hand over its resume data.
+static const NSTimeInterval SQRLUpdaterTerminationResumeDataTimeout = 2;
 
 BOOL isVersionStandard(NSString* version) {
 	NSCharacterSet *alphaNums = [NSCharacterSet decimalDigitCharacterSet];
@@ -102,6 +117,13 @@ BOOL isVersionStandard(NSString* version) {
 // errors, on a background thread.
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
 
+// Checks a downloaded package against the size and digest its update declares.
+//
+// Returns a signal which completes, or errors with
+// `SQRLUpdaterErrorInvalidUpdatePackage`, on a background thread. Completes
+// immediately when the update declares neither.
+- (RACSignal *)verifyPackageAtURL:(NSURL *)packageURL forUpdate:(SQRLUpdate *)update;
+
 // Creates a unique directory in which to save the update bundle, for later use
 // by ShipIt.
 //
@@ -142,7 +164,9 @@ BOOL isVersionStandard(NSString* version) {
 
 @end
 
-@implementation SQRLUpdater
+@implementation SQRLUpdater {
+	RACSubject *_downloadProgress;
+}
 
 #pragma mark Properties
 
@@ -198,6 +222,14 @@ BOOL isVersionStandard(NSString* version) {
 	}
 	_updateRequest = mutableUpdateRequest;
 	_updateClass = SQRLUpdate.class;
+	_downloadProgress = [[RACSubject subject] setNameWithFormat:@"%@ downloadProgress", self];
+
+	[[[NSNotificationCenter.defaultCenter
+		rac_addObserverForName:NSApplicationWillTerminateNotification object:nil]
+		takeUntil:self.rac_willDeallocSignal]
+		subscribeNext:^(id _) {
+			[SQRLDownloader cancelAllWritingResumeDataWithTimeout:SQRLUpdaterTerminationResumeDataTimeout];
+		}];
 	NSError *error = nil;
 	_signature = [SQRLCodeSignature currentApplicationSignature:&error];
 	if (_signature == nil) {
@@ -462,42 +494,29 @@ BOOL isVersionStandard(NSString* version) {
 					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
 				}]
 				doError:^(id _) {
+					// The archive behind that ETag never became a prepared
+					// update, so a 304 for it must not read as "already have it".
+					self.etag = nil;
 					cleanUp();
 				}];
 		}]
 		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
 }
 
-- (RACSignal *)unarchiveAndPrepareData:(NSData *)data withName:(NSString *)name intoDirectory:(NSURL *)downloadDirectory {
-	return [[[[[RACSignal
-		defer:^{
-			NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:name];
+- (RACSignal *)unarchiveAndPrepareZipAtURL:(NSURL *)zipURL intoDirectory:(NSURL *)downloadDirectory {
+	return [[[[[SQRLZipArchiver
+		unzipArchiveAtURL:zipURL intoDirectoryAtURL:downloadDirectory]
+		ignoreValues]
+		doCompleted:^{
 			NSError *error = nil;
-			if ([data writeToURL:zipOutputURL options:NSDataWritingAtomic error:&error]) {
-				return [RACSignal return:zipOutputURL];
-			} else {
-				return [RACSignal error:error];
+			if (![NSFileManager.defaultManager removeItemAtURL:zipURL error:&error]) {
+				NSLog(@"Error removing downloaded archive at %@: %@", zipURL, error.sqrl_verboseDescription);
 			}
 		}]
-		doNext:^(NSURL *zipOutputURL) {
-			NSLog(@"Download completed to: %@", zipOutputURL);
-		}]
-		flattenMap:^(NSURL *zipOutputURL) {
-			return [[[[SQRLZipArchiver
-				unzipArchiveAtURL:zipOutputURL intoDirectoryAtURL:downloadDirectory]
-				ignoreValues]
-				concat:[RACSignal return:zipOutputURL]]
-				doCompleted:^{
-					NSError *error = nil;
-					if (![NSFileManager.defaultManager removeItemAtURL:zipOutputURL error:&error]) {
-						NSLog(@"Error removing downloaded archive at %@: %@", zipOutputURL, error.sqrl_verboseDescription);
-					}
-				}];
-		}]
-		flattenMap:^(NSURL *zipOutputURL) {
+		then:^{
 			return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
 		}]
-		setNameWithFormat:@"%@ -unarchiveAndPrepareData:withName: %@ intoDirectory: %@", self, name, downloadDirectory];
+		setNameWithFormat:@"%@ -unarchiveAndPrepareZipAtURL: %@ intoDirectory: %@", self, zipURL, downloadDirectory];
 }
 
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
@@ -516,17 +535,29 @@ BOOL isVersionStandard(NSString* version) {
 
 			[zipDownloadRequest setTimeoutInterval:SQURLUpdaterZipDownloadTimeoutSeconds];
 
-			return [[[NSURLConnection
-				rac_sendAsynchronousRequest:zipDownloadRequest]
-				reduceEach:^(NSURLResponse *response, NSData *bodyData) {
+			// A fixed name: the URL is the server's, the directory is ours.
+			NSURL *zipOutputURL = [downloadDirectory URLByAppendingPathComponent:@"update.zip"];
+			NSURL *resumeDataURL = [downloadDirectory.URLByDeletingLastPathComponent URLByAppendingPathComponent:SQRLUpdaterResumeDataFileName];
+			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:zipDownloadRequest resumeDataURL:resumeDataURL];
+			[downloader.progress subscribeNext:^(SQRLDownloadProgress *progress) {
+				[self->_downloadProgress sendNext:progress];
+			}];
+
+			return [[[downloader
+				downloadToURL:zipOutputURL]
+				reduceEach:^(NSURLResponse *response, NSURL *zipURL) {
 					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
 						NSHTTPURLResponse *httpResponse = (id)response;
 
 						if (httpResponse.statusCode == 304 /* Not Modified */) {
+							[NSFileManager.defaultManager removeItemAtURL:zipURL error:NULL];
 							return [RACSignal return:nil];
 						}
 
 						if (!(httpResponse.statusCode >= 200 && httpResponse.statusCode <= 299)) {
+							NSData *bodyData = [[NSFileHandle fileHandleForReadingFromURL:zipURL error:NULL] readDataOfLength:SQRLUpdaterServerDataErrorLimit] ?: NSData.data;
+							[NSFileManager.defaultManager removeItemAtURL:zipURL error:NULL];
+
 							NSDictionary *errorInfo = @{
 								NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
 								NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The server sent an invalid response. Try again later.", nil),
@@ -539,11 +570,73 @@ BOOL isVersionStandard(NSString* version) {
 						self.etag = httpResponse.allHeaderFields[@"ETag"];
 					}
 
-					return [self unarchiveAndPrepareData:bodyData withName:zipDownloadURL.lastPathComponent intoDirectory:downloadDirectory];
+					NSLog(@"Download completed to: %@", zipURL);
+					return [[self
+						verifyPackageAtURL:zipURL forUpdate:update]
+						then:^{
+							return [self unarchiveAndPrepareZipAtURL:zipURL intoDirectory:downloadDirectory];
+						}];
 				}]
 				flatten];
 		}]
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
+}
+
+- (RACSignal *)verifyPackageAtURL:(NSURL *)packageURL forUpdate:(SQRLUpdate *)update {
+	NSParameterAssert(packageURL != nil);
+	NSParameterAssert(update != nil);
+
+	if (update.packageSize == nil && update.packageDigest == nil) return [RACSignal empty];
+
+	return [[RACSignal
+		defer:^{
+			RACSignal * (^reject)(NSString *) = ^(NSString *reason) {
+				[NSFileManager.defaultManager removeItemAtURL:packageURL error:NULL];
+
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
+					NSLocalizedRecoverySuggestionErrorKey: reason,
+					NSURLErrorKey: update.updateURL,
+				};
+				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidUpdatePackage userInfo:userInfo]];
+			};
+
+			if (update.packageSize != nil) {
+				NSNumber *size = nil;
+				[packageURL getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
+				if (![size isEqual:update.packageSize]) {
+					return reject([NSString stringWithFormat:NSLocalizedString(@"The update package is %@ bytes, expected %@.", nil), size, update.packageSize]);
+				}
+			}
+
+			if (update.packageDigest != nil) {
+				NSInputStream *stream = [NSInputStream inputStreamWithURL:packageURL];
+				[stream open];
+
+				CC_SHA256_CTX context;
+				CC_SHA256_Init(&context);
+				uint8_t buffer[256 * 1024];
+				NSInteger read;
+				while ((read = [stream read:buffer maxLength:sizeof(buffer)]) > 0) {
+					CC_SHA256_Update(&context, buffer, (CC_LONG)read);
+				}
+				NSError *readError = read < 0 ? stream.streamError : nil;
+				[stream close];
+				if (readError != nil) return [RACSignal error:readError];
+
+				unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+				CC_SHA256_Final(digest, &context);
+				NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
+				for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) [hex appendFormat:@"%02x", digest[i]];
+
+				if (![hex isEqualToString:update.packageDigest]) {
+					return reject([NSString stringWithFormat:NSLocalizedString(@"The update package digest is %@, expected %@.", nil), hex, update.packageDigest]);
+				}
+			}
+
+			return [RACSignal empty];
+		}]
+		setNameWithFormat:@"%@ -verifyPackageAtURL: %@ forUpdate: %@", self, packageURL, update];
 }
 
 #pragma mark File Management

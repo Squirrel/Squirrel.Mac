@@ -28,4 +28,14 @@
 // The URL to the update package that should be downloaded for installation.
 @property (readonly, copy, nonatomic) NSURL *updateURL;
 
+// The SHA-256 digest of the update package, as lowercase hex, if the server
+// declared one as 64 hex digits (anything else is logged and ignored). A
+// downloaded package that does not match it is rejected before it is opened.
+@property (readonly, copy, nonatomic) NSString *packageDigest;
+
+// The size of the update package in bytes, if the server declared a positive
+// number (anything else is logged and ignored). A downloaded package of any
+// other size is rejected before it is opened.
+@property (readonly, copy, nonatomic) NSNumber *packageSize;
+
 @end

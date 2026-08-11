@@ -55,6 +55,10 @@ extern const NSInteger SQRLUpdaterErrorInvalidServerBody;
 // Includes `SQRLUpdaterJSONObjectErrorKey` in the error's `userInfo`.
 extern const NSInteger SQRLUpdaterErrorInvalidJSON;
 
+// The downloaded update package did not have the size or SHA-256 digest the
+// update declared for it.
+extern const NSInteger SQRLUpdaterErrorInvalidUpdatePackage;
+
 // Associated with the `NSData` received from the server when an error with code
 // `SQRLUpdaterErrorInvalidServerResponse` is generated.
 extern NSString * const SQRLUpdaterServerDataErrorKey;
@@ -85,6 +89,12 @@ typedef enum {
 //
 // This property is KVO-compliant.
 @property (atomic, readonly) SQRLUpdaterState state;
+
+// Sends `SQRLDownloadProgress` values on an unspecified thread while an update
+// package is being downloaded (`state` is
+// `SQRLUpdaterStateDownloadingUpdate`). A download that continues a previous
+// interrupted attempt reports the offset it started from as `bytesResumed`.
+@property (nonatomic, strong, readonly) RACSignal *downloadProgress;
 
 // Sends an `SQRLDownloadedUpdate` object on the main thread whenever a new
 // update is available.
