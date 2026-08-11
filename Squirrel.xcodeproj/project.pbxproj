@@ -29,6 +29,9 @@
 		D000219717BAD34D0050109A /* TestApplication.app.zip in Resources */ = {isa = PBXBuildFile; fileRef = D000219617BAD34D0050109A /* TestApplication.app.zip */; };
 		D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */; };
 		D0F0A00126500005000D0AD1 /* SQRLDownloaderSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00126500006000D0AD1 /* SQRLDownloaderSpec.m */; };
+		D0F0A00426500003000D0AD1 /* SUBinaryDeltaCreate.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00426500002000D0AD1 /* SUBinaryDeltaCreate.m */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A00426500005000D0AD1 /* bsdiff.c in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00426500004000D0AD1 /* bsdiff.c */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A00426500007000D0AD1 /* sais.c in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00426500006000D0AD1 /* sais.c */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
 		D0F0A00126500007000D0AD1 /* TestServer.py in Resources */ = {isa = PBXBuildFile; fileRef = D0F0A00126500008000D0AD1 /* TestServer.py */; };
 		D00F5B8B17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h in Headers */ = {isa = PBXBuildFile; fileRef = D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D00F5B8C17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m in Sources */ = {isa = PBXBuildFile; fileRef = D00F5B8A17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m */; };
@@ -87,7 +90,15 @@
 		D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4B179CC15100158214 /* SQRLUpdater.m */; };
 		D0F0A00126500001000D0AD1 /* SQRLDownloader.h in Headers */ = {isa = PBXBuildFile; fileRef = D0F0A00126500003000D0AD1 /* SQRLDownloader.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0F0A00126500002000D0AD1 /* SQRLDownloader.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00126500004000D0AD1 /* SQRLDownloader.m */; };
-		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; };
+		D0F0A00326500003000D0AD1 /* SQRLUpdateDelta.h in Headers */ = {isa = PBXBuildFile; fileRef = D0F0A00326500001000D0AD1 /* SQRLUpdateDelta.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		D0F0A00326500004000D0AD1 /* SQRLUpdateDelta.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00326500002000D0AD1 /* SQRLUpdateDelta.m */; };
+		D0F0A00226500003000D0AD1 /* SUBinaryDeltaApply.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00226500002000D0AD1 /* SUBinaryDeltaApply.m */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A00226500006000D0AD1 /* SUBinaryDeltaCommon.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00226500005000D0AD1 /* SUBinaryDeltaCommon.m */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A00226500009000D0AD1 /* SPUDeltaArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00226500008000D0AD1 /* SPUDeltaArchive.m */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A0022650000E000D0AD1 /* SPUSparkleDeltaArchive.m in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A0022650000D000D0AD1 /* SPUSparkleDeltaArchive.m */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A00226500011000D0AD1 /* bspatch.c in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00226500010000D0AD1 /* bspatch.c */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0F0A00226500014000D0AD1 /* bscommon.c in Sources */ = {isa = PBXBuildFile; fileRef = D0F0A00226500013000D0AD1 /* bscommon.c */; settings = {COMPILER_FLAGS = "-w $(SPARKLE_DELTA_CFLAGS)"; }; };
+		D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */ = {isa = PBXBuildFile; fileRef = D0C22C4F179CC18C00158214 /* SQRLUpdaterSpec.m */; settings = {COMPILER_FLAGS = "$(SPARKLE_DELTA_CFLAGS)"; }; };
 		D0C22C52179CC23900158214 /* Squirrel.h in Headers */ = {isa = PBXBuildFile; fileRef = D0C22BE7179CC00E00158214 /* Squirrel.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		D0D2B6261804E903000EA901 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */; };
 		D0D2B6271804E903000EA901 /* SQRLDirectoryManager.m in Sources */ = {isa = PBXBuildFile; fileRef = D0D2B6241804E903000EA901 /* SQRLDirectoryManager.m */; };
@@ -239,6 +250,29 @@
 		D000219617BAD34D0050109A /* TestApplication.app.zip */ = {isa = PBXFileReference; lastKnownFileType = archive.zip; path = TestApplication.app.zip; sourceTree = "<group>"; };
 		D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLZipArchiverSpec.m; sourceTree = "<group>"; };
 		D0F0A00126500006000D0AD1 /* SQRLDownloaderSpec.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLDownloaderSpec.m; sourceTree = "<group>"; };
+		D0F0A00426500001000D0AD1 /* SUBinaryDeltaCreate.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SUBinaryDeltaCreate.h; path = Autoupdate/SUBinaryDeltaCreate.h; sourceTree = "<group>"; };
+		D0F0A00426500002000D0AD1 /* SUBinaryDeltaCreate.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SUBinaryDeltaCreate.m; path = Autoupdate/SUBinaryDeltaCreate.m; sourceTree = "<group>"; };
+		D0F0A00426500004000D0AD1 /* bsdiff.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bsdiff.c; path = Vendor/bsdiff/bsdiff.c; sourceTree = "<group>"; };
+		D0F0A00426500006000D0AD1 /* sais.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = sais.c; path = Vendor/bsdiff/sais.c; sourceTree = "<group>"; };
+		D0F0A00426500008000D0AD1 /* sais.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = sais.h; path = Vendor/bsdiff/sais.h; sourceTree = "<group>"; };
+		D0F0A00326500001000D0AD1 /* SQRLUpdateDelta.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SQRLUpdateDelta.h; sourceTree = "<group>"; };
+		D0F0A00326500002000D0AD1 /* SQRLUpdateDelta.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SQRLUpdateDelta.m; sourceTree = "<group>"; };
+		D0F0A00226500001000D0AD1 /* SUBinaryDeltaApply.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SUBinaryDeltaApply.h; path = Autoupdate/SUBinaryDeltaApply.h; sourceTree = "<group>"; };
+		D0F0A00226500002000D0AD1 /* SUBinaryDeltaApply.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SUBinaryDeltaApply.m; path = Autoupdate/SUBinaryDeltaApply.m; sourceTree = "<group>"; };
+		D0F0A00226500004000D0AD1 /* SUBinaryDeltaCommon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SUBinaryDeltaCommon.h; path = Autoupdate/SUBinaryDeltaCommon.h; sourceTree = "<group>"; };
+		D0F0A00226500005000D0AD1 /* SUBinaryDeltaCommon.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SUBinaryDeltaCommon.m; path = Autoupdate/SUBinaryDeltaCommon.m; sourceTree = "<group>"; };
+		D0F0A00226500007000D0AD1 /* SPUDeltaArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPUDeltaArchive.h; path = Autoupdate/SPUDeltaArchive.h; sourceTree = "<group>"; };
+		D0F0A00226500008000D0AD1 /* SPUDeltaArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SPUDeltaArchive.m; path = Autoupdate/SPUDeltaArchive.m; sourceTree = "<group>"; };
+		D0F0A0022650000A000D0AD1 /* SPUDeltaArchiveProtocol.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPUDeltaArchiveProtocol.h; path = Autoupdate/SPUDeltaArchiveProtocol.h; sourceTree = "<group>"; };
+		D0F0A0022650000B000D0AD1 /* SPUDeltaCompressionMode.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPUDeltaCompressionMode.h; path = Autoupdate/SPUDeltaCompressionMode.h; sourceTree = "<group>"; };
+		D0F0A0022650000C000D0AD1 /* SPUSparkleDeltaArchive.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SPUSparkleDeltaArchive.h; path = Autoupdate/SPUSparkleDeltaArchive.h; sourceTree = "<group>"; };
+		D0F0A0022650000D000D0AD1 /* SPUSparkleDeltaArchive.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = SPUSparkleDeltaArchive.m; path = Autoupdate/SPUSparkleDeltaArchive.m; sourceTree = "<group>"; };
+		D0F0A0022650000F000D0AD1 /* bspatch.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bspatch.h; path = Vendor/bsdiff/bspatch.h; sourceTree = "<group>"; };
+		D0F0A00226500010000D0AD1 /* bspatch.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bspatch.c; path = Vendor/bsdiff/bspatch.c; sourceTree = "<group>"; };
+		D0F0A00226500012000D0AD1 /* bscommon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = bscommon.h; path = Vendor/bsdiff/bscommon.h; sourceTree = "<group>"; };
+		D0F0A00226500013000D0AD1 /* bscommon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = bscommon.c; path = Vendor/bsdiff/bscommon.c; sourceTree = "<group>"; };
+		D0F0A00226500015000D0AD1 /* AppKitPrevention.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = AppKitPrevention.h; path = Sparkle/AppKitPrevention.h; sourceTree = "<group>"; };
+		D0F0A00226500030000D0AD1 /* SparkleDeltaConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = SparkleDeltaConfig.h; path = SparkleDelta/SparkleDeltaConfig.h; sourceTree = "<group>"; };
 		D0F0A00126500008000D0AD1 /* TestServer.py */ = {isa = PBXFileReference; lastKnownFileType = text.script.python; path = TestServer.py; sourceTree = "<group>"; };
 		D00F5B8917E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSProcessInfo+SQRLVersionExtensions.h"; sourceTree = "<group>"; };
 		D00F5B8A17E82D15009A4818 /* NSProcessInfo+SQRLVersionExtensions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSProcessInfo+SQRLVersionExtensions.m"; sourceTree = "<group>"; };
@@ -530,6 +564,8 @@
 				D0C22C4A179CC15100158214 /* SQRLUpdater.h */,
 				D0C22C4B179CC15100158214 /* SQRLUpdater.m */,
 				D0F0A00126500003000D0AD1 /* SQRLDownloader.h */,
+				D0F0A00326500001000D0AD1 /* SQRLUpdateDelta.h */,
+				D0F0A00326500002000D0AD1 /* SQRLUpdateDelta.m */,
 				D0F0A00126500004000D0AD1 /* SQRLDownloader.m */,
 				53AACF4917E9CA0500B41027 /* SQRLUpdate.h */,
 				53AACF4A17E9CA0500B41027 /* SQRLUpdate.m */,
@@ -588,11 +624,48 @@
 			name = "Static Dependencies";
 			sourceTree = "<group>";
 		};
+		D0F0A00226500016000D0AD1 /* SparkleDelta */ = {
+			isa = PBXGroup;
+			children = (
+				D0F0A00226500001000D0AD1 /* SUBinaryDeltaApply.h */,
+				D0F0A00226500002000D0AD1 /* SUBinaryDeltaApply.m */,
+				D0F0A00226500004000D0AD1 /* SUBinaryDeltaCommon.h */,
+				D0F0A00226500005000D0AD1 /* SUBinaryDeltaCommon.m */,
+				D0F0A00226500007000D0AD1 /* SPUDeltaArchive.h */,
+				D0F0A00226500008000D0AD1 /* SPUDeltaArchive.m */,
+				D0F0A0022650000A000D0AD1 /* SPUDeltaArchiveProtocol.h */,
+				D0F0A0022650000B000D0AD1 /* SPUDeltaCompressionMode.h */,
+				D0F0A0022650000C000D0AD1 /* SPUSparkleDeltaArchive.h */,
+				D0F0A0022650000D000D0AD1 /* SPUSparkleDeltaArchive.m */,
+				D0F0A0022650000F000D0AD1 /* bspatch.h */,
+				D0F0A00226500010000D0AD1 /* bspatch.c */,
+				D0F0A00226500012000D0AD1 /* bscommon.h */,
+				D0F0A00226500013000D0AD1 /* bscommon.c */,
+				D0F0A00226500015000D0AD1 /* AppKitPrevention.h */,
+			);
+			name = Sparkle;
+			path = Carthage/Checkouts/Sparkle;
+			sourceTree = "<group>";
+		};
+		D0F0A00426500009000D0AD1 /* SparkleDeltaCreate */ = {
+			isa = PBXGroup;
+			children = (
+				D0F0A00426500001000D0AD1 /* SUBinaryDeltaCreate.h */,
+				D0F0A00426500002000D0AD1 /* SUBinaryDeltaCreate.m */,
+				D0F0A00426500004000D0AD1 /* bsdiff.c */,
+				D0F0A00426500006000D0AD1 /* sais.c */,
+				D0F0A00426500008000D0AD1 /* sais.h */,
+			);
+			name = SparkleDeltaCreate;
+			path = ../Carthage/Checkouts/Sparkle;
+			sourceTree = "<group>";
+		};
 		D0C22BCD179CC00E00158214 = {
 			isa = PBXGroup;
 			children = (
 				D0EDBE9F17B0C6930058BC3C /* Shared */,
 				D0C22BE0179CC00E00158214 /* Squirrel */,
+				D0F0A00226500016000D0AD1 /* SparkleDelta */,
 				D014AC0317B97885007D79D0 /* ShipIt */,
 				D0C22BF6179CC00E00158214 /* SquirrelTests */,
 				D08D4E0E17B451500012B22D /* TestApplication */,
@@ -640,6 +713,7 @@
 			isa = PBXGroup;
 			children = (
 				D0C22BE7179CC00E00158214 /* Squirrel.h */,
+				D0F0A00226500030000D0AD1 /* SparkleDeltaConfig.h */,
 				D00F5B8217E82CFB009A4818 /* Extensions */,
 				D0C22C49179CC14400158214 /* Classes */,
 				D0C22BE1179CC00E00158214 /* Supporting Files */,
@@ -769,6 +843,7 @@
 				5395C0E217E9D013001648E8 /* SQRLUpdateSpec.m */,
 				D000219817BAD35C0050109A /* SQRLZipArchiverSpec.m */,
 				D0F0A00126500006000D0AD1 /* SQRLDownloaderSpec.m */,
+				D0F0A00426500009000D0AD1 /* SparkleDeltaCreate */,
 			);
 			name = Specs;
 			sourceTree = "<group>";
@@ -798,6 +873,7 @@
 				D0964B3C17F2E20B00D88BF7 /* NSBundle+SQRLVersionExtensions.h in Headers */,
 				D0C22C4C179CC15100158214 /* SQRLUpdater.h in Headers */,
 				D0F0A00126500001000D0AD1 /* SQRLDownloader.h in Headers */,
+				D0F0A00326500003000D0AD1 /* SQRLUpdateDelta.h in Headers */,
 				D0C22C52179CC23900158214 /* Squirrel.h in Headers */,
 				D0964B3817F2E01500D88BF7 /* SQRLDownloadedUpdate.h in Headers */,
 				53AACF4B17E9CA0500B41027 /* SQRLUpdate.h in Headers */,
@@ -1053,6 +1129,13 @@
 				D000218F17BACEFF0050109A /* SQRLZipArchiver.m in Sources */,
 				D0C22C4D179CC15100158214 /* SQRLUpdater.m in Sources */,
 				D0F0A00126500002000D0AD1 /* SQRLDownloader.m in Sources */,
+				D0F0A00326500004000D0AD1 /* SQRLUpdateDelta.m in Sources */,
+				D0F0A00226500003000D0AD1 /* SUBinaryDeltaApply.m in Sources */,
+				D0F0A00226500006000D0AD1 /* SUBinaryDeltaCommon.m in Sources */,
+				D0F0A00226500009000D0AD1 /* SPUDeltaArchive.m in Sources */,
+				D0F0A0022650000E000D0AD1 /* SPUSparkleDeltaArchive.m in Sources */,
+				D0F0A00226500011000D0AD1 /* bspatch.c in Sources */,
+				D0F0A00226500014000D0AD1 /* bscommon.c in Sources */,
 				D0EDBE9D17B0C68E0058BC3C /* NSError+SQRLVerbosityExtensions.m in Sources */,
 				53AACF4C17E9CA0500B41027 /* SQRLUpdate.m in Sources */,
 				5397A5CF187D92810014A477 /* SQRLShipItRequest.m in Sources */,
@@ -1069,6 +1152,9 @@
 				5395C0E317E9D013001648E8 /* SQRLUpdateSpec.m in Sources */,
 				D000219917BAD35C0050109A /* SQRLZipArchiverSpec.m in Sources */,
 				D0F0A00126500005000D0AD1 /* SQRLDownloaderSpec.m in Sources */,
+				D0F0A00426500003000D0AD1 /* SUBinaryDeltaCreate.m in Sources */,
+				D0F0A00426500005000D0AD1 /* bsdiff.c in Sources */,
+				D0F0A00426500007000D0AD1 /* sais.c in Sources */,
 				D043F77E17FF43640012F996 /* SQRLTerminationListener.m in Sources */,
 				D09D244117B595470001FAF8 /* SQRLInstallerSpec.m in Sources */,
 				D0C22C50179CC18C00158214 /* SQRLUpdaterSpec.m in Sources */,
@@ -1328,6 +1414,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0B179CC02E00158214 /* Debug.xcconfig */;
 			buildSettings = {
+				SPARKLE_DELTA_CFLAGS = "-include $(SRCROOT)/Squirrel/SparkleDelta/SparkleDeltaConfig.h -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Autoupdate -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Vendor/bsdiff -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Sparkle";
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				ENABLE_TESTABILITY = YES;
@@ -1346,6 +1433,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0D179CC02E00158214 /* Release.xcconfig */;
 			buildSettings = {
+				SPARKLE_DELTA_CFLAGS = "-include $(SRCROOT)/Squirrel/SparkleDelta/SparkleDeltaConfig.h -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Autoupdate -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Vendor/bsdiff -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Sparkle";
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING = YES;
@@ -1364,6 +1452,12 @@
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lbz2",
+					"-lz",
+					"-lcompression",
+				);
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1383,6 +1477,12 @@
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lbz2",
+					"-lz",
+					"-lcompression",
+				);
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1441,6 +1541,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0C179CC02E00158214 /* Profile.xcconfig */;
 			buildSettings = {
+				SPARKLE_DELTA_CFLAGS = "-include $(SRCROOT)/Squirrel/SparkleDelta/SparkleDeltaConfig.h -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Autoupdate -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Vendor/bsdiff -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Sparkle";
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING = YES;
@@ -1459,6 +1560,12 @@
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lbz2",
+					"-lz",
+					"-lcompression",
+				);
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;
@@ -1497,6 +1604,7 @@
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = D0C22C0E179CC02E00158214 /* Test.xcconfig */;
 			buildSettings = {
+				SPARKLE_DELTA_CFLAGS = "-include $(SRCROOT)/Squirrel/SparkleDelta/SparkleDeltaConfig.h -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Autoupdate -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Vendor/bsdiff -I$(SRCROOT)/Carthage/Checkouts/Sparkle/Sparkle";
 				CLANG_WARN_INFINITE_RECURSION = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				DISABLE_MANUAL_TARGET_ORDER_BUILD_WARNING = YES;
@@ -1514,6 +1622,12 @@
 			baseConfigurationReference = D0C22C1A179CC02E00158214 /* Mac-Framework.xcconfig */;
 			buildSettings = {
 				APPLICATION_EXTENSION_API_ONLY = NO;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-lbz2",
+					"-lz",
+					"-lcompression",
+				);
 				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = NO;
 				DYLIB_COMPATIBILITY_VERSION = 1;
 				DYLIB_CURRENT_VERSION = 1;

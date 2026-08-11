@@ -35,7 +35,7 @@ jobs:
           submodules: false
 
       - name: Init submodules
-        # Recursive init pulls 15 nested clones; only 8 are used by the
+        # Recursive init pulls 15 nested clones; only 9 are used by the
         # build (the rest are Mantle's / ReactiveObjC's / Quick's own
         # test deps).
         run: |
@@ -44,6 +44,7 @@ jobs:
             Carthage/Checkouts/Nimble \
             Carthage/Checkouts/Quick \
             Carthage/Checkouts/ReactiveObjC \
+            Carthage/Checkouts/Sparkle \
             Carthage/Checkouts/xcconfigs \
             External/OHHTTPStubs
           git -C Carthage/Checkouts/Mantle submodule update --init --depth 1 \

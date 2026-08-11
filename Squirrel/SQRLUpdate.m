@@ -7,6 +7,7 @@
 //
 
 #import "SQRLUpdate.h"
+#import "SQRLUpdateDelta.h"
 #import <ReactiveObjC/ReactiveObjC.h>
 
 NSString * const SQRLUpdateJSONURLKey = @"url";
@@ -67,6 +68,7 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 		@keypath(SQRLUpdate.new, updateURL): @"url",
 		@keypath(SQRLUpdate.new, packageDigest): @"sha256",
 		@keypath(SQRLUpdate.new, packageSize): @"size",
+		@keypath(SQRLUpdate.new, delta): @"delta",
 	};
 }
 
@@ -93,6 +95,19 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 
 		NSLog(@"Ignoring update \"size\" that is not a positive number: %@", size);
 		return nil;
+	}];
+}
+
+// A `delta` that does not parse is logged and dropped: offering one must
+// never cost the update it rides on.
++ (NSValueTransformer *)deltaJSONTransformer {
+	return [MTLValueTransformer transformerUsingForwardBlock:^ id (id JSON, BOOL *success, NSError **error) {
+		NSError *deltaError = nil;
+		SQRLUpdateDelta *delta = [JSON isKindOfClass:NSDictionary.class] ? [MTLJSONAdapter modelOfClass:SQRLUpdateDelta.class fromJSONDictionary:JSON error:&deltaError] : nil;
+		if (delta == nil) NSLog(@"Ignoring update \"delta\" that cannot be used: %@ (%@)", JSON, deltaError.localizedRecoverySuggestion ?: deltaError);
+		return delta;
+	} reverseBlock:^ id (SQRLUpdateDelta *delta, BOOL *success, NSError **error) {
+		return delta == nil ? nil : [MTLJSONAdapter JSONDictionaryFromModel:delta error:error];
 	}];
 }
 

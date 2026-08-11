@@ -161,7 +161,13 @@ to the update request provided:
 	"notes": "Theses are some release notes innit",
 	"pub_date": "2013-09-18T12:29:53+01:00",
 	"sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-	"size": 104857600
+	"size": 104857600,
+	"delta": {
+		"from_version": "412",
+		"url": "https://mycompany.example.com/myapp/releases/412-to-myrelease.delta",
+		"sha256": "60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752",
+		"size": 7340032
+	}
 }
 ```
 
@@ -193,6 +199,19 @@ path. Downloads run in their own `NSURLSession`, so an `NSURLProtocol`
 registered with `+registerClass:` sees the update check but not the download;
 set `SQRLDownloader.sessionConfiguration` (with its `protocolClasses`) to
 intercept both.
+
+"delta", if present, offers a binary patch from one earlier build to this
+release; it needs all four keys ("sha256" as 64 hex digits, "size" positive)
+and is logged and ignored otherwise. When "from_version" equals the
+running application's `CFBundleVersion`, Squirrel downloads the patch instead
+of the ZIP, checks its "size" and "sha256", applies it to a copy of the running
+application, and puts the result through the same code signing verification as
+an unpacked ZIP. If any of that fails, or "from_version" is anything else, it
+downloads the ZIP from "url" in the same check, so a server can always include
+the one delta it has for the version that asked. Patches are
+[Sparkle](https://sparkle-project.org) BinaryDelta files (format 3 or 4), made
+with Sparkle's `BinaryDelta create <old.app> <new.app> <patch>` from the exact
+signed bundles that were shipped.
 
 ## Update File JSON Format
 
@@ -250,6 +269,7 @@ file); a single entry is fine.
 | `updateTo.version` | — | Echoed into the `update-downloaded` event; conventionally the same as the outer `version`. |
 | `updateTo.name` / `notes` / `pub_date` | — | Surfaced to your app for display. `pub_date` must be ISO 8601 if present. |
 | `updateTo.sha256` / `size` | — | Digest (hex) and byte size of the `.zip`; a download that does not match is rejected. |
+| `updateTo.delta` | — | Optional `{from_version, url, sha256, size}` binary patch from one earlier `CFBundleVersion`; tried first when it matches the running app, with the `.zip` as fallback. |
 
 Point the updater directly at this file's URL — there's no required filename.
 

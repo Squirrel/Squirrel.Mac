@@ -20,6 +20,8 @@
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "QuickSpec+SQRLFixtures.h"
 #import "SQRLTestUpdate.h"
+#import "SUBinaryDeltaCreate.h"
+#import <CommonCrypto/CommonDigest.h>
 #import "TestAppConstants.h"
 #import <objc/objc-class.h>
 
@@ -422,6 +424,76 @@ describe(@"updating", ^{
 		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 		[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
+
+	describe(@"with a delta", ^{
+		__block NSURL *serverDirectoryURL;
+		__block NSURL *baseURL;
+		__block NSURL *requestLogURL;
+
+		beforeEach(^{
+			serverDirectoryURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"served" isDirectory:YES];
+			[NSFileManager.defaultManager createDirectoryAtURL:serverDirectoryURL withIntermediateDirectories:YES attributes:nil error:NULL];
+			[NSFileManager.defaultManager copyItemAtURL:zipUpdate(updateURL) toURL:[serverDirectoryURL URLByAppendingPathComponent:@"full.zip"] error:NULL];
+			baseURL = [self startTestServerForDirectory:serverDirectoryURL requestLog:&requestLogURL];
+		});
+
+		NSArray * (^requestedPaths)(void) = ^{
+			NSMutableArray *paths = [NSMutableArray array];
+			for (NSString *line in [[NSString stringWithContentsOfURL:requestLogURL encoding:NSUTF8StringEncoding error:NULL] componentsSeparatedByString:@"\n"]) {
+				if (line.length > 0) [paths addObject:[line componentsSeparatedByString:@" "][1]];
+			}
+			return paths;
+		};
+
+		SQRLUpdateDelta * (^servedDelta)(BOOL) = ^(BOOL intact) {
+			NSURL *deltaURL = [serverDirectoryURL URLByAppendingPathComponent:@"update.delta"];
+			NSError *error = nil;
+			BOOL created = createBinaryDelta(self.testApplicationURL.path, updateURL.path, deltaURL.path, SUBinaryDeltaMajorVersion4, SPUDeltaCompressionModeDefault, 0, NO, &error);
+			expect(@(created)).to(beTruthy());
+			expect(error).to(beNil());
+
+			NSMutableData *contents = [NSMutableData dataWithContentsOfURL:deltaURL];
+			if (!intact) {
+				memset(contents.mutableBytes, 'x', contents.length);
+				[contents writeToURL:deltaURL atomically:YES];
+			}
+			unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+			CC_SHA256(contents.bytes, (CC_LONG)contents.length, digest);
+			NSMutableString *hex = [NSMutableString string];
+			for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) [hex appendFormat:@"%02x", digest[i]];
+
+			return [MTLJSONAdapter modelOfClass:SQRLUpdateDelta.class fromJSONDictionary:@{
+				@"from_version": self.testApplicationBundle.sqrl_bundleVersion,
+				@"url": [baseURL URLByAppendingPathComponent:@"update.delta"].absoluteString,
+				@"sha256": hex,
+				@"size": @(contents.length),
+			} error:NULL];
+		};
+
+		void (^updateWithDelta)(SQRLUpdateDelta *) = ^(SQRLUpdateDelta *delta) {
+			SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+				@"updateURL": [baseURL URLByAppendingPathComponent:@"full.zip"],
+				@"delta": delta,
+				@"final": @YES
+			} error:NULL];
+			writeUpdate(update);
+
+			NSRunningApplication *app = launchWithEnvironment(nil);
+			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+			[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
+			expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+		};
+
+		it(@"should install from the delta alone", ^{
+			updateWithDelta(servedDelta(YES));
+			expect(requestedPaths()).to(equal(@[ @"/update.delta" ]));
+		});
+
+		it(@"should fall back to the full update when the delta does not apply", ^{
+			updateWithDelta(servedDelta(NO));
+			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+		});
 	});
 
 	it(@"should not install a corrupt update", ^{

@@ -17,6 +17,8 @@
 #import "SQRLDownloader.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLUpdate.h"
+#import "SQRLUpdateDelta.h"
+#import "SUBinaryDeltaApply.h"
 #import "SQRLZipArchiver.h"
 #import "SQRLShipItRequest.h"
 #import <ReactiveObjC/EXTScope.h>
@@ -117,12 +119,30 @@ BOOL isVersionStandard(NSString* version) {
 // errors, on a background thread.
 - (RACSignal *)downloadBundleForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
 
-// Checks a downloaded package against the size and digest its update declares.
+// Checks a downloaded file against a declared size and SHA-256 digest, deleting
+// it on mismatch.
 //
 // Returns a signal which completes, or errors with
 // `SQRLUpdaterErrorInvalidUpdatePackage`, on a background thread. Completes
-// immediately when the update declares neither.
-- (RACSignal *)verifyPackageAtURL:(NSURL *)packageURL forUpdate:(SQRLUpdate *)update;
+// immediately when neither is declared.
+- (RACSignal *)verifyFileAtURL:(NSURL *)fileURL size:(NSNumber *)size digest:(NSString *)digest;
+
+// Produces the verified update in `downloadDirectory`: from `update.delta`
+// applied to the running application when that delta targets the running
+// version, and otherwise, or if anything about the delta fails, from the
+// full archive at `update.updateURL`.
+//
+// Returns a signal which sends a `SQRLDownloadedUpdate` (or nil when a
+// conditional GET says the archive was already downloaded) then completes, or
+// errors, on a background thread.
+- (RACSignal *)downloadedUpdateForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory;
+
+// Downloads `delta`, verifies it, and applies it to a copy of the running
+// application inside `downloadDirectory`.
+//
+// Returns a signal which sends the patched `NSBundle` then completes, or
+// errors, on a background thread.
+- (RACSignal *)bundleByApplyingDelta:(SQRLUpdateDelta *)delta intoDirectory:(NSURL *)downloadDirectory;
 
 // Creates a unique directory in which to save the update bundle, for later use
 // by ShipIt.
@@ -140,17 +160,14 @@ BOOL isVersionStandard(NSString* version) {
 // errors.
 - (RACSignal *)updateBundleMatchingCurrentApplicationInDirectory:(NSURL *)directory;
 
-// Validates the code signature of the given update bundle, then prepares it for
-// installation.
+// Validates the code signature (and, with ElectronSquirrelPreventDowngrades,
+// the version) of the given update bundle.
 //
-// Upon success, the update will be automatically installed after the
-// application terminates.
-//
-// update - Describes the update to verify and prepare. This must not be nil.
+// update - Describes the update to verify. This must not be nil.
 //
 // Returns a signal which sends a `SQRLDownloadedUpdate` then completes, or
 // errors, on a background thread.
-- (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle;
+- (RACSignal *)verifyUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle;
 
 // Prepares the given update for installation.
 //
@@ -482,16 +499,18 @@ BOOL isVersionStandard(NSString* version) {
 			};
 
 			return [[[self
-				downloadBundleForUpdate:update intoDirectory:downloadDirectory]
-				flattenMap:^(NSBundle *updateBundle) {
-					// If the bundle is nil it means our conditional GET told us
-					// we already downloaded the update. So just clean up.
-					if (updateBundle == nil) {
+				downloadedUpdateForUpdate:update intoDirectory:downloadDirectory]
+				flattenMap:^(SQRLDownloadedUpdate *downloadedUpdate) {
+					// Nil means our conditional GET told us we already
+					// downloaded the update. So just clean up.
+					if (downloadedUpdate == nil) {
 						cleanUp();
 						return [RACSignal empty];
 					}
 
-					return [self verifyAndPrepareUpdate:update fromBundle:updateBundle];
+					return [[self prepareUpdateForInstallation:downloadedUpdate] then:^{
+						return [RACSignal return:downloadedUpdate];
+					}];
 				}]
 				doError:^(id _) {
 					// The archive behind that ETag never became a prepared
@@ -501,6 +520,104 @@ BOOL isVersionStandard(NSString* version) {
 				}];
 		}]
 		setNameWithFormat:@"%@ -downloadAndPrepareUpdate: %@", self, update];
+}
+
+- (RACSignal *)downloadedUpdateForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
+	RACSignal *fullUpdate = [[self
+		downloadBundleForUpdate:update intoDirectory:downloadDirectory]
+		flattenMap:^(NSBundle *updateBundle) {
+			if (updateBundle == nil) return [RACSignal return:nil];
+			return [self verifyUpdate:update fromBundle:updateBundle];
+		}];
+
+	SQRLUpdateDelta *delta = update.delta;
+	if (delta == nil) return fullUpdate;
+
+	NSURL *runningURL = NSRunningApplication.currentApplication.bundleURL;
+	NSString *runningVersion = (runningURL == nil ? nil : [NSBundle bundleWithURL:runningURL].sqrl_bundleVersion);
+	if (![delta.fromVersion isEqual:runningVersion]) {
+		NSLog(@"Delta update is from %@ but %@ is running, downloading the full update instead", delta.fromVersion, runningVersion);
+		return fullUpdate;
+	}
+
+	return [[[[self
+		bundleByApplyingDelta:delta intoDirectory:downloadDirectory]
+		flattenMap:^(NSBundle *updateBundle) {
+			return [self verifyUpdate:update fromBundle:updateBundle];
+		}]
+		catch:^(NSError *error) {
+			NSLog(@"Delta update from %@ could not be used (%@), downloading the full update instead", delta.fromVersion, error.sqrl_verboseDescription);
+
+			NSFileManager *fileManager = [[NSFileManager alloc] init];
+			for (NSURL *leftover in [fileManager contentsOfDirectoryAtURL:downloadDirectory includingPropertiesForKeys:nil options:0 error:NULL]) {
+				[fileManager removeItemAtURL:leftover error:NULL];
+			}
+			return fullUpdate;
+		}]
+		setNameWithFormat:@"%@ -downloadedUpdateForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
+}
+
+- (RACSignal *)bundleByApplyingDelta:(SQRLUpdateDelta *)delta intoDirectory:(NSURL *)downloadDirectory {
+	NSParameterAssert(delta != nil);
+	NSParameterAssert(downloadDirectory != nil);
+
+	return [[RACSignal
+		defer:^{
+			NSMutableURLRequest *request = [self.requestForDownload(delta.deltaURL) mutableCopy];
+			[request setValue:@"application/octet-stream" forHTTPHeaderField:@"Accept"];
+			[request setTimeoutInterval:SQURLUpdaterZipDownloadTimeoutSeconds];
+
+			// A fixed name: the URL is the server's, the directory is ours.
+			NSURL *deltaOutputURL = [downloadDirectory URLByAppendingPathComponent:@"update.delta"];
+			NSURL *resumeDataURL = [downloadDirectory.URLByDeletingLastPathComponent URLByAppendingPathComponent:SQRLUpdaterResumeDataFileName];
+			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:request resumeDataURL:resumeDataURL];
+			[downloader.progress subscribeNext:^(SQRLDownloadProgress *progress) {
+				[self->_downloadProgress sendNext:progress];
+			}];
+
+			return [[[downloader
+				downloadToURL:deltaOutputURL]
+				reduceEach:^(NSURLResponse *response, NSURL *deltaFileURL) {
+					if ([response isKindOfClass:NSHTTPURLResponse.class]) {
+						NSInteger statusCode = [(NSHTTPURLResponse *)response statusCode];
+						if (statusCode < 200 || statusCode > 299) {
+							[NSFileManager.defaultManager removeItemAtURL:deltaFileURL error:NULL];
+							return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidServerResponse userInfo:@{
+								NSLocalizedDescriptionKey: [NSString stringWithFormat:NSLocalizedString(@"Delta download answered %ld", nil), (long)statusCode],
+								NSURLErrorKey: delta.deltaURL,
+							}]];
+						}
+					}
+
+					NSURL *sourceURL = NSRunningApplication.currentApplication.bundleURL.URLByResolvingSymlinksInPath;
+					NSURL *patchedURL = [downloadDirectory URLByAppendingPathComponent:sourceURL.lastPathComponent];
+					return [[[self
+						verifyFileAtURL:deltaFileURL size:delta.size digest:delta.digest]
+						then:^{
+							return [RACSignal startLazilyWithScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground] block:^(id<RACSubscriber> subscriber) {
+								NSLog(@"Applying delta %@ to %@", deltaFileURL.lastPathComponent, sourceURL.path);
+								NSError *error = nil;
+								BOOL applied = applyBinaryDelta(sourceURL.path, patchedURL.path, deltaFileURL.path, NO, ^(double progress){}, &error);
+								[NSFileManager.defaultManager removeItemAtURL:deltaFileURL error:NULL];
+
+								if (applied) {
+									[subscriber sendCompleted];
+								} else {
+									[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidUpdatePackage userInfo:@{
+										NSLocalizedDescriptionKey: NSLocalizedString(@"Could not apply the delta update", nil),
+										NSURLErrorKey: delta.deltaURL,
+										NSUnderlyingErrorKey: error ?: [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidUpdatePackage userInfo:nil],
+									}]];
+								}
+							}];
+						}]
+						then:^{
+							return [self updateBundleMatchingCurrentApplicationInDirectory:downloadDirectory];
+						}];
+				}]
+				flatten];
+		}]
+		setNameWithFormat:@"%@ -bundleByApplyingDelta: %@ intoDirectory: %@", self, delta, downloadDirectory];
 }
 
 - (RACSignal *)unarchiveAndPrepareZipAtURL:(NSURL *)zipURL intoDirectory:(NSURL *)downloadDirectory {
@@ -572,7 +689,7 @@ BOOL isVersionStandard(NSString* version) {
 
 					NSLog(@"Download completed to: %@", zipURL);
 					return [[self
-						verifyPackageAtURL:zipURL forUpdate:update]
+						verifyFileAtURL:zipURL size:update.packageSize digest:update.packageDigest]
 						then:^{
 							return [self unarchiveAndPrepareZipAtURL:zipURL intoDirectory:downloadDirectory];
 						}];
@@ -582,11 +699,10 @@ BOOL isVersionStandard(NSString* version) {
 		setNameWithFormat:@"%@ -downloadBundleForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
 
-- (RACSignal *)verifyPackageAtURL:(NSURL *)packageURL forUpdate:(SQRLUpdate *)update {
+- (RACSignal *)verifyFileAtURL:(NSURL *)packageURL size:(NSNumber *)expectedSize digest:(NSString *)expectedDigest {
 	NSParameterAssert(packageURL != nil);
-	NSParameterAssert(update != nil);
 
-	if (update.packageSize == nil && update.packageDigest == nil) return [RACSignal empty];
+	if (expectedSize == nil && expectedDigest == nil) return [RACSignal empty];
 
 	return [[RACSignal
 		defer:^{
@@ -596,20 +712,20 @@ BOOL isVersionStandard(NSString* version) {
 				NSDictionary *userInfo = @{
 					NSLocalizedDescriptionKey: NSLocalizedString(@"Update download failed", nil),
 					NSLocalizedRecoverySuggestionErrorKey: reason,
-					NSURLErrorKey: update.updateURL,
+					NSURLErrorKey: packageURL,
 				};
 				return [RACSignal error:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidUpdatePackage userInfo:userInfo]];
 			};
 
-			if (update.packageSize != nil) {
+			if (expectedSize != nil) {
 				NSNumber *size = nil;
 				[packageURL getResourceValue:&size forKey:NSURLFileSizeKey error:NULL];
-				if (![size isEqual:update.packageSize]) {
-					return reject([NSString stringWithFormat:NSLocalizedString(@"The update package is %@ bytes, expected %@.", nil), size, update.packageSize]);
+				if (![size isEqual:expectedSize]) {
+					return reject([NSString stringWithFormat:NSLocalizedString(@"The downloaded file is %@ bytes, expected %@.", nil), size, expectedSize]);
 				}
 			}
 
-			if (update.packageDigest != nil) {
+			if (expectedDigest != nil) {
 				NSInputStream *stream = [NSInputStream inputStreamWithURL:packageURL];
 				[stream open];
 
@@ -629,14 +745,14 @@ BOOL isVersionStandard(NSString* version) {
 				NSMutableString *hex = [NSMutableString stringWithCapacity:CC_SHA256_DIGEST_LENGTH * 2];
 				for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) [hex appendFormat:@"%02x", digest[i]];
 
-				if (![hex isEqualToString:update.packageDigest]) {
-					return reject([NSString stringWithFormat:NSLocalizedString(@"The update package digest is %@, expected %@.", nil), hex, update.packageDigest]);
+				if (![hex isEqualToString:expectedDigest]) {
+					return reject([NSString stringWithFormat:NSLocalizedString(@"The downloaded file digest is %@, expected %@.", nil), hex, expectedDigest]);
 				}
 			}
 
 			return [RACSignal empty];
 		}]
-		setNameWithFormat:@"%@ -verifyPackageAtURL: %@ forUpdate: %@", self, packageURL, update];
+		setNameWithFormat:@"%@ -verifyFileAtURL: %@", self, packageURL];
 }
 
 #pragma mark File Management
@@ -840,11 +956,11 @@ BOOL isVersionStandard(NSString* version) {
 
 #pragma mark Installing Updates
 
-- (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle {
+- (RACSignal *)verifyUpdate:(SQRLUpdate *)update fromBundle:(NSBundle *)updateBundle {
 	NSParameterAssert(update != nil);
 	NSParameterAssert(updateBundle != nil);
 
-	return [[[[self.signature
+	return [[[self.signature
 		verifyBundleAtURL:updateBundle.bundleURL]
 		then:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
@@ -894,12 +1010,7 @@ BOOL isVersionStandard(NSString* version) {
 			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
 			return [RACSignal return:downloadedUpdate];
 		}]
-		flattenMap:^(SQRLDownloadedUpdate *downloadedUpdate) {
-			return [[self prepareUpdateForInstallation:downloadedUpdate] then:^{
-				return [RACSignal return:downloadedUpdate];
-			}];
-		}]
-		setNameWithFormat:@"%@ -verifyAndPrepareUpdate: %@ fromBundle: %@", self, update, updateBundle];
+		setNameWithFormat:@"%@ -verifyUpdate: %@ fromBundle: %@", self, update, updateBundle];
 }
 
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {

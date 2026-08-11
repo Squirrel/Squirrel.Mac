@@ -60,6 +60,28 @@ it(@"should parse the package digest and size, ignoring values it cannot use", ^
 	}
 });
 
+it(@"should parse a delta and drop one it cannot use", ^{
+	NSString *digest = [@"" stringByPaddingToLength:64 withString:@"A1" startingAtIndex:0];
+	NSDictionary *delta = @{ @"from_version": @"1.2.3", @"url": @"http://example.com/1.2.3-to-1.2.4.delta", @"sha256": digest, @"size": @99 };
+	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"delta": delta } error:NULL];
+	expect(update.delta.fromVersion).to(equal(@"1.2.3"));
+	expect(update.delta.deltaURL).to(equal([NSURL URLWithString:@"http://example.com/1.2.3-to-1.2.4.delta"]));
+	expect(update.delta.digest).to(equal(digest.lowercaseString));
+	expect(update.delta.size).to(equal(@99));
+
+	NSDictionary * (^with)(NSString *, id) = ^(NSString *key, id value) {
+		NSMutableDictionary *bad = [delta mutableCopy];
+		bad[key] = value;
+		return bad;
+	};
+	NSArray *unusable = @[ @"soon", with(@"from_version", nil), with(@"from_version", @412), with(@"url", nil), with(@"sha256", @"abc"), with(@"sha256", [digest stringByReplacingCharactersInRange:NSMakeRange(0, 1) withString:@"g"]), with(@"size", nil), with(@"size", @0) ];
+	for (id bad in unusable) {
+		update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"delta": bad } error:NULL];
+		expect(update).notTo(beNil());
+		expect(update.delta).to(beNil());
+	}
+});
+
 it(@"should parse Central style dates", ^{
 	SQRLUpdate *update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"pub_date": @"Tue Sep 17 10:24:27 -0700 2013" } error:NULL];
 	expect(update.releaseDate).to(equal([NSDate dateWithTimeIntervalSince1970:1379438667]));
