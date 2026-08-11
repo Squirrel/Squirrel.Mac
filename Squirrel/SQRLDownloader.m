@@ -49,10 +49,11 @@ static NSString * const SQRLDownloaderResumeDataKey = @"resumeData";
 @property (nonatomic, strong) id<RACSubscriber> subscriber;
 @property (nonatomic, copy) NSURL *destinationURL;
 @property (nonatomic, strong) NSError *moveError;
+// The resume data this downloader took off disk, in case it must go back.
+@property (nonatomic, copy) NSData *takenResumeData;
 
 @property (nonatomic, assign) int64_t bytesResumed;
 @property (nonatomic, assign) BOOL startedFromResumeData;
-@property (nonatomic, assign) BOOL retriedFresh;
 @property (nonatomic, assign) BOOL receivedBytes;
 @property (nonatomic, assign) BOOL cancelled;
 
@@ -212,6 +213,7 @@ static NSURLSessionConfiguration *SQRLDownloaderSessionConfiguration = nil;
 	dispatch_group_enter(self.completionGroup);
 
 	NSURLSessionDownloadTask *resumed = resumeData != nil ? [self.session downloadTaskWithResumeData:resumeData] : nil;
+	if (resumed != nil) self.takenResumeData = resumeData;
 	self.startedFromResumeData = (resumed != nil);
 	self.receivedBytes = NO;
 	self.bytesResumed = 0;
@@ -268,19 +270,17 @@ static NSURLSessionConfiguration *SQRLDownloaderSessionConfiguration = nil;
 	NSInteger statusCode = [task.response isKindOfClass:NSHTTPURLResponse.class] ? [(NSHTTPURLResponse *)task.response statusCode] : 200;
 	BOOL resumeWentNowhere = self.startedFromResumeData && !self.cancelled && (error != nil ? !self.receivedBytes : statusCode < 200 || statusCode > 299);
 	if (resumeWentNowhere) {
-		if (!self.retriedFresh) {
-			self.retriedFresh = YES;
-			dispatch_group_leave(self.completionGroup);
-			[self startTaskWithResumeData:nil];
-			return;
-		}
-		error = error ?: [NSError errorWithDomain:NSURLErrorDomain code:NSURLErrorCannotLoadFromNetwork userInfo:@{ NSURLErrorKey: self.request.URL }];
-		[self finishWithError:error];
+		dispatch_group_leave(self.completionGroup);
+		[self startTaskWithResumeData:nil];
 		return;
 	}
 
 	if (error != nil) {
-		[self storeResumeData:error.userInfo[NSURLSessionDownloadTaskResumeData]];
+		// A fresh attempt that received nothing either means the network is
+		// the problem, not the ranged request: put back what was taken so
+		// the partial file outlives the outage.
+		NSData *resumeData = error.userInfo[NSURLSessionDownloadTaskResumeData];
+		[self storeResumeData:(!self.receivedBytes && self.takenResumeData != nil) ? self.takenResumeData : resumeData];
 		[self finishWithError:error];
 		return;
 	}

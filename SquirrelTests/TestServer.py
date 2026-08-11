@@ -15,6 +15,8 @@
 #   ...&ranged=403|reset   a request carrying Range is answered 403, or has
 #                          its connection closed before any response.
 #   ...&ranged=slow        only requests carrying Range get the ?slow pause.
+#   ...&then=reset         after the ?drop, every later request for this URL
+#                          has its connection closed (the network went away).
 
 import hashlib
 import http.server
@@ -46,10 +48,11 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return
 
         ranged = query.get("ranged", [""])[0]
+        gone = query.get("then", [""])[0] == "reset" and self.path in dropped
         if self.headers.get("Range") and ranged == "403":
             self.send_error(403)
             return
-        if self.headers.get("Range") and ranged == "reset":
+        if gone or (self.headers.get("Range") and ranged == "reset"):
             self.connection.shutdown(socket.SHUT_RDWR)
             self.close_connection = True
             return

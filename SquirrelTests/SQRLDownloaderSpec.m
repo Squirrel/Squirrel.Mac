@@ -115,6 +115,23 @@ it(@"should go back to a plain GET when the resumed request is refused or reset"
 	}
 });
 
+it(@"should put the resume data back when the network is gone rather than the range refused", ^{
+	NSString *path = @"payload.zip?drop=1048576&then=reset";
+	[[downloaderForPath(path) downloadToURL:destinationURL] waitUntilCompleted:NULL];
+	NSData *stored = [NSData dataWithContentsOfURL:resumeDataURL];
+	expect(stored).notTo(beNil());
+
+	NSError *error;
+	BOOL finished = [[downloaderForPath(path) downloadToURL:destinationURL] waitUntilCompleted:&error];
+	expect(@(finished)).to(beFalsy());
+	expect(error.domain).to(equal(NSURLErrorDomain));
+
+	NSArray *log = requestLog();
+	expect([log filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF BEGINSWITH 'GET /payload.zip Range=bytes='"]]).notTo(beEmpty());
+	expect(log.lastObject).to(equal(@"GET /payload.zip Range=- If-Range=-"));
+	expect([NSData dataWithContentsOfURL:resumeDataURL]).to(equal(stored));
+});
+
 it(@"should hold no resume data on disk while a resumed download owns the partial file", ^{
 	NSString *path = @"payload.zip?drop=1048576&slow=20&ranged=slow";
 	[[downloaderForPath(path) downloadToURL:destinationURL] waitUntilCompleted:NULL];
