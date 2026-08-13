@@ -39,21 +39,24 @@ If you’re developing Squirrel on its own, then use `Squirrel.xcworkspace`.
 
 # Dependencies
 
-Squirrel depends on [ReactiveCocoa](http://github.com/ReactiveCocoa/ReactiveCocoa)
-and [Mantle](https://github.com/Mantle/Mantle).
+Squirrel depends on [ReactiveObjC](https://github.com/ReactiveCocoa/ReactiveObjC)
+and [Mantle](https://github.com/Mantle/Mantle). Both are git submodules of this
+repository (under `Carthage/Checkouts/`, a directory name kept from when they
+were fetched with Carthage); `git submodule update --init` or `script/bootstrap`
+checks them out.
 
-If your application is already using ReactiveCocoa, ensure it is using the same
+If your application is already using ReactiveObjC, ensure it is using the same
 version as Squirrel.
 
 Otherwise, add a target dependency and Copy Files build phase entry for the
-ReactiveCocoa.framework target included in Squirrel's repository, in
-`Carthage/Checkouts/ReactiveCocoa`.
+ReactiveObjC.framework target included in Squirrel's repository, in
+`Carthage/Checkouts/ReactiveObjC`.
 
 Similarly, ensure your application includes Mantle, or copies in the Squirrel
 version.
 
 Finally, ensure your application's Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`)
-includes the directory that Squirrel.framework, ReactiveCocoa.framework
+includes the directory that Squirrel.framework, ReactiveObjC.framework
 and Mantle.framework are copied into.
 
 # Configuration
