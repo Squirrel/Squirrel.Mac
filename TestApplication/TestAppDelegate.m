@@ -80,12 +80,15 @@
 			NSLog(@"***** UPDATE CHECK %lu *****", (unsigned long)updateCheckCount);
 			updateCheckCount++;
 
-			return [self.updater.checkForUpdatesCommand execute:RACUnit.defaultUnit];
+			return [[self.updater.checkForUpdatesCommand
+				execute:RACUnit.defaultUnit]
+				concat:[[RACSignal empty] delay:0.2]];
 		}]
 		doNext:^(SQRLDownloadedUpdate *update) {
 			NSLog(@"Got a candidate update: %@", update);
 		}]
-		// Retry until we get the expected release.
+		// Retry until we get the expected release (a check that yields
+		// nothing, e.g. an update already staged, is retried after 0.2s).
 		repeat]
 		skipUntilBlock:^(SQRLDownloadedUpdate *download) {
 			SQRLTestUpdate *testUpdate = (id)download.update;

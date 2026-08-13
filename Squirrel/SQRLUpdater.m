@@ -7,6 +7,7 @@
 //
 
 #import "SQRLUpdater.h"
+
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "NSProcessInfo+SQRLVersionExtensions.h"
@@ -25,6 +26,8 @@
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <CommonCrypto/CommonDigest.h>
 #import <sys/mount.h>
+#import <sys/stat.h>
+#import <unistd.h>
 
 NSString * const SQRLUpdaterErrorDomain = @"SQRLUpdaterErrorDomain";
 NSString * const SQRLUpdaterServerDataErrorKey = @"SQRLUpdaterServerDataErrorKey";
@@ -51,6 +54,9 @@ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
 // Kept in the storage directory, beside the per-attempt update directories, so
 // an interrupted package download can continue on a later check or launch.
 static NSString * const SQRLUpdaterResumeDataFileName = @"download.resumedata";
+// The delta and the ZIP are different URLs; sharing one file would have each
+// downloader discard the other's resume data.
+static NSString * const SQRLUpdaterDeltaResumeDataFileName = @"delta.resumedata";
 
 // How much of an error response body to attach to the error.
 static const NSUInteger SQRLUpdaterServerDataErrorLimit = 64 * 1024;
@@ -78,6 +84,10 @@ BOOL isVersionStandard(NSString* version) {
 /// The etag of the currently downloaded update, nil if no update has been
 /// downloaded.
 @property (atomic, copy) NSString *etag;
+
+// Digest of the delta the staged update was made from. Plays the ETag's role
+// for the delta path: a later check offering the same delta has nothing to do.
+@property (atomic, copy) NSString *appliedDeltaDigest;
 
 // The code signature for the running application, used to check updates before
 // sending them to ShipIt.
@@ -516,6 +526,7 @@ BOOL isVersionStandard(NSString* version) {
 					// The archive behind that ETag never became a prepared
 					// update, so a 304 for it must not read as "already have it".
 					self.etag = nil;
+					self.appliedDeltaDigest = nil;
 					cleanUp();
 				}];
 		}]
@@ -523,38 +534,60 @@ BOOL isVersionStandard(NSString* version) {
 }
 
 - (RACSignal *)downloadedUpdateForUpdate:(SQRLUpdate *)update intoDirectory:(NSURL *)downloadDirectory {
-	RACSignal *fullUpdate = [[self
-		downloadBundleForUpdate:update intoDirectory:downloadDirectory]
-		flattenMap:^(NSBundle *updateBundle) {
-			if (updateBundle == nil) return [RACSignal return:nil];
-			return [self verifyUpdate:update fromBundle:updateBundle];
-		}];
+	RACSignal * (^fullUpdateIntoDirectory)(NSURL *) = ^(NSURL *directory) {
+		return [[self
+			downloadBundleForUpdate:update intoDirectory:directory]
+			flattenMap:^(NSBundle *updateBundle) {
+				if (updateBundle == nil) return [RACSignal return:nil];
+				return [self verifyUpdate:update fromBundle:updateBundle];
+			}];
+	};
 
 	SQRLUpdateDelta *delta = update.delta;
-	if (delta == nil) return fullUpdate;
+	if (delta == nil) return fullUpdateIntoDirectory(downloadDirectory);
 
 	NSURL *runningURL = NSRunningApplication.currentApplication.bundleURL;
 	NSString *runningVersion = (runningURL == nil ? nil : [NSBundle bundleWithURL:runningURL].sqrl_bundleVersion);
 	if (![delta.fromVersion isEqual:runningVersion]) {
 		NSLog(@"Delta update is from %@ but %@ is running, downloading the full update instead", delta.fromVersion, runningVersion);
-		return fullUpdate;
+		return fullUpdateIntoDirectory(downloadDirectory);
 	}
+
+	// Already applied and staged from this delta: nothing to download, the
+	// same answer a 304 gives the ZIP path.
+	if ([delta.digest isEqual:self.appliedDeltaDigest]) return [RACSignal return:nil];
 
 	return [[[[self
 		bundleByApplyingDelta:delta intoDirectory:downloadDirectory]
 		flattenMap:^(NSBundle *updateBundle) {
-			return [self verifyUpdate:update fromBundle:updateBundle];
+			return [[self verifyUpdate:update fromBundle:updateBundle] doCompleted:^{
+				self.appliedDeltaDigest = delta.digest;
+			}];
 		}]
 		catch:^(NSError *error) {
 			NSLog(@"Delta update from %@ could not be used (%@), downloading the full update instead", delta.fromVersion, error.sqrl_verboseDescription);
 
-			NSFileManager *fileManager = [[NSFileManager alloc] init];
-			for (NSURL *leftover in [fileManager contentsOfDirectoryAtURL:downloadDirectory includingPropertiesForKeys:nil options:0 error:NULL]) {
-				[fileManager removeItemAtURL:leftover error:NULL];
-			}
-			return fullUpdate;
+			// Whatever the apply left behind may not be removable (it copies
+			// file flags such as uchg from the running app), so the ZIP gets a
+			// directory of its own rather than this one emptied.
+			[self removeDirectoryClearingFlagsAtURL:downloadDirectory];
+			return [[self uniqueTemporaryDirectoryForUpdate] flattenMap:^(NSURL *freshDirectory) {
+				return fullUpdateIntoDirectory(freshDirectory);
+			}];
 		}]
 		setNameWithFormat:@"%@ -downloadedUpdateForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
+}
+
+- (void)removeDirectoryClearingFlagsAtURL:(NSURL *)directoryURL {
+	NSFileManager *fileManager = [[NSFileManager alloc] init];
+	for (NSURL *itemURL in [fileManager enumeratorAtURL:directoryURL includingPropertiesForKeys:nil options:0 errorHandler:nil]) {
+		lchflags(itemURL.fileSystemRepresentation, 0);
+	}
+
+	NSError *error = nil;
+	if (![fileManager removeItemAtURL:directoryURL error:&error]) {
+		NSLog(@"Could not remove %@ after a failed delta: %@", directoryURL.path, error.sqrl_verboseDescription);
+	}
 }
 
 - (RACSignal *)bundleByApplyingDelta:(SQRLUpdateDelta *)delta intoDirectory:(NSURL *)downloadDirectory {
@@ -569,7 +602,7 @@ BOOL isVersionStandard(NSString* version) {
 
 			// A fixed name: the URL is the server's, the directory is ours.
 			NSURL *deltaOutputURL = [downloadDirectory URLByAppendingPathComponent:@"update.delta"];
-			NSURL *resumeDataURL = [downloadDirectory.URLByDeletingLastPathComponent URLByAppendingPathComponent:SQRLUpdaterResumeDataFileName];
+			NSURL *resumeDataURL = [downloadDirectory.URLByDeletingLastPathComponent URLByAppendingPathComponent:SQRLUpdaterDeltaResumeDataFileName];
 			SQRLDownloader *downloader = [[SQRLDownloader alloc] initWithRequest:request resumeDataURL:resumeDataURL];
 			[downloader.progress subscribeNext:^(SQRLDownloadProgress *progress) {
 				[self->_downloadProgress sendNext:progress];

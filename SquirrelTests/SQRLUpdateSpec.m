@@ -74,7 +74,10 @@ it(@"should parse a delta and drop one it cannot use", ^{
 		bad[key] = value;
 		return bad;
 	};
-	NSArray *unusable = @[ @"soon", with(@"from_version", nil), with(@"from_version", @412), with(@"url", nil), with(@"sha256", @"abc"), with(@"sha256", [digest stringByReplacingCharactersInRange:NSMakeRange(0, 1) withString:@"g"]), with(@"size", nil), with(@"size", @0) ];
+	update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"delta": with(@"from_version", @412) } error:NULL];
+	expect(update.delta.fromVersion).to(equal(@"412"));
+
+	NSArray *unusable = @[ @"soon", with(@"from_version", nil), with(@"url", nil), with(@"sha256", @"abc"), with(@"sha256", [digest stringByReplacingCharactersInRange:NSMakeRange(0, 1) withString:@"g"]), with(@"size", nil), with(@"size", @0), with(@"size", @1.5), with(@"size", @YES) ];
 	for (id bad in unusable) {
 		update = [MTLJSONAdapter modelOfClass:SQRLUpdate.class fromJSONDictionary:@{ @"url": @"http://example.com/update", @"delta": bad } error:NULL];
 		expect(update).notTo(beNil());

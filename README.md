@@ -45,6 +45,13 @@ repository (under `Carthage/Checkouts/`, a directory name kept from when they
 were fetched with Carthage); `git submodule update --init` or `script/bootstrap`
 checks them out.
 
+Binary delta support compiles Sparkle's BinaryDelta sources and the bsdiff it
+vendors straight out of a third submodule, `Carthage/Checkouts/Sparkle`, pinned
+to a Sparkle release tag (currently 2.9.5); nothing of Sparkle is linked as a
+framework and applications need not ship it. To move the pin, check out the new
+tag in the submodule, build, run the tests, and commit the submodule change; the
+files involved are listed under the SparkleDelta group in the Xcode project.
+
 If your application is already using ReactiveObjC, ensure it is using the same
 version as Squirrel.
 
@@ -210,11 +217,22 @@ running application's `CFBundleVersion`, Squirrel downloads the patch instead
 of the ZIP, checks its "size" and "sha256", applies it to a copy of the running
 application, and puts the result through the same code signing verification as
 an unpacked ZIP. If any of that fails, or "from_version" is anything else, it
-downloads the ZIP from "url" in the same check, so a server can always include
-the one delta it has for the version that asked. Patches are
-[Sparkle](https://sparkle-project.org) BinaryDelta files (format 3 or 4), made
-with Sparkle's `BinaryDelta create <old.app> <new.app> <patch>` from the exact
-signed bundles that were shipped.
+downloads the ZIP from "url" in the same check (its `downloadProgress` starting
+again from zero), so a server can always include the one delta it has for the
+version that asked. A delta that has been applied and staged is not fetched
+again by later checks in the same process.
+
+Patches are [Sparkle](https://sparkle-project.org) BinaryDelta files (format 3
+or 4, any `--compression` except `bzip2`), made with Sparkle's
+`BinaryDelta create <old.app> <new.app> <patch>`. A patch only applies to a
+byte-identical copy of `<old.app>`, file modes included, and ShipIt clears the
+group and other write bits of everything it installs; strip them from the app
+before signing it (`chmod -R go-w MyApp.app`) so the shipped bundle, the
+installed bundle and the trees the patch was made from all agree, otherwise
+the patch applies once to a fresh install and never again. Files the patch adds
+or rewrites are created with decomposed (NFD) names, so a non-ASCII file name
+outside an archive such as `app.asar` can fail code signing verification and
+cost a fallback to the ZIP. "from_version" may be a JSON string or number.
 
 ## Update File JSON Format
 

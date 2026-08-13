@@ -5,7 +5,9 @@
 // Only Sparkle's own container format (delta major versions 3 and 4) is read;
 // the XAR-based formats 1 and 2 are not built.
 #define SPARKLE_BUILD_LEGACY_DELTA_SUPPORT 0
-// LZMA/LZFSE/LZ4/ZLIB via libcompression only.
+// Containers compressed with LZMA/LZFSE/LZ4/ZLIB (libcompression) are read;
+// a `--compression bzip2` container is refused. The per-file bsdiff patches
+// inside any container are still bzip2, which is what libbz2 is linked for.
 #define SPARKLE_BUILD_BZIP2_DELTA_SUPPORT 0
 
 // Sparkle marks these classes objc_direct as a size optimisation; direct

@@ -102,6 +102,13 @@ NSString * const SQRLUpdateJSONPublicationDateKey = @"pub_date";
 // never cost the update it rides on.
 + (NSValueTransformer *)deltaJSONTransformer {
 	return [MTLValueTransformer transformerUsingForwardBlock:^ id (id JSON, BOOL *success, NSError **error) {
+		// CFBundleVersion is often a bare build number; accept it as one.
+		if ([JSON isKindOfClass:NSDictionary.class] && [JSON[@"from_version"] isKindOfClass:NSNumber.class]) {
+			NSMutableDictionary *stringified = [JSON mutableCopy];
+			stringified[@"from_version"] = [JSON[@"from_version"] stringValue];
+			JSON = stringified;
+		}
+
 		NSError *deltaError = nil;
 		SQRLUpdateDelta *delta = [JSON isKindOfClass:NSDictionary.class] ? [MTLJSONAdapter modelOfClass:SQRLUpdateDelta.class fromJSONDictionary:JSON error:&deltaError] : nil;
 		if (delta == nil) NSLog(@"Ignoring update \"delta\" that cannot be used: %@ (%@)", JSON, deltaError.localizedRecoverySuggestion ?: deltaError);

@@ -19,7 +19,7 @@
 	if (self.fromVersion.length == 0) missing = @"from_version";
 	else if (self.deltaURL.scheme == nil || self.deltaURL.path == nil) missing = @"url";
 	else if (self.digest.length != 64 || [self.digest rangeOfCharacterFromSet:notHex].location != NSNotFound) missing = @"sha256";
-	else if (self.size.longLongValue <= 0) missing = @"size";
+	else if (![self.size isKindOfClass:NSNumber.class] || CFGetTypeID((__bridge CFTypeRef)self.size) == CFBooleanGetTypeID() || CFNumberIsFloatType((__bridge CFNumberRef)self.size) || self.size.longLongValue <= 0) missing = @"size";
 
 	if (missing != nil) {
 		if (error != NULL) {
