@@ -9,6 +9,8 @@
 #import <Foundation/Foundation.h>
 #import <Mantle/Mantle.h>
 
+@class SQRLUpdateDelta;
+
 // An update parsed from a response to the `SQRLUpdater.updateRequest`.
 //
 // This can be subclassed, and `SQRLUpdater.updateClass` set, to preserve
@@ -37,5 +39,10 @@
 // number (anything else is logged and ignored). A downloaded package of any
 // other size is rejected before it is opened.
 @property (readonly, copy, nonatomic) NSNumber *packageSize;
+
+// A binary delta from the running version to this update, if the server has
+// one. When present and applicable it is tried first; any failure to download,
+// verify, apply or code-sign-check it falls back to `updateURL`.
+@property (readonly, copy, nonatomic) SQRLUpdateDelta *delta;
 
 @end

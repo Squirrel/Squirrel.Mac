@@ -11,6 +11,8 @@
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <Squirrel/Squirrel.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <sys/stat.h>
+#import <unistd.h>
 
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
@@ -20,6 +22,8 @@
 #import "OHHTTPStubs/OHHTTPStubs.h"
 #import "QuickSpec+SQRLFixtures.h"
 #import "SQRLTestUpdate.h"
+#import "SUBinaryDeltaCreate.h"
+#import <CommonCrypto/CommonDigest.h>
 #import "TestAppConstants.h"
 #import <objc/objc-class.h>
 
@@ -422,6 +426,164 @@ describe(@"updating", ^{
 		expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
 		[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
+
+	describe(@"with a delta", ^{
+		__block NSURL *serverDirectoryURL;
+		__block NSURL *baseURL;
+		__block NSURL *requestLogURL;
+
+		beforeEach(^{
+			serverDirectoryURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"served" isDirectory:YES];
+			[NSFileManager.defaultManager createDirectoryAtURL:serverDirectoryURL withIntermediateDirectories:YES attributes:nil error:NULL];
+			[NSFileManager.defaultManager copyItemAtURL:zipUpdate(updateURL) toURL:[serverDirectoryURL URLByAppendingPathComponent:@"full.zip"] error:NULL];
+			baseURL = [self startTestServerForDirectory:serverDirectoryURL requestLog:&requestLogURL];
+		});
+
+		NSArray * (^requestedPaths)(void) = ^{
+			NSMutableArray *paths = [NSMutableArray array];
+			for (NSString *line in [[NSString stringWithContentsOfURL:requestLogURL encoding:NSUTF8StringEncoding error:NULL] componentsSeparatedByString:@"\n"]) {
+				if (line.length > 0) [paths addObject:[line componentsSeparatedByString:@" "][1]];
+			}
+			return paths;
+		};
+
+		// A delta from `fromURL` to the update, served as /update.delta with
+		// `corrupt` of its bytes overwritten first (digest and size describe
+		// what is served, so the download itself always verifies).
+		SQRLUpdateDelta * (^servedDelta)(NSURL *, NSRange) = ^(NSURL *fromURL, NSRange corrupt) {
+			NSURL *deltaURL = [serverDirectoryURL URLByAppendingPathComponent:@"update.delta"];
+			NSError *error = nil;
+			BOOL created = createBinaryDelta(fromURL.path, updateURL.path, deltaURL.path, SUBinaryDeltaMajorVersion4, SPUDeltaCompressionModeDefault, 0, NO, &error);
+			expect(@(created)).to(beTruthy());
+			expect(error).to(beNil());
+
+			NSMutableData *contents = [NSMutableData dataWithContentsOfURL:deltaURL];
+			if (corrupt.length > 0) {
+				memset((char *)contents.mutableBytes + corrupt.location, 'x', corrupt.length);
+				[contents writeToURL:deltaURL atomically:YES];
+			}
+			unsigned char digest[CC_SHA256_DIGEST_LENGTH];
+			CC_SHA256(contents.bytes, (CC_LONG)contents.length, digest);
+			NSMutableString *hex = [NSMutableString string];
+			for (NSUInteger i = 0; i < CC_SHA256_DIGEST_LENGTH; i++) [hex appendFormat:@"%02x", digest[i]];
+
+			return [MTLJSONAdapter modelOfClass:SQRLUpdateDelta.class fromJSONDictionary:@{
+				@"from_version": self.testApplicationBundle.sqrl_bundleVersion,
+				@"url": [baseURL URLByAppendingPathComponent:@"update.delta"].absoluteString,
+				@"sha256": hex,
+				@"size": @(contents.length),
+			} error:NULL];
+		};
+
+		SQRLUpdateDelta * (^deltaWith)(SQRLUpdateDelta *, NSDictionary *) = ^(SQRLUpdateDelta *delta, NSDictionary *overrides) {
+			NSMutableDictionary *JSON = [[MTLJSONAdapter JSONDictionaryFromModel:delta error:NULL] mutableCopy];
+			[JSON addEntriesFromDictionary:overrides];
+			return [MTLJSONAdapter modelOfClass:SQRLUpdateDelta.class fromJSONDictionary:JSON error:NULL];
+		};
+
+		void (^updateWithDelta)(SQRLUpdateDelta *, NSDictionary *) = ^(SQRLUpdateDelta *delta, NSDictionary *environment) {
+			SQRLTestUpdate *update = [SQRLTestUpdate modelWithDictionary:@{
+				@"updateURL": [baseURL URLByAppendingPathComponent:@"full.zip"],
+				@"delta": delta,
+				@"final": @YES
+			} error:NULL];
+			writeUpdate(update);
+
+			NSRunningApplication *app = launchWithEnvironment(environment);
+			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+			[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
+			expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+		};
+
+		NSRange const intact = { 0, 0 };
+
+		it(@"should install from the delta alone", ^{
+			updateWithDelta(servedDelta(self.testApplicationURL, intact), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta" ]));
+		});
+
+		it(@"should not fetch a delta it has already staged on a later check", ^{
+			updateWithDelta(servedDelta(self.testApplicationURL, intact), @{ @"SQRLUpdateRequestCount": @"2" });
+			expect(requestedPaths()).to(equal(@[ @"/update.delta" ]));
+		});
+
+		it(@"should apply a delta made from the shipped bundles to a ShipIt-installed copy", ^{
+			// What happens in the field: the running app went through ShipIt
+			// (which normalises modes and ownership), the delta was made from
+			// the bundles as built.
+			NSURL *shippedURL = [[NSBundle bundleForClass:self.class] URLForResource:@"TestApplication" withExtension:@"app"];
+			[NSFileManager.defaultManager copyItemAtURL:zipUpdate(shippedURL) toURL:[serverDirectoryURL URLByAppendingPathComponent:@"same.zip"] error:NULL];
+			writeUpdate([SQRLTestUpdate modelWithDictionary:@{
+				@"updateURL": [baseURL URLByAppendingPathComponent:@"same.zip"],
+				@"final": @YES
+			} error:NULL]);
+			NSRunningApplication *app = launchWithEnvironment(nil);
+			expect(@(app.terminated)).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+			[self waitForShipItJobToExitWithLabel:@"com.github.Squirrel.TestApplication.ShipIt"];
+
+			updateWithDelta(servedDelta(shippedURL, intact), nil);
+			expect(requestedPaths()).to(equal(@[ @"/same.zip", @"/update.delta" ]));
+		});
+
+		it(@"should not request a delta made from another version", ^{
+			updateWithDelta(deltaWith(servedDelta(self.testApplicationURL, intact), @{ @"from_version": @"0" }), nil);
+			expect(requestedPaths()).to(equal(@[ @"/full.zip" ]));
+		});
+
+		it(@"should fall back to the full update when the delta is not the one described", ^{
+			updateWithDelta(deltaWith(servedDelta(self.testApplicationURL, intact), @{ @"sha256": [@"" stringByPaddingToLength:64 withString:@"0" startingAtIndex:0] }), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+		});
+
+		it(@"should fall back to the full update when the delta does not apply", ^{
+			updateWithDelta(servedDelta(self.testApplicationURL, NSMakeRange(0, 64)), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+		});
+
+		// Finder's "Locked" checkbox: sets uchg on a file inside the running
+		// app, which the apply copies onto its clone.
+		void (^lockRunningFile)(NSString *) = ^(NSString *relativePath) {
+			const char *path = [self.testApplicationURL URLByAppendingPathComponent:relativePath].fileSystemRepresentation;
+			expect(@(chflags(path, UF_IMMUTABLE))).to(equal(@0));
+			NSURL *temporaryDirectoryURL = self.temporaryDirectoryURL;
+			[self addCleanupBlock:^{
+				// The install moves the locked original aside under here.
+				for (NSURL *itemURL in [NSFileManager.defaultManager enumeratorAtURL:temporaryDirectoryURL includingPropertiesForKeys:nil options:0 errorHandler:nil]) lchflags(itemURL.fileSystemRepresentation, 0);
+			}];
+		};
+
+		NSArray * (^lockedItemsInUpdateStorage)(void) = ^{
+			NSURL *storageURL = [[[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication.ShipIt"] storageURL].first;
+			NSMutableArray *locked = [NSMutableArray array];
+			for (NSURL *itemURL in [NSFileManager.defaultManager enumeratorAtURL:storageURL includingPropertiesForKeys:@[ NSURLIsUserImmutableKey ] options:0 errorHandler:nil]) {
+				NSNumber *immutable = nil;
+				[itemURL getResourceValue:&immutable forKey:NSURLIsUserImmutableKey error:NULL];
+				if (immutable.boolValue) [locked addObject:itemURL.path];
+			}
+			return locked;
+		};
+
+		it(@"should install from a delta when the running app has a locked file the delta leaves alone", ^{
+			lockRunningFile(@"Contents/PkgInfo");
+			updateWithDelta(servedDelta(self.testApplicationURL, intact), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta" ]));
+		});
+
+		it(@"should fall back to the full update and clean up when a locked file stops the delta applying", ^{
+			lockRunningFile(@"Contents/Info.plist");
+			updateWithDelta(servedDelta(self.testApplicationURL, intact), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+			expect(lockedItemsInUpdateStorage()).to(equal(@[]));
+		});
+
+		it(@"should fall back to the full update when the delta fails part way through applying", ^{
+			// Header and tree hashes intact, payload damaged: the apply has
+			// already written into the update directory when it gives up.
+			NSUInteger size = servedDelta(self.testApplicationURL, intact).size.unsignedIntegerValue;
+			updateWithDelta(servedDelta(self.testApplicationURL, NSMakeRange(size - size / 3, size / 3)), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+		});
 	});
 
 	it(@"should not install a corrupt update", ^{

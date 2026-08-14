@@ -20,3 +20,4 @@ FOUNDATION_EXPORT const unsigned char SquirrelVersionString[];
 #import <Squirrel/SQRLDownloader.h>
 #import <Squirrel/SQRLUpdater.h>
 #import <Squirrel/SQRLUpdate.h>
+#import <Squirrel/SQRLUpdateDelta.h>

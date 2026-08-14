@@ -45,6 +45,13 @@ repository (under `Carthage/Checkouts/`, a directory name kept from when they
 were fetched with Carthage); `git submodule update --init` or `script/bootstrap`
 checks them out.
 
+Binary delta support compiles Sparkle's BinaryDelta sources and the bsdiff it
+vendors straight out of a third submodule, `Carthage/Checkouts/Sparkle`, pinned
+to a Sparkle release tag (currently 2.9.5); nothing of Sparkle is linked as a
+framework and applications need not ship it. To move the pin, check out the new
+tag in the submodule, build, run the tests, and commit the submodule change; the
+files involved are listed under the SparkleDelta group in the Xcode project.
+
 If your application is already using ReactiveObjC, ensure it is using the same
 version as Squirrel.
 
@@ -164,7 +171,13 @@ to the update request provided:
 	"notes": "Theses are some release notes innit",
 	"pub_date": "2013-09-18T12:29:53+01:00",
 	"sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
-	"size": 104857600
+	"size": 104857600,
+	"delta": {
+		"from_version": "412",
+		"url": "https://mycompany.example.com/myapp/releases/412-to-myrelease.delta",
+		"sha256": "60303ae22b998861bce3b28f33eec1be758a213c86c93c076dbe9f558c11c752",
+		"size": 7340032
+	}
 }
 ```
 
@@ -196,6 +209,31 @@ path. Downloads run in their own `NSURLSession`, so an `NSURLProtocol`
 registered with `+registerClass:` sees the update check but not the download;
 set `SQRLDownloader.sessionConfiguration` (with its `protocolClasses`) to
 intercept both.
+
+"delta", if present, offers a binary patch from one earlier build to this
+release; it needs all four keys ("sha256" as 64 hex digits, "size" positive)
+and is logged and ignored otherwise. When "from_version" equals the
+running application's `CFBundleVersion`, Squirrel downloads the patch instead
+of the ZIP, checks its "size" and "sha256", applies it to a copy of the running
+application, and puts the result through the same code signing verification as
+an unpacked ZIP. If any of that fails, or "from_version" is anything else, it
+downloads the ZIP from "url" in the same check (its `downloadProgress` starting
+again from zero), so a server can always include the one delta it has for the
+version that asked. A delta that has been applied and staged is not fetched
+again by later checks in the same process, and neither is one that downloaded
+intact but would not apply or verify.
+
+Patches are [Sparkle](https://sparkle-project.org) BinaryDelta files (format 3
+or 4, any `--compression` except `bzip2`), made with Sparkle's
+`BinaryDelta create <old.app> <new.app> <patch>`. A patch only applies to a
+byte-identical copy of `<old.app>`, file modes included, and ShipIt clears the
+group and other write bits of everything it installs; strip them from the app
+before signing it (`chmod -R go-w MyApp.app`) so the shipped bundle, the
+installed bundle and the trees the patch was made from all agree, otherwise
+the patch applies once to a fresh install and never again. Files the patch adds
+or rewrites are created with decomposed (NFD) names, so a non-ASCII file name
+outside an archive such as `app.asar` can fail code signing verification and
+cost a fallback to the ZIP. "from_version" may be a JSON string or number.
 
 ## Update File JSON Format
 
@@ -253,6 +291,7 @@ file); a single entry is fine.
 | `updateTo.version` | — | Echoed into the `update-downloaded` event; conventionally the same as the outer `version`. |
 | `updateTo.name` / `notes` / `pub_date` | — | Surfaced to your app for display. `pub_date` must be ISO 8601 if present. |
 | `updateTo.sha256` / `size` | — | Digest (hex) and byte size of the `.zip`; a download that does not match is rejected. |
+| `updateTo.delta` | — | Optional `{from_version, url, sha256, size}` binary patch from one earlier `CFBundleVersion`; tried first when it matches the running app, with the `.zip` as fallback. |
 
 Point the updater directly at this file's URL — there's no required filename.
 
