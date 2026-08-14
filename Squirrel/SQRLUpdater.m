@@ -89,6 +89,11 @@ BOOL isVersionStandard(NSString* version) {
 // for the delta path: a later check offering the same delta has nothing to do.
 @property (atomic, copy) NSString *appliedDeltaDigest;
 
+// Digest of a delta that downloaded intact but would not apply or verify.
+// That does not change within a process, so later checks go straight to the
+// ZIP instead of fetching and applying it again.
+@property (atomic, copy) NSString *unusableDeltaDigest;
+
 // The code signature for the running application, used to check updates before
 // sending them to ShipIt.
 @property (nonatomic, strong, readonly) SQRLCodeSignature *signature;
@@ -503,7 +508,7 @@ BOOL isVersionStandard(NSString* version) {
 		flattenMap:^(NSURL *downloadDirectory) {
 			void (^cleanUp)(void) = ^{
 				NSError *error;
-				if (![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&error]) {
+				if ([downloadDirectory checkResourceIsReachableAndReturnError:NULL] && ![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&error]) {
 					NSLog(@"Error removing temporary download directory at %@: %@", downloadDirectory, error.sqrl_verboseDescription);
 				}
 			};
@@ -556,37 +561,52 @@ BOOL isVersionStandard(NSString* version) {
 	// Already applied and staged from this delta: nothing to download, the
 	// same answer a 304 gives the ZIP path.
 	if ([delta.digest isEqual:self.appliedDeltaDigest]) return [RACSignal return:nil];
+	if ([delta.digest isEqual:self.unusableDeltaDigest]) return fullUpdateIntoDirectory(downloadDirectory);
 
 	return [[[[self
 		bundleByApplyingDelta:delta intoDirectory:downloadDirectory]
 		flattenMap:^(NSBundle *updateBundle) {
-			return [[self verifyUpdate:update fromBundle:updateBundle] doCompleted:^{
-				self.appliedDeltaDigest = delta.digest;
-			}];
+			// The apply copies file flags (a Finder-locked file's uchg) over
+			// from the running app; ShipIt cannot strip xattrs from or replace
+			// an immutable file, so the staged copy carries none.
+			[self clearFileFlagsUnderURL:updateBundle.bundleURL];
+			return [[[self
+				verifyUpdate:update fromBundle:updateBundle]
+				doError:^(NSError *error) {
+					self.unusableDeltaDigest = delta.digest;
+				}]
+				doCompleted:^{
+					self.appliedDeltaDigest = delta.digest;
+				}];
 		}]
 		catch:^(NSError *error) {
 			NSLog(@"Delta update from %@ could not be used (%@), downloading the full update instead", delta.fromVersion, error.sqrl_verboseDescription);
 
-			// Whatever the apply left behind may not be removable (it copies
-			// file flags such as uchg from the running app), so the ZIP gets a
-			// directory of its own rather than this one emptied.
-			[self removeDirectoryClearingFlagsAtURL:downloadDirectory];
+			// Whatever the apply left behind may not be removable as is (it has
+			// the running app's file flags), so clear those, remove it, and
+			// give the ZIP a directory of its own either way.
+			[self clearFileFlagsUnderURL:downloadDirectory];
+			NSError *removeError = nil;
+			if (![NSFileManager.defaultManager removeItemAtURL:downloadDirectory error:&removeError]) {
+				NSLog(@"Could not remove %@ after a failed delta: %@", downloadDirectory.path, removeError.sqrl_verboseDescription);
+			}
+
 			return [[self uniqueTemporaryDirectoryForUpdate] flattenMap:^(NSURL *freshDirectory) {
-				return fullUpdateIntoDirectory(freshDirectory);
+				return [[fullUpdateIntoDirectory(freshDirectory)
+					doNext:^(SQRLDownloadedUpdate *downloadedUpdate) {
+						if (downloadedUpdate == nil) [NSFileManager.defaultManager removeItemAtURL:freshDirectory error:NULL];
+					}]
+					doError:^(NSError *error) {
+						[NSFileManager.defaultManager removeItemAtURL:freshDirectory error:NULL];
+					}];
 			}];
 		}]
 		setNameWithFormat:@"%@ -downloadedUpdateForUpdate: %@ intoDirectory: %@", self, update, downloadDirectory];
 }
 
-- (void)removeDirectoryClearingFlagsAtURL:(NSURL *)directoryURL {
-	NSFileManager *fileManager = [[NSFileManager alloc] init];
-	for (NSURL *itemURL in [fileManager enumeratorAtURL:directoryURL includingPropertiesForKeys:nil options:0 errorHandler:nil]) {
+- (void)clearFileFlagsUnderURL:(NSURL *)directoryURL {
+	for (NSURL *itemURL in [NSFileManager.defaultManager enumeratorAtURL:directoryURL includingPropertiesForKeys:nil options:0 errorHandler:nil]) {
 		lchflags(itemURL.fileSystemRepresentation, 0);
-	}
-
-	NSError *error = nil;
-	if (![fileManager removeItemAtURL:directoryURL error:&error]) {
-		NSLog(@"Could not remove %@ after a failed delta: %@", directoryURL.path, error.sqrl_verboseDescription);
 	}
 }
 
@@ -636,6 +656,7 @@ BOOL isVersionStandard(NSString* version) {
 								if (applied) {
 									[subscriber sendCompleted];
 								} else {
+									self.unusableDeltaDigest = delta.digest;
 									[subscriber sendError:[NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorInvalidUpdatePackage userInfo:@{
 										NSLocalizedDescriptionKey: NSLocalizedString(@"Could not apply the delta update", nil),
 										NSURLErrorKey: delta.deltaURL,

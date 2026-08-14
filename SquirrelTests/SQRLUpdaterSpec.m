@@ -11,6 +11,8 @@
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <Squirrel/Squirrel.h>
 #import <CommonCrypto/CommonDigest.h>
+#import <sys/stat.h>
+#import <unistd.h>
 
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
@@ -537,6 +539,42 @@ describe(@"updating", ^{
 		it(@"should fall back to the full update when the delta does not apply", ^{
 			updateWithDelta(servedDelta(self.testApplicationURL, NSMakeRange(0, 64)), nil);
 			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+		});
+
+		// Finder's "Locked" checkbox: sets uchg on a file inside the running
+		// app, which the apply copies onto its clone.
+		void (^lockRunningFile)(NSString *) = ^(NSString *relativePath) {
+			const char *path = [self.testApplicationURL URLByAppendingPathComponent:relativePath].fileSystemRepresentation;
+			expect(@(chflags(path, UF_IMMUTABLE))).to(equal(@0));
+			NSURL *temporaryDirectoryURL = self.temporaryDirectoryURL;
+			[self addCleanupBlock:^{
+				// The install moves the locked original aside under here.
+				for (NSURL *itemURL in [NSFileManager.defaultManager enumeratorAtURL:temporaryDirectoryURL includingPropertiesForKeys:nil options:0 errorHandler:nil]) lchflags(itemURL.fileSystemRepresentation, 0);
+			}];
+		};
+
+		NSArray * (^lockedItemsInUpdateStorage)(void) = ^{
+			NSURL *storageURL = [[[SQRLDirectoryManager alloc] initWithApplicationIdentifier:@"com.github.Squirrel.TestApplication.ShipIt"] storageURL].first;
+			NSMutableArray *locked = [NSMutableArray array];
+			for (NSURL *itemURL in [NSFileManager.defaultManager enumeratorAtURL:storageURL includingPropertiesForKeys:@[ NSURLIsUserImmutableKey ] options:0 errorHandler:nil]) {
+				NSNumber *immutable = nil;
+				[itemURL getResourceValue:&immutable forKey:NSURLIsUserImmutableKey error:NULL];
+				if (immutable.boolValue) [locked addObject:itemURL.path];
+			}
+			return locked;
+		};
+
+		it(@"should install from a delta when the running app has a locked file the delta leaves alone", ^{
+			lockRunningFile(@"Contents/PkgInfo");
+			updateWithDelta(servedDelta(self.testApplicationURL, intact), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta" ]));
+		});
+
+		it(@"should fall back to the full update and clean up when a locked file stops the delta applying", ^{
+			lockRunningFile(@"Contents/Info.plist");
+			updateWithDelta(servedDelta(self.testApplicationURL, intact), nil);
+			expect(requestedPaths()).to(equal(@[ @"/update.delta", @"/full.zip" ]));
+			expect(lockedItemsInUpdateStorage()).to(equal(@[]));
 		});
 
 		it(@"should fall back to the full update when the delta fails part way through applying", ^{

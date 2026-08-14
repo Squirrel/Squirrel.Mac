@@ -220,7 +220,8 @@ an unpacked ZIP. If any of that fails, or "from_version" is anything else, it
 downloads the ZIP from "url" in the same check (its `downloadProgress` starting
 again from zero), so a server can always include the one delta it has for the
 version that asked. A delta that has been applied and staged is not fetched
-again by later checks in the same process.
+again by later checks in the same process, and neither is one that downloaded
+intact but would not apply or verify.
 
 Patches are [Sparkle](https://sparkle-project.org) BinaryDelta files (format 3
 or 4, any `--compression` except `bzip2`), made with Sparkle's
