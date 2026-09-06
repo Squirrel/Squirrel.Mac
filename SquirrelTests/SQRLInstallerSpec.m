@@ -19,6 +19,7 @@
 
 #import "QuickSpec+SQRLFixtures.h"
 
+#import <ServiceManagement/ServiceManagement.h>
 #import <sys/xattr.h>
 
 @interface SQRLInstaller (SQRLTestingHooks)
@@ -51,6 +52,23 @@ it(@"should install an update using ShipIt", ^{
 	[self installWithRequest:request remote:YES];
 
 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+});
+
+it(@"should remove its launchd job once the install completes", ^{
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	[self installWithRequest:request remote:YES];
+
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+
+	// ShipIt removes its own job on success (SMJobRemove with wait=false),
+	// so the registration may lag its exit by a moment — poll for it to
+	// disappear rather than asserting immediately. A lingering registration
+	// causes macOS 27 to show a Dock tile for the updated app after quit.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	expect(CFBridgingRelease(SMJobCopyDictionary(kSMDomainUserLaunchd, (__bridge CFStringRef)self.shipItDirectoryManager.applicationIdentifier))).withTimeout(SQRLLongTimeout).toEventually(beNil());
+#pragma clang diagnostic pop
 });
 
 it(@"should round-trip the owned bundle through CFPreferences", ^{
