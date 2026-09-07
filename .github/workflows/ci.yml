@@ -28,85 +28,37 @@ jobs:
           - { os: macos-15-intel, xcode: '26.3', name: 'macOS 15 x86_64' }
           - { os: macos-26,       xcode: '26.4', name: 'macOS 26 arm64'  }
           - { os: macos-26-intel, xcode: '26.4', name: 'macOS 26 x86_64' }
+    env:
+      DEPOT_TOOLS_UPDATE: '0'
+      DEPOT_TOOLS_METRICS: '0'
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          submodules: false
-
-      - name: Init submodules
-        # Recursive init pulls 15 nested clones; only 9 are used by the
-        # build (the rest are Mantle's / ReactiveObjC's / Quick's own
-        # test deps).
-        run: |
-          git submodule update --init --depth 1 \
-            Carthage/Checkouts/Mantle \
-            Carthage/Checkouts/Nimble \
-            Carthage/Checkouts/Quick \
-            Carthage/Checkouts/ReactiveObjC \
-            Carthage/Checkouts/Sparkle \
-            Carthage/Checkouts/xcconfigs \
-            External/OHHTTPStubs
-          git -C Carthage/Checkouts/Mantle submodule update --init --depth 1 \
-            Carthage/Checkouts/xcconfigs
-          git -C Carthage/Checkouts/ReactiveObjC submodule update --init --depth 1 \
-            Carthage/Checkouts/xcconfigs
-
-      - name: Patch vendored xcconfigs for arm64
-        # The vendored xcconfigs (jspahrsummers/xcconfigs 0.x) pin
-        # VALID_ARCHS = x86_64 in Mac-Base.xcconfig. Project-level
-        # overrides handle the build, but some Xcode versions resolve
-        # -destination from the raw xcconfig before overrides apply and
-        # refuse arch=arm64. Patch every copy under Carthage in place.
-        run: |
-          find Carthage -name 'Mac-Base.xcconfig' -print0 | \
-            xargs -0 sed -i '' 's/^VALID_ARCHS = x86_64$/VALID_ARCHS = arm64 x86_64/'
 
       - name: Select Xcode
         run: |
           sudo xcode-select -s "/Applications/Xcode_${{ matrix.xcode }}.app"
           xcodebuild -version
 
-      - name: Compute dep cache key
-        id: dep-key
+      - name: Install depot_tools
         run: |
-          echo "key=${{ matrix.os }}-xcode${{ matrix.xcode }}-$(git submodule status --recursive | shasum -a 256 | cut -c1-16)" >> "$GITHUB_OUTPUT"
+          git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "$RUNNER_TEMP/depot_tools"
+          echo "$RUNNER_TEMP/depot_tools" >> "$GITHUB_PATH"
 
-      - name: Cache DerivedData
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
-        with:
-          path: DerivedData
-          key: deriveddata-${{ steps.dep-key.outputs.key }}-${{ github.sha }}
-          restore-keys: |
-            deriveddata-${{ steps.dep-key.outputs.key }}-
+      - name: gclient sync
+        run: |
+          cp standalone.gclient .gclient
+          gclient sync --no-history --shallow
+
+      - name: gn gen
+        run: buildtools/mac/gn gen out/Default
 
       - name: Build
-        run: |
-          set -o pipefail
-          xcodebuild \
-            -workspace Squirrel.xcworkspace \
-            -scheme Squirrel \
-            -destination "platform=macOS,arch=$(uname -m)" \
-            -derivedDataPath DerivedData \
-            build \
-            GCC_TREAT_WARNINGS_AS_ERRORS=NO \
-            MACOSX_DEPLOYMENT_TARGET=10.13 \
-            CODE_SIGN_IDENTITY=- \
-            DEVELOPMENT_TEAM= \
-            ONLY_ACTIVE_ARCH=YES \
-            VALID_ARCHS="arm64 x86_64" \
-            OTHER_CODE_SIGN_FLAGS=--timestamp=none \
-            | xcbeautify --renderer github-actions
+        run: third_party/ninja/ninja -C out/Default
 
       - name: Test
-        run: |
-          set -o pipefail
-          # shellcheck disable=SC2266 # script/test is a path, not the `test` builtin
-          script/test -derivedDataPath DerivedData | xcbeautify --renderer github-actions
-
-      - name: Prune DerivedData before cache save
-        run: |
-          rm -rf DerivedData/Logs DerivedData/Index.noindex DerivedData/ModuleCache.noindex/Session.modulevalidation
+        # shellcheck disable=SC2266 # script/test is a path, not the `test` builtin
+        run: script/test out/Default
 
   ci-green:
     name: ci-green
