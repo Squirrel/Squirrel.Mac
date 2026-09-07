@@ -1,5 +1,5 @@
 // Build configuration for the Sparkle BinaryDelta sources Squirrel compiles
-// out of the Sparkle submodule (Carthage/Checkouts/Sparkle). Sparkle sets these
+// out of the Sparkle checkout (vendor/Sparkle). Sparkle sets these
 // from its xcconfigs; Squirrel force-includes this header instead.
 
 // Only Sparkle's own container format (delta major versions 3 and 4) is read;

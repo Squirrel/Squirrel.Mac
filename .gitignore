@@ -1,6 +1,8 @@
 # Xcode
 .DS_Store
-build/
+build/*
+!build/*.gni
+!build/*.py
 *.pbxuser
 !default.pbxuser
 *.mode1v3
