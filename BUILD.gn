@@ -1,6 +1,7 @@
 assert(is_mac)
 
 import("//build/config/mac/rules.gni")
+import("//build_overrides/build.gni")
 import("filenames.gni")
 
 bundle_data("mantle_headers") {
@@ -282,4 +283,10 @@ mac_framework_bundle("squirrel_framework") {
 
   include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ] +
                  sparkle_binary_delta_filenames.include_dirs
+}
+
+if (!build_with_chromium) {
+  group("default") {
+    deps = [ ":squirrel_framework" ]
+  }
 }
