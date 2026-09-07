@@ -1,26 +1,20 @@
 #!/bin/bash
 #
-# Regenerates the SquirrelTests fixture bundles so that they share a stable
-# designated requirement with the freshly-built TestApplication.app.
+# Produces the SquirrelTests fixture bundles from a built TestApplication.app:
+# a copy of the app, a "TestApplication 2.1.app" update derived from it, and a
+# zip of that update, all ad-hoc signed with the same explicit designated
+# requirement so SQRLCodeSignature accepts the update as matching the app.
 #
-# Historically `TestApplication 2.1.app` and `TestApplication.app.zip` were
-# checked-in artifacts signed with a "Mac Developer" certificate that no
-# longer exists. We now derive both fixtures from the just-built
-# TestApplication.app and ad-hoc sign everything with an explicit DR so that
-# SQRLCodeSignature can validate the "update" against the original.
+# usage: sign-test-fixtures <TestApplication.app> <output-directory>
 
 set -euo pipefail
 
-RESOURCES="${BUILT_PRODUCTS_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}"
-APP="${RESOURCES}/TestApplication.app"
-UPDATE="${RESOURCES}/TestApplication 2.1.app"
-ZIP="${RESOURCES}/TestApplication.app.zip"
+SOURCE_APP="$1"
+OUT="$2"
+APP="${OUT}/TestApplication.app"
+UPDATE="${OUT}/TestApplication 2.1.app"
+ZIP="${OUT}/TestApplication.app.zip"
 REQ='=designated => identifier "com.github.Squirrel.TestApplication"'
-
-if [[ ! -d "${APP}" ]]; then
-  echo "error: ${APP} not found; ensure TestApplication is a target dependency" >&2
-  exit 1
-fi
 
 sign_bundle () {
   local bundle="$1"
@@ -34,21 +28,18 @@ sign_bundle () {
   codesign --force -s - --requirements "${REQ}" "${bundle}"
 }
 
-# Re-sign the freshly-built 1.0 app so its DR is the shared identifier rather
-# than the ad-hoc cdhash.
+mkdir -p "${OUT}"
+rm -rf "${APP}" "${UPDATE}" "${ZIP}"
+
+cp -R "${SOURCE_APP}" "${APP}"
 sign_bundle "${APP}"
 
-# Derive the 2.1 update from the 1.0 app.
-rm -rf "${UPDATE}"
 cp -R "${APP}" "${UPDATE}"
 /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString 2.1" "${UPDATE}/Contents/Info.plist"
 sign_bundle "${UPDATE}"
 
-# Regenerate the zip fixture (the archived contents are the 2.1 update bundle).
-rm -f "${ZIP}"
 ditto -c -k --sequesterRsrc --keepParent "${UPDATE}" "${ZIP}"
 
-# Sanity check: both bundles must verify and satisfy the shared requirement.
 codesign --verify "${APP}"
 codesign --verify "${UPDATE}"
 codesign --verify -R='identifier "com.github.Squirrel.TestApplication"' "${UPDATE}"

@@ -1,0 +1,458 @@
+import("//build/config/mac/mac_sdk.gni")
+import("//build/config/mac/rules.gni")
+import("//gn/swift_module.gni")
+
+# XCTest and the Swift XCTest support libraries ship with the platform, not
+# the SDK. //build symlinks the platform and toolchain next to the SDK it hands
+# to the compiler, so derive their paths from that.
+_xcode_links = get_path_info(mac_sdk_path, "dir")
+_platform_developer_dir = "$_xcode_links/MacOSX.platform/Developer"
+xctest_framework_dir = "$_platform_developer_dir/Library/Frameworks"
+xctest_lib_dir = "$_platform_developer_dir/usr/lib"
+swift_lib_dirs = [
+  "$mac_sdk_path/usr/lib/swift",
+  "$_xcode_links/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
+  xctest_lib_dir,
+]
+xctest_swiftflags = [
+  "-F" + rebase_path(xctest_framework_dir, root_build_dir),
+  "-I" + rebase_path(xctest_lib_dir, root_build_dir),
+]
+
+# XCTest is built for a newer macOS than Squirrel targets (14.0 as of Xcode
+# 26) and lld rejects linking against a library newer than the image's own
+# deployment target, so the images that link XCTest raise theirs.
+config("xctest_config") {
+  framework_dirs = [ xctest_framework_dir ]
+  frameworks = [ "XCTest.framework" ]
+  ldflags = [ "-mmacos-version-min=14.0" ]
+}
+
+config("vendor_code") {
+  configs = [ "//build/config/compiler:no_chromium_code" ]
+  cflags_objc = [ "-fobjc-arc" ]
+}
+
+# Quick and Nimble are mixed Swift/Objective-C frameworks. The Swift half is
+# compiled against a module map over the staged public headers
+# (-import-underlying-module), the Objective-C half against the generated
+# <Module>-Swift.h, and both are linked into one framework.
+template("mixed_framework") {
+  _target_name = target_name
+  _module = invoker.module_name
+  _staged_dir = "$target_gen_dir/$_module/include"
+  _module_map = "$_staged_dir/$_module/module.modulemap"
+
+  write_file(_module_map,
+             [
+               "module $_module {",
+               "  umbrella header \"$_module.h\"",
+               "  export *",
+               "  module * { export * }",
+               "}",
+             ])
+
+  copy("${_target_name}_staged_headers") {
+    testonly = true
+    sources = invoker.public_headers
+    outputs = [ "$_staged_dir/$_module/{{source_file_part}}" ]
+  }
+
+  swift_module("${_target_name}_swift") {
+    testonly = true
+    module_name = _module
+    header_dir = "$_staged_dir/$_module"
+    sources = invoker.swift_sources
+    inputs = [ _module_map ] + invoker.public_headers
+    deps = [ ":${_target_name}_staged_headers" ]
+    swiftflags =
+        [
+          # As in their Xcode projects; this is also what makes swiftc emit
+          # internal @objc classes (World, CurrentTestCaseTracker, ...) into
+          # the generated header the Objective-C half compiles against.
+          "-application-extension",
+          "-import-underlying-module",
+          "-Xcc",
+          "-fmodule-map-file=" + rebase_path(_module_map, root_build_dir),
+          "-Xcc",
+          "-I" + rebase_path(_staged_dir, root_build_dir),
+          "-suppress-warnings",
+        ] + xctest_swiftflags
+  }
+
+  bundle_data("${_target_name}_headers") {
+    testonly = true
+    sources =
+        invoker.public_headers + [ "$_staged_dir/$_module/$_module-Swift.h" ]
+    outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
+    public_deps = [ ":${_target_name}_swift" ]
+  }
+
+  mac_framework_bundle(_target_name) {
+    testonly = true
+    output_name = _module
+    framework_version = "A"
+    framework_contents = [
+      "Headers",
+      "Resources",
+    ]
+    info_plist = invoker.info_plist
+    extra_substitutions = [
+      "CURRENT_PROJECT_VERSION=0.0.0",
+      "PRODUCT_BUNDLE_IDENTIFIER=${invoker.bundle_identifier}",
+    ]
+    configs -= [
+      "//build/config/compiler:chromium_code",
+      "//build/config/gcc:symbol_visibility_hidden",
+    ]
+    configs += [
+      ":vendor_code",
+      ":xctest_config",
+    ]
+    sources = invoker.sources + [ "$target_out_dir/$_module.o" ]
+    include_dirs = [
+      _staged_dir,
+      "$_staged_dir/$_module",
+    ]
+    lib_dirs = swift_lib_dirs
+    ldflags = [
+      "-Wl,-install_name,@rpath/$_module.framework/$_module",
+      "-Wl,-rpath,/usr/lib/swift",
+    ]
+    if (defined(invoker.ldflags)) {
+      ldflags += invoker.ldflags
+    }
+    deps = [
+      ":${_target_name}_headers",
+      ":${_target_name}_swift",
+    ]
+  }
+}
+
+mixed_framework("quick_framework") {
+  module_name = "Quick"
+  bundle_identifier = "io.quick.Quick"
+  info_plist = "../vendor/Quick/Sources/Quick/Info.plist"
+  public_headers = [
+    "../vendor/Quick/Sources/QuickObjectiveC/Configuration/QuickConfiguration.h",
+    "../vendor/Quick/Sources/QuickObjectiveC/DSL/QCKDSL.h",
+    "../vendor/Quick/Sources/QuickObjectiveC/Quick.h",
+    "../vendor/Quick/Sources/QuickObjectiveC/QuickSpec.h",
+  ]
+  sources = [
+    "../vendor/Quick/Sources/QuickObjectiveC/Configuration/QuickConfiguration.m",
+    "../vendor/Quick/Sources/QuickObjectiveC/DSL/QCKDSL.m",
+    "../vendor/Quick/Sources/QuickObjectiveC/QuickSpec.m",
+    "../vendor/Quick/Sources/QuickObjectiveC/XCTestSuite+QuickTestSuiteBuilder.m",
+  ]
+  swift_sources = [
+    "../vendor/Quick/Sources/Quick/Behavior.swift",
+    "../vendor/Quick/Sources/Quick/Callsite.swift",
+    "../vendor/Quick/Sources/Quick/Configuration/QCKConfiguration.swift",
+    "../vendor/Quick/Sources/Quick/Configuration/QuickConfiguration.swift",
+    "../vendor/Quick/Sources/Quick/DSL/DSL.swift",
+    "../vendor/Quick/Sources/Quick/DSL/World+DSL.swift",
+    "../vendor/Quick/Sources/Quick/ErrorUtility.swift",
+    "../vendor/Quick/Sources/Quick/Example.swift",
+    "../vendor/Quick/Sources/Quick/ExampleGroup.swift",
+    "../vendor/Quick/Sources/Quick/ExampleMetadata.swift",
+    "../vendor/Quick/Sources/Quick/Filter.swift",
+    "../vendor/Quick/Sources/Quick/Hooks/Closures.swift",
+    "../vendor/Quick/Sources/Quick/Hooks/ExampleHooks.swift",
+    "../vendor/Quick/Sources/Quick/Hooks/HooksPhase.swift",
+    "../vendor/Quick/Sources/Quick/Hooks/SuiteHooks.swift",
+    "../vendor/Quick/Sources/Quick/NSBundle+CurrentTestBundle.swift",
+    "../vendor/Quick/Sources/Quick/QuickSelectedTestSuiteBuilder.swift",
+    "../vendor/Quick/Sources/Quick/QuickTestObservation.swift",
+    "../vendor/Quick/Sources/Quick/QuickTestSuite.swift",
+    "../vendor/Quick/Sources/Quick/String+C99ExtendedIdentifier.swift",
+    "../vendor/Quick/Sources/Quick/URL+FileName.swift",
+    "../vendor/Quick/Sources/Quick/World.swift",
+  ]
+}
+
+_cwl = "../vendor/Nimble/Carthage/Checkouts"
+
+mixed_framework("nimble_framework") {
+  module_name = "Nimble"
+  bundle_identifier = "net.jeffhui.Nimble"
+  info_plist = "../vendor/Nimble/Sources/Nimble/Info.plist"
+  public_headers = [
+    "$_cwl/CwlCatchException/Sources/CwlCatchExceptionSupport/include/CwlCatchException.h",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlMachBadInstructionHandler/include/CwlMachBadInstructionHandler.h",
+    "../vendor/Nimble/Sources/Nimble/Nimble.h",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/DSL.h",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/NMBExceptionCapture.h",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/NMBStringify.h",
+  ]
+  sources = [
+    "$_cwl/CwlCatchException/Sources/CwlCatchExceptionSupport/CwlCatchException.m",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlMachBadInstructionHandler/CwlMachBadInstructionHandler.m",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlMachBadInstructionHandler/mach_excServer.c",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlMachBadInstructionHandler/mach_excServer.h",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/DSL.m",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/NMBExceptionCapture.m",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/NMBStringify.m",
+    "../vendor/Nimble/Sources/NimbleObjectiveC/XCTestObservationCenter+Register.m",
+  ]
+  swift_sources = [
+    "$_cwl/CwlCatchException/Sources/CwlCatchException/CwlCatchException.swift",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlPreconditionTesting/CwlBadInstructionException.swift",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlPreconditionTesting/CwlCatchBadInstruction.swift",
+    "$_cwl/CwlPreconditionTesting/Sources/CwlPreconditionTesting/CwlDarwinDefinitions.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/AdapterProtocols.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/AssertionDispatcher.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/AssertionRecorder.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/NMBExpectation.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/NMBObjCMatcher.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/NimbleEnvironment.swift",
+    "../vendor/Nimble/Sources/Nimble/Adapters/NimbleXCTestHandler.swift",
+    "../vendor/Nimble/Sources/Nimble/DSL+Wait.swift",
+    "../vendor/Nimble/Sources/Nimble/DSL.swift",
+    "../vendor/Nimble/Sources/Nimble/Expectation.swift",
+    "../vendor/Nimble/Sources/Nimble/ExpectationMessage.swift",
+    "../vendor/Nimble/Sources/Nimble/Expression.swift",
+    "../vendor/Nimble/Sources/Nimble/FailureMessage.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/AllPass.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/Async.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeAKindOf.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeAnInstanceOf.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeCloseTo.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeEmpty.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeGreaterThan.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeGreaterThanOrEqualTo.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeIdenticalTo.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeLessThan.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeLessThanOrEqual.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeLogical.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeNil.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeVoid.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeginWith.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/BeginWithPrefix.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/Contain.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/ContainElementSatisfying.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/ElementsEqual.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/EndWith.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/Equal+Tuple.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/Equal.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/HaveCount.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/Match.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/MatchError.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/MatcherFunc.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/MatcherProtocols.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/PostNotification.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/Predicate.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/RaisesException.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/SatisfyAllOf.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/SatisfyAnyOf.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/ThrowAssertion.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/ThrowError.swift",
+    "../vendor/Nimble/Sources/Nimble/Matchers/ToSucceed.swift",
+    "../vendor/Nimble/Sources/Nimble/Utils/Await.swift",
+    "../vendor/Nimble/Sources/Nimble/Utils/DispatchTimeInterval.swift",
+    "../vendor/Nimble/Sources/Nimble/Utils/Errors.swift",
+    "../vendor/Nimble/Sources/Nimble/Utils/SourceLocation.swift",
+    "../vendor/Nimble/Sources/Nimble/Utils/Stringers.swift",
+  ]
+  ldflags = [
+    "-Wl,-weak_framework,XCTest",
+    "-Wl,-weak-lXCTestSwiftSupport",
+  ]
+}
+
+config("ohhttpstubs_config") {
+  include_dirs = [ "../vendor/OHHTTPStubs" ]
+}
+
+source_set("ohhttpstubs") {
+  testonly = true
+  public_configs = [ ":ohhttpstubs_config" ]
+  sources = [
+    "../vendor/OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.h",
+    "../vendor/OHHTTPStubs/OHHTTPStubs/OHHTTPStubs.m",
+    "../vendor/OHHTTPStubs/OHHTTPStubs/OHHTTPStubsResponse.h",
+    "../vendor/OHHTTPStubs/OHHTTPStubs/OHHTTPStubsResponse.m",
+  ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ ":vendor_code" ]
+  frameworks = [ "Foundation.framework" ]
+}
+
+# The generator half of Sparkle's BinaryDelta, so the specs can produce deltas
+# for Squirrel.framework's applier to consume. Its headers, which the specs
+# include too, expect the configuration //:sparkle_binary_delta is built with.
+config("sparkle_binary_delta_config") {
+  include_dirs = [
+    "../vendor/Sparkle/Autoupdate",
+    "../vendor/Sparkle/Sparkle",
+    "../vendor/Sparkle/Vendor/bsdiff",
+  ]
+  cflags = [
+    "-include",
+    rebase_path("../Squirrel/SparkleDelta/SparkleDeltaConfig.h",
+                root_build_dir),
+  ]
+}
+
+source_set("sparkle_binary_delta_create") {
+  testonly = true
+  sources = [
+    "../vendor/Sparkle/Autoupdate/SUBinaryDeltaCreate.h",
+    "../vendor/Sparkle/Autoupdate/SUBinaryDeltaCreate.m",
+    "../vendor/Sparkle/Vendor/bsdiff/bsdiff.c",
+    "../vendor/Sparkle/Vendor/bsdiff/sais.c",
+    "../vendor/Sparkle/Vendor/bsdiff/sais.h",
+  ]
+  public_configs = [ ":sparkle_binary_delta_config" ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  cflags = [ "-w" ]
+  cflags_objc = [ "-fobjc-arc" ]
+  frameworks = [ "Foundation.framework" ]
+}
+
+_fixtures_dir = "$root_out_dir/fixtures"
+
+# script/sign-test-fixtures derives the signed TestApplication fixtures the
+# install and code-signature specs use from the built TestApplication.app.
+action("fixtures") {
+  testonly = true
+  script = "//gn/run.py"
+  deps = [ "//TestApplication:test_application" ]
+  inputs = [ "../script/sign-test-fixtures" ]
+  outputs = [
+    "$_fixtures_dir/TestApplication 2.1.app",
+    "$_fixtures_dir/TestApplication.app",
+    "$_fixtures_dir/TestApplication.app.zip",
+  ]
+  args = [
+    rebase_path("../script/sign-test-fixtures", root_build_dir),
+    rebase_path("$root_out_dir/TestApplication.app", root_build_dir),
+    rebase_path(_fixtures_dir, root_build_dir),
+  ]
+}
+
+bundle_data("squirrel_tests_resources") {
+  testonly = true
+  sources = get_target_outputs(":fixtures") + [ "TestServer.py" ]
+  outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
+  public_deps = [ ":fixtures" ]
+}
+
+bundle_data("squirrel_tests_frameworks") {
+  testonly = true
+  sources = [
+    "$root_out_dir/Mantle.framework",
+    "$root_out_dir/Nimble.framework",
+    "$root_out_dir/Quick.framework",
+    "$root_out_dir/ReactiveObjC.framework",
+    "$root_out_dir/Squirrel.framework",
+  ]
+  outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
+  public_deps = [
+    ":nimble_framework",
+    ":quick_framework",
+    "//:mantle_framework",
+    "//:reactiveobjc_framework",
+    "//:squirrel_framework",
+  ]
+}
+
+mac_info_plist("squirrel_tests_info_plist") {
+  testonly = true
+  executable_name = "SquirrelTests"
+  info_plist = "SquirrelTests-Info.plist"
+  extra_substitutions = [ "PRODUCT_BUNDLE_IDENTIFIER=com.github.SquirrelTests" ]
+}
+
+bundle_data("squirrel_tests_info_plist_bundle_data") {
+  testonly = true
+  sources = get_target_outputs(":squirrel_tests_info_plist")
+  outputs = [ "{{bundle_contents_dir}}/Info.plist" ]
+  public_deps = [ ":squirrel_tests_info_plist" ]
+}
+
+loadable_module("squirrel_tests_module") {
+  testonly = true
+  output_name = "SquirrelTests"
+  output_dir = target_out_dir
+  output_extension = ""
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [
+    "//build/config/compiler:no_chromium_code",
+    ":xctest_config",
+  ]
+  sources = [
+    "../Squirrel/SQRLInstaller.m",
+    "../Squirrel/SQRLInstallerOwnedBundle.m",
+    "../Squirrel/SQRLTerminationListener.m",
+    "../TestApplication/TestAppConstants.m",
+    "NSProcessInfoExtensionsSpec.m",
+    "QuickSpec+SQRLFixtures.h",
+    "QuickSpec+SQRLFixtures.m",
+    "SQRLCodeSignatureSpec.m",
+    "SQRLDirectoryManagerSpec.m",
+    "SQRLDownloaderSpec.m",
+    "SQRLInstallerSpec.m",
+    "SQRLShipItRequestSpec.m",
+    "SQRLTerminationListenerSpec.m",
+    "SQRLTestUpdate.h",
+    "SQRLTestUpdate.m",
+    "SQRLUpdateSpec.m",
+    "SQRLUpdaterSpec.m",
+    "SQRLZipArchiverSpec.m",
+  ]
+  include_dirs = [
+    "../Squirrel",
+    "../TestApplication",
+    "../vendor/ReactiveObjC/ReactiveObjC/extobjc",
+  ]
+  deps = [
+    ":nimble_framework+link",
+    ":ohhttpstubs",
+    ":quick_framework+link",
+    ":sparkle_binary_delta_create",
+    "//:mantle_framework+link",
+    "//:reactiveobjc_framework+link",
+    "//:squirrel_framework+link",
+  ]
+  frameworks = [
+    "AppKit.framework",
+    "Foundation.framework",
+    "IOKit.framework",
+    "Security.framework",
+    "ServiceManagement.framework",
+  ]
+  cflags_objc = [
+    "-fobjc-arc",
+    "-Wno-deprecated-declarations",
+
+    # The specs use the Swift-implemented parts of Quick and Nimble's API,
+    # which their umbrella headers only expose through Clang modules.
+    "-include",
+    rebase_path("SquirrelTests-Prefix.h", root_build_dir),
+  ]
+  ldflags = [ "-Wl,-rpath,@loader_path/../Frameworks" ]
+}
+
+bundle_data("squirrel_tests_module_bundle_data") {
+  testonly = true
+  sources = [ "$target_out_dir/SquirrelTests" ]
+  outputs = [ "{{bundle_executable_dir}}/SquirrelTests" ]
+  public_deps = [ ":squirrel_tests_module" ]
+}
+
+create_bundle("squirrel_tests") {
+  testonly = true
+  product_type = "com.apple.product-type.bundle.unit-test"
+  bundle_root_dir = "$root_out_dir/SquirrelTests.xctest"
+  bundle_contents_dir = "$bundle_root_dir/Contents"
+  bundle_resources_dir = "$bundle_contents_dir/Resources"
+  bundle_executable_dir = "$bundle_contents_dir/MacOS"
+  deps = [
+    ":squirrel_tests_frameworks",
+    ":squirrel_tests_info_plist_bundle_data",
+    ":squirrel_tests_module_bundle_data",
+    ":squirrel_tests_resources",
+  ]
+}

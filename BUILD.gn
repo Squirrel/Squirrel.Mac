@@ -287,6 +287,10 @@ mac_framework_bundle("squirrel_framework") {
 
 if (!build_with_chromium) {
   group("default") {
-    deps = [ ":squirrel_framework" ]
+    testonly = true
+    deps = [
+      ":squirrel_framework",
+      "//SquirrelTests:squirrel_tests",
+    ]
   }
 }
