@@ -10,6 +10,4 @@ declare_args() {
   # Build with the Xcode selected by `xcode-select` rather than Chromium's
   # hermetic toolchain, which is not distributed outside Google.
   use_system_xcode = true
-
-  ignore_elf32_limitations = false
 }

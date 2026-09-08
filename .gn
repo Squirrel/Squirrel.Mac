@@ -10,15 +10,12 @@ default_args = {
   use_custom_libcxx_for_host = false
   use_llvm_libatomic = false
   clang_use_chrome_plugins = false
-  treat_warnings_as_errors = false
 
   # The oldest macOS the frameworks load on.
   mac_deployment_target = "11.0"
   mac_min_system_version = "11.0"
-
-  # The SDK in the oldest Xcode CI runs with.
-  mac_sdk_min = "14"
 }
 
-exec_script_allowlist = build_dotfile_settings.exec_script_allowlist
+exec_script_allowlist = build_dotfile_settings.exec_script_allowlist +
+                        [ "//SquirrelTests/BUILD.gn" ]
 expand_directory_allowlist = build_dotfile_settings.expand_directory_allowlist

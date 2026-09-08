@@ -2,16 +2,20 @@ import("//build/config/mac/mac_sdk.gni")
 import("//build/config/mac/rules.gni")
 import("//gn/swift_module.gni")
 
-# XCTest and the Swift XCTest support libraries ship with the platform, not
-# the SDK. //build symlinks the platform and toolchain next to the SDK it hands
-# to the compiler, so derive their paths from that.
-_xcode_links = get_path_info(mac_sdk_path, "dir")
-_platform_developer_dir = "$_xcode_links/MacOSX.platform/Developer"
+# XCTest and the Swift XCTest support libraries ship with the platform, and
+# the Swift compatibility libraries with the toolchain, not the SDK.
+_sdk_info = exec_script("//build/config/apple/sdk_info.py",
+                        [
+                          "--get_sdk_info",
+                          mac_sdk_name,
+                        ],
+                        "scope")
+_platform_developer_dir = _sdk_info.sdk_platform_path + "/Developer"
 xctest_framework_dir = "$_platform_developer_dir/Library/Frameworks"
 xctest_lib_dir = "$_platform_developer_dir/usr/lib"
 swift_lib_dirs = [
   "$mac_sdk_path/usr/lib/swift",
-  "$_xcode_links/XcodeDefault.xctoolchain/usr/lib/swift/macosx",
+  _sdk_info.toolchains_path + "/usr/lib/swift/macosx",
   xctest_lib_dir,
 ]
 xctest_swiftflags = [

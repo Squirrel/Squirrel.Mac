@@ -29,6 +29,10 @@ jobs:
           - { os: macos-26,       xcode: '26.4', name: 'macOS 26 arm64'  }
           - { os: macos-26-intel, xcode: '26.4', name: 'macOS 26 x86_64' }
     env:
+      # depot_tools revision to run gclient with; bump to the current
+      # https://chromium.googlesource.com/chromium/tools/depot_tools/+/refs/heads/main
+      # when rolling //build in DEPS. DEPOT_TOOLS_UPDATE=0 keeps it there.
+      DEPOT_TOOLS_REVISION: ed9c87f6f12f6b87210e7025d4a36a5a72a2ccd4
       DEPOT_TOOLS_UPDATE: '0'
       DEPOT_TOOLS_METRICS: '0'
     steps:
@@ -42,7 +46,9 @@ jobs:
 
       - name: Install depot_tools
         run: |
-          git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "$RUNNER_TEMP/depot_tools"
+          git init -q "$RUNNER_TEMP/depot_tools"
+          git -C "$RUNNER_TEMP/depot_tools" fetch -q --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git "$DEPOT_TOOLS_REVISION"
+          git -C "$RUNNER_TEMP/depot_tools" checkout -q FETCH_HEAD
           echo "$RUNNER_TEMP/depot_tools" >> "$GITHUB_PATH"
 
       - name: gclient sync

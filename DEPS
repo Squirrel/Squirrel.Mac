@@ -16,7 +16,6 @@ vars = {
   'build_with_chromium': False,
   'checkout_android': False,
   'checkout_src_internal': False,
-  'checkout_clang_coverage_tools': False,
 
   'chromium_git': 'https://chromium.googlesource.com',
   'github_git': 'https://github.com',
