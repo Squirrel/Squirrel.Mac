@@ -1,0 +1,296 @@
+assert(is_mac)
+
+import("//build/config/mac/rules.gni")
+import("//build_overrides/build.gni")
+import("filenames.gni")
+
+bundle_data("mantle_headers") {
+  sources = []
+  public_deps = []
+  sources += mantle_filenames.headers
+  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
+}
+
+mac_framework_bundle("mantle_framework") {
+  output_name = "Mantle"
+  framework_version = "A"
+  framework_contents = [
+    "Headers",
+    "Resources",
+  ]
+  info_plist = "vendor/Mantle/Mantle/Info.plist"
+  extra_substitutions = [
+    "CURRENT_PROJECT_VERSION=0.0.0",
+    "PRODUCT_BUNDLE_IDENTIFIER=org.mantle.Mantle",
+  ]
+
+  configs -= [
+    "//build/config/compiler:chromium_code",
+    "//build/config/gcc:symbol_visibility_hidden",
+  ]
+
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  public_deps = [ ":mantle_headers" ]
+  deps = []
+  frameworks = [
+    "CoreData.framework",
+    "Foundation.framework",
+  ]
+  sources = mantle_filenames.headers + mantle_filenames.sources
+
+  include_dirs = [
+    "vendor/Mantle/Mantle",
+    "vendor/Mantle/Mantle/extobjc",
+    "vendor/Mantle/Mantle/extobjc/include",
+    "vendor/Mantle/Mantle/include",
+  ]
+
+  cflags_objc = [
+    "-fobjc-arc",
+    "-Wno-block-capture-autoreleasing",
+  ]
+
+  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
+}
+
+dtrace_header_dir = "$target_gen_dir/dtrace"
+
+foreach(provider,
+        [
+          "RACCompoundDisposableProvider",
+          "RACSignalProvider",
+        ]) {
+  action("reactiveobjc_dtrace_$provider") {
+    script = "gn/run.py"
+    sources = [ "vendor/ReactiveObjC/ReactiveObjC/$provider.d" ]
+    outputs = [ "$dtrace_header_dir/$provider.h" ]
+    args = [
+             "xcrun",
+             "dtrace",
+             "-h",
+             "-s",
+           ] + rebase_path(sources, root_build_dir) + [ "-o" ] +
+           rebase_path(outputs, root_build_dir)
+  }
+}
+
+bundle_data("reactiveobjc_headers") {
+  sources = reactiveobjc_filenames.public_headers
+  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
+}
+
+# ReactiveObjC's own sources import its public headers framework-style
+# (<ReactiveObjC/EXTScope.h>), which Xcode resolves through a header map before
+# the framework exists. Stage the headers under a ReactiveObjC/ directory so
+# those imports resolve while the framework itself is being compiled.
+rac_staged_headers_dir = "$target_gen_dir/rac_headers"
+
+copy("reactiveobjc_staged_headers") {
+  sources = reactiveobjc_filenames.public_headers
+  outputs = [ "$rac_staged_headers_dir/ReactiveObjC/{{source_file_part}}" ]
+}
+
+mac_framework_bundle("reactiveobjc_framework") {
+  output_name = "ReactiveObjC"
+  framework_version = "A"
+  framework_contents = [
+    "Headers",
+    "Resources",
+  ]
+  info_plist = "vendor/ReactiveObjC/ReactiveObjC/Info.plist"
+  extra_substitutions = [
+    "CURRENT_PROJECT_VERSION=0.0.0",
+    "PRODUCT_BUNDLE_IDENTIFIER=org.reactivecocoa.ReactiveObjC",
+  ]
+  defines = [ "DTRACE_PROBES_DISABLED" ]
+
+  configs -= [
+    "//build/config/compiler:chromium_code",
+    "//build/config/gcc:symbol_visibility_hidden",
+  ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  deps = [
+    ":reactiveobjc_dtrace_RACCompoundDisposableProvider",
+    ":reactiveobjc_dtrace_RACSignalProvider",
+    ":reactiveobjc_headers",
+    ":reactiveobjc_staged_headers",
+  ]
+  frameworks = [
+    "AppKit.framework",
+    "Foundation.framework",
+  ]
+  sources =
+      reactiveobjc_filenames.public_headers +
+      reactiveobjc_filenames.private_headers + reactiveobjc_filenames.sources
+
+  include_dirs = [
+    "vendor/ReactiveObjC/ReactiveObjC",
+    "vendor/ReactiveObjC/ReactiveObjC/extobjc",
+    "$dtrace_header_dir",
+    rac_staged_headers_dir,
+  ]
+
+  cflags_objc = [
+    "-fobjc-arc",
+    "-Wno-deprecated-declarations",
+
+    # RACQueueScheduler.m passes LONG_MAX to fmin().
+    "-Wno-implicit-const-int-float-conversion",
+  ]
+
+  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
+}
+
+executable("squirrel_shipit") {
+  output_name = "ShipIt"
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  sources = [
+    "Squirrel/NSBundle+SQRLVersionExtensions.h",
+    "Squirrel/NSBundle+SQRLVersionExtensions.m",
+    "Squirrel/NSError+SQRLVerbosityExtensions.h",
+    "Squirrel/NSError+SQRLVerbosityExtensions.m",
+    "Squirrel/NSProcessInfo+SQRLVersionExtensions.h",
+    "Squirrel/NSProcessInfo+SQRLVersionExtensions.m",
+    "Squirrel/RACSignal+SQRLTransactionExtensions.h",
+    "Squirrel/RACSignal+SQRLTransactionExtensions.m",
+    "Squirrel/SQRLCodeSignature.h",
+    "Squirrel/SQRLCodeSignature.m",
+    "Squirrel/SQRLInstaller+Private.h",
+    "Squirrel/SQRLInstaller.h",
+    "Squirrel/SQRLInstaller.m",
+    "Squirrel/SQRLInstallerOwnedBundle.h",
+    "Squirrel/SQRLInstallerOwnedBundle.m",
+    "Squirrel/SQRLShipItRequest.h",
+    "Squirrel/SQRLShipItRequest.m",
+    "Squirrel/SQRLTerminationListener.h",
+    "Squirrel/SQRLTerminationListener.m",
+    "Squirrel/ShipIt-main.m",
+  ]
+  deps = [
+    ":mantle_framework+link",
+    ":reactiveobjc_framework+link",
+  ]
+  frameworks = [
+    "AppKit.framework",
+    "Foundation.framework",
+    "IOKit.framework",
+    "Security.framework",
+  ]
+
+  cflags_objc = [
+    "-fobjc-weak",
+    "-Wno-unknown-warning-option",
+    "-Wno-deprecated-declarations",
+    "-Wno-block-capture-autoreleasing",
+    "-fobjc-arc",
+  ]
+
+  ldflags = [
+    "-rpath",
+    "@executable_path/../..",
+    "-rpath",
+    "@executable_path/../../../..",
+  ]
+
+  include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ]
+}
+
+bundle_data("squirrel_framework_shipit") {
+  sources = []
+  public_deps = [ ":squirrel_shipit" ]
+  sources += [ "$root_out_dir/ShipIt" ]
+  outputs = [ "{{bundle_contents_dir}}/Resources/{{source_file_part}}" ]
+}
+
+bundle_data("squirrel_framework_headers") {
+  sources = []
+  public_deps = []
+  sources += squirrel_filenames.headers
+  outputs = [ "{{bundle_contents_dir}}/Headers/{{source_file_part}}" ]
+}
+
+# Sparkle's BinaryDelta applier, configured by a force-included header in place
+# of Sparkle's xcconfig defines. Default visibility so the tests can link
+# Sparkle's delta generator against the archive classes in Squirrel.framework.
+source_set("sparkle_binary_delta") {
+  visibility = [ ":*" ]
+  sources = sparkle_binary_delta_filenames.sources
+  include_dirs = sparkle_binary_delta_filenames.include_dirs
+  configs -= [
+    "//build/config/compiler:chromium_code",
+    "//build/config/gcc:symbol_visibility_hidden",
+  ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  cflags = [
+    "-w",
+    "-include",
+    rebase_path("Squirrel/SparkleDelta/SparkleDeltaConfig.h", root_build_dir),
+  ]
+  cflags_objc = [ "-fobjc-arc" ]
+  frameworks = [ "Foundation.framework" ]
+}
+
+mac_framework_bundle("squirrel_framework") {
+  output_name = "Squirrel"
+  framework_version = "A"
+  framework_contents = [
+    "Headers",
+    "Resources",
+  ]
+  info_plist = "Squirrel/Squirrel-Info.plist"
+  extra_substitutions = [
+    "CURRENT_PROJECT_VERSION=0.0.0",
+    "PRODUCT_BUNDLE_IDENTIFIER=com.github.Squirrel",
+  ]
+
+  configs -= [
+    "//build/config/compiler:chromium_code",
+    "//build/config/gcc:symbol_visibility_hidden",
+  ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  public_deps = [
+    ":squirrel_framework_headers",
+    ":squirrel_framework_shipit",
+  ]
+  deps = [
+    ":mantle_framework+link",
+    ":reactiveobjc_framework+link",
+    ":sparkle_binary_delta",
+  ]
+  frameworks = [
+    "AppKit.framework",
+    "Foundation.framework",
+    "IOKit.framework",
+    "Security.framework",
+    "ServiceManagement.framework",
+  ]
+  libs = [
+    "bz2",
+    "compression",
+    "z",
+  ]
+  sources = squirrel_filenames.headers + squirrel_filenames.sources
+
+  cflags_objc = [
+    "-fobjc-weak",
+    "-fobjc-arc",
+    "-Wno-deprecated-declarations",
+    "-Wno-block-capture-autoreleasing",
+  ]
+
+  ldflags = [ "-Wl,-install_name,@rpath/$output_name.framework/$output_name" ]
+
+  include_dirs = [ "vendor/ReactiveObjC/ReactiveObjC/extobjc" ] +
+                 sparkle_binary_delta_filenames.include_dirs
+}
+
+if (!build_with_chromium) {
+  group("default") {
+    testonly = true
+    deps = [
+      ":squirrel_framework",
+      "//SquirrelTests:squirrel_tests",
+    ]
+  }
+}

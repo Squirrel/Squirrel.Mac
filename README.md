@@ -22,49 +22,74 @@ updates installed are valid.
 
 ![:shipit:](http://shipitsquirrel.github.io/images/ship%20it%20squirrel.png)
 
+# Building
+
+Squirrel builds with [GN](https://gn.googlesource.com/gn/) and Ninja on top of
+Chromium's `//build` configuration, the same way Electron builds it. A
+standalone checkout fetches the build files, a pinned clang, GN, Ninja and the
+third-party libraries with `gclient` from
+[depot_tools](https://commondatastorage.googleapis.com/chrome-infra-docs/flat/depot_tools/docs/html/depot_tools_tutorial.html#_setting_up).
+Xcode must be installed for the macOS SDK, `swiftc` and `xctest`.
+
+```sh
+git clone https://github.com/Squirrel/Squirrel.Mac.git
+cd Squirrel.Mac
+cp standalone.gclient .gclient
+gclient sync
+
+gn gen out/Default
+ninja -C out/Default
+script/test out/Default
+```
+
+`gclient sync` reads [`DEPS`](DEPS) and checks out `build/`, `buildtools/`,
+`tools/clang/`, `third_party/llvm-build/`, `third_party/ninja/` and `vendor/`,
+all of which git ignores.
+The default Ninja target builds `Squirrel.framework` (with `ShipIt` in its
+Resources), `ReactiveObjC.framework`, `Mantle.framework` and
+`SquirrelTests.xctest`; `script/test` runs the tests with Xcode's `xctest`.
+`gn gen out/Release --args='is_debug=false'` configures an optimized build;
+`target_cpu` (`"arm64"` or `"x64"`) selects the architecture and
+`mac_deployment_target` (11.0 by default, set in [`.gn`](.gn)) the minimum
+macOS.
+
+The targets an application needs are `//:squirrel_framework`,
+`//:reactiveobjc_framework` and `//:mantle_framework` in [`BUILD.gn`](BUILD.gn).
+That file only uses paths relative to itself and templates from `//build`, so a
+project that already builds with Chromium's `//build` (as Electron does) can
+check this repository out anywhere in its tree, check the libraries below out
+under this repository's `vendor/` directory, and depend on those targets
+directly.
+
 # Adopting Squirrel
 
-1. Install xctool with `brew install xctool`
-1. Add the Squirrel repository as a git submodule
-1. Run `script/bootstrap` from within the submodule
-1. Add references to Squirrel.xcodeproj and its [dependencies](#dependencies) to
-   your project
-1. Add Squirrel.framework as a target dependency
-1. Link Squirrel.framework and add it to a Copy Files build phase which copies
-it into your Frameworks directory
-1. Ensure your application includes the [dependencies](#dependencies). Squirrel
-does not embed them itself.
-
-If you’re developing Squirrel on its own, then use `Squirrel.xcworkspace`.
+1. Build `Squirrel.framework`, `ReactiveObjC.framework` and `Mantle.framework`
+   as above, or from your own GN build.
+1. Link Squirrel.framework and copy all three frameworks into your
+   application's Frameworks directory. Squirrel does not embed its
+   [dependencies](#dependencies) itself.
+1. Ensure your application's Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`)
+   includes the directory the three frameworks are copied into.
 
 # Dependencies
 
 Squirrel depends on [ReactiveObjC](https://github.com/ReactiveCocoa/ReactiveObjC)
-and [Mantle](https://github.com/Mantle/Mantle). Both are git submodules of this
-repository (under `Carthage/Checkouts/`, a directory name kept from when they
-were fetched with Carthage); `git submodule update --init` or `script/bootstrap`
-checks them out.
+and [Mantle](https://github.com/Mantle/Mantle), which `gclient sync` checks out
+under `vendor/` at the revisions pinned in [`DEPS`](DEPS) and the build turns
+into frameworks next to Squirrel's. If your application already uses either,
+make sure it uses the same version as Squirrel.
 
 Binary delta support compiles Sparkle's BinaryDelta sources and the bsdiff it
-vendors straight out of a third submodule, `Carthage/Checkouts/Sparkle`, pinned
-to a Sparkle release tag (currently 2.9.5); nothing of Sparkle is linked as a
-framework and applications need not ship it. To move the pin, check out the new
-tag in the submodule, build, run the tests, and commit the submodule change; the
-files involved are listed under the SparkleDelta group in the Xcode project.
+vendors straight out of a third checkout, `vendor/Sparkle`, pinned to a Sparkle
+release tag (currently 2.9.5); nothing of Sparkle is linked as a framework and
+applications need not ship it. To move the pin, change `sparkle_revision` in
+`DEPS`, run `gclient sync`, build, run the tests, and commit; the files involved
+are listed in [`filenames.gni`](filenames.gni).
 
-If your application is already using ReactiveObjC, ensure it is using the same
-version as Squirrel.
-
-Otherwise, add a target dependency and Copy Files build phase entry for the
-ReactiveObjC.framework target included in Squirrel's repository, in
-`Carthage/Checkouts/ReactiveObjC`.
-
-Similarly, ensure your application includes Mantle, or copies in the Squirrel
-version.
-
-Finally, ensure your application's Runpath Search Paths (`LD_RUNPATH_SEARCH_PATHS`)
-includes the directory that Squirrel.framework, ReactiveObjC.framework
-and Mantle.framework are copied into.
+The tests additionally use [Quick](https://github.com/Quick/Quick),
+[Nimble](https://github.com/Quick/Nimble) and
+[OHHTTPStubs](https://github.com/github/OHHTTPStubs), also pinned in `DEPS`
+and built from source by [`SquirrelTests/BUILD.gn`](SquirrelTests/BUILD.gn).
 
 # Configuration
 

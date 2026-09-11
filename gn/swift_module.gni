@@ -1,0 +1,64 @@
+import("//build/config/mac/mac_sdk.gni")
+
+# Compiles Swift sources into a single object file with Xcode's swiftc, for
+# linking into a framework next to its Objective-C half. Chromium's macOS
+# toolchain deliberately has no Swift support, and this is only used for the
+# test-only Quick and Nimble frameworks.
+#
+#   module_name: Swift module name; also names <module_name>-Swift.h.
+#   header_dir: directory the Objective-C header is generated into.
+#   sources: .swift files.
+#   swiftflags: extra swiftc arguments (-I, -F, -Xcc ..., -D ...).
+#
+# The object file is "$target_out_dir/<module_name>.o".
+template("swift_module") {
+  action(target_name) {
+    forward_variables_from(invoker,
+                           [
+                             "deps",
+                             "public_deps",
+                             "testonly",
+                           ])
+    script = "//gn/swiftc.py"
+    sources = invoker.sources
+    if (defined(invoker.inputs)) {
+      inputs = invoker.inputs
+    }
+
+    _module = invoker.module_name
+    _object = "$target_out_dir/$_module.o"
+    _header = invoker.header_dir + "/$_module-Swift.h"
+    outputs = [
+      _object,
+      _header,
+      "$target_out_dir/$_module.swiftmodule",
+    ]
+
+    if (current_cpu == "x64") {
+      _triple_cpu = "x86_64"
+    } else {
+      _triple_cpu = current_cpu
+    }
+    args =
+        [
+          "--module-name",
+          _module,
+          "--object",
+          rebase_path(_object, root_build_dir),
+          "--module",
+          rebase_path("$target_out_dir/$_module.swiftmodule", root_build_dir),
+          "--header",
+          rebase_path(_header, root_build_dir),
+          "--module-cache",
+          rebase_path("$root_out_dir/swift_module_cache", root_build_dir),
+          "--sdk",
+          rebase_path(mac_sdk_path, root_build_dir),
+          "--target",
+          "$_triple_cpu-apple-macos$mac_deployment_target",
+          "-swift-version",
+          "5",
+          "-g",
+          "-Onone",
+        ] + invoker.swiftflags + rebase_path(sources, root_build_dir)
+  }
+}

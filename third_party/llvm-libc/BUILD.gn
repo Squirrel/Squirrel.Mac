@@ -1,0 +1,14 @@
+# //build's default configs load //buildtools/third_party/libc++/BUILD.gn,
+# which depends on this label even though use_custom_libcxx is false and
+# nothing here is built. Chromium keeps the real file in its main repository.
+
+config("llvm-libc-config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "src" ]
+  defines = [ "LIBC_NAMESPACE=__llvm_libc_cr" ]
+}
+
+group("llvm-libc-shared") {
+  visibility = [ "//buildtools/third_party/libc++" ]
+  public_configs = [ ":llvm-libc-config" ]
+}

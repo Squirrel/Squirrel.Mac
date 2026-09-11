@@ -1,0 +1,83 @@
+import("//build/config/mac/rules.gni")
+
+bundle_data("test_application_frameworks") {
+  testonly = true
+  public_deps = [
+    "//:mantle_framework",
+    "//:reactiveobjc_framework",
+    "//:squirrel_framework",
+  ]
+  sources = [
+    "$root_out_dir/Mantle.framework",
+    "$root_out_dir/ReactiveObjC.framework",
+    "$root_out_dir/Squirrel.framework",
+  ]
+  outputs = [ "{{bundle_contents_dir}}/Frameworks/{{source_file_part}}" ]
+}
+
+bundle_data("test_application_xpc_services") {
+  testonly = true
+  public_deps = [ "//TestService:test_service" ]
+  sources =
+      [ "$root_out_dir/com.github.Squirrel.TestApplication.TestService.xpc" ]
+  outputs = [ "{{bundle_contents_dir}}/XPCServices/{{source_file_part}}" ]
+}
+
+# A prebuilt helper the code signature specs expect as both an auxiliary
+# executable and a login item.
+bundle_data("test_application_helper") {
+  testonly = true
+  sources = [ "unused-helper" ]
+  outputs = [ "{{bundle_executable_dir}}/{{source_file_part}}" ]
+}
+
+# Unlocalized so that codesign treats it as a required resource; the code
+# signature specs delete and corrupt it.
+bundle_data("test_application_resources") {
+  testonly = true
+  sources = [ "Credits.rtf" ]
+  outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
+}
+
+bundle_data("test_application_login_item") {
+  testonly = true
+  sources = [ "unused-helper" ]
+  outputs =
+      [ "{{bundle_contents_dir}}/Library/LoginItems/{{source_file_part}}" ]
+}
+
+mac_app_bundle("test_application") {
+  testonly = true
+  output_name = "TestApplication"
+  info_plist = "TestApplication-Info.plist"
+  extra_substitutions =
+      [ "PRODUCT_BUNDLE_IDENTIFIER=com.github.Squirrel.TestApplication" ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  sources = [
+    "../SquirrelTests/SQRLTestUpdate.h",
+    "../SquirrelTests/SQRLTestUpdate.m",
+    "TestAppConstants.h",
+    "TestAppConstants.m",
+    "TestAppDelegate.h",
+    "TestAppDelegate.m",
+    "main.m",
+  ]
+  include_dirs = [
+    "../Squirrel",
+    "../SquirrelTests",
+  ]
+  deps = [
+    ":test_application_frameworks",
+    ":test_application_helper",
+    ":test_application_login_item",
+    ":test_application_resources",
+    ":test_application_xpc_services",
+    "//:mantle_framework+link",
+    "//:reactiveobjc_framework+link",
+    "//:squirrel_framework+link",
+  ]
+  frameworks = [ "Cocoa.framework" ]
+  cflags_objc = [ "-fobjc-arc" ]
+  ldflags = [ "-Wl,-rpath,@executable_path/../Frameworks" ]
+}

@@ -8,8 +8,13 @@
 
 #import <Cocoa/Cocoa.h>
 
+#import "TestAppDelegate.h"
+
 int main(int argc, const char * argv[]) {
 	@autoreleasepool {
-		return NSApplicationMain(argc, argv);
+		TestAppDelegate *delegate = [[TestAppDelegate alloc] init];
+		NSApplication.sharedApplication.delegate = delegate;
+		[NSApp run];
 	}
+	return 0;
 }

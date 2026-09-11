@@ -7,6 +7,9 @@
 //
 
 #import "TestAppDelegate.h"
+
+#import <Squirrel/Squirrel.h>
+
 #import "SQRLDirectoryManager.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLTestUpdate.h"

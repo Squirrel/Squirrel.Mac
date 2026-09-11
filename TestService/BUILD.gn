@@ -1,0 +1,14 @@
+import("//build/config/mac/rules.gni")
+
+mac_app_bundle("test_service") {
+  testonly = true
+  package_type = "xpc"
+  output_name = "com.github.Squirrel.TestApplication.TestService"
+  info_plist = "TestService-Info.plist"
+  extra_substitutions = [ "PRODUCT_BUNDLE_IDENTIFIER=$output_name" ]
+  configs -= [ "//build/config/compiler:chromium_code" ]
+  configs += [ "//build/config/compiler:no_chromium_code" ]
+  sources = [ "main.m" ]
+  frameworks = [ "Foundation.framework" ]
+  cflags_objc = [ "-fobjc-arc" ]
+}

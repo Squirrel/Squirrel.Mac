@@ -1,0 +1,13 @@
+# Variables that Chromium's //build expects the embedding project to define.
+# This file is only read by the standalone build; inside Electron's tree
+# Chromium's own //build_overrides/build.gni is used.
+
+import("//build/config/gclient_args.gni")
+
+enable_java_templates = false
+
+declare_args() {
+  # Build with the Xcode selected by `xcode-select` rather than Chromium's
+  # hermetic toolchain, which is not distributed outside Google.
+  use_system_xcode = true
+}
