@@ -175,6 +175,26 @@ it(@"should install an update to another volume", ^{
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
+it(@"should install an update from one external volume to another", ^{
+	// Both the update bundle and the target app live on separate disk images,
+	// so every rename() call in the install path hits EXDEV. This exercises
+	// the cross-volume staging path twice: once when the target app is backed
+	// up onto the system volume and again when the update is placed onto the
+	// target volume.
+	NSURL *updateDiskImageURL = [self createAndMountDiskImageNamed:@"TestUpdate" fromDirectory:updateURL.URLByDeletingLastPathComponent];
+	NSURL *crossVolumeUpdateURL = [updateDiskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
+
+	NSURL *targetDiskImageURL = [self createAndMountDiskImageNamed:@"TestApplicationExternal" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+	NSURL *crossVolumeTargetURL = [targetDiskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:crossVolumeUpdateURL targetBundleURL:crossVolumeTargetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	[self installWithRequest:request remote:YES];
+
+	NSURL *plistURL = [crossVolumeTargetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationUpdatedShortVersionString));
+});
+
 describe(@"with backup restoration", ^{
 	__block NSURL *targetURL;
 
@@ -223,6 +243,50 @@ describe(@"with backup restoration", ^{
 		expect(error).to(beNil());
 
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+	});
+});
+
+describe(@"with backup restoration when target is on another volume", ^{
+	// Models the VS Code scenario: the app lives on a non-system volume. ShipIt
+	// backed it up to system temp (ownedBundle.temporaryURL) before it was
+	// killed. On relaunch with too many attempts it must restore the backed-up
+	// app back across volumes to its original location.
+	__block NSURL *externalTargetURL;
+
+	beforeEach(^{
+		NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplicationRollback" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+		externalTargetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+		// Simulate acquireTargetBundleURLForRequest: having moved the app off the
+		// external volume into system temp before ShipIt was killed.
+		NSURL *backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"TestApplication Backup.app"];
+		expect(@([NSFileManager.defaultManager moveItemAtURL:externalTargetURL toURL:backupURL error:NULL])).to(beTruthy());
+
+		SQRLCodeSignature *codeSignature = self.testApplicationSignature;
+		SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:externalTargetURL temporaryURL:backupURL codeSignature:codeSignature];
+		NSData *ownedBundleArchive = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle];
+		expect(ownedBundleArchive).notTo(beNil());
+
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(4), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)ownedBundleArchive, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+
+		BOOL synchronized = CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(@(synchronized)).to(beTruthy());
+	});
+
+	it(@"should restore the app to the external volume after too many install attempts", ^{
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:externalTargetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+		[self installWithRequest:request remote:YES];
+
+		// App must be back at its original location on the external volume with
+		// the original version — not at the system-temp backup path.
+		NSURL *plistURL = [externalTargetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+		expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).withTimeout(SQRLLongTimeout).toEventually(equal(SQRLTestApplicationOriginalShortVersionString));
+
+		__block NSError *verifyError;
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:externalTargetURL] waitUntilCompleted:&verifyError])).toEventually(beTruthy());
+		expect(verifyError).to(beNil());
 	});
 });
 

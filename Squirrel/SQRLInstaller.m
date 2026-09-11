@@ -635,17 +635,33 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		catch:^(NSError *error) {
 			if (![error.domain isEqual:NSPOSIXErrorDomain] || error.code != EXDEV) return [RACSignal error:error];
 
-			// If the locations lie on two different volumes, remove the
-			// destination by hand, then perform a move.
-			[NSFileManager.defaultManager removeItemAtURL:targetContentsURL error:NULL];
+			// The source and target are on different volumes. Stage the source in a
+			// UUID-named temporary path on the same volume as the target, then
+			// rename() atomically. This ensures the target slot is never left empty:
+			// the existing item (if any) stays in place until the rename succeeds.
+			NSURL *stagingContentsURL = [targetContentsURL.URLByDeletingLastPathComponent
+				URLByAppendingPathComponent:[[NSUUID UUID] UUIDString]];
 
-			if ([NSFileManager.defaultManager moveItemAtURL:sourceContentsURL toURL:targetContentsURL error:&error]) {
-				NSLog(@"Moved bundle contents across volumes from %@ to %@", sourceContentsURL, targetContentsURL);
-				return [RACSignal empty];
-			} else {
-				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't move bundle contents %@ across volumes to %@", nil), sourceContentsURL, targetContentsURL];
-				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:error]];
+			NSError *copyError = nil;
+			if (![NSFileManager.defaultManager copyItemAtURL:sourceContentsURL toURL:stagingContentsURL error:&copyError]) {
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't stage bundle %@ on target volume at %@", nil), sourceContentsURL, stagingContentsURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:copyError]];
 			}
+
+			if (rename(stagingContentsURL.path.fileSystemRepresentation, targetContentsURL.path.fileSystemRepresentation) == 0) {
+				[NSFileManager.defaultManager removeItemAtURL:sourceContentsURL error:NULL];
+				NSLog(@"Installed bundle cross-volume from %@ to %@", sourceContentsURL, targetContentsURL);
+				return [RACSignal empty];
+			}
+
+			int renameErrno = errno;
+			[NSFileManager.defaultManager removeItemAtURL:stagingContentsURL error:NULL];
+			NSMutableDictionary *renameInfo = [NSMutableDictionary dictionary];
+			const char *renameDesc = strerror(renameErrno);
+			if (renameDesc != NULL) renameInfo[NSLocalizedDescriptionKey] = @(renameDesc);
+			NSError *renameError = [NSError errorWithDomain:NSPOSIXErrorDomain code:renameErrno userInfo:renameInfo];
+			NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't rename staged bundle contents %@ to %@", nil), stagingContentsURL, targetContentsURL];
+			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:renameError]];
 		}]
 		setNameWithFormat:@"%@ -installItemAtURL: %@ fromURL: %@", self, targetContentsURL, sourceContentsURL];
 }
