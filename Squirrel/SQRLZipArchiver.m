@@ -14,6 +14,32 @@ NSString * const SQRLZipArchiverErrorDomain = @"SQRLZipArchiverErrorDomain";
 NSString * const SQRLZipArchiverExitCodeErrorKey = @"SQRLZipArchiverExitCodeErrorKey";
 const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
+// `ditto` writes diagnostics for input it cannot process. Keep the retained
+// untrusted output bounded so a failed archive operation cannot exhaust memory.
+static const NSUInteger SQRLZipArchiverMaximumStandardErrorDataLength = 1024 * 1024;
+
+static NSUInteger SQRLUTF8TruncationBoundary(const uint8_t *bytes, NSUInteger length) {
+	NSUInteger codePointStart = length;
+	while (codePointStart > 0 && (bytes[codePointStart - 1] & 0xC0) == 0x80) {
+		codePointStart--;
+	}
+
+	if (codePointStart == 0) return 0;
+
+	codePointStart--;
+	uint8_t leadingByte = bytes[codePointStart];
+	NSUInteger codePointLength = 1;
+	if ((leadingByte & 0xE0) == 0xC0) {
+		codePointLength = 2;
+	} else if ((leadingByte & 0xF0) == 0xE0) {
+		codePointLength = 3;
+	} else if ((leadingByte & 0xF8) == 0xF0) {
+		codePointLength = 4;
+	}
+
+	return codePointStart + codePointLength <= length ? length : codePointStart;
+}
+
 @interface SQRLZipArchiver () {
 	RACSubject *_taskTerminated;
 }
@@ -30,8 +56,8 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 // A pipe used for reading error logging from `dittoTask`.
 @property (nonatomic, strong, readonly) NSPipe *standardErrorPipe;
 
-// Sends an NSData representing the error logging from `dittoTask` once the task
-// has terminated.
+// Sends up to 1 MiB of error logging from `dittoTask` once the task has
+// terminated.
 @property (nonatomic, strong, readonly) RACSignal *standardErrorData;
 
 // Launches the receiver's `dittoTask` with the given command line arguments.
@@ -68,19 +94,42 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
 	RACSubject *errorDataChunks = [[RACSubject subject] setNameWithFormat:@"errorDataChunks"];
 	self.standardErrorPipe.fileHandleForReading.readabilityHandler = ^(NSFileHandle *handle) {
-		[errorDataChunks sendNext:handle.availableData];
+		NSData *data = handle.availableData;
+		if (data.length == 0) {
+			handle.readabilityHandler = nil;
+			return;
+		}
+
+		[errorDataChunks sendNext:data];
 	};
 
 	_standardErrorData = [[[[[[errorDataChunks
 		takeUntil:self.taskTerminated]
-		collect]
-		flattenMap:^(NSArray *chunks) {
-			NSMutableData *combined = [NSMutableData data];
-			for (NSData *data in chunks) {
-				[combined appendData:data];
+		aggregateWithStartFactory:^id {
+			return [@{
+				@"data": [NSMutableData data],
+				@"truncated": @NO,
+			} mutableCopy];
+		} reduce:^id(NSMutableDictionary *aggregate, NSData *data) {
+			if ([aggregate[@"truncated"] boolValue]) {
+				return aggregate;
 			}
 
-			return [RACSignal return:combined];
+			NSMutableData *combined = aggregate[@"data"];
+			NSUInteger remainingLength =
+				SQRLZipArchiverMaximumStandardErrorDataLength - combined.length;
+			NSUInteger appendLength = MIN(data.length, remainingLength);
+			[combined appendBytes:data.bytes length:appendLength];
+
+			if (appendLength < data.length) {
+				combined.length = SQRLUTF8TruncationBoundary(combined.bytes, combined.length);
+				aggregate[@"truncated"] = @YES;
+			}
+
+			return aggregate;
+		}]
+		map:^id(NSDictionary *aggregate) {
+			return aggregate[@"data"];
 		}]
 		repeat]
 		takeUntil:self.rac_willDeallocSignal]
