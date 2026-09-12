@@ -17,6 +17,10 @@
 #include <sys/wait.h>
 #include <mach/mach.h>
 #include <servers/bootstrap.h>
+#include <signal.h>
+#include <unistd.h>
+
+#import <ServiceManagement/ServiceManagement.h>
 
 #import "NSError+SQRLVerbosityExtensions.h"
 #import "RACSignal+SQRLTransactionExtensions.h"
@@ -85,6 +89,50 @@ static void drainMachServicePort(const char *serviceName) {
 	                0, sizeof(msg), port, 0, MACH_PORT_NULL) == KERN_SUCCESS) {
 		mach_msg_destroy(&msg.header);
 	}
+}
+
+// Remove ShipIt's own launchd job on the way out. A job submitted with
+// SMJobSubmit is a registration, not a one-shot: after ShipIt exits, the
+// job would otherwise stay in the domain as "not running" until the login
+// session ends (or indefinitely, for the system domain), and macOS 27 shows
+// a Dock tile for any app with a registered background job — making an
+// updated-and-quit app look like it is still running. Removal is limited to
+// the terminal success paths; failure exits must keep the registration so
+// the KeepAlive/SuccessfulExit policy can respawn ShipIt to retry.
+//
+// SMJobRemove is deprecated but is the counterpart of the SMJobSubmit that
+// created the job (SQRLShipItLauncher); there is no other API that can
+// remove a submitted job.
+static void removeOwnLaunchdJob(NSString *jobLabel) {
+	// launchd terminates a running job as part of removing it. Ignore
+	// SIGTERM so we still exit through our own exit() call with the
+	// intended status rather than dying by signal mid-cleanup.
+	signal(SIGTERM, SIG_IGN);
+
+	// Privileged installs run ShipIt as root in the system domain;
+	// unprivileged ones run as the user in their domain.
+	//
+	// The authorization is deliberately NULL. By this point the installer
+	// has replaced (and typically deleted) the bundle containing this
+	// running ShipIt binary, so authd can no longer validate our code
+	// signature on disk and AuthorizationCreate fails with
+	// errAuthorizationDenied, even for root (verified empirically).
+	// SMJobRemove with a NULL authorization instead authorizes on the
+	// caller itself — root may modify the system domain and any caller its
+	// own user domain — which neither consults authd nor can present a
+	// prompt, and works with the binary already gone.
+	CFStringRef domain = (geteuid() == 0 ? kSMDomainSystemLaunchd : kSMDomainUserLaunchd);
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	// `wait` must be false: waiting blocks until the job (i.e. this
+	// process) exits, which would deadlock against our own exit().
+	CFErrorRef cfError = NULL;
+	if (!SMJobRemove(domain, (__bridge CFStringRef)jobLabel, NULL, false, &cfError)) {
+		NSError *error = CFBridgingRelease(cfError);
+		NSLog(@"Could not remove ShipIt launchd job %@: %@", jobLabel, error);
+	}
+#pragma clang diagnostic pop
 }
 
 // Waits for all instances of the target application (as described in the
@@ -231,6 +279,7 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 				NSLog(@"Installation cancelled: %@", error);
 				clearInstallationAttempts(applicationIdentifier);
 				drainMachServicePort(applicationIdentifier.UTF8String);
+				removeOwnLaunchdJob(applicationIdentifier);
 				exit(EXIT_SUCCESS);
 			} else {
 				NSLog(@"Installation error: %@", error);
@@ -238,6 +287,7 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 			}
 		} completed:^{
 			drainMachServicePort(applicationIdentifier.UTF8String);
+			removeOwnLaunchdJob(applicationIdentifier);
 			exit(EXIT_SUCCESS);
 		}];
 }
