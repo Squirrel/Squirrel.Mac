@@ -76,6 +76,20 @@ it(@"should install an update in process", ^{
 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
+it(@"should remove working copies left by earlier runs and leave nothing behind", ^{
+	NSURL *supportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
+	NSURL *workingDirectory = [supportURL URLByAppendingPathComponent:self.shipItDirectoryManager.applicationIdentifier isDirectory:YES];
+	NSURL *staleURL = [workingDirectory URLByAppendingPathComponent:@"install.stale123/TestApplication.app/Contents" isDirectory:YES];
+	expect(@([NSFileManager.defaultManager createDirectoryAtURL:staleURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+	[self installWithRequest:request remote:NO];
+
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	NSArray *leftovers = [[NSFileManager.defaultManager contentsOfDirectoryAtPath:workingDirectory.path error:NULL] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF BEGINSWITH 'install.'"]];
+	expect(leftovers).to(equal(@[]));
+});
+
 describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
 	beforeEach(^{
 		// SQRLInstaller adds the running application's identifier (and that
@@ -209,6 +223,21 @@ describe(@"with backup restoration", ^{
 		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());
 
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+	});
+
+	it(@"should restore the backup on the first attempt when the update is gone", ^{
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
+
+		NSURL *missingUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.gone/TestApplication.app" isDirectory:YES];
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:missingUpdateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+		[self installWithRequest:request remote:YES];
+
+		__block NSError *error;
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
