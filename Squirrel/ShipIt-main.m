@@ -259,6 +259,13 @@ int main(int argc, const char * argv[]) {
 			return EXIT_FAILURE;
 		}
 
+		// Resolve the main bundle while it still exists on disk. ShipIt can wait
+		// hours for the application to quit, and the app that contains it may be
+		// moved or deleted in that time; +mainBundle is created lazily and comes
+		// back nil once the executable's directory is gone, which turns every
+		// later NSLocalizedString() into nil.
+		(void)NSBundle.mainBundle;
+
 		char const *jobLabel = argv[1];
 		const char *statePath = argv[2];
 		NSURL *shipItStateURL = [NSURL fileURLWithPath:@(statePath)];
