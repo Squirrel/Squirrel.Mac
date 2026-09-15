@@ -113,12 +113,20 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
 			setInstallationAttempts(applicationIdentifier, attempt);
 
+			// The staged update can be removed while ShipIt waits for the
+			// application to quit; retrying cannot help then.
+			BOOL updateMissing = ![request.updateBundleURL checkResourceIsReachableAndReturnError:NULL];
+
 			RACSignal *action;
-			if (attempt > SQRLShipItMaximumInstallationAttempts) {
+			if (updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
-						NSLog(@"Too many attempts to install, aborting update");
+						if (updateMissing) {
+							NSLog(@"Update bundle %@ no longer exists, aborting update", request.updateBundleURL.path);
+						} else {
+							NSLog(@"Too many attempts to install, aborting update");
+						}
 					}]
 					catch:^(NSError *error) {
 						NSLog(@"Error aborting installation: %@", error);
