@@ -100,16 +100,31 @@ static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
 		setNameWithFormat:@"waitForTerminationIfNecessary"];
 }
 
+// Puts back an application that an earlier, interrupted run moved aside. Done
+// at launch rather than after waiting for the application to quit, which can
+// take days, so the backup does not sit in the temporary directory long enough
+// for the system to clean it up.
+static RACSignal *restoreOwnedBundle(SQRLInstaller *installer) {
+	return [[[installer
+		abortInstall]
+		catch:^(NSError *error) {
+			NSLog(@"Could not restore bundle left by an earlier install attempt: %@", error.sqrl_verboseDescription);
+			return [RACSignal empty];
+		}]
+		setNameWithFormat:@"restoreOwnedBundle"];
+}
+
 static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
-	[[[[[readRequestSignal
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
+
+	[[[[[[restoreOwnedBundle(installer)
+		concat:readRequestSignal]
 		flattenMap:^(SQRLShipItRequest *request) {
 			return waitForTerminationIfNecessary(request);
 		}]
 		ignoreValues]
 		concat:readRequestSignal]
 		flattenMap:^(SQRLShipItRequest *request) {
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
-
 			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
 			setInstallationAttempts(applicationIdentifier, attempt);
 

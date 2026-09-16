@@ -15,6 +15,7 @@
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller+Private.h"
 #import "SQRLInstallerOwnedBundle.h"
+#import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
 
 #import "QuickSpec+SQRLFixtures.h"
@@ -137,6 +138,30 @@ it(@"should abort the install if the target application is still running", ^{
 	expect(@(error.code)).to(equal(@(SQRLInstallerErrorAppStillRunning)));
 
 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+});
+
+it(@"should restore a bundle left by an earlier attempt before waiting for the application to quit", ^{
+	NSURL *strandedURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"Stranded.app"];
+	NSURL *originalURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"Original.app"];
+	expect(@([NSFileManager.defaultManager copyItemAtURL:self.testApplicationURL toURL:strandedURL error:NULL])).to(beTruthy());
+
+	SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:originalURL temporaryURL:strandedURL codeSignature:self.testApplicationSignature];
+	NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+	CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)[NSKeyedArchiver archivedDataWithRootObject:ownedBundle], (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+	expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
+
+	NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
+	[self submitShipItRequest:request];
+
+	expect(@([NSFileManager.defaultManager fileExistsAtPath:originalURL.path])).withTimeout(SQRLLongTimeout).toEventually(beTruthy());
+	expect(@([NSFileManager.defaultManager fileExistsAtPath:strandedURL.path])).to(beFalsy());
+	expect(@(app.isTerminated)).to(beFalsy());
+
+	[app forceTerminate];
+	[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
 it(@"should install an update and relaunch", ^{
