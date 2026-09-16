@@ -76,20 +76,6 @@ it(@"should install an update in process", ^{
 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
-it(@"should remove working copies left by earlier runs and leave nothing behind", ^{
-	NSURL *supportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:NULL];
-	NSURL *workingDirectory = [supportURL URLByAppendingPathComponent:self.shipItDirectoryManager.applicationIdentifier isDirectory:YES];
-	NSURL *staleURL = [workingDirectory URLByAppendingPathComponent:@"install.stale123/TestApplication.app/Contents" isDirectory:YES];
-	expect(@([NSFileManager.defaultManager createDirectoryAtURL:staleURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
-
-	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
-	[self installWithRequest:request remote:NO];
-
-	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
-	NSArray *leftovers = [[NSFileManager.defaultManager contentsOfDirectoryAtPath:workingDirectory.path error:NULL] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"SELF BEGINSWITH 'install.'"]];
-	expect(leftovers).to(equal(@[]));
-});
-
 describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
 	beforeEach(^{
 		// SQRLInstaller adds the running application's identifier (and that

@@ -166,9 +166,7 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			}]
 			catchTo:[RACSignal empty]]
 			then:^{
-				return [[self pruneOrphanedWorkingCopies] then:^{
-					return [self installRequest:request];
-				}];
+				return [self installRequest:request];
 			}];
 	}];
 
@@ -425,31 +423,13 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 #pragma mark Bundle Ownership
 
-// Holds this installer's working copies: the incoming update while it is
-// verified, and the existing application while it is moved aside. Not
-// NSTemporaryDirectory(), because the system deletes files there that have gone
-// unused for a few days while keeping the directories, and a moved-aside
-// application can wait longer than that for the next ShipIt run.
-- (NSURL *)workingDirectoryWithError:(NSError **)errorRef {
-	NSURL *supportURL = [NSFileManager.defaultManager URLForDirectory:NSApplicationSupportDirectory inDomain:NSUserDomainMask appropriateForURL:nil create:YES error:errorRef];
-	if (supportURL == nil) return nil;
-
-	NSURL *directoryURL = [supportURL URLByAppendingPathComponent:self.applicationIdentifier isDirectory:YES];
-	if (![NSFileManager.defaultManager createDirectoryAtURL:directoryURL withIntermediateDirectories:YES attributes:nil error:errorRef]) return nil;
-
-	return directoryURL;
-}
-
 - (RACSignal *)ownedTemporaryDirectoryURL {
 	return [[[RACSignal
 		defer:^{
-			NSError *error = nil;
-			NSURL *workingDirectory = [self workingDirectoryWithError:&error];
-			if (workingDirectory == nil) {
-				return [RACSignal error:error];
-			}
+			NSString *tmpPath = [NSTemporaryDirectory() stringByResolvingSymlinksInPath];
+			NSString *template = [NSString stringWithFormat:@"%@.XXXXXXXX", self.applicationIdentifier];
 
-			char *fullTemplate = strdup([workingDirectory.path stringByAppendingPathComponent:@"install.XXXXXXXX"].fileSystemRepresentation);
+			char *fullTemplate = strdup([tmpPath stringByAppendingPathComponent:template].UTF8String);
 			@onExit {
 				free(fullTemplate);
 			};
@@ -466,35 +446,6 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 			return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorBackupFailed toError:error]];
 		}]
 		setNameWithFormat:@"%@ -ownedDirectoryURL", self];
-}
-
-// Removes working copies left by earlier runs that did not finish, except the
-// one holding the currently owned bundle.
-- (RACSignal *)pruneOrphanedWorkingCopies {
-	return [[RACSignal
-		defer:^{
-			NSError *error = nil;
-			NSURL *workingDirectory = [self workingDirectoryWithError:&error];
-			NSArray<NSURL *> *entries = workingDirectory == nil ? nil : [NSFileManager.defaultManager contentsOfDirectoryAtURL:workingDirectory includingPropertiesForKeys:nil options:0 error:&error];
-			if (entries == nil) {
-				NSLog(@"Could not list %@ to prune it: %@", workingDirectory, error);
-				return [RACSignal empty];
-			}
-
-			NSURL *ownedDirectory = self.ownedBundle.temporaryURL.URLByDeletingLastPathComponent.URLByStandardizingPath;
-			for (NSURL *entry in entries) {
-				if (![entry.lastPathComponent hasPrefix:@"install."]) continue;
-				if ([entry.URLByStandardizingPath isEqual:ownedDirectory]) continue;
-
-				NSError *removeError = nil;
-				if (![NSFileManager.defaultManager removeItemAtURL:entry error:&removeError]) {
-					NSLog(@"Could not remove stale working copy %@: %@", entry.path, removeError);
-				}
-			}
-
-			return [RACSignal empty];
-		}]
-		setNameWithFormat:@"%@ -pruneOrphanedWorkingCopies", self];
 }
 
 - (RACSignal *)copyBundleAtURL:(NSURL *)bundleURL toDirectory:(NSURL *)directoryURL {
