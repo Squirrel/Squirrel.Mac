@@ -100,25 +100,48 @@ static RACSignal *waitForTerminationIfNecessary(SQRLShipItRequest *request) {
 		setNameWithFormat:@"waitForTerminationIfNecessary"];
 }
 
+// Puts back an application that an earlier, interrupted run moved aside. Done
+// at launch rather than after waiting for the application to quit, which can
+// take days, so the backup does not sit in the temporary directory long enough
+// for the system to clean it up.
+static RACSignal *restoreOwnedBundle(SQRLInstaller *installer) {
+	return [[[installer
+		abortInstall]
+		catch:^(NSError *error) {
+			NSLog(@"Could not restore bundle left by an earlier install attempt: %@", error.sqrl_verboseDescription);
+			return [RACSignal empty];
+		}]
+		setNameWithFormat:@"restoreOwnedBundle"];
+}
+
 static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
-	[[[[[readRequestSignal
+	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
+
+	[[[[[[restoreOwnedBundle(installer)
+		concat:readRequestSignal]
 		flattenMap:^(SQRLShipItRequest *request) {
 			return waitForTerminationIfNecessary(request);
 		}]
 		ignoreValues]
 		concat:readRequestSignal]
 		flattenMap:^(SQRLShipItRequest *request) {
-			SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
-
 			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
 			setInstallationAttempts(applicationIdentifier, attempt);
 
+			// The staged update can be removed while ShipIt waits for the
+			// application to quit; retrying cannot help then.
+			BOOL updateMissing = ![request.updateBundleURL checkResourceIsReachableAndReturnError:NULL];
+
 			RACSignal *action;
-			if (attempt > SQRLShipItMaximumInstallationAttempts) {
+			if (updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
-						NSLog(@"Too many attempts to install, aborting update");
+						if (updateMissing) {
+							NSLog(@"Update bundle %@ no longer exists, aborting update", request.updateBundleURL.path);
+						} else {
+							NSLog(@"Too many attempts to install, aborting update");
+						}
 					}]
 					catch:^(NSError *error) {
 						NSLog(@"Error aborting installation: %@", error);
@@ -258,6 +281,13 @@ int main(int argc, const char * argv[]) {
 			}
 			return EXIT_FAILURE;
 		}
+
+		// Resolve the main bundle while it still exists on disk. ShipIt can wait
+		// hours for the application to quit, and the app that contains it may be
+		// moved or deleted in that time; +mainBundle is created lazily and comes
+		// back nil once the executable's directory is gone, which turns every
+		// later NSLocalizedString() into nil.
+		(void)NSBundle.mainBundle;
 
 		char const *jobLabel = argv[1];
 		const char *statePath = argv[2];
