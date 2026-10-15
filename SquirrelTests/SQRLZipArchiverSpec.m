@@ -17,6 +17,7 @@
 
 @interface SQRLZipArchiver (SQRLTestingHooks)
 @property (nonatomic, strong, readonly) NSTask *dittoTask;
+@property (nonatomic, strong, readonly) NSPipe *standardErrorPipe;
 - (RACSignal *)launchWithArguments:(NSArray *)arguments;
 @end
 
@@ -49,6 +50,18 @@ it(@"should error (not throw) when the ditto task fails to launch", ^{
 	expect(error.domain).to(equal(SQRLZipArchiverErrorDomain));
 	expect(@(error.code)).to(equal(@(SQRLZipArchiverShellTaskFailed)));
 	expect(error.userInfo[NSLocalizedDescriptionKey]).notTo(beNil());
+});
+
+it(@"should stop reading standard error once the ditto task has terminated", ^{
+	SQRLZipArchiver *archiver = [[SQRLZipArchiver alloc] init];
+	archiver.dittoTask.launchPath = @"/bin/sh";
+
+	NSError *error = nil;
+	BOOL success = [[archiver launchWithArguments:@[ @"-c", @"echo failure >&2; exit 1" ]] asynchronouslyWaitUntilCompleted:&error];
+
+	expect(@(success)).to(beFalsy());
+	expect(@(error.code)).to(equal(@(SQRLZipArchiverShellTaskFailed)));
+	expect(archiver.standardErrorPipe.fileHandleForReading.readabilityHandler).to(beNil());
 });
 
 it(@"should fail to extract a nonexistent zip archive", ^{

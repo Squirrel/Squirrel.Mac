@@ -62,13 +62,21 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 		@strongify(self);
 		if (self == nil) return;
 
+		NSFileHandle *standardError = self.standardErrorPipe.fileHandleForReading;
+		standardError.readabilityHandler = nil;
 		[self->_taskTerminated sendNext:@(task.terminationStatus)];
-		[self.standardErrorPipe.fileHandleForReading closeFile];
+		[standardError closeFile];
 	};
 
 	RACSubject *errorDataChunks = [[RACSubject subject] setNameWithFormat:@"errorDataChunks"];
 	self.standardErrorPipe.fileHandleForReading.readabilityHandler = ^(NSFileHandle *handle) {
-		[errorDataChunks sendNext:handle.availableData];
+		NSData *data = handle.availableData;
+		if (data.length == 0) {
+			handle.readabilityHandler = nil;
+			return;
+		}
+
+		[errorDataChunks sendNext:data];
 	};
 
 	_standardErrorData = [[[[[[errorDataChunks
@@ -91,7 +99,9 @@ const NSInteger SQRLZipArchiverShellTaskFailed = 1;
 
 - (void)dealloc {
 	[_taskTerminated sendCompleted];
-	[self.standardErrorPipe.fileHandleForReading closeFile];
+	NSFileHandle *standardError = self.standardErrorPipe.fileHandleForReading;
+	standardError.readabilityHandler = nil;
+	[standardError closeFile];
 }
 
 #pragma mark Archiving/Unarchiving
