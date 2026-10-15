@@ -11,3 +11,4 @@
 NSString * const SQRLTestAppUpdaterStateTransitionNotificationName = @"com.github.Squirrel.TestApplication.state-changed";
 
 NSString * const SQRLTestAppUpdaterStateKey = @"state";
+NSString * const SQRLTestAppUpdaterHasAvailableUpdateKey = @"hasAvailableUpdate";
