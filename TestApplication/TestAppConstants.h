@@ -20,3 +20,6 @@ extern NSString * const SQRLTestAppUpdaterStateTransitionNotificationName;
 
 // The state of the updater, an NSNumber.
 extern NSString * const SQRLTestAppUpdaterStateKey;
+
+// Whether the updater has an `availableUpdate` in that state, an NSNumber.
+extern NSString * const SQRLTestAppUpdaterHasAvailableUpdateKey;

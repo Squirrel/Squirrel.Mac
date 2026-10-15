@@ -856,6 +856,15 @@ static RACSignal * (^stateNotificationListener)(void) = ^ {
 		setNameWithFormat:@"stateNotificationListener"];
 };
 
+static RACSignal * (^availableUpdateNotificationListener)(void) = ^ {
+	return [[[NSDistributedNotificationCenter.defaultCenter
+		rac_addObserverForName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil]
+		map:^(NSNotification *notification) {
+			return notification.userInfo[SQRLTestAppUpdaterHasAvailableUpdateKey];
+		}]
+		setNameWithFormat:@"availableUpdateNotificationListener"];
+};
+
 describe(@"state", ^{
 	it(@"should transition through idle, checking and idle, when there is no update", ^{
 		SKIP_IF_RUNNING_ON_TRAVIS
@@ -863,6 +872,11 @@ describe(@"state", ^{
 		NSMutableArray *states = [NSMutableArray array];
 		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
 			[states addObject:state];
+		}];
+
+		NSMutableArray *availableUpdates = [NSMutableArray array];
+		[availableUpdateNotificationListener() subscribeNext:^(NSNumber *hasAvailableUpdate) {
+			[availableUpdates addObject:hasAvailableUpdate];
 		}];
 
 		NSRunningApplication *testApplication = launchWithEnvironment(nil);
@@ -877,6 +891,7 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateIdle),
 		];
 		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
+		expect(availableUpdates).withTimeout(SQRLLongTimeout).toEventually(equal(@[ @NO, @NO, @NO ]));
 	});
 
 	it(@"should transition through idle, checking, downloading and awaiting relaunch, when there is an update", ^{
@@ -885,6 +900,11 @@ describe(@"state", ^{
 		NSMutableArray *states = [NSMutableArray array];
 		[stateNotificationListener() subscribeNext:^(NSNumber *state) {
 			[states addObject:state];
+		}];
+
+		NSMutableArray *availableUpdates = [NSMutableArray array];
+		[availableUpdateNotificationListener() subscribeNext:^(NSNumber *hasAvailableUpdate) {
+			[availableUpdates addObject:hasAvailableUpdate];
 		}];
 
 		// Declares the archive's real digest and size, so reaching
@@ -921,6 +941,9 @@ describe(@"state", ^{
 			@(SQRLUpdaterStateAwaitingRelaunch),
 		];
 		expect(states).withTimeout(SQRLLongTimeout).toEventually(equal(expectedStates));
+
+		// The update is known from the downloading state on.
+		expect(availableUpdates).withTimeout(SQRLLongTimeout).toEventually(equal(@[ @NO, @NO, @YES, @YES ]));
 	});
 });
 

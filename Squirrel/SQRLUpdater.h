@@ -70,6 +70,7 @@ extern NSString * const SQRLUpdaterJSONObjectErrorKey;
 @class RACCommand;
 @class RACDisposable;
 @class RACSignal;
+@class SQRLUpdate;
 
 /// Type of mode used to download the release
 typedef enum {
@@ -89,6 +90,14 @@ typedef enum {
 //
 // This property is KVO-compliant.
 @property (atomic, readonly) SQRLUpdaterState state;
+
+// The update that the server last offered. It is set before `state` changes to
+// `SQRLUpdaterStateDownloadingUpdate`, so it describes the update while that is
+// being downloaded and while it waits to be installed, and it is reset to `nil`
+// before `state` returns to `SQRLUpdaterStateIdle`.
+//
+// This property is KVO-compliant.
+@property (atomic, strong, readonly) SQRLUpdate *availableUpdate;
 
 // Sends `SQRLDownloadProgress` values on an unspecified thread while an update
 // package is being downloaded (`state` is

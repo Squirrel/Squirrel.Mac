@@ -67,10 +67,14 @@
 	self.updater = [[SQRLUpdater alloc] initWithUpdateRequest:request];
 	self.updater.updateClass = SQRLTestUpdate.class;
 
+	SQRLUpdater *updater = self.updater;
 	[RACObserve(self.updater, state) subscribeNext:^(NSNumber *state) {
 		NSLog(@"State transition: %@", state);
 
-		[NSDistributedNotificationCenter.defaultCenter postNotificationName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil userInfo:@{ SQRLTestAppUpdaterStateKey: state } deliverImmediately:YES];
+		[NSDistributedNotificationCenter.defaultCenter postNotificationName:SQRLTestAppUpdaterStateTransitionNotificationName object:nil userInfo:@{
+			SQRLTestAppUpdaterStateKey: state,
+			SQRLTestAppUpdaterHasAvailableUpdateKey: @(updater.availableUpdate != nil),
+		} deliverImmediately:YES];
 	}];
 
 	__block NSUInteger updateCheckCount = 1;

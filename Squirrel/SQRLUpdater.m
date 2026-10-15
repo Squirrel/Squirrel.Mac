@@ -81,6 +81,8 @@ BOOL isVersionStandard(NSString* version) {
 
 @property (atomic, readwrite) SQRLUpdaterState state;
 
+@property (atomic, strong, readwrite) SQRLUpdate *availableUpdate;
+
 /// The etag of the currently downloaded update, nil if no update has been
 /// downloaded.
 @property (atomic, copy) NSString *etag;
@@ -382,6 +384,7 @@ BOOL isVersionStandard(NSString* version) {
 			flattenMap:^(SQRLUpdate *update) {
 				return [[RACSignal
 					defer:^{
+						self.availableUpdate = update;
 						self.state = SQRLUpdaterStateDownloadingUpdate;
 
 						return [self downloadAndPrepareUpdate:update];
@@ -392,6 +395,7 @@ BOOL isVersionStandard(NSString* version) {
 			}]
 			finally:^{
 				if (self.state == SQRLUpdaterStateAwaitingRelaunch) return;
+				self.availableUpdate = nil;
 				self.state = SQRLUpdaterStateIdle;
 			}]
 			deliverOn:RACScheduler.mainThreadScheduler];
