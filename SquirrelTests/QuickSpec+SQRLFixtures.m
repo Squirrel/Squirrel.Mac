@@ -236,13 +236,17 @@ QuickConfigurationEnd
 
 		// Remove ShipIt's launchd job so it doesn't relaunch itself.
 		// SMJobRemove is deprecated but has no test-suitable replacement
-		// (SMAppService requires registration via the same API).
+		// (SMAppService requires registration via the same API). The job
+		// is usually already gone — ShipIt removes it on success — so a
+		// job-not-found error is expected and not worth logging.
 		CFErrorRef error = NULL;
 		#pragma clang diagnostic push
 		#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 		if (!SMJobRemove(kSMDomainUserLaunchd, CFSTR("com.github.Squirrel.TestApplication.ShipIt"), NULL, true, &error)) {
-			NSLog(@"Could not remove ShipIt job after tests: %@", error);
-			if (error != NULL) CFRelease(error);
+			NSError *removeError = CFBridgingRelease(error);
+			if (![removeError.domain isEqual:(__bridge id)kSMErrorDomainLaunchd] || removeError.code != kSMErrorJobNotFound) {
+				NSLog(@"Could not remove ShipIt job after tests: %@", removeError);
+			}
 		}
 		#pragma clang diagnostic pop
 	}];
@@ -338,7 +342,10 @@ QuickConfigurationEnd
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 static NSNumber *SQRLShipItLastExitStatus(NSString *jobLabel) {
 	NSDictionary *job = CFBridgingRelease(SMJobCopyDictionary(kSMDomainUserLaunchd, (__bridge CFStringRef)jobLabel));
-	if (job == nil || job[@"PID"] != nil) return nil;
+	// ShipIt removes its own launchd job when it finishes successfully, so
+	// once the job has been submitted, its disappearance means a clean exit.
+	if (job == nil) return @0;
+	if (job[@"PID"] != nil) return nil;
 	return job[@"LastExitStatus"];
 }
 #pragma clang diagnostic pop
@@ -348,8 +355,9 @@ static NSNumber *SQRLShipItLastExitStatus(NSString *jobLabel) {
 	// spawn — it does not wait for ShipIt to actually run. Block until launchd
 	// reports the job has exited so callers can assert on the install result
 	// synchronously instead of racing Nimble's default 1s poll timeout.
-	// LastExitStatus only appears once the process has run and exited, which
-	// avoids the brief no-PID window before launchd spawns it.
+	// LastExitStatus only appears once the process has run and exited (and the
+	// job disappears entirely on a successful run), which avoids the brief
+	// no-PID window before launchd spawns it.
 	expect(SQRLShipItLastExitStatus(jobLabel)).withTimeout(SQRLLongTimeout).toEventuallyNot(beNil());
 }
 
