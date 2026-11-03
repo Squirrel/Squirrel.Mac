@@ -22,6 +22,7 @@
 #import <sys/xattr.h>
 #import <copyfile.h>
 #import <signal.h>
+#import <sys/stat.h>
 
 #import "NSBundle+SQRLVersionExtensions.h"
 #import "NSError+SQRLVerbosityExtensions.h"
@@ -271,6 +272,17 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 
 #pragma mark Installer States
 
+- (BOOL)isPreparedDirectoryOwnerAndLocked:(NSURL *)directoryURL requirePrivateDirectory:(BOOL)requirePrivateDirectory {
+	if (directoryURL == nil) return NO;
+	struct stat sb;
+	if (lstat(directoryURL.path.fileSystemRepresentation, &sb) != 0) return NO;
+	if (!S_ISDIR(sb.st_mode)) return NO;
+	if (sb.st_uid != getuid()) return NO;
+	mode_t forbiddenMask = requirePrivateDirectory ? (S_IRWXG | S_IRWXO) : (S_IWGRP | S_IWOTH);
+	if ((sb.st_mode & forbiddenMask) != 0) return NO;
+	return YES;
+}
+
 - (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
@@ -298,7 +310,10 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	}
 
 	RACSignal *candidate;
-	if ([self.preparedRequest matchesPreparedRequest:request] && self.preparedBundleURL != nil) {
+	if ([self.preparedRequest matchesPreparedRequest:request] &&
+		self.preparedBundleURL != nil &&
+		[self isPreparedDirectoryOwnerAndLocked:self.preparedBundleURL.URLByDeletingLastPathComponent requirePrivateDirectory:YES] &&
+		[self isPreparedDirectoryOwnerAndLocked:self.preparedBundleURL requirePrivateDirectory:NO]) {
 		NSLog(@"Using prepared bundle for %@", request.updateBundleURL);
 		candidate = [RACSignal return:self.preparedBundleURL];
 	} else {
@@ -385,7 +400,12 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 					return [self takeOwnershipOfDirectory:bundleURL];
 				}]
 				ignoreValues]
-				concat:[RACSignal return:bundleURL]];
+				then:^{
+					if (chmod(bundleURL.URLByDeletingLastPathComponent.path.fileSystemRepresentation, S_IRWXU) != 0) {
+						return [RACSignal error:[NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil]];
+					}
+					return [RACSignal return:bundleURL];
+				}];
 		}]
 		catch:^(NSError *error) {
 			if (candidateURL == nil) return [RACSignal error:error];
@@ -694,9 +714,10 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 		defer:^{
 			if ([self isEarlyStagingEnabled]) {
 				// COPYFILE_CLONE uses COW where supported and falls back to copying
-				// elsewhere. The source remains intact for a fresh crash retry.
+				// elsewhere. Do not copy caller ACLs (omit COPYFILE_ACL) so a
+				// non-root caller cannot retain write access on a privileged clone.
 				if (copyfile(bundleURL.fileSystemRepresentation, newBundleURL.fileSystemRepresentation, NULL,
-					COPYFILE_ALL | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL | COPYFILE_CLONE) == 0) {
+					COPYFILE_STAT | COPYFILE_XATTR | COPYFILE_DATA | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL | COPYFILE_CLONE) == 0) {
 					return [RACSignal return:newBundleURL];
 				}
 				int code = errno;
@@ -1031,7 +1052,15 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	// permissions left as is.
 	fileMode = (fileMode & ~(S_IWGRP | S_IWOTH));
 
-	return CFFileSecuritySetMode(actualFileSecurity, fileMode);
+	if (!CFFileSecuritySetMode(actualFileSecurity, fileMode)) return NO;
+
+	if ([self isEarlyStagingEnabled]) {
+		// Strip any ACLs inherited from the staged source bundle so caller
+		// ACL entries cannot grant write access after ShipIt takes ownership.
+		(void)CFFileSecuritySetAccessControlList(actualFileSecurity, NULL);
+	}
+
+	return YES;
 }
 
 #pragma mark Error Handling

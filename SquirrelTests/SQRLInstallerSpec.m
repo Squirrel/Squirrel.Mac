@@ -152,6 +152,32 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
 	});
 
+	it(@"should strip ACLs and lock the private staging directory to 0700, re-staging if permissions are loosened", ^{
+		NSString *chmodACL = [NSString stringWithFormat:@"/bin/chmod +a 'everyone allow write' '%@'", updateURL.path];
+		expect(@(system(chmodACL.UTF8String))).to(equal(@0));
+
+		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		NSURL *candidate = [installer valueForKey:@"preparedBundleURL"];
+		expect(@(modeOfURL(candidate.URLByDeletingLastPathComponent))).to(equal(@0700));
+		expect(@(modeOfURL(candidate) & (S_IWGRP | S_IWOTH))).to(equal(@0));
+
+		NSFileSecurity *security = nil;
+		BOOL gotSecurity = [candidate getResourceValue:&security forKey:NSURLFileSecurityKey error:NULL];
+		expect(@(gotSecurity)).to(beTruthy());
+		acl_t acl = NULL;
+		BOOL gotACL = CFFileSecurityCopyAccessControlList((__bridge CFFileSecurityRef)security, &acl);
+		expect(@(gotACL)).to(beFalsy());
+		expect(@(acl == NULL)).to(beTruthy());
+
+		// Loosening the private parent directory's mode must cause the installer
+		// to discard the candidate and stage a fresh one at install time.
+		expect(@(chmod(candidate.URLByDeletingLastPathComponent.path.fileSystemRepresentation, 0755))).to(equal(@0));
+		expect(@([[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:candidate.URLByDeletingLastPathComponent.path])).to(beFalsy());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(@([[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+	});
+
 	it(@"should discard the old candidate for a changed request", ^{
 		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
 		NSURL *oldCandidate = [installer valueForKey:@"preparedBundleURL"];
