@@ -1086,15 +1086,20 @@ BOOL isVersionStandard(NSString* version) {
 				}];
 			}
 
+			NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
+			values[@keypath(request.earlyStaging)] = @YES;
+			NSError *error = nil;
+			request = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
+			if (request == nil) return [RACSignal error:error];
+
 			return [[[request writeUsingURL:self.shipItStateURL]
 				concat:[RACSignal return:request]]
 				flattenMap:^(SQRLShipItRequest *request) {
-					return [self.shipItLauncher then:^{
+					return [[self.shipItLauncher then:^{
 						return [request waitForPreparationUsingURL:self.shipItStateURL];
-					}];
+					}] ignoreValues];
 				}];
 		}]
-		ignoreValues]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
 }

@@ -67,6 +67,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		@keypath(SQRLShipItRequest.new, bundleIdentifier): @keypath(SQRLShipItRequest.new, bundleIdentifier),
 		@keypath(SQRLShipItRequest.new, launchAfterInstallation): @keypath(SQRLShipItRequest.new, launchAfterInstallation),
 		@keypath(SQRLShipItRequest.new, useUpdateBundleName): @keypath(SQRLShipItRequest.new, useUpdateBundleName),
+		@keypath(SQRLShipItRequest.new, earlyStaging): @keypath(SQRLShipItRequest.new, earlyStaging),
 		@keypath(SQRLShipItRequest.new, prepared): @keypath(SQRLShipItRequest.new, prepared),
 		@keypath(SQRLShipItRequest.new, preparationError): @keypath(SQRLShipItRequest.new, preparationError),
 	};
@@ -77,7 +78,8 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	return [self.updateBundleURL isEqual:request.updateBundleURL] &&
 		[self.targetBundleURL isEqual:request.targetBundleURL] &&
 		(self.bundleIdentifier == request.bundleIdentifier || [self.bundleIdentifier isEqual:request.bundleIdentifier]) &&
-		self.useUpdateBundleName == request.useUpdateBundleName;
+		self.useUpdateBundleName == request.useUpdateBundleName &&
+		self.earlyStaging == request.earlyStaging;
 }
 
 - (RACSignal *)writePreparationResult:(NSError *)error usingURL:(RACSignal *)stateURL {

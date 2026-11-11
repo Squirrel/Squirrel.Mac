@@ -59,6 +59,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 // Stores the bundle moved aside by an install request so that the original
 // bundle can be restored to its original location if needed.
 @property (atomic, strong) SQRLInstallerOwnedBundle *ownedBundle;
+@property (nonatomic, assign, readonly) BOOL earlyStagingEnabled;
 @property (nonatomic, strong) SQRLShipItRequest *preparedRequest;
 @property (nonatomic, copy) NSURL *preparedBundleURL;
 
@@ -145,6 +146,12 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	if (self == nil) return nil;
 
 	_applicationIdentifier = [applicationIdentifier copy];
+	NSUserDefaults *defaults = [[NSUserDefaults alloc] init];
+	[defaults addSuiteNamed:_applicationIdentifier];
+	if ([_applicationIdentifier hasSuffix:@".ShipIt"]) {
+		[defaults addSuiteNamed:[_applicationIdentifier substringToIndex:[_applicationIdentifier length] - 7]];
+	}
+	_earlyStagingEnabled = [defaults boolForKey:@"SquirrelMacEnableEarlyStaging"];
 
 	@weakify(self);
 
@@ -191,12 +198,11 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (BOOL)isEarlyStagingEnabled {
-	NSUserDefaults *defaults = [[NSUserDefaults alloc] init];
-	[defaults addSuiteNamed:_applicationIdentifier];
-	if ([_applicationIdentifier hasSuffix:@".ShipIt"]) {
-		[defaults addSuiteNamed:[_applicationIdentifier substringToIndex:[_applicationIdentifier length] - 7]];
-	}
-	return [defaults boolForKey:@"SquirrelMacEnableEarlyStaging"];
+	return self.earlyStagingEnabled;
+}
+
+- (BOOL)isEarlyStagingEnabledForRequest:(SQRLShipItRequest *)request {
+	return request.earlyStaging || self.earlyStagingEnabled;
 }
 
 #pragma mark Preferences
@@ -286,7 +292,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 - (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
-	if (![self isEarlyStagingEnabled]) {
+	if (![self isEarlyStagingEnabledForRequest:request]) {
 		return [[[[[[[self
 			ownedTemporaryDirectoryURL]
 			flattenMap:^(NSURL *directoryURL) {
@@ -388,7 +394,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	return [[[[[[self
 		ownedTemporaryDirectoryURL]
 		flattenMap:^(NSURL *directoryURL) {
-			return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
+			return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL useClone:YES];
 		}]
 		doNext:^(NSURL *URL) {
 			candidateURL = URL;
@@ -397,7 +403,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 		flattenMap:^(NSURL *bundleURL) {
 			return [[[[self clearQuarantineForDirectory:bundleURL]
 				then:^{
-					return [self takeOwnershipOfDirectory:bundleURL];
+					return [self takeOwnershipOfDirectory:bundleURL stripACLs:YES];
 				}]
 				ignoreValues]
 				then:^{
@@ -545,7 +551,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
 				}]
 				flattenMap:^(SQRLShipItRequest *request) {
-					if ([self isEarlyStagingEnabled]) {
+					if ([self isEarlyStagingEnabledForRequest:request]) {
 						return [[self
 							installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
 							then:^{
@@ -579,7 +585,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 						concat:[RACSignal return:request]];
 				}]
 				doCompleted:^{
-					if (![self isEarlyStagingEnabled]) {
+					if (![self isEarlyStagingEnabledForRequest:request]) {
 						self.ownedBundle = nil;
 					}
 				}];
@@ -705,6 +711,10 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (RACSignal *)copyBundleAtURL:(NSURL *)bundleURL toDirectory:(NSURL *)directoryURL {
+	return [self copyBundleAtURL:bundleURL toDirectory:directoryURL useClone:self.earlyStagingEnabled];
+}
+
+- (RACSignal *)copyBundleAtURL:(NSURL *)bundleURL toDirectory:(NSURL *)directoryURL useClone:(BOOL)useClone {
 	NSParameterAssert(bundleURL != nil);
 	NSParameterAssert(directoryURL != nil);
 
@@ -712,7 +722,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 
 	return [[[RACSignal
 		defer:^{
-			if ([self isEarlyStagingEnabled]) {
+			if (useClone) {
 				// COPYFILE_CLONE uses COW where supported and falls back to copying
 				// elsewhere. Do not copy caller ACLs (omit COPYFILE_ACL) so a
 				// non-root caller cannot retain write access on a privileged clone.
@@ -998,6 +1008,10 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL {
+	return [self takeOwnershipOfDirectory:directoryURL stripACLs:self.earlyStagingEnabled];
+}
+
+- (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL stripACLs:(BOOL)stripACLs {
 	NSParameterAssert(directoryURL != nil);
 
 	return [[[RACSignal
@@ -1015,7 +1029,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 			return [[[self
 				readFileSecurityOfURL:itemURL]
 				flattenMap:^(NSFileSecurity *fileSecurity) {
-					if (![self takeOwnershipOfFileSecurity:fileSecurity]) {
+					if (![self takeOwnershipOfFileSecurity:fileSecurity stripACLs:stripACLs]) {
 						NSDictionary *errorInfo = @{
 							NSLocalizedDescriptionKey: NSLocalizedString(@"Permissions Error", nil),
 							NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"Couldn’t update permissions of %@", nil), itemURL.path],
@@ -1034,7 +1048,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 		setNameWithFormat:@"%@ -takeOwnershipOfDirectory: %@", self, directoryURL];
 }
 
-- (BOOL)takeOwnershipOfFileSecurity:(NSFileSecurity *)fileSecurity {
+- (BOOL)takeOwnershipOfFileSecurity:(NSFileSecurity *)fileSecurity stripACLs:(BOOL)stripACLs {
 	CFFileSecurityRef actualFileSecurity = (__bridge CFFileSecurityRef)fileSecurity;
 
 	// If ShipIt is running as root, this will change the owner to
@@ -1054,7 +1068,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 
 	if (!CFFileSecuritySetMode(actualFileSecurity, fileMode)) return NO;
 
-	if ([self isEarlyStagingEnabled]) {
+	if (stripACLs) {
 		// Strip any ACLs inherited from the staged source bundle so caller
 		// ACL entries cannot grant write access after ShipIt takes ownership.
 		(void)CFFileSecuritySetAccessControlList(actualFileSecurity, NULL);

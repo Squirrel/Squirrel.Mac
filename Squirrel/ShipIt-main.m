@@ -118,47 +118,50 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
 	RACSignal *readRequestSignal = [SQRLShipItRequest readUsingURL:[RACSignal return:stateURL]];
 
-	RACSignal *readyToInstall;
-	if ([installer isEarlyStagingEnabled]) {
-		RACScheduler *preparationScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityLow];
-		RACSignal *requests = [[[[[[RACSignal interval:0.5 onScheduler:preparationScheduler]
-			startWith:NSDate.date]
-			flattenMap:^(id _) {
-				return readRequestSignal;
-			}]
-			map:^(SQRLShipItRequest *request) {
-				return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:request.useUpdateBundleName];
-			}]
-			distinctUntilChanged]
-			deliverOn:preparationScheduler];
+	RACSignal *readyToInstall = [readRequestSignal
+		flattenMap:^(SQRLShipItRequest *initialRequest) {
+			if (![installer isEarlyStagingEnabledForRequest:initialRequest]) {
+				return [[waitForTerminationIfNecessary(initialRequest)
+					ignoreValues]
+					concat:readRequestSignal];
+			}
 
-		readyToInstall = [[[requests
-			map:^(SQRLShipItRequest *request) {
-				__block NSError *preparationError = nil;
-				RACSignal *preparing = [[[installer prepareRequest:request]
-					catch:^(NSError *error) {
-						preparationError = error;
-						NSLog(@"Preparation failed: %@", error.sqrl_verboseDescription);
-						return [RACSignal empty];
-					}]
-					ignoreValues];
-				return [[[[preparing then:^{
-					return [request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]];
+			RACScheduler *preparationScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityLow];
+			RACSignal *requests = [[[[[[RACSignal interval:0.5 onScheduler:preparationScheduler]
+				startWith:NSDate.date]
+				flattenMap:^(id _) {
+					return readRequestSignal;
 				}]
-					concat:[waitForTerminationIfNecessary(request) ignoreValues]]
-					concat:readRequestSignal]
-					deliverOn:preparationScheduler];
-			}]
-			switchToLatest]
-			take:1];
-	} else {
-		readyToInstall = [[[readRequestSignal
-			flattenMap:^(SQRLShipItRequest *request) {
-				return waitForTerminationIfNecessary(request);
-			}]
-			ignoreValues]
-			concat:readRequestSignal];
-	}
+				flattenMap:^(SQRLShipItRequest *request) {
+					NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
+					values[@keypath(request.launchAfterInstallation)] = @NO;
+					NSError *error = nil;
+					SQRLShipItRequest *normalized = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
+					return normalized == nil ? [RACSignal error:error] : [RACSignal return:normalized];
+				}]
+				distinctUntilChanged]
+				deliverOn:preparationScheduler];
+
+			return [[[requests
+				map:^(SQRLShipItRequest *request) {
+					__block NSError *preparationError = nil;
+					RACSignal *preparing = [[[installer prepareRequest:request]
+						catch:^(NSError *error) {
+							preparationError = error;
+							NSLog(@"Preparation failed: %@", error.sqrl_verboseDescription);
+							return [RACSignal empty];
+						}]
+						ignoreValues];
+					return [[[[preparing then:^{
+						return [request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]];
+					}]
+						concat:[waitForTerminationIfNecessary(request) ignoreValues]]
+						concat:readRequestSignal]
+						deliverOn:preparationScheduler];
+				}]
+				switchToLatest]
+				take:1];
+		}];
 
 	[[[restoreOwnedBundle(installer)
 		concat:readyToInstall]
@@ -290,7 +293,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 
 			// deliverOn above ensures launch handling runs before this
 			// subscription starts recursive cleanup.
-			if (![installer isEarlyStagingEnabled]) {
+			if (![installer isEarlyStagingEnabledForRequest:request]) {
 				return action;
 			}
 			return [action concat:[RACSignal defer:^{

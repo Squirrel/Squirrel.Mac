@@ -97,6 +97,10 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // Whether the app should use the update bundle's name.
 @property (nonatomic, assign, readonly) BOOL useUpdateBundleName;
 
+// Whether ShipIt should pre-stage the update before termination and defer
+// obsolete bundle cleanup until after relaunch.
+@property (nonatomic, assign, readonly) BOOL earlyStaging;
+
 // Compares all installation fields, excluding launchAfterInstallation and
 // preparation status.
 - (BOOL)matchesPreparedRequest:(SQRLShipItRequest *)request;

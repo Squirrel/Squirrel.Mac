@@ -100,11 +100,11 @@ describe(@"preparation status", ^{
 		SQRLShipItRequest *relaunch = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
 		expect(@([request matchesPreparedRequest:relaunch])).to(beTruthy());
 
-		for (NSString *key in @[ @"targetBundleURL", @"updateBundleURL", @"bundleIdentifier", @"useUpdateBundleName" ]) {
+		for (NSString *key in @[ @"targetBundleURL", @"updateBundleURL", @"bundleIdentifier", @"useUpdateBundleName", @"earlyStaging" ]) {
 			NSMutableDictionary *changed = [values mutableCopy];
 			if ([key hasSuffix:@"URL"]) {
 				changed[key] = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"different.app"];
-			} else if ([key isEqual:@"useUpdateBundleName"]) {
+			} else if ([key isEqual:@"useUpdateBundleName"] || [key isEqual:@"earlyStaging"]) {
 				changed[key] = @YES;
 			} else {
 				changed[key] = @"different";

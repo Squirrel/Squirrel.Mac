@@ -366,7 +366,7 @@ static NSNumber *SQRLShipItLastExitStatus(NSString *jobLabel) {
 		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
 		expect(@(installed)).to(beTruthy());
 		expect(installedError).to(beNil());
-		if ([installer isEarlyStagingEnabled]) {
+		if ([installer isEarlyStagingEnabledForRequest:request]) {
 			BOOL cleaned = [[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:&installedError];
 			expect(@(cleaned)).to(beTruthy());
 			expect(installedError).to(beNil());

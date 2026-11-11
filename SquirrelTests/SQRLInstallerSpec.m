@@ -270,6 +270,27 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
+
+	it(@"should honor earlyStaging on the request even when ShipIt user defaults are unset", ^{
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		[NSUserDefaults.standardUserDefaults removeObjectForKey:@"SquirrelMacEnableEarlyStaging"];
+		CFPreferencesSetValue(CFSTR("SquirrelMacEnableEarlyStaging"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+
+		NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
+		values[@"earlyStaging"] = @YES;
+		SQRLShipItRequest *requestWithFlag = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
+		expect(requestWithFlag).notTo(beNil());
+
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:requestWithFlag];
+		__block NSError *error = nil;
+		expect(@([[requestWithFlag waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
 });
 
 describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{

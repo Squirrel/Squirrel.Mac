@@ -34,8 +34,9 @@ extern NSString * const SQRLShipItInstallationAttemptsKey;
 // Removes committed obsolete bundles; never restores a committed backup.
 - (RACSignal *)cleanupAfterInstallation;
 
-// Whether SquirrelMacEnableEarlyStaging is enabled in NSUserDefaults for the
-// target application or ShipIt domain.
+// Whether SquirrelMacEnableEarlyStaging is enabled for the given request or
+// in NSUserDefaults for the target application / ShipIt domain.
 - (BOOL)isEarlyStagingEnabled;
+- (BOOL)isEarlyStagingEnabledForRequest:(SQRLShipItRequest *)request;
 
 @end
