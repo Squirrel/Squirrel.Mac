@@ -22,6 +22,7 @@
 #import "SUBinaryDeltaApply.h"
 #import "SQRLZipArchiver.h"
 #import "SQRLShipItRequest.h"
+#import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -1070,7 +1071,7 @@ BOOL isVersionStandard(NSString* version) {
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[RACSignal
+	return [[[RACSignal
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 			NSURL *targetBundleURL = currentApplication.bundleURL.URLByResolvingSymlinksInPath;
@@ -1113,10 +1114,12 @@ BOOL isVersionStandard(NSString* version) {
 - (RACSignal *)relaunchToInstallUpdate {
 	return [[[[[[[[SQRLShipItRequest
 		readUsingURL:self.shipItStateURL]
-		map:^(SQRLShipItRequest *request) {
+		flattenMap:^(SQRLShipItRequest *request) {
 			NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
-			values[@"launchAfterInstallation"] = @YES;
-			return [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
+			values[@keypath(request.launchAfterInstallation)] = @YES;
+			NSError *error = nil;
+			SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
+			return updatedRequest == nil ? [RACSignal error:error] : [RACSignal return:updatedRequest];
 		}]
 		flattenMap:^(SQRLShipItRequest *request) {
 			return [[request

@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
+#import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/RACCommand.h>
 #import <ReactiveObjC/RACSignal+Operations.h>
@@ -179,7 +180,6 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 			BOOL updateMissing = ![request.updateBundleURL checkResourceIsReachableAndReturnError:NULL];
 
 			RACSignal *action;
-			__block BOOL launched = !request.launchAfterInstallation;
 			if (updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[[installer.abortInstallationCommand
 					execute:request]
@@ -265,8 +265,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 								NSLog(@"New ShipIt pid: %i", pid);
 								do {
 									if (waitpid(pid, &status, 0) != -1) {
-										launched = WIFEXITED(status) && WEXITSTATUS(status) == 0;
-										NSLog(@"ShipIt launch succeeded: %d", launched);
+										NSLog(@"ShipIt status %d", WEXITSTATUS(status));
 									} else {
 										perror("waitpid");
 										exit(1);
@@ -291,7 +290,6 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 #pragma clang diagnostic pop
 
 							NSLog(@"Application launched at %@", bundleURL);
-							launched = YES;
 						}
 					}];
 			}
@@ -302,10 +300,6 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 				return action;
 			}
 			return [action concat:[RACSignal defer:^{
-				if (!launched) {
-					NSLog(@"Application launch failed; retaining obsolete bundles for later cleanup");
-					return [RACSignal empty];
-				}
 				return [[[installer cleanupAfterInstallation]
 					subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
 					catch:^(NSError *error) {
@@ -366,7 +360,6 @@ int main(int argc, const char * argv[]) {
 			NSError *error;
 			if (![NSWorkspace.sharedWorkspace launchApplicationAtURL:shipItStateURL options:NSWorkspaceLaunchDefault configuration:@{} error:&error]) {
 				NSLog(@"Could not launch application at %@: %@", shipItStateURL, error);
-				return EXIT_FAILURE;
 			} else {
 				NSLog(@"Successfully launched application at %@", shipItStateURL);
 			}

@@ -37,15 +37,6 @@ static NSNumber *SQRLTestShipItPID(void) {
 	return job[@"PID"];
 }
 
-static void SQRLSignalTestShipIt(int signalNumber) {
-	pid_t pid = SQRLTestShipItPID().intValue;
-	if (pid > 0) {
-		kill(pid, signalNumber);
-	} else {
-		NSLog(@"Test ShipIt has already exited before signal %d", signalNumber);
-	}
-}
-
 QuickSpecBegin(SQRLInstallerSpec)
 
 mode_t (^modeOfURL)(NSURL *) = ^ mode_t (NSURL *fileURL) {
@@ -84,6 +75,7 @@ it(@"should round-trip the owned bundle through CFPreferences", ^{
 	expect(restored).notTo(beNil());
 	expect(restored.originalURL).to(equal(original.originalURL));
 	expect(restored.temporaryURL).to(equal(original.temporaryURL));
+	expect(restored.cleanupURLs).to(beNil());
 
 	[installer setValue:nil forKey:@"ownedBundle"];
 	expect([installer valueForKey:@"ownedBundle"]).to(beNil());
@@ -548,22 +540,22 @@ describe(@"signal handling", ^{
 	});
 
 	it(@"should handle SIGHUP", ^{
-		SQRLSignalTestShipIt(SIGHUP);
+		system("killall -HUP ShipIt");
 		verifyUpdate();
 	});
 
 	it(@"should handle SIGTERM", ^{
-		SQRLSignalTestShipIt(SIGTERM);
+		system("killall -TERM ShipIt");
 		verifyUpdate();
 	});
 
 	it(@"should handle SIGINT", ^{
-		SQRLSignalTestShipIt(SIGINT);
+		system("killall -INT ShipIt");
 		verifyUpdate();
 	});
 
 	it(@"should handle SIGQUIT", ^{
-		SQRLSignalTestShipIt(SIGQUIT);
+		system("killall -QUIT ShipIt");
 		verifyUpdate();
 	});
 
@@ -574,7 +566,7 @@ describe(@"signal handling", ^{
 		// Two SIGKILL signals means that it'll be launched three times (which
 		// matches the maximum number of attempts per state).
 		for (int i = 0; i < 2; i++) {
-			SQRLSignalTestShipIt(SIGKILL);
+			system("killall -KILL ShipIt");
 
 			// Wait at least for the launchd throttle interval.
 			NSTimeInterval delay = 2 + (arc4random_uniform(100) / 1000.0);

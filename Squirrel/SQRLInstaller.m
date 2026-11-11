@@ -12,6 +12,7 @@
 #import <mach-o/dyld.h>
 #import <sys/param.h>
 #import <unistd.h>
+#import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/NSEnumerator+RACSequenceAdditions.h>
 #import <ReactiveObjC/NSObject+RACPropertySubscribing.h>
@@ -61,8 +62,8 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 // bundle can be restored to its original location if needed.
 @property (atomic, strong) SQRLInstallerOwnedBundle *ownedBundle;
 @property (nonatomic, assign, readonly) BOOL earlyStagingEnabled;
-@property (nonatomic, strong) SQRLShipItRequest *preparedRequest;
-@property (nonatomic, copy) NSURL *preparedBundleURL;
+@property (atomic, strong) SQRLShipItRequest *preparedRequest;
+@property (atomic, copy) NSURL *preparedBundleURL;
 
 // Reads the given key from `request`, failing if it's not set.
 //
@@ -173,8 +174,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 		//
 		// If that's the case, we need to abort the previous owned bundle, and
 		// then handle the new install request.
-
-		return [[[[self
+		RACSignal *preparePreviousState = (self.ownedBundle == nil ? [RACSignal empty] : [[[[self
 			abortInstall]
 			doError:^(NSError *error) {
 				NSLog(@"Couldn't abort install and restore owned bundle to previous location %@, error %@", self.ownedBundle.originalURL, error.sqrl_verboseDescription);
@@ -184,9 +184,11 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 				// record if obsolete bundles could not be removed.
 				return self.ownedBundle.cleanupURLs != nil ? [RACSignal error:error] : [RACSignal empty];
 			}]
-			then:^{
-				return [self installRequest:request];
-			}];
+			ignoreValues]);
+
+		return [preparePreviousState then:^{
+			return [self installRequest:request];
+		}];
 	}];
 
 	_abortInstallationCommand = [[RACCommand alloc] initWithEnabled:[self.installUpdateCommand.executing not] signalBlock:^(SQRLShipItRequest *request) {
@@ -392,14 +394,12 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 
 - (RACSignal *)stageUpdateForRequest:(SQRLShipItRequest *)request {
 	__block NSURL *candidateURL = nil;
-	return [[[[[[self
+	return [[[[[self
 		ownedTemporaryDirectoryURL]
 		flattenMap:^(NSURL *directoryURL) {
+			candidateURL = [directoryURL URLByAppendingPathComponent:request.updateBundleURL.lastPathComponent];
+			[self setPersistedPreparedBundleURL:candidateURL];
 			return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL useClone:YES];
-		}]
-		doNext:^(NSURL *URL) {
-			candidateURL = URL;
-			[self setPersistedPreparedBundleURL:URL];
 		}]
 		flattenMap:^(NSURL *bundleURL) {
 			return [[[[self clearQuarantineForDirectory:bundleURL]
@@ -456,8 +456,10 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 			if ([newTargetURL isEqual:request.targetBundleURL]) return [RACSignal return:request];
 
 			NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
-			values[@"targetBundleURL"] = newTargetURL;
-			SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
+			values[@keypath(request.targetBundleURL)] = newTargetURL;
+			NSError *error = nil;
+			SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
+			if (updatedRequest == nil) return [RACSignal error:error];
 			return [[self
 				installItemToURL:newTargetURL fromURL:request.targetBundleURL]
 				concat:[RACSignal return:updatedRequest]];
@@ -509,7 +511,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	}
 
 	NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
-	values[@"targetBundleURL"] = resolvedTargetURL;
+	values[@keypath(request.targetBundleURL)] = resolvedTargetURL;
 	NSError *error = nil;
 	SQRLShipItRequest *canonicalRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
 	return canonicalRequest == nil ? [RACSignal error:error] : [RACSignal return:canonicalRequest];
@@ -556,8 +558,9 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 						return [[self
 							installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
 							then:^{
-								NSMutableDictionary *values = [self.ownedBundle.dictionaryValue mutableCopy];
-								values[@"cleanupURLs"] = @[ request.updateBundleURL, updateBundleURL, self.ownedBundle.temporaryURL ];
+								SQRLInstallerOwnedBundle *ownedBundle = self.ownedBundle;
+								NSMutableDictionary *values = [ownedBundle.dictionaryValue mutableCopy];
+								values[@keypath(ownedBundle.cleanupURLs)] = @[ request.updateBundleURL, updateBundleURL, ownedBundle.temporaryURL ];
 								NSError *error = nil;
 								SQRLInstallerOwnedBundle *committed = [[SQRLInstallerOwnedBundle alloc] initWithDictionary:values error:&error];
 								if (committed == nil || ![self saveOwnedBundle:committed error:&error]) return [RACSignal error:error];
@@ -603,13 +606,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	// original location.
 
 	SQRLInstallerOwnedBundle *ownedBundle = self.ownedBundle;
-	if (ownedBundle == nil) {
-		if (![self isEarlyStagingEnabled]) return [RACSignal empty];
-		return [[self discardOrphanedPreparedBundle] then:^{
-			return [self cleanupAfterInstallation];
-		}];
-	}
-	if (ownedBundle.cleanupURLs != nil) {
+	if (ownedBundle == nil || ownedBundle.cleanupURLs != nil) {
 		return [[self discardOrphanedPreparedBundle] then:^{
 			return [self cleanupAfterInstallation];
 		}];
