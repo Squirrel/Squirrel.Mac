@@ -260,6 +260,8 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 			XCTFail(@"Waiting ShipIt has no process ID");
 			return;
 		}
+		NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
+		[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
 		expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 		expect(@(kill(oldPID.intValue, SIGKILL))).to(equal(@0));
 		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());

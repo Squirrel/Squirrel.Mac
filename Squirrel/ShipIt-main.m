@@ -152,11 +152,16 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 							return [RACSignal empty];
 						}]
 						ignoreValues];
-					return [[[[preparing then:^{
-						return [request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]];
-					}]
-						concat:[waitForTerminationIfNecessary(request) ignoreValues]]
-						concat:readRequestSignal]
+					return [[[preparing
+						then:^{
+							return [request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]];
+						}]
+						then:^{
+							if (preparationError != nil) return [RACSignal empty];
+							return [[waitForTerminationIfNecessary(request)
+								ignoreValues]
+								concat:readRequestSignal];
+						}]
 						deliverOn:preparationScheduler];
 				}]
 				switchToLatest]

@@ -1092,7 +1092,13 @@ BOOL isVersionStandard(NSString* version) {
 			request = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
 			if (request == nil) return [RACSignal error:error];
 
-			return [[[request writeUsingURL:self.shipItStateURL]
+			return [[[[self.shipItStateURL
+				doNext:^(NSURL *stateURL) {
+					[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
+				}]
+				then:^{
+					return [request writeUsingURL:self.shipItStateURL];
+				}]
 				concat:[RACSignal return:request]]
 				flattenMap:^(SQRLShipItRequest *request) {
 					return [[self.shipItLauncher then:^{

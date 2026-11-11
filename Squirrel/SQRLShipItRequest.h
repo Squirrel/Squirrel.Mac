@@ -105,12 +105,14 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // preparation status.
 - (BOOL)matchesPreparedRequest:(SQRLShipItRequest *)request;
 
-// Whether ShipIt has finished early staging for this request.
-@property (nonatomic, copy, readonly) NSNumber *prepared;
-
 // Any error encountered during early staging for this request.
 @property (nonatomic, copy, readonly) NSString *preparationError;
 
+// Returns the helper-owned preparation status URL corresponding to a state URL.
++ (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL;
+
+// Writes and waits for preparation readiness in a separate ShipIt-written file
+// so ShipItState.plist remains exclusively written by the application.
 // The result is a readiness notification, never an installation trust anchor.
 - (RACSignal *)writePreparationResult:(NSError *)error usingURL:(RACSignal *)stateURL;
 - (RACSignal *)waitForPreparationUsingURL:(RACSignal *)stateURL;

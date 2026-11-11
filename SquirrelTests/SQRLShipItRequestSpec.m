@@ -39,6 +39,7 @@ afterEach(^{
 	expect(stateURL).notTo(beNil());
 
 	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
+	[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
 });
 
 it(@"should copy", ^{
@@ -84,19 +85,26 @@ it(@"should fail gracefully with archives encoding a different class", ^{
 });
 
 describe(@"preparation status", ^{
-	it(@"should preserve preparation status through serialization", ^{
-		NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
-		values[@"prepared"] = @YES;
-		SQRLShipItRequest *preparedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
-		expect(@([[preparedRequest writeUsingURL:directoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
-		SQRLShipItRequest *restored = [[SQRLShipItRequest readUsingURL:directoryManager.shipItStateURL] first];
-		expect(restored.prepared).to(equal(@YES));
+	it(@"should write preparation status to a separate file without modifying ShipItState.plist", ^{
+		NSURL *stateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"ShipItState.plist"];
+		RACSignal *location = [RACSignal return:stateURL];
+
+		NSMutableDictionary *newerValues = [request.dictionaryValue mutableCopy];
+		newerValues[@"updateBundleURL"] = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"newer.app"];
+		newerValues[@"launchAfterInstallation"] = @YES;
+		SQRLShipItRequest *newerRequest = [[SQRLShipItRequest alloc] initWithDictionary:newerValues error:NULL];
+		expect(@([[newerRequest writeUsingURL:location] waitUntilCompleted:NULL])).to(beTruthy());
+
+		expect(@([[request writePreparationResult:nil usingURL:location] waitUntilCompleted:NULL])).to(beTruthy());
+
+		SQRLShipItRequest *stateOnDisk = [[SQRLShipItRequest readUsingURL:location] first];
+		expect(stateOnDisk).to(equal(newerRequest));
+		expect(@(stateOnDisk.launchAfterInstallation)).to(beTruthy());
 	});
 
 	it(@"should allow only the relaunch flag and preparation fields to change", ^{
 		NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
 		values[@"launchAfterInstallation"] = @YES;
-		values[@"prepared"] = @YES;
 		SQRLShipItRequest *relaunch = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
 		expect(@([request matchesPreparedRequest:relaunch])).to(beTruthy());
 
@@ -113,18 +121,15 @@ describe(@"preparation status", ^{
 		}
 	});
 
-	it(@"should wait for a matching acknowledgment in ShipItState.plist rather than a stale request", ^{
+	it(@"should wait for a matching acknowledgment in ShipItState.plist.prepared rather than a stale request", ^{
 		NSURL *URL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"ShipItState.plist"];
 		RACSignal *location = [RACSignal return:URL];
 		NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
 		values[@"updateBundleURL"] = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"stale.app"];
-		values[@"prepared"] = @YES;
 		SQRLShipItRequest *stale = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
-		expect(@([[stale writeUsingURL:location] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([[stale writePreparationResult:nil usingURL:location] waitUntilCompleted:NULL])).to(beTruthy());
 		dispatch_after(dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC / 5), dispatch_get_global_queue(QOS_CLASS_DEFAULT, 0), ^{
-			[[[request writeUsingURL:location] then:^{
-				return [request writePreparationResult:nil usingURL:location];
-			}] subscribeError:^(NSError *error) {
+			[[request writePreparationResult:nil usingURL:location] subscribeError:^(NSError *error) {
 				XCTFail(@"Could not acknowledge preparation: %@", error);
 			}];
 		});
@@ -133,7 +138,7 @@ describe(@"preparation status", ^{
 		expect(error).to(beNil());
 	});
 
-	it(@"should propagate preparation errors from ShipItState.plist", ^{
+	it(@"should propagate preparation errors from ShipItState.plist.prepared", ^{
 		RACSignal *location = [RACSignal return:[self.temporaryDirectoryURL URLByAppendingPathComponent:@"ShipItState.plist"]];
 		expect(@([[request writeUsingURL:location] waitUntilCompleted:NULL])).to(beTruthy());
 		NSError *failure = [NSError errorWithDomain:NSPOSIXErrorDomain code:ENOSPC userInfo:@{ NSLocalizedDescriptionKey: @"No space for preparation" }];

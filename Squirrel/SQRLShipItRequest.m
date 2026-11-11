@@ -11,6 +11,7 @@
 #import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/RACSignal+Operations.h>
 #import <ReactiveObjC/RACScheduler.h>
+#import <sys/stat.h>
 
 NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
 
@@ -68,7 +69,6 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		@keypath(SQRLShipItRequest.new, launchAfterInstallation): @keypath(SQRLShipItRequest.new, launchAfterInstallation),
 		@keypath(SQRLShipItRequest.new, useUpdateBundleName): @keypath(SQRLShipItRequest.new, useUpdateBundleName),
 		@keypath(SQRLShipItRequest.new, earlyStaging): @keypath(SQRLShipItRequest.new, earlyStaging),
-		@keypath(SQRLShipItRequest.new, prepared): @keypath(SQRLShipItRequest.new, prepared),
 		@keypath(SQRLShipItRequest.new, preparationError): @keypath(SQRLShipItRequest.new, preparationError),
 	};
 }
@@ -82,37 +82,45 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		self.earlyStaging == request.earlyStaging;
 }
 
++ (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL {
+	NSParameterAssert(stateURL != nil);
+	return [stateURL URLByAppendingPathExtension:@"prepared"];
+}
+
 - (RACSignal *)writePreparationResult:(NSError *)error usingURL:(RACSignal *)stateURL {
-	return [[SQRLShipItRequest
-		readUsingURL:stateURL]
-		flattenMap:^(SQRLShipItRequest *currentRequest) {
-			if (![self matchesPreparedRequest:currentRequest]) return [RACSignal empty];
-			NSMutableDictionary *values = [currentRequest.dictionaryValue mutableCopy];
-			values[@keypath(self.prepared)] = @(error == nil);
-			values[@keypath(self.preparationError)] = error.localizedDescription ?: NSNull.null;
-			NSError *modelError = nil;
-			SQRLShipItRequest *updated = [[SQRLShipItRequest alloc] initWithDictionary:values error:&modelError];
-			if (updated == nil) return [RACSignal error:modelError];
-			return [updated writeUsingURL:stateURL];
+	NSParameterAssert(stateURL != nil);
+
+	return [stateURL flattenMap:^(NSURL *URL) {
+		NSURL *preparedURL = [SQRLShipItRequest preparationStatusURLForStateURL:URL];
+		NSMutableDictionary *values = [self.dictionaryValue mutableCopy];
+		values[@keypath(self.preparationError)] = error.localizedDescription ?: NSNull.null;
+		NSError *modelError = nil;
+		SQRLShipItRequest *updated = [[SQRLShipItRequest alloc] initWithDictionary:values error:&modelError];
+		if (updated == nil) return [RACSignal error:modelError];
+		return [[updated writeUsingURL:[RACSignal return:preparedURL]] doCompleted:^{
+			chmod(preparedURL.path.fileSystemRepresentation, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
 		}];
+	}];
 }
 
 - (RACSignal *)waitForPreparationUsingURL:(RACSignal *)stateURL {
+	NSParameterAssert(stateURL != nil);
+
 	RACScheduler *scheduler = [RACScheduler scheduler];
+	RACSignal *preparedURLSignal = [stateURL map:^(NSURL *URL) {
+		return [SQRLShipItRequest preparationStatusURLForStateURL:URL];
+	}];
 	return [[[[[[RACSignal interval:0.1 onScheduler:scheduler]
 		startWith:NSDate.date]
 		flattenMap:^(id _) {
-			return [[SQRLShipItRequest readUsingURL:stateURL] catchTo:[RACSignal empty]];
+			return [[SQRLShipItRequest readUsingURL:preparedURLSignal] catchTo:[RACSignal empty]];
 		}]
-		flattenMap:^(SQRLShipItRequest *currentRequest) {
-			if (![self matchesPreparedRequest:currentRequest]) return [RACSignal empty];
-			if (currentRequest.preparationError != nil) {
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:@{ NSLocalizedDescriptionKey: currentRequest.preparationError }]];
+		flattenMap:^(SQRLShipItRequest *preparedRequest) {
+			if (![self matchesPreparedRequest:preparedRequest]) return [RACSignal empty];
+			if (preparedRequest.preparationError != nil) {
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:@{ NSLocalizedDescriptionKey: preparedRequest.preparationError }]];
 			}
-			if (currentRequest.prepared.boolValue) {
-				return [RACSignal return:currentRequest];
-			}
-			return [RACSignal empty];
+			return [RACSignal return:preparedRequest];
 		}]
 		take:1]
 		timeout:300 onScheduler:scheduler];
