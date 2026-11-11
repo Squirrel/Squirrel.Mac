@@ -21,6 +21,7 @@
 #import <ReactiveObjC/RACSubscriber.h>
 #import <sys/xattr.h>
 #import <copyfile.h>
+#import <fcntl.h>
 #import <signal.h>
 #import <sys/stat.h>
 
@@ -1069,9 +1070,11 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	if (!CFFileSecuritySetMode(actualFileSecurity, fileMode)) return NO;
 
 	if (stripACLs) {
-		// Strip any ACLs inherited from the staged source bundle so caller
-		// ACL entries cannot grant write access after ShipIt takes ownership.
-		(void)CFFileSecuritySetAccessControlList(actualFileSecurity, NULL);
+		// Pass _FILESEC_REMOVE_ACL so chmodx_np deletes any extended ACL on
+		// disk (e.g. when copyBundleAtURL: falls back to NSFileManager).
+		// Passing NULL or CFFileSecurityClearProperties only clears FS_VALID_ACL
+		// on the in-memory filesec_t and leaves existing on-disk ACLs intact.
+		if (!CFFileSecuritySetAccessControlList(actualFileSecurity, (acl_t)_FILESEC_REMOVE_ACL)) return NO;
 	}
 
 	return YES;

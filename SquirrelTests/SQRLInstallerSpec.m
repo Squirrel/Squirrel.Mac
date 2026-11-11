@@ -26,6 +26,7 @@
 
 @interface SQRLInstaller (SQRLTestingHooks)
 - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
+- (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL stripACLs:(BOOL)stripACLs;
 @end
 
 static NSNumber *SQRLTestShipItPID(void) {
@@ -153,7 +154,7 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 	});
 
 	it(@"should strip ACLs and lock the private staging directory to 0700, re-staging if permissions are loosened", ^{
-		NSString *chmodACL = [NSString stringWithFormat:@"/bin/chmod +a 'everyone allow write' '%@'", updateURL.path];
+		NSString *chmodACL = [NSString stringWithFormat:@"/bin/chmod -R +a 'everyone allow write' '%@'", updateURL.path];
 		expect(@(system(chmodACL.UTF8String))).to(equal(@0));
 
 		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
@@ -161,13 +162,28 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 		expect(@(modeOfURL(candidate.URLByDeletingLastPathComponent))).to(equal(@0700));
 		expect(@(modeOfURL(candidate) & (S_IWGRP | S_IWOTH))).to(equal(@0));
 
-		NSFileSecurity *security = nil;
-		BOOL gotSecurity = [candidate getResourceValue:&security forKey:NSURLFileSecurityKey error:NULL];
-		expect(@(gotSecurity)).to(beTruthy());
-		acl_t acl = NULL;
-		BOOL gotACL = CFFileSecurityCopyAccessControlList((__bridge CFFileSecurityRef)security, &acl);
-		expect(@(gotACL)).to(beFalsy());
-		expect(@(acl == NULL)).to(beTruthy());
+		for (NSURL *checkURL in @[ candidate, [candidate URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"] ]) {
+			NSFileSecurity *security = nil;
+			BOOL gotSecurity = [checkURL getResourceValue:&security forKey:NSURLFileSecurityKey error:NULL];
+			expect(@(gotSecurity)).to(beTruthy());
+			acl_t acl = NULL;
+			BOOL gotACL = CFFileSecurityCopyAccessControlList((__bridge CFFileSecurityRef)security, &acl);
+			expect(@(gotACL)).to(beFalsy());
+			expect(@(acl == NULL)).to(beTruthy());
+		}
+
+		// Also verify that takeOwnershipOfDirectory:stripACLs: removes existing
+		// on-disk ACLs (used when copyfile falls back to NSFileManager).
+		expect(@([[installer takeOwnershipOfDirectory:updateURL stripACLs:YES] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		for (NSURL *checkURL in @[ updateURL, [updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"] ]) {
+			NSFileSecurity *security = nil;
+			BOOL gotSecurity = [checkURL getResourceValue:&security forKey:NSURLFileSecurityKey error:NULL];
+			expect(@(gotSecurity)).to(beTruthy());
+			acl_t acl = NULL;
+			BOOL gotACL = CFFileSecurityCopyAccessControlList((__bridge CFFileSecurityRef)security, &acl);
+			expect(@(gotACL)).to(beFalsy());
+			expect(@(acl == NULL)).to(beTruthy());
+		}
 
 		// Loosening the private parent directory's mode must cause the installer
 		// to discard the candidate and stage a fresh one at install time.
