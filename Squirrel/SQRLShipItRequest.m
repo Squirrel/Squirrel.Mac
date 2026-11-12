@@ -9,9 +9,12 @@
 #import "SQRLShipItRequest.h"
 
 #import <ReactiveObjC/EXTKeyPathCoding.h>
+#import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/RACSignal+Operations.h>
 #import <ReactiveObjC/RACScheduler.h>
+#import <fcntl.h>
 #import <sys/stat.h>
+#import <unistd.h>
 
 NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
 
@@ -97,10 +100,111 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		NSError *modelError = nil;
 		SQRLShipItRequest *updated = [[SQRLShipItRequest alloc] initWithDictionary:values error:&modelError];
 		if (updated == nil) return [RACSignal error:modelError];
-		return [[updated writeUsingURL:[RACSignal return:preparedURL]] doCompleted:^{
-			chmod(preparedURL.path.fileSystemRepresentation, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+
+		return [[updated serialization] flattenMap:^(NSData *data) {
+			NSError *writeError = nil;
+			if (![updated writePreparationData:data toURL:preparedURL error:&writeError]) {
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not write update request", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil),
+				};
+				if (writeError != nil) {
+					userInfo = [userInfo mtl_dictionaryByAddingEntriesFromDictionary:@{
+						NSUnderlyingErrorKey: writeError,
+					}];
+				}
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo]];
+			}
+			return [RACSignal empty];
 		}];
 	}];
+}
+
+- (BOOL)writePreparationData:(NSData *)data toURL:(NSURL *)URL error:(NSError **)errorRef {
+	NSURL *parentURL = URL.URLByDeletingLastPathComponent;
+	NSString *fileName = URL.lastPathComponent;
+
+	// ShipIt may run as root while writing into the user's cache directory.
+	// Reject symlinks on the directory (and all ancestor components when
+	// privileged), create a fresh mode-0644 temporary file with O_NOFOLLOW,
+	// and renameat() within the opened directory descriptor so symlinks are
+	// never followed.
+	int dirFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
+	if (geteuid() == 0) {
+		dirFlags |= O_NOFOLLOW_ANY;
+	}
+	int dirfd = open(parentURL.path.fileSystemRepresentation, dirFlags);
+	if (dirfd < 0) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+		return NO;
+	}
+	@onExit {
+		close(dirfd);
+	};
+
+	struct stat dirStat;
+	if (fstat(dirfd, &dirStat) != 0 || !S_ISDIR(dirStat.st_mode)) {
+		int code = errno ?: ENOTDIR;
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+		return NO;
+	}
+
+	NSString *tempName = [NSString stringWithFormat:@".%@.%@", fileName, NSUUID.UUID.UUIDString];
+	int fd = openat(dirfd, tempName.fileSystemRepresentation, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	if (fd < 0) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+		return NO;
+	}
+
+	if (fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) != 0) {
+		int code = errno;
+		close(fd);
+		unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+		return NO;
+	}
+
+	const uint8_t *bytes = data.bytes;
+	NSUInteger remaining = data.length;
+	while (remaining > 0) {
+		ssize_t written = write(fd, bytes, remaining);
+		if (written < 0) {
+			if (errno == EINTR) continue;
+			int code = errno;
+			close(fd);
+			unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+			return NO;
+		}
+		bytes += written;
+		remaining -= (NSUInteger)written;
+	}
+
+	if (close(fd) != 0) {
+		int code = errno;
+		unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+		return NO;
+	}
+
+	__block BOOL renamed = NO;
+	__block NSError *renameError = nil;
+	NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+	[coordinator coordinateWritingItemAtURL:URL options:0 error:&renameError byAccessor:^(NSURL * __unused newURL) {
+		if (renameat(dirfd, tempName.fileSystemRepresentation, dirfd, fileName.fileSystemRepresentation) == 0) {
+			renamed = YES;
+		} else {
+			renameError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+		}
+	}];
+
+	if (!renamed) {
+		unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+		if (errorRef != NULL) *errorRef = renameError;
+		return NO;
+	}
+
+	return YES;
 }
 
 - (RACSignal *)waitForPreparationUsingURL:(RACSignal *)stateURL {

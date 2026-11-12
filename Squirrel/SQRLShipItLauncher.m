@@ -65,7 +65,7 @@ const NSInteger SQRLShipItLauncherErrorCouldNotStartService = 1;
 			// calculate the path itself. This is because ShipIt may run as a
 			// different user if it had to escalate to be able to replace the
 			// bundle.
-			[arguments addObject:shipItStateURL.path];
+			[arguments addObject:shipItStateURL.URLByResolvingSymlinksInPath.path];
 
 			jobDict[@(LAUNCH_JOBKEY_PROGRAMARGUMENTS)] = arguments;
 			jobDict[@(LAUNCH_JOBKEY_STANDARDOUTPATH)] = stdoutURL.path;

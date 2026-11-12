@@ -16,6 +16,9 @@
 
 #import "QuickSpec+SQRLFixtures.h"
 
+#import <sys/stat.h>
+#import <unistd.h>
+
 QuickSpecBegin(SQRLShipItRequestSpec)
 
 __block SQRLDirectoryManager *directoryManager;
@@ -146,6 +149,44 @@ describe(@"preparation status", ^{
 		__block NSError *error = nil;
 		expect(@([[request waitForPreparationUsingURL:location] asynchronouslyWaitUntilCompleted:&error])).to(beFalsy());
 		expect(error.localizedDescription).to(equal(failure.localizedDescription));
+	});
+
+	it(@"should replace a symlink at ShipItState.plist.prepared without following it or changing target permissions", ^{
+		NSURL *stateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"ShipItState.plist"];
+		NSURL *preparedURL = [SQRLShipItRequest preparationStatusURLForStateURL:stateURL];
+		NSURL *victimURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"victim"];
+		expect(@([@"secret" writeToURL:victimURL atomically:YES encoding:NSUTF8StringEncoding error:NULL])).to(beTruthy());
+		expect(@(chmod(victimURL.path.fileSystemRepresentation, S_IRUSR | S_IWUSR))).to(equal(@0));
+		expect(@(symlink(victimURL.path.fileSystemRepresentation, preparedURL.path.fileSystemRepresentation))).to(equal(@0));
+
+		__block NSError *error = nil;
+		expect(@([[request writePreparationResult:nil usingURL:[RACSignal return:stateURL]] waitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		struct stat victimStat = {0};
+		int victimStatResult = lstat(victimURL.path.fileSystemRepresentation, &victimStat);
+		expect(@(victimStatResult)).to(equal(@0));
+		expect(@(victimStat.st_mode & 0777)).to(equal(@0600));
+		expect([NSString stringWithContentsOfURL:victimURL encoding:NSUTF8StringEncoding error:NULL]).to(equal(@"secret"));
+
+		struct stat preparedStat = {0};
+		int preparedStatResult = lstat(preparedURL.path.fileSystemRepresentation, &preparedStat);
+		expect(@(preparedStatResult)).to(equal(@0));
+		expect(@(S_ISREG(preparedStat.st_mode))).to(beTruthy());
+		expect(@(preparedStat.st_mode & 0777)).to(equal(@0644));
+	});
+
+	it(@"should refuse to write preparation status through a symlinked parent directory", ^{
+		NSURL *realDirURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"real-dir" isDirectory:YES];
+		NSURL *symlinkDirURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"symlink-dir" isDirectory:YES];
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:realDirURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+		expect(@(symlink(realDirURL.path.fileSystemRepresentation, symlinkDirURL.path.fileSystemRepresentation))).to(equal(@0));
+
+		NSURL *stateURL = [symlinkDirURL URLByAppendingPathComponent:@"ShipItState.plist"];
+		__block NSError *error = nil;
+		expect(@([[request writePreparationResult:nil usingURL:[RACSignal return:stateURL]] waitUntilCompleted:&error])).to(beFalsy());
+		expect(error).notTo(beNil());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:[realDirURL URLByAppendingPathComponent:@"ShipItState.plist.prepared"].path])).to(beFalsy());
 	});
 });
 
