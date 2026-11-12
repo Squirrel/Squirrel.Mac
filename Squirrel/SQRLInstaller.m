@@ -22,7 +22,6 @@
 #import <ReactiveObjC/RACSubscriber.h>
 #import <sys/xattr.h>
 #import <copyfile.h>
-#import <fcntl.h>
 #import <signal.h>
 #import <sys/stat.h>
 
@@ -321,8 +320,13 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	return [[[[candidate
 		zipWith:[self codeSignatureForBundleAtURL:request.targetBundleURL]]
 		reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
-			// A new code object is required: do not reuse cached validation
-			// from preparation across the potentially long wait.
+			// Call -verifyBundleAtURL: directly rather than
+			// -verifyBundleAtURL:usingSignature: because -stageUpdateForRequest:
+			// already normalized ownership and locked the private 0700 parent
+			// directory (verified via lstat above), avoiding a second full-bundle
+			// CFFileSecurity walk on the post-quit critical path. A fresh
+			// SQRLCodeSignature is still required so cached validation is never
+			// reused across the wait.
 			return [[[codeSignature verifyBundleAtURL:updateBundleURL]
 				ignoreValues]
 				concat:[RACSignal return:updateBundleURL]];
@@ -709,8 +713,9 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 		defer:^{
 			if (useClone) {
 				// COPYFILE_CLONE uses COW where supported and falls back to copying
-				// elsewhere. Do not copy caller ACLs (omit COPYFILE_ACL) so a
-				// non-root caller cannot retain write access on a privileged clone.
+				// elsewhere. Omit COPYFILE_ACL so copyfile does not pass CLONE_ACL
+				// (or copy ACLs on fallback), and strip any remaining ACLs in
+				// -takeOwnershipOfDirectory:stripACLs: if NSFileManager is used.
 				if (copyfile(bundleURL.fileSystemRepresentation, newBundleURL.fileSystemRepresentation, NULL,
 					COPYFILE_STAT | COPYFILE_XATTR | COPYFILE_DATA | COPYFILE_RECURSIVE | COPYFILE_NOFOLLOW_SRC | COPYFILE_EXCL | COPYFILE_CLONE) == 0) {
 					return [RACSignal return:newBundleURL];
@@ -1054,11 +1059,11 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	if (!CFFileSecuritySetMode(actualFileSecurity, fileMode)) return NO;
 
 	if (stripACLs) {
-		// Pass _FILESEC_REMOVE_ACL so chmodx_np deletes any extended ACL on
-		// disk (e.g. when copyBundleAtURL: falls back to NSFileManager).
+		// Pass kCFFileSecurityRemoveACL so chmodx_np deletes any extended ACL
+		// on disk (e.g. when copyBundleAtURL: falls back to NSFileManager).
 		// Passing NULL or CFFileSecurityClearProperties only clears FS_VALID_ACL
 		// on the in-memory filesec_t and leaves existing on-disk ACLs intact.
-		if (!CFFileSecuritySetAccessControlList(actualFileSecurity, (acl_t)_FILESEC_REMOVE_ACL)) return NO;
+		if (!CFFileSecuritySetAccessControlList(actualFileSecurity, kCFFileSecurityRemoveACL)) return NO;
 	}
 
 	return YES;
