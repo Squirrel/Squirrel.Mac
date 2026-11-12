@@ -121,7 +121,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 
 	RACSignal *readyToInstall = [readRequestSignal
 		flattenMap:^(SQRLShipItRequest *initialRequest) {
-			if (![installer isEarlyStagingEnabledForRequest:initialRequest]) {
+			if (!initialRequest.earlyStaging) {
 				return [[waitForTerminationIfNecessary(initialRequest)
 					ignoreValues]
 					concat:readRequestSignal];
@@ -296,7 +296,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 
 			// deliverOn above ensures launch handling runs before this
 			// subscription starts recursive cleanup.
-			if (![installer isEarlyStagingEnabledForRequest:request]) {
+			if (!request.earlyStaging) {
 				return action;
 			}
 			return [action concat:[RACSignal defer:^{

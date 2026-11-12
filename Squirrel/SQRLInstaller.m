@@ -61,7 +61,6 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 // Stores the bundle moved aside by an install request so that the original
 // bundle can be restored to its original location if needed.
 @property (atomic, strong) SQRLInstallerOwnedBundle *ownedBundle;
-@property (nonatomic, assign, readonly) BOOL earlyStagingEnabled;
 @property (atomic, strong) SQRLShipItRequest *preparedRequest;
 @property (atomic, copy) NSURL *preparedBundleURL;
 
@@ -148,12 +147,6 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	if (self == nil) return nil;
 
 	_applicationIdentifier = [applicationIdentifier copy];
-	NSUserDefaults *defaults = [[NSUserDefaults alloc] init];
-	[defaults addSuiteNamed:_applicationIdentifier];
-	if ([_applicationIdentifier hasSuffix:@".ShipIt"]) {
-		[defaults addSuiteNamed:[_applicationIdentifier substringToIndex:[_applicationIdentifier length] - 7]];
-	}
-	_earlyStagingEnabled = [defaults boolForKey:@"SquirrelMacEnableEarlyStaging"];
 
 	@weakify(self);
 
@@ -198,14 +191,6 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	}];
 
 	return self;
-}
-
-- (BOOL)isEarlyStagingEnabled {
-	return self.earlyStagingEnabled;
-}
-
-- (BOOL)isEarlyStagingEnabledForRequest:(SQRLShipItRequest *)request {
-	return request.earlyStaging || self.earlyStagingEnabled;
 }
 
 #pragma mark Preferences
@@ -295,27 +280,29 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 - (RACSignal *)prepareAndValidateUpdateBundleURLForRequest:(SQRLShipItRequest *)request {
 	NSParameterAssert(request != nil);
 
-	if (![self isEarlyStagingEnabledForRequest:request]) {
-		return [[[[[[[self
-			ownedTemporaryDirectoryURL]
-			flattenMap:^(NSURL *directoryURL) {
-				return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
-			}]
-			flattenMap:^(NSURL *bundleURL) {
-				return [[[self
-					clearQuarantineForDirectory:bundleURL]
-					ignoreValues]
-					concat:[RACSignal return:bundleURL]];
-			}]
-			zipWith:[self codeSignatureForBundleAtURL:request.targetBundleURL]]
-			reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
-				return [[[self
-					verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
-					ignoreValues]
-					concat:[RACSignal return:updateBundleURL]];
-			}]
-			flatten]
-			setNameWithFormat:@"%@ -prepareAndValidateUpdateBundleURLForRequest: %@", self, request];
+	if (!request.earlyStaging) {
+		return [[self discardPreparedBundle] then:^{
+			return [[[[[[[self
+				ownedTemporaryDirectoryURL]
+				flattenMap:^(NSURL *directoryURL) {
+					return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
+				}]
+				flattenMap:^(NSURL *bundleURL) {
+					return [[[self
+						clearQuarantineForDirectory:bundleURL]
+						ignoreValues]
+						concat:[RACSignal return:bundleURL]];
+				}]
+				zipWith:[self codeSignatureForBundleAtURL:request.targetBundleURL]]
+				reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
+					return [[[self
+						verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
+						ignoreValues]
+						concat:[RACSignal return:updateBundleURL]];
+				}]
+				flatten]
+				setNameWithFormat:@"%@ -prepareAndValidateUpdateBundleURLForRequest: %@", self, request];
+		}];
 	}
 
 	RACSignal *candidate;
@@ -554,7 +541,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
 				}]
 				flattenMap:^(SQRLShipItRequest *request) {
-					if ([self isEarlyStagingEnabledForRequest:request]) {
+					if (request.earlyStaging) {
 						return [[self
 							installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
 							then:^{
@@ -589,7 +576,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 						concat:[RACSignal return:request]];
 				}]
 				doCompleted:^{
-					if (![self isEarlyStagingEnabledForRequest:request]) {
+					if (!request.earlyStaging) {
 						self.ownedBundle = nil;
 					}
 				}];
@@ -709,7 +696,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (RACSignal *)copyBundleAtURL:(NSURL *)bundleURL toDirectory:(NSURL *)directoryURL {
-	return [self copyBundleAtURL:bundleURL toDirectory:directoryURL useClone:self.earlyStagingEnabled];
+	return [self copyBundleAtURL:bundleURL toDirectory:directoryURL useClone:NO];
 }
 
 - (RACSignal *)copyBundleAtURL:(NSURL *)bundleURL toDirectory:(NSURL *)directoryURL useClone:(BOOL)useClone {
@@ -1006,7 +993,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL {
-	return [self takeOwnershipOfDirectory:directoryURL stripACLs:self.earlyStagingEnabled];
+	return [self takeOwnershipOfDirectory:directoryURL stripACLs:NO];
 }
 
 - (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL stripACLs:(BOOL)stripACLs {

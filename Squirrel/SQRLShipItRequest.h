@@ -79,6 +79,8 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // perform.
 - (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName;
 
+- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName earlyStaging:(BOOL)earlyStaging;
+
 // The URL to the downloaded update's app bundle.
 @property (nonatomic, copy, readonly) NSURL *updateBundleURL;
 

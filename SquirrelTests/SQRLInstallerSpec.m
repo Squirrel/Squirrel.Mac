@@ -89,24 +89,17 @@ it(@"should install an update in process", ^{
 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
-describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
+describe(@"with earlyStaging enabled", ^{
 	__block SQRLInstaller *installer;
 	__block SQRLShipItRequest *request;
 
 	beforeEach(^{
 		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
-		[NSUserDefaults.standardUserDefaults setBool:YES forKey:@"SquirrelMacEnableEarlyStaging"];
-		CFPreferencesSetValue(CFSTR("SquirrelMacEnableEarlyStaging"), kCFBooleanTrue, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-		CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-
 		installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
-		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
+		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
 		[self addCleanupBlock:^{
-			[NSUserDefaults.standardUserDefaults removeObjectForKey:@"SquirrelMacEnableEarlyStaging"];
-			CFPreferencesSetValue(CFSTR("SquirrelMacEnableEarlyStaging"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 			CFPreferencesSetValue(CFSTR("SQRLInstallerPreparedBundlePath"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 			CFPreferencesSetValue(CFSTR("SQRLInstallerPendingCleanup"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
-			CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
 			CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
 
 			NSURL *candidate = [installer valueForKey:@"preparedBundleURL"];
@@ -190,7 +183,7 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
 		NSURL *oldCandidate = [installer valueForKey:@"preparedBundleURL"];
 		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
-		SQRLShipItRequest *changed = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
+		SQRLShipItRequest *changed = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
 		expect(@([[installer prepareRequest:changed] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
 		expect(@([NSFileManager.defaultManager fileExistsAtPath:oldCandidate.path])).to(beFalsy());
 		expect([installer valueForKey:@"preparedRequest"]).to(equal(changed));
@@ -232,7 +225,7 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 		expect(@([NSFileManager.defaultManager fileExistsAtPath:committed.temporaryURL.path])).to(beFalsy());
 
 		NSURL *nextUpdate = [self createTestApplicationUpdate];
-		SQRLShipItRequest *next = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:nextUpdate targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+		SQRLShipItRequest *next = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:nextUpdate targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
 		expect(@([[installer.installUpdateCommand execute:next] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
 		expect(@([[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
@@ -246,7 +239,7 @@ describe(@"with SquirrelMacEnableEarlyStaging enabled", ^{
 		expect(error).to(beNil());
 		expect(@(app.isTerminated)).to(beFalsy());
 		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
-		SQRLShipItRequest *changed = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO];
+		SQRLShipItRequest *changed = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
 		expect(@([[changed writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 		expect(@([[changed waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
 		expect(error).to(beNil());

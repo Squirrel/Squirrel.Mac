@@ -31,12 +31,10 @@ extern NSString * const SQRLShipItInstallationAttemptsKey;
 // The install still performs fresh strict signature verification.
 - (RACSignal *)prepareRequest:(SQRLShipItRequest *)request;
 
+// Discards any in-memory or persisted prepared staging bundle.
+- (RACSignal *)discardPreparedBundle;
+
 // Removes committed obsolete bundles; never restores a committed backup.
 - (RACSignal *)cleanupAfterInstallation;
-
-// Whether SquirrelMacEnableEarlyStaging is enabled for the given request or
-// in NSUserDefaults for the target application / ShipIt domain.
-- (BOOL)isEarlyStagingEnabled;
-- (BOOL)isEarlyStagingEnabledForRequest:(SQRLShipItRequest *)request;
 
 @end

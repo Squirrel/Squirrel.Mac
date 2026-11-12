@@ -199,6 +199,7 @@ BOOL isVersionStandard(NSString* version) {
 
 @implementation SQRLUpdater {
 	RACSubject *_downloadProgress;
+	BOOL _earlyStagingEnabled;
 }
 
 #pragma mark Properties
@@ -256,6 +257,7 @@ BOOL isVersionStandard(NSString* version) {
 	_updateRequest = mutableUpdateRequest;
 	_updateClass = SQRLUpdate.class;
 	_downloadProgress = [[RACSubject subject] setNameWithFormat:@"%@ downloadProgress", self];
+	_earlyStagingEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:@"SquirrelMacEnableEarlyStaging"];
 
 	[[[NSNotificationCenter.defaultCenter
 		rac_addObserverForName:NSApplicationWillTerminateNotification object:nil]
@@ -1080,18 +1082,12 @@ BOOL isVersionStandard(NSString* version) {
 			// app themselves.
 			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:targetBundleURL.lastPathComponent.stringByDeletingPathExtension];
 
-			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:targetBundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
-			if (![[NSUserDefaults standardUserDefaults] boolForKey:@"SquirrelMacEnableEarlyStaging"]) {
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:targetBundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName earlyStaging:self->_earlyStagingEnabled];
+			if (!request.earlyStaging) {
 				return [[request writeUsingURL:self.shipItStateURL] then:^{
 					return self.shipItLauncher;
 				}];
 			}
-
-			NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
-			values[@keypath(request.earlyStaging)] = @YES;
-			NSError *error = nil;
-			request = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
-			if (request == nil) return [RACSignal error:error];
 
 			return [[[[self.shipItStateURL
 				doNext:^(NSURL *stateURL) {
