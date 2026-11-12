@@ -10,8 +10,11 @@
 
 #import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/EXTScope.h>
+#import <ReactiveObjC/RACDisposable.h>
 #import <ReactiveObjC/RACSignal+Operations.h>
 #import <ReactiveObjC/RACScheduler.h>
+#import <ReactiveObjC/RACSubscriber.h>
+#import <ReactiveObjC/RACUnit.h>
 #import <fcntl.h>
 #import <sys/stat.h>
 #import <unistd.h>
@@ -93,6 +96,41 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 + (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL {
 	NSParameterAssert(stateURL != nil);
 	return [stateURL URLByAppendingPathExtension:@"prepared"];
+}
+
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL {
+	NSParameterAssert(directoryURL != nil);
+
+	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		int dirfd = open(directoryURL.path.fileSystemRepresentation, O_EVTONLY | O_CLOEXEC);
+		if (dirfd < 0) {
+			return [[[RACSignal interval:1.0 onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityLow]]
+				startWith:NSDate.date]
+				subscribe:subscriber];
+		}
+
+		dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
+		dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)dirfd, DISPATCH_VNODE_WRITE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_DELETE | DISPATCH_VNODE_ATTRIB, queue);
+		if (source == nil) {
+			close(dirfd);
+			return [[[RACSignal interval:1.0 onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityLow]]
+				startWith:NSDate.date]
+				subscribe:subscriber];
+		}
+
+		dispatch_source_set_event_handler(source, ^{
+			[subscriber sendNext:RACUnit.defaultUnit];
+		});
+		dispatch_source_set_cancel_handler(source, ^{
+			close(dirfd);
+		});
+		[subscriber sendNext:RACUnit.defaultUnit];
+		dispatch_resume(source);
+
+		return [RACDisposable disposableWithBlock:^{
+			dispatch_source_cancel(source);
+		}];
+	}] setNameWithFormat:@"+watchDirectoryAtURL: %@", directoryURL];
 }
 
 - (RACSignal *)writePreparationResult:(NSError *)error usingURL:(RACSignal *)stateURL {
@@ -216,20 +254,22 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	NSParameterAssert(stateURL != nil);
 
 	RACScheduler *scheduler = [RACScheduler scheduler];
-	RACSignal *preparedURLSignal = [stateURL map:^(NSURL *URL) {
-		return [SQRLShipItRequest preparationStatusURLForStateURL:URL];
-	}];
-	return [[[[[[RACSignal interval:0.1 onScheduler:scheduler]
-		startWith:NSDate.date]
-		flattenMap:^(id _) {
-			return [[SQRLShipItRequest readUsingURL:preparedURLSignal] catchTo:[RACSignal empty]];
-		}]
-		flattenMap:^(SQRLShipItRequest *preparedRequest) {
-			if (![self matchesPreparedRequest:preparedRequest]) return [RACSignal empty];
-			if (preparedRequest.preparationError != nil) {
-				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:@{ NSLocalizedDescriptionKey: preparedRequest.preparationError }]];
-			}
-			return [RACSignal return:preparedRequest];
+	return [[[stateURL
+		flattenMap:^(NSURL *URL) {
+			NSURL *preparedURL = [SQRLShipItRequest preparationStatusURLForStateURL:URL];
+			RACSignal *preparedURLSignal = [RACSignal return:preparedURL];
+			return [[[[SQRLShipItRequest watchDirectoryAtURL:preparedURL.URLByDeletingLastPathComponent]
+				flattenMap:^(id _) {
+					return [[SQRLShipItRequest readUsingURL:preparedURLSignal] catchTo:[RACSignal empty]];
+				}]
+				flattenMap:^(SQRLShipItRequest *preparedRequest) {
+					if (![self matchesPreparedRequest:preparedRequest]) return [RACSignal empty];
+					if (preparedRequest.preparationError != nil) {
+						return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:@{ NSLocalizedDescriptionKey: preparedRequest.preparationError }]];
+					}
+					return [RACSignal return:preparedRequest];
+				}]
+				take:1];
 		}]
 		take:1]
 		timeout:300 onScheduler:scheduler];

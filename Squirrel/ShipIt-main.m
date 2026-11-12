@@ -128,23 +128,37 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 			}
 
 			RACScheduler *preparationScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityLow];
-			RACSignal *requests = [[[[[[RACSignal interval:0.5 onScheduler:preparationScheduler]
-				startWith:NSDate.date]
+			RACSignal *requests = [[[[[[SQRLShipItRequest watchDirectoryAtURL:stateURL.URLByDeletingLastPathComponent]
+				deliverOn:preparationScheduler]
 				flattenMap:^(id _) {
-					return readRequestSignal;
+					return [readRequestSignal catch:^(NSError *error) {
+						NSLog(@"Ignoring transient error reading request while waiting: %@", error.sqrl_verboseDescription);
+						return [RACSignal empty];
+					}];
 				}]
 				flattenMap:^(SQRLShipItRequest *request) {
 					NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
 					values[@keypath(request.launchAfterInstallation)] = @NO;
 					NSError *error = nil;
 					SQRLShipItRequest *normalized = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
-					return normalized == nil ? [RACSignal error:error] : [RACSignal return:normalized];
+					if (normalized == nil) {
+						NSLog(@"Ignoring invalid request while waiting: %@", error.sqrl_verboseDescription);
+						return [RACSignal empty];
+					}
+					return [RACSignal return:normalized];
 				}]
 				distinctUntilChanged]
 				deliverOn:preparationScheduler];
 
 			return [[[requests
 				map:^(SQRLShipItRequest *request) {
+					if (!request.earlyStaging) {
+						return [[[installer discardPreparedBundle]
+							then:^{
+								return [waitForTerminationIfNecessary(request) ignoreValues];
+							}]
+							concat:readRequestSignal];
+					}
 					__block NSError *preparationError = nil;
 					RACSignal *preparing = [[[installer prepareRequest:request]
 						catch:^(NSError *error) {
@@ -155,13 +169,24 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 						ignoreValues];
 					return [[[preparing
 						then:^{
-							return [request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]];
+							return [[request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]] catch:^(NSError *error) {
+								NSLog(@"Could not write preparation status: %@", error.sqrl_verboseDescription);
+								return [RACSignal empty];
+							}];
 						}]
 						then:^{
-							if (preparationError != nil) return [RACSignal empty];
 							return [[waitForTerminationIfNecessary(request)
 								ignoreValues]
-								concat:readRequestSignal];
+								concat:[readRequestSignal flattenMap:^(SQRLShipItRequest *finalRequest) {
+									if (preparationError == nil || ![request matchesPreparedRequest:finalRequest]) {
+										return [RACSignal return:finalRequest];
+									}
+									NSMutableDictionary *values = [finalRequest.dictionaryValue mutableCopy];
+									values[@keypath(finalRequest.preparationError)] = preparationError.localizedDescription ?: @"Preparation failed";
+									NSError *modelError = nil;
+									SQRLShipItRequest *failedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:&modelError];
+									return failedRequest == nil ? [RACSignal error:modelError] : [RACSignal return:failedRequest];
+								}]];
 						}]
 						deliverOn:preparationScheduler];
 				}]
@@ -176,15 +201,19 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 			setInstallationAttempts(applicationIdentifier, attempt);
 
 			// The staged update can be removed while ShipIt waits for the
-			// application to quit; retrying cannot help then.
+			// application to quit, or early preparation may have failed;
+			// retrying cannot help then.
+			BOOL preparationFailed = (request.preparationError != nil);
 			BOOL updateMissing = ![request.updateBundleURL checkResourceIsReachableAndReturnError:NULL];
 
 			RACSignal *action;
-			if (updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
+			if (preparationFailed || updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
-						if (updateMissing) {
+						if (preparationFailed) {
+							NSLog(@"Early preparation failed (%@), aborting update", request.preparationError);
+						} else if (updateMissing) {
 							NSLog(@"Update bundle %@ no longer exists, aborting update", request.updateBundleURL.path);
 						} else {
 							NSLog(@"Too many attempts to install, aborting update");

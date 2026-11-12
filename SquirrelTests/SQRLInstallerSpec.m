@@ -294,6 +294,22 @@ describe(@"with earlyStaging enabled", ^{
 		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
+
+	it(@"should abort and exit cleanly after termination when early preparation fails", ^{
+		NSURL *missingUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.missing/TestApplication.app" isDirectory:YES];
+		SQRLShipItRequest *failingRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:missingUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:failingRequest];
+
+		__block NSError *error = nil;
+		expect(@([[failingRequest waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beFalsy());
+		expect(error).notTo(beNil());
+
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+	});
 });
 
 describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
