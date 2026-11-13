@@ -21,10 +21,21 @@
 #import "QuickSpec+SQRLFixtures.h"
 
 #import <sys/xattr.h>
+#import <sys/stat.h>
+#import <ServiceManagement/ServiceManagement.h>
 
 @interface SQRLInstaller (SQRLTestingHooks)
 - (RACSignal *)deleteOwnedBundleAtURL:(NSURL *)bundleURL;
+- (RACSignal *)takeOwnershipOfDirectory:(NSURL *)directoryURL stripACLs:(BOOL)stripACLs;
 @end
+
+static NSNumber *SQRLTestShipItPID(void) {
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+	NSDictionary *job = CFBridgingRelease(SMJobCopyDictionary(kSMDomainUserLaunchd, (__bridge CFStringRef)SQRLShipItLauncher.shipItJobLabel));
+#pragma clang diagnostic pop
+	return job[@"PID"];
+}
 
 QuickSpecBegin(SQRLInstallerSpec)
 
@@ -64,6 +75,7 @@ it(@"should round-trip the owned bundle through CFPreferences", ^{
 	expect(restored).notTo(beNil());
 	expect(restored.originalURL).to(equal(original.originalURL));
 	expect(restored.temporaryURL).to(equal(original.temporaryURL));
+	expect(restored.cleanupURLs).to(beNil());
 
 	[installer setValue:nil forKey:@"ownedBundle"];
 	expect([installer valueForKey:@"ownedBundle"]).to(beNil());
@@ -75,6 +87,256 @@ it(@"should install an update in process", ^{
 	[self installWithRequest:request remote:NO];
 
 	expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+});
+
+describe(@"with earlyStaging enabled", ^{
+	__block SQRLInstaller *installer;
+	__block SQRLShipItRequest *request;
+
+	beforeEach(^{
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
+		request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		[self addCleanupBlock:^{
+			CFPreferencesSetValue(CFSTR("SQRLInstallerPreparedBundlePath"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+			CFPreferencesSetValue(CFSTR("SQRLInstallerPendingCleanup"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+			CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+
+			NSURL *candidate = [installer valueForKey:@"preparedBundleURL"];
+			if (candidate != nil) [NSFileManager.defaultManager removeItemAtURL:candidate.URLByDeletingLastPathComponent error:NULL];
+		}];
+	});
+
+	it(@"should prepare while the app runs without replacing it", ^{
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		__block NSError *error = nil;
+		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+		expect(@(app.isTerminated)).to(beFalsy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:updateURL.path])).to(beTruthy());
+	});
+
+	it(@"should install the independent snapshot even if the source changes", ^{
+		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		NSURL *sourceResource = [updateURL URLByAppendingPathComponent:@"Contents/Resources/Credits.rtf"];
+		expect(@([@"changed after cloning" writeToURL:sourceResource atomically:YES encoding:NSUTF8StringEncoding error:NULL])).to(beTruthy());
+		__block NSError *error = nil;
+		expect(@([[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(@([[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+	});
+
+	it(@"should freshly verify the prepared candidate at installation", ^{
+		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		NSURL *candidate = [installer valueForKey:@"preparedBundleURL"];
+		expect(@([@"tampered" writeToURL:[candidate URLByAppendingPathComponent:@"Contents/Resources/Credits.rtf"] atomically:YES encoding:NSUTF8StringEncoding error:NULL])).to(beTruthy());
+		__block NSError *error = nil;
+		expect(@([[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&error])).to(beFalsy());
+		expect(error).notTo(beNil());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+	});
+
+	it(@"should strip ACLs and lock the private staging directory to 0700, re-staging if permissions are loosened", ^{
+		NSString *chmodACL = [NSString stringWithFormat:@"/bin/chmod -R +a 'everyone allow write' '%@'", updateURL.path];
+		expect(@(system(chmodACL.UTF8String))).to(equal(@0));
+
+		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		NSURL *candidate = [installer valueForKey:@"preparedBundleURL"];
+		expect(@(modeOfURL(candidate.URLByDeletingLastPathComponent))).to(equal(@0700));
+		expect(@(modeOfURL(candidate) & (S_IWGRP | S_IWOTH))).to(equal(@0));
+
+		for (NSURL *checkURL in @[ candidate, [candidate URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"] ]) {
+			NSFileSecurity *security = nil;
+			BOOL gotSecurity = [checkURL getResourceValue:&security forKey:NSURLFileSecurityKey error:NULL];
+			expect(@(gotSecurity)).to(beTruthy());
+			acl_t acl = NULL;
+			BOOL gotACL = CFFileSecurityCopyAccessControlList((__bridge CFFileSecurityRef)security, &acl);
+			expect(@(gotACL)).to(beFalsy());
+			expect(@(acl == NULL)).to(beTruthy());
+		}
+
+		// Also verify that takeOwnershipOfDirectory:stripACLs: removes existing
+		// on-disk ACLs (used when copyfile falls back to NSFileManager).
+		expect(@([[installer takeOwnershipOfDirectory:updateURL stripACLs:YES] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		for (NSURL *checkURL in @[ updateURL, [updateURL URLByAppendingPathComponent:@"Contents/MacOS/TestApplication"] ]) {
+			NSFileSecurity *security = nil;
+			BOOL gotSecurity = [checkURL getResourceValue:&security forKey:NSURLFileSecurityKey error:NULL];
+			expect(@(gotSecurity)).to(beTruthy());
+			acl_t acl = NULL;
+			BOOL gotACL = CFFileSecurityCopyAccessControlList((__bridge CFFileSecurityRef)security, &acl);
+			expect(@(gotACL)).to(beFalsy());
+			expect(@(acl == NULL)).to(beTruthy());
+		}
+
+		// Loosening the private parent directory's mode must cause the installer
+		// to discard the candidate and stage a fresh one at install time.
+		expect(@(chmod(candidate.URLByDeletingLastPathComponent.path.fileSystemRepresentation, 0755))).to(equal(@0));
+		expect(@([[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:candidate.URLByDeletingLastPathComponent.path])).to(beFalsy());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(@([[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+	});
+
+	it(@"should discard the old candidate for a changed request", ^{
+		expect(@([[installer prepareRequest:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		NSURL *oldCandidate = [installer valueForKey:@"preparedBundleURL"];
+		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
+		SQRLShipItRequest *changed = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[installer prepareRequest:changed] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:oldCandidate.path])).to(beFalsy());
+		expect([installer valueForKey:@"preparedRequest"]).to(equal(changed));
+	});
+
+	it(@"should recover committed cleanup without rolling back a successful install", ^{
+		expect(@([[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		SQRLInstallerOwnedBundle *committed = [installer valueForKey:@"ownedBundle"];
+		expect(committed.cleanupURLs).notTo(beNil());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:committed.temporaryURL.path])).to(beTruthy());
+		SQRLInstaller *restarted = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+		expect(@([[restarted abortInstall] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:committed.temporaryURL.path])).to(beFalsy());
+		expect([restarted valueForKey:@"ownedBundle"]).to(beNil());
+	});
+
+	it(@"should retain failed cleanup without preventing the next install", ^{
+		expect(@([[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		SQRLInstallerOwnedBundle *committed = [installer valueForKey:@"ownedBundle"];
+		NSURL *locked = [committed.temporaryURL URLByAppendingPathComponent:@"Contents/PkgInfo"];
+		expect(@(lchflags(locked.fileSystemRepresentation, UF_IMMUTABLE))).to(equal(@0));
+		[self addCleanupBlock:^{ lchflags(locked.fileSystemRepresentation, 0); }];
+		NSError *error = nil;
+		BOOL cleaned = [[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:&error];
+		expect(@(cleaned)).to(beFalsy());
+		expect(error).notTo(beNil());
+		expect([installer valueForKey:@"ownedBundle"]).to(beNil());
+		// The unlocked staged bundle should still have been cleaned up even
+		// though the locked backup bundle failed to delete.
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:updateURL.path])).to(beFalsy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:committed.temporaryURL.path])).to(beTruthy());
+
+		// A restarted ShipIt running abortInstall after unlocking should drain
+		// the remaining pending cleanup path even when ownedBundle is already nil.
+		expect(@(lchflags(locked.fileSystemRepresentation, 0))).to(equal(@0));
+		SQRLInstaller *restarted = [[SQRLInstaller alloc] initWithApplicationIdentifier:self.shipItDirectoryManager.applicationIdentifier];
+		expect(@([[restarted abortInstall] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:committed.temporaryURL.path])).to(beFalsy());
+
+		NSURL *nextUpdate = [self createTestApplicationUpdate];
+		SQRLShipItRequest *next = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:nextUpdate targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[installer.installUpdateCommand execute:next] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
+
+	it(@"should acknowledge readiness before termination and prepare a newer request", ^{
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:request];
+		__block NSError *error = nil;
+		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+		expect(@(app.isTerminated)).to(beFalsy());
+		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
+		SQRLShipItRequest *changed = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[changed writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([[changed waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
+
+	it(@"should rebuild preparation after the waiting helper is killed", ^{
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:request];
+		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		NSString *oldPreparedPath = CFBridgingRelease(CFPreferencesCopyValue(CFSTR("SQRLInstallerPreparedBundlePath"), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+		expect(oldPreparedPath).notTo(beNil());
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:oldPreparedPath])).to(beTruthy());
+		NSNumber *oldPID = SQRLTestShipItPID();
+		if (oldPID.intValue <= 0) {
+			XCTFail(@"Waiting ShipIt has no process ID");
+			return;
+		}
+		NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
+		[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+		expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@(kill(oldPID.intValue, SIGKILL))).to(equal(@0));
+		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
+		expect(SQRLTestShipItPID()).notTo(equal(oldPID));
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:oldPreparedPath.stringByDeletingLastPathComponent])).to(beFalsy());
+		expect(@(app.isTerminated)).to(beFalsy());
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
+
+	it(@"should honor earlyStaging on the request even when ShipIt user defaults are unset", ^{
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		[NSUserDefaults.standardUserDefaults removeObjectForKey:@"SquirrelMacEnableEarlyStaging"];
+		CFPreferencesSetValue(CFSTR("SquirrelMacEnableEarlyStaging"), NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+		CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+
+		NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
+		values[@"earlyStaging"] = @YES;
+		SQRLShipItRequest *requestWithFlag = [[SQRLShipItRequest alloc] initWithDictionary:values error:NULL];
+		expect(requestWithFlag).notTo(beNil());
+
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:requestWithFlag];
+		__block NSError *error = nil;
+		expect(@([[requestWithFlag waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
+
+	it(@"should abort and exit cleanly after termination when early preparation fails", ^{
+		NSURL *missingUpdateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"update.missing/TestApplication.app" isDirectory:YES];
+		SQRLShipItRequest *failingRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:missingUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:failingRequest];
+
+		__block NSError *error = nil;
+		expect(@([[failingRequest waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beFalsy());
+		expect(error).notTo(beNil());
+
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		id attempts = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+		expect(attempts).to(beNil());
+	});
+
+	it(@"should recover when the state directory is deleted while ShipIt waits and prepare the recreated request", ^{
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:request];
+		__block NSError *error = nil;
+		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
+		NSURL *stateDirURL = stateURL.URLByDeletingLastPathComponent;
+		expect(@([NSFileManager.defaultManager removeItemAtURL:stateDirURL error:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:stateDirURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+
+		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
+		SQRLShipItRequest *recreatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[recreatedRequest writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([[recreatedRequest waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+	});
 });
 
 describe(@"with SquirrelMacEnableDirectContentsWrite enabled", ^{
@@ -384,6 +646,14 @@ describe(@"-deleteOwnedBundleAtURL:", ^{
 		expect(@(success)).to(beTruthy());
 		expect(error).to(beNil());
 		expect(@([NSFileManager.defaultManager fileExistsAtPath:parentURL.path])).to(beFalsy());
+	});
+
+	it(@"should allow retrying cleanup after the parent directory was removed", ^{
+		expect(@([NSFileManager.defaultManager removeItemAtURL:parentURL error:NULL])).to(beTruthy());
+		NSError *error = nil;
+		BOOL success = [[installer deleteOwnedBundleAtURL:bundleURL] asynchronouslyWaitUntilCompleted:&error];
+		expect(@(success)).to(beTruthy());
+		expect(error).to(beNil());
 	});
 
 	it(@"should report the rmdir errno when the parent directory is not empty", ^{

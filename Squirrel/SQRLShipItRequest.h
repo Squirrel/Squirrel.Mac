@@ -79,6 +79,8 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // perform.
 - (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName;
 
+- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName earlyStaging:(BOOL)earlyStaging;
+
 // The URL to the downloaded update's app bundle.
 @property (nonatomic, copy, readonly) NSURL *updateBundleURL;
 
@@ -96,5 +98,34 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 
 // Whether the app should use the update bundle's name.
 @property (nonatomic, assign, readonly) BOOL useUpdateBundleName;
+
+// Whether ShipIt should pre-stage the update before termination and defer
+// obsolete bundle cleanup until after relaunch.
+@property (nonatomic, assign, readonly) BOOL earlyStaging;
+
+// Compares all installation fields, excluding launchAfterInstallation and
+// preparation status.
+- (BOOL)matchesPreparedRequest:(SQRLShipItRequest *)request;
+
+// Any error encountered during early staging for this request.
+@property (nonatomic, copy, readonly) NSString *preparationError;
+
+// Returns the helper-owned preparation status URL corresponding to a state URL.
++ (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL;
+
+// Removes any preparation status file corresponding to `stateURL` without
+// following symlinks.
++ (void)removePreparationStatusForStateURL:(NSURL *)stateURL;
+
+// Emits immediately after registration and whenever entries in `directoryURL`
+// are modified, recovering if `directoryURL` is deleted or renamed.
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL;
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL fallbackInterval:(NSTimeInterval)fallbackInterval retryInterval:(NSTimeInterval)retryInterval;
+
+// Writes and waits for preparation readiness in a separate ShipIt-written file
+// so ShipItState.plist remains exclusively written by the application.
+// The result is a readiness notification, never an installation trust anchor.
+- (RACSignal *)writePreparationResult:(NSError *)error usingURL:(RACSignal *)stateURL;
+- (RACSignal *)waitForPreparationUsingURL:(RACSignal *)stateURL;
 
 @end

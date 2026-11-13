@@ -22,6 +22,7 @@
 #import "SUBinaryDeltaApply.h"
 #import "SQRLZipArchiver.h"
 #import "SQRLShipItRequest.h"
+#import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/ReactiveObjC.h>
 #import <CommonCrypto/CommonDigest.h>
@@ -200,6 +201,7 @@ BOOL isVersionStandard(NSString* version) {
 
 @implementation SQRLUpdater {
 	RACSubject *_downloadProgress;
+	BOOL _earlyStagingEnabled;
 }
 
 #pragma mark Properties
@@ -257,6 +259,7 @@ BOOL isVersionStandard(NSString* version) {
 	_updateRequest = mutableUpdateRequest;
 	_updateClass = SQRLUpdate.class;
 	_downloadProgress = [[RACSubject subject] setNameWithFormat:@"%@ downloadProgress", self];
+	_earlyStagingEnabled = [[NSUserDefaults standardUserDefaults] boolForKey:@"SquirrelMacEnableEarlyStaging"];
 
 	[[[NSNotificationCenter.defaultCenter
 		rac_addObserverForName:NSApplicationWillTerminateNotification object:nil]
@@ -1074,7 +1077,7 @@ BOOL isVersionStandard(NSString* version) {
 - (RACSignal *)prepareUpdateForInstallation:(SQRLDownloadedUpdate *)update {
 	NSParameterAssert(update != nil);
 
-	return [[[[RACSignal
+	return [[[RACSignal
 		defer:^{
 			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
 			NSURL *targetBundleURL = currentApplication.bundleURL.URLByResolvingSymlinksInPath;
@@ -1083,11 +1086,26 @@ BOOL isVersionStandard(NSString* version) {
 			// app themselves.
 			BOOL useUpdateBundleName = [appBundle.sqrl_executableName isEqual:targetBundleURL.lastPathComponent.stringByDeletingPathExtension];
 
-			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:targetBundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName];
-			return [request writeUsingURL:self.shipItStateURL];
-		}]
-		then:^{
-			return self.shipItLauncher;
+			SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:update.bundle.bundleURL targetBundleURL:targetBundleURL bundleIdentifier:currentApplication.bundleIdentifier launchAfterInstallation:NO useUpdateBundleName:useUpdateBundleName earlyStaging:self->_earlyStagingEnabled];
+			if (!request.earlyStaging) {
+				return [[request writeUsingURL:self.shipItStateURL] then:^{
+					return self.shipItLauncher;
+				}];
+			}
+
+			return [[[[self.shipItStateURL
+				doNext:^(NSURL *stateURL) {
+					[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+				}]
+				then:^{
+					return [request writeUsingURL:self.shipItStateURL];
+				}]
+				concat:[RACSignal return:request]]
+				flattenMap:^(SQRLShipItRequest *stagedRequest) {
+					return [[self.shipItLauncher then:^{
+						return [stagedRequest waitForPreparationUsingURL:self.shipItStateURL];
+					}] ignoreValues];
+				}];
 		}]
 		sqrl_addTransactionWithName:NSLocalizedString(@"Preparing update", nil) description:NSLocalizedString(@"An update for %@ is being prepared. Interrupting the process could corrupt the application.", nil), NSRunningApplication.currentApplication.bundleIdentifier]
 		setNameWithFormat:@"%@ -prepareUpdateForInstallation: %@", self, update];
@@ -1096,8 +1114,12 @@ BOOL isVersionStandard(NSString* version) {
 - (RACSignal *)relaunchToInstallUpdate {
 	return [[[[[[[[SQRLShipItRequest
 		readUsingURL:self.shipItStateURL]
-		map:^(SQRLShipItRequest *request) {
-			return [[SQRLShipItRequest alloc] initWithUpdateBundleURL:request.updateBundleURL targetBundleURL:request.targetBundleURL bundleIdentifier:request.bundleIdentifier launchAfterInstallation:YES useUpdateBundleName:request.useUpdateBundleName];
+		flattenMap:^(SQRLShipItRequest *request) {
+			NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
+			values[@keypath(request.launchAfterInstallation)] = @YES;
+			NSError *error = nil;
+			SQRLShipItRequest *updatedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
+			return updatedRequest == nil ? [RACSignal error:error] : [RACSignal return:updatedRequest];
 		}]
 		flattenMap:^(SQRLShipItRequest *request) {
 			return [[request

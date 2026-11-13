@@ -11,6 +11,7 @@
 #import "SQRLCodeSignature.h"
 #import "SQRLDirectoryManager.h"
 #import "SQRLInstaller.h"
+#import "SQRLInstaller+Private.h"
 #import "SQRLShipItLauncher.h"
 #import "SQRLShipItRequest.h"
 #import <ServiceManagement/ServiceManagement.h>
@@ -312,6 +313,10 @@ QuickConfigurationEnd
 }
 
 - (void)submitShipItRequest:(SQRLShipItRequest *)request {
+	NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
+	if (stateURL != nil) {
+		[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+	}
 	expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 
 	__block NSError *error = nil;
@@ -365,6 +370,11 @@ static NSNumber *SQRLShipItLastExitStatus(NSString *jobLabel) {
 		BOOL installed = [[installer.installUpdateCommand execute:request] asynchronouslyWaitUntilCompleted:&installedError];
 		expect(@(installed)).to(beTruthy());
 		expect(installedError).to(beNil());
+		if (request.earlyStaging) {
+			BOOL cleaned = [[installer cleanupAfterInstallation] asynchronouslyWaitUntilCompleted:&installedError];
+			expect(@(cleaned)).to(beTruthy());
+			expect(installedError).to(beNil());
+		}
 	}
 }
 

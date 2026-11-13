@@ -34,4 +34,7 @@
 @property (readonly, copy, nonatomic) NSURL *temporaryURL;
 @property (readonly, copy, nonatomic) SQRLCodeSignature *codeSignature;
 
+// Non-nil means replacement committed: cleanup is allowed, rollback is not.
+@property (readonly, copy, nonatomic) NSArray<NSURL *> *cleanupURLs;
+
 @end

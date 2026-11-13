@@ -9,6 +9,7 @@
 #import "SQRLInstaller.h"
 
 @class RACSignal;
+@class SQRLShipItRequest;
 
 // The defaults key to store a `SQRLInstallerOwnedBundle` so that a moved bundle
 // can be restored.
@@ -25,5 +26,15 @@ extern NSString * const SQRLShipItInstallationAttemptsKey;
 // when there was nothing to restore or the bundle was restored, and errors if
 // it could not be moved back.
 - (RACSignal *)abortInstall;
+
+// Creates a private snapshot without replacing the running application.
+// The install still performs fresh strict signature verification.
+- (RACSignal *)prepareRequest:(SQRLShipItRequest *)request;
+
+// Discards any in-memory or persisted prepared staging bundle.
+- (RACSignal *)discardPreparedBundle;
+
+// Removes committed obsolete bundles; never restores a committed backup.
+- (RACSignal *)cleanupAfterInstallation;
 
 @end

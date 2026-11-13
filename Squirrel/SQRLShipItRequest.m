@@ -9,7 +9,15 @@
 #import "SQRLShipItRequest.h"
 
 #import <ReactiveObjC/EXTKeyPathCoding.h>
+#import <ReactiveObjC/EXTScope.h>
+#import <ReactiveObjC/RACDisposable.h>
 #import <ReactiveObjC/RACSignal+Operations.h>
+#import <ReactiveObjC/RACScheduler.h>
+#import <ReactiveObjC/RACSubscriber.h>
+#import <ReactiveObjC/RACUnit.h>
+#import <fcntl.h>
+#import <sys/stat.h>
+#import <unistd.h>
 
 NSString * const SQRLShipItRequestErrorDomain = @"SQRLShipItRequestErrorDomain";
 
@@ -48,12 +56,17 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 }
 
 - (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName {
+	return [self initWithUpdateBundleURL:updateBundleURL targetBundleURL:targetBundleURL bundleIdentifier:bundleIdentifier launchAfterInstallation:launchAfterInstallation useUpdateBundleName:useUpdateBundleName earlyStaging:NO];
+}
+
+- (instancetype)initWithUpdateBundleURL:(NSURL *)updateBundleURL targetBundleURL:(NSURL *)targetBundleURL bundleIdentifier:(NSString *)bundleIdentifier launchAfterInstallation:(BOOL)launchAfterInstallation useUpdateBundleName:(BOOL)useUpdateBundleName earlyStaging:(BOOL)earlyStaging {
 	return [self initWithDictionary:@{
 		@keypath(self.updateBundleURL): updateBundleURL,
 		@keypath(self.targetBundleURL): targetBundleURL,
 		@keypath(self.bundleIdentifier): bundleIdentifier ?: NSNull.null,
 		@keypath(self.launchAfterInstallation): @(launchAfterInstallation),
 		@keypath(self.useUpdateBundleName): @(useUpdateBundleName),
+		@keypath(self.earlyStaging): @(earlyStaging),
 	} error:NULL];
 }
 
@@ -66,7 +79,292 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		@keypath(SQRLShipItRequest.new, bundleIdentifier): @keypath(SQRLShipItRequest.new, bundleIdentifier),
 		@keypath(SQRLShipItRequest.new, launchAfterInstallation): @keypath(SQRLShipItRequest.new, launchAfterInstallation),
 		@keypath(SQRLShipItRequest.new, useUpdateBundleName): @keypath(SQRLShipItRequest.new, useUpdateBundleName),
+		@keypath(SQRLShipItRequest.new, earlyStaging): @keypath(SQRLShipItRequest.new, earlyStaging),
+		@keypath(SQRLShipItRequest.new, preparationError): @keypath(SQRLShipItRequest.new, preparationError),
 	};
+}
+
+- (BOOL)matchesPreparedRequest:(SQRLShipItRequest *)request {
+	if (request == nil) return NO;
+	return [self.updateBundleURL isEqual:request.updateBundleURL] &&
+		[self.targetBundleURL isEqual:request.targetBundleURL] &&
+		(self.bundleIdentifier == request.bundleIdentifier || [self.bundleIdentifier isEqual:request.bundleIdentifier]) &&
+		self.useUpdateBundleName == request.useUpdateBundleName &&
+		self.earlyStaging == request.earlyStaging;
+}
+
+static int openStateDirectory(NSURL *directoryURL) {
+	int dirFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
+	if (geteuid() == 0) {
+		dirFlags |= O_NOFOLLOW_ANY;
+	}
+	return open(directoryURL.path.fileSystemRepresentation, dirFlags);
+}
+
++ (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL {
+	NSParameterAssert(stateURL != nil);
+	return [stateURL URLByAppendingPathExtension:@"prepared"];
+}
+
++ (void)removePreparationStatusForStateURL:(NSURL *)stateURL {
+	if (stateURL == nil) return;
+	NSURL *preparedURL = [self preparationStatusURLForStateURL:stateURL];
+	int dirfd = openStateDirectory(preparedURL.URLByDeletingLastPathComponent);
+	if (dirfd < 0) return;
+	unlinkat(dirfd, preparedURL.lastPathComponent.fileSystemRepresentation, 0);
+	close(dirfd);
+}
+
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL {
+	return [self watchDirectoryAtURL:directoryURL fallbackInterval:30.0 retryInterval:1.0];
+}
+
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL fallbackInterval:(NSTimeInterval)fallbackInterval retryInterval:(NSTimeInterval)retryInterval {
+	NSParameterAssert(directoryURL != nil);
+
+	NSString *directoryPath = directoryURL.path;
+	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
+		dispatch_queue_attr_t attr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_UTILITY, 0);
+		dispatch_queue_t queue = dispatch_queue_create("com.github.Squirrel.directoryWatcher", attr);
+
+		__block BOOL cancelled = NO;
+		__block BOOL initialized = NO;
+		__block dispatch_source_t vnodeSource = nil;
+		dispatch_source_t timerSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
+
+		void (^scheduleTimer)(NSTimeInterval) = ^(NSTimeInterval intervalSeconds) {
+			if (timerSource == nil) return;
+			uint64_t intervalNs = (uint64_t)(MAX(intervalSeconds, 0.05) * NSEC_PER_SEC);
+			uint64_t leewayNs = MAX(intervalNs / 5, (uint64_t)(NSEC_PER_SEC / 20));
+			dispatch_source_set_timer(timerSource, dispatch_time(DISPATCH_TIME_NOW, (int64_t)intervalNs), intervalNs, leewayNs);
+		};
+
+		__block void (^attachVnodeSource)(BOOL);
+		__weak __block void (^weakAttachVnodeSource)(BOOL);
+		weakAttachVnodeSource = attachVnodeSource = ^(BOOL sendInitialIfUnavailable) {
+			if (cancelled || vnodeSource != nil) return;
+
+			int dirfd = open(directoryPath.fileSystemRepresentation, O_EVTONLY | O_CLOEXEC);
+			if (dirfd < 0) {
+				scheduleTimer(retryInterval);
+				if (sendInitialIfUnavailable) {
+					[subscriber sendNext:RACUnit.defaultUnit];
+				}
+				return;
+			}
+
+			dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)dirfd, DISPATCH_VNODE_WRITE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_DELETE | DISPATCH_VNODE_ATTRIB | DISPATCH_VNODE_REVOKE, queue);
+			if (source == nil) {
+				close(dirfd);
+				scheduleTimer(retryInterval);
+				if (sendInitialIfUnavailable) {
+					[subscriber sendNext:RACUnit.defaultUnit];
+				}
+				return;
+			}
+
+			vnodeSource = source;
+			scheduleTimer(fallbackInterval);
+
+			dispatch_source_set_registration_handler(source, ^{
+				if (!cancelled) {
+					[subscriber sendNext:RACUnit.defaultUnit];
+				}
+			});
+			dispatch_source_set_event_handler(source, ^{
+				if (cancelled) return;
+				uintptr_t flags = dispatch_source_get_data(source);
+				[subscriber sendNext:RACUnit.defaultUnit];
+				if ((flags & (DISPATCH_VNODE_DELETE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_REVOKE)) != 0) {
+					if (vnodeSource == source) {
+						vnodeSource = nil;
+					}
+					dispatch_source_cancel(source);
+					void (^reattach)(BOOL) = weakAttachVnodeSource;
+					if (reattach != nil) {
+						reattach(NO);
+					}
+					if (vnodeSource == nil) {
+						scheduleTimer(retryInterval);
+					}
+				}
+			});
+			dispatch_source_set_cancel_handler(source, ^{
+				close(dirfd);
+			});
+			dispatch_resume(source);
+		};
+
+		if (timerSource != nil) {
+			scheduleTimer(fallbackInterval);
+			dispatch_source_set_event_handler(timerSource, ^{
+				if (cancelled || !initialized) return;
+				if (vnodeSource == nil) {
+					attachVnodeSource(NO);
+					if (vnodeSource != nil) return;
+				}
+				[subscriber sendNext:RACUnit.defaultUnit];
+			});
+			dispatch_resume(timerSource);
+		}
+
+		dispatch_async(queue, ^{
+			initialized = YES;
+			attachVnodeSource(YES);
+		});
+
+		return [RACDisposable disposableWithBlock:^{
+			dispatch_async(queue, ^{
+				cancelled = YES;
+				attachVnodeSource = nil;
+				if (vnodeSource != nil) {
+					dispatch_source_cancel(vnodeSource);
+					vnodeSource = nil;
+				}
+				if (timerSource != nil) {
+					dispatch_source_cancel(timerSource);
+				}
+			});
+		}];
+	}] setNameWithFormat:@"+watchDirectoryAtURL: %@", directoryURL];
+}
+
+- (RACSignal *)writePreparationResult:(NSError *)error usingURL:(RACSignal *)stateURL {
+	NSParameterAssert(stateURL != nil);
+
+	return [stateURL flattenMap:^(NSURL *URL) {
+		NSURL *preparedURL = [SQRLShipItRequest preparationStatusURLForStateURL:URL];
+		NSMutableDictionary *values = [self.dictionaryValue mutableCopy];
+		values[@keypath(self.preparationError)] = error.localizedDescription ?: NSNull.null;
+		NSError *modelError = nil;
+		SQRLShipItRequest *updated = [[SQRLShipItRequest alloc] initWithDictionary:values error:&modelError];
+		if (updated == nil) return [RACSignal error:modelError];
+
+		return [[updated serialization] flattenMap:^(NSData *data) {
+			NSError *writeError = nil;
+			if (![updated writePreparationData:data toURL:preparedURL error:&writeError]) {
+				NSDictionary *userInfo = @{
+					NSLocalizedDescriptionKey: NSLocalizedString(@"Could not write update request", nil),
+					NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"An unknown error occurred while archiving.", nil),
+				};
+				if (writeError != nil) {
+					userInfo = [userInfo mtl_dictionaryByAddingEntriesFromDictionary:@{
+						NSUnderlyingErrorKey: writeError,
+					}];
+				}
+				return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorArchiving userInfo:userInfo]];
+			}
+			return [RACSignal empty];
+		}];
+	}];
+}
+
+- (BOOL)writePreparationData:(NSData *)data toURL:(NSURL *)URL error:(NSError **)errorRef {
+	NSURL *parentURL = URL.URLByDeletingLastPathComponent;
+	NSString *fileName = URL.lastPathComponent;
+
+	// ShipIt may run as root while writing into the user's cache directory.
+	// Reject symlinks on the directory (and all ancestor components when
+	// privileged), create a fresh mode-0644 temporary file with O_NOFOLLOW,
+	// and renameat() within the opened directory descriptor so symlinks are
+	// never followed.
+	int dirfd = openStateDirectory(parentURL);
+	if (dirfd < 0) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+		return NO;
+	}
+	@onExit {
+		close(dirfd);
+	};
+
+	struct stat dirStat;
+	if (fstat(dirfd, &dirStat) != 0 || !S_ISDIR(dirStat.st_mode)) {
+		int code = errno ?: ENOTDIR;
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+		return NO;
+	}
+
+	NSString *tempName = [NSString stringWithFormat:@".%@.%@", fileName, NSUUID.UUID.UUIDString];
+	int fd = openat(dirfd, tempName.fileSystemRepresentation, O_WRONLY | O_CREAT | O_EXCL | O_NOFOLLOW | O_CLOEXEC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	if (fd < 0) {
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+		return NO;
+	}
+
+	if (fchmod(fd, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) != 0) {
+		int code = errno;
+		close(fd);
+		unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+		return NO;
+	}
+
+	const uint8_t *bytes = data.bytes;
+	NSUInteger remaining = data.length;
+	while (remaining > 0) {
+		ssize_t written = write(fd, bytes, remaining);
+		if (written < 0) {
+			if (errno == EINTR) continue;
+			int code = errno;
+			close(fd);
+			unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+			if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+			return NO;
+		}
+		bytes += written;
+		remaining -= (NSUInteger)written;
+	}
+
+	if (close(fd) != 0) {
+		int code = errno;
+		unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:nil];
+		return NO;
+	}
+
+	__block BOOL renamed = NO;
+	__block NSError *renameError = nil;
+	NSFileCoordinator *coordinator = [[NSFileCoordinator alloc] initWithFilePresenter:nil];
+	[coordinator coordinateWritingItemAtURL:URL options:0 error:&renameError byAccessor:^(NSURL * __unused newURL) {
+		if (renameat(dirfd, tempName.fileSystemRepresentation, dirfd, fileName.fileSystemRepresentation) == 0) {
+			renamed = YES;
+		} else {
+			renameError = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
+		}
+	}];
+
+	if (!renamed) {
+		unlinkat(dirfd, tempName.fileSystemRepresentation, 0);
+		if (errorRef != NULL) *errorRef = renameError;
+		return NO;
+	}
+
+	return YES;
+}
+
+- (RACSignal *)waitForPreparationUsingURL:(RACSignal *)stateURL {
+	NSParameterAssert(stateURL != nil);
+
+	RACScheduler *scheduler = [RACScheduler scheduler];
+	return [[[stateURL
+		flattenMap:^(NSURL *URL) {
+			NSURL *preparedURL = [SQRLShipItRequest preparationStatusURLForStateURL:URL];
+			RACSignal *preparedURLSignal = [RACSignal return:preparedURL];
+			return [[[[SQRLShipItRequest watchDirectoryAtURL:preparedURL.URLByDeletingLastPathComponent]
+				flattenMap:^(id _) {
+					return [[SQRLShipItRequest readUsingURL:preparedURLSignal] catchTo:[RACSignal empty]];
+				}]
+				flattenMap:^(SQRLShipItRequest *preparedRequest) {
+					if (![self matchesPreparedRequest:preparedRequest]) return [RACSignal empty];
+					if (preparedRequest.preparationError != nil) {
+						return [RACSignal error:[NSError errorWithDomain:SQRLShipItRequestErrorDomain code:SQRLShipItRequestErrorUnarchiving userInfo:@{ NSLocalizedDescriptionKey: preparedRequest.preparationError }]];
+					}
+					return [RACSignal return:preparedRequest];
+				}]
+				take:1];
+		}]
+		take:1]
+		timeout:300 onScheduler:scheduler];
 }
 
 + (NSValueTransformer *)updateBundleURLJSONTransformer {

@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 
+#import <ReactiveObjC/EXTKeyPathCoding.h>
 #import <ReactiveObjC/EXTScope.h>
 #import <ReactiveObjC/RACCommand.h>
 #import <ReactiveObjC/RACSignal+Operations.h>
@@ -114,30 +115,111 @@ static RACSignal *restoreOwnedBundle(SQRLInstaller *installer) {
 		setNameWithFormat:@"restoreOwnedBundle"];
 }
 
-static void installRequest(RACSignal *readRequestSignal, NSString *applicationIdentifier) {
+static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 	SQRLInstaller *installer = [[SQRLInstaller alloc] initWithApplicationIdentifier:applicationIdentifier];
+	RACSignal *readRequestSignal = [SQRLShipItRequest readUsingURL:[RACSignal return:stateURL]];
 
-	[[[[[[restoreOwnedBundle(installer)
-		concat:readRequestSignal]
-		flattenMap:^(SQRLShipItRequest *request) {
-			return waitForTerminationIfNecessary(request);
-		}]
-		ignoreValues]
-		concat:readRequestSignal]
+	RACSignal *readyToInstall = [readRequestSignal
+		flattenMap:^(SQRLShipItRequest *initialRequest) {
+			if (!initialRequest.earlyStaging) {
+				return [[waitForTerminationIfNecessary(initialRequest)
+					ignoreValues]
+					concat:readRequestSignal];
+			}
+
+			// Clear any stale acknowledgment from an earlier ShipIt instance
+			// before preparing this launch's candidate.
+			[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+
+			RACScheduler *preparationScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityLow];
+			RACSignal *requests = [[[[[[SQRLShipItRequest watchDirectoryAtURL:stateURL.URLByDeletingLastPathComponent]
+				deliverOn:preparationScheduler]
+				flattenMap:^(id _) {
+					return [readRequestSignal catch:^(NSError *error) {
+						NSLog(@"Ignoring transient error reading request while waiting: %@", error.sqrl_verboseDescription);
+						return [RACSignal empty];
+					}];
+				}]
+				flattenMap:^(SQRLShipItRequest *request) {
+					NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
+					values[@keypath(request.launchAfterInstallation)] = @NO;
+					values[@keypath(request.preparationError)] = NSNull.null;
+					NSError *error = nil;
+					SQRLShipItRequest *normalized = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
+					if (normalized == nil) {
+						NSLog(@"Ignoring invalid request while waiting: %@", error.sqrl_verboseDescription);
+						return [RACSignal empty];
+					}
+					return [RACSignal return:normalized];
+				}]
+				distinctUntilChanged]
+				deliverOn:preparationScheduler];
+
+			return [[[requests
+				map:^(SQRLShipItRequest *request) {
+					if (!request.earlyStaging) {
+						[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+						return [[[installer discardPreparedBundle]
+							then:^{
+								return [waitForTerminationIfNecessary(request) ignoreValues];
+							}]
+							concat:readRequestSignal];
+					}
+					__block NSError *preparationError = nil;
+					RACSignal *preparing = [[[installer prepareRequest:request]
+						catch:^(NSError *error) {
+							preparationError = error;
+							NSLog(@"Preparation failed: %@", error.sqrl_verboseDescription);
+							return [RACSignal empty];
+						}]
+						ignoreValues];
+					return [[[preparing
+						then:^{
+							return [[request writePreparationResult:preparationError usingURL:[RACSignal return:stateURL]] catch:^(NSError *error) {
+								NSLog(@"Could not write preparation status: %@", error.sqrl_verboseDescription);
+								return [RACSignal empty];
+							}];
+						}]
+						then:^{
+							return [[waitForTerminationIfNecessary(request)
+								ignoreValues]
+								concat:[readRequestSignal flattenMap:^(SQRLShipItRequest *finalRequest) {
+									if (preparationError == nil || ![request matchesPreparedRequest:finalRequest]) {
+										return [RACSignal return:finalRequest];
+									}
+									NSMutableDictionary *values = [finalRequest.dictionaryValue mutableCopy];
+									values[@keypath(finalRequest.preparationError)] = preparationError.localizedDescription ?: @"Preparation failed";
+									NSError *modelError = nil;
+									SQRLShipItRequest *failedRequest = [[SQRLShipItRequest alloc] initWithDictionary:values error:&modelError];
+									return failedRequest == nil ? [RACSignal error:modelError] : [RACSignal return:failedRequest];
+								}]];
+						}]
+						deliverOn:preparationScheduler];
+				}]
+				switchToLatest]
+				take:1];
+		}];
+
+	[[[restoreOwnedBundle(installer)
+		concat:readyToInstall]
 		flattenMap:^(SQRLShipItRequest *request) {
 			NSUInteger attempt = installationAttempts(applicationIdentifier) + 1;
 			setInstallationAttempts(applicationIdentifier, attempt);
 
 			// The staged update can be removed while ShipIt waits for the
-			// application to quit; retrying cannot help then.
+			// application to quit, or early preparation may have failed;
+			// retrying cannot help then.
+			BOOL preparationFailed = (request.preparationError != nil);
 			BOOL updateMissing = ![request.updateBundleURL checkResourceIsReachableAndReturnError:NULL];
 
 			RACSignal *action;
-			if (updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
+			if (preparationFailed || updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
 				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
-						if (updateMissing) {
+						if (preparationFailed) {
+							NSLog(@"Early preparation failed (%@), aborting update", request.preparationError);
+						} else if (updateMissing) {
 							NSLog(@"Update bundle %@ no longer exists, aborting update", request.updateBundleURL.path);
 						} else {
 							NSLog(@"Too many attempts to install, aborting update");
@@ -168,10 +250,13 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path];
 			}
 
-			// Clear the installation attempts for a successful abort or
-			// install.
+			// Clear the installation attempts and any preparation acknowledgment
+			// for a successful abort or install.
 			action = [action doCompleted:^{
 				clearInstallationAttempts(applicationIdentifier);
+				if (request.earlyStaging) {
+					[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+				}
 			}];
 
 			if (request.launchAfterInstallation) {
@@ -247,7 +332,19 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
 					}];
 			}
 
-			return action;
+			// deliverOn above ensures launch handling runs before this
+			// subscription starts recursive cleanup.
+			if (!request.earlyStaging) {
+				return action;
+			}
+			return [action concat:[RACSignal defer:^{
+				return [[[installer cleanupAfterInstallation]
+					subscribeOn:[RACScheduler schedulerWithPriority:RACSchedulerPriorityBackground]]
+					catch:^(NSError *error) {
+						NSLog(@"Deferred cleanup failed; retained for next ShipIt run: %@", error.sqrl_verboseDescription);
+						return [RACSignal empty];
+					}];
+			}]];
 		}]
 		subscribeError:^(NSError *error) {
 			if ([[error domain] isEqual:SQRLInstallerErrorDomain] && [error code] == SQRLInstallerErrorAppStillRunning) {
@@ -308,7 +405,7 @@ int main(int argc, const char * argv[]) {
 			exit(EXIT_SUCCESS);
 		} else {
 			NSLog(@"Detected this as an install request");
-			installRequest([SQRLShipItRequest readUsingURL:[RACSignal return:shipItStateURL]], @(jobLabel));
+			installRequest(shipItStateURL, @(jobLabel));
 			dispatch_main();
 		}
 	}
