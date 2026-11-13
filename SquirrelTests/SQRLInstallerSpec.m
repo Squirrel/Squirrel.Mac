@@ -262,7 +262,7 @@ describe(@"with earlyStaging enabled", ^{
 			return;
 		}
 		NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
-		[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
+		[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 		expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 		expect(@(kill(oldPID.intValue, SIGKILL))).to(equal(@0));
 		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:NULL])).to(beTruthy());
@@ -309,6 +309,33 @@ describe(@"with earlyStaging enabled", ^{
 		[app forceTerminate];
 		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		id attempts = CFBridgingRelease(CFPreferencesCopyValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost));
+		expect(attempts).to(beNil());
+	});
+
+	it(@"should recover when the state directory is deleted while ShipIt waits and prepare the recreated request", ^{
+		NSRunningApplication *app = [self launchTestApplicationWithEnvironment:nil];
+		[self submitShipItRequest:request];
+		__block NSError *error = nil;
+		expect(@([[request waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
+		NSURL *stateDirURL = stateURL.URLByDeletingLastPathComponent;
+		expect(@([NSFileManager.defaultManager removeItemAtURL:stateDirURL error:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:stateDirURL withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+
+		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
+		SQRLShipItRequest *recreatedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:@"com.github.Squirrel.TestApplication" launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[recreatedRequest writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@([[recreatedRequest waitForPreparationUsingURL:self.shipItDirectoryManager.shipItStateURL] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		[app forceTerminate];
+		[self waitForShipItJobToExitWithLabel:SQRLShipItLauncher.shipItJobLabel];
+		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 	});
 });
 

@@ -1091,15 +1091,15 @@ BOOL isVersionStandard(NSString* version) {
 
 			return [[[[self.shipItStateURL
 				doNext:^(NSURL *stateURL) {
-					[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
+					[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 				}]
 				then:^{
 					return [request writeUsingURL:self.shipItStateURL];
 				}]
 				concat:[RACSignal return:request]]
-				flattenMap:^(SQRLShipItRequest *request) {
+				flattenMap:^(SQRLShipItRequest *stagedRequest) {
 					return [[self.shipItLauncher then:^{
-						return [request waitForPreparationUsingURL:self.shipItStateURL];
+						return [stagedRequest waitForPreparationUsingURL:self.shipItStateURL];
 					}] ignoreValues];
 				}];
 		}]

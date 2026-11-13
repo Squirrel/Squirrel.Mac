@@ -42,7 +42,7 @@ afterEach(^{
 	expect(stateURL).notTo(beNil());
 
 	[NSFileManager.defaultManager removeItemAtURL:stateURL error:NULL];
-	[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
+	[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 });
 
 it(@"should copy", ^{
@@ -187,6 +187,77 @@ describe(@"preparation status", ^{
 		expect(@([[request writePreparationResult:nil usingURL:[RACSignal return:stateURL]] waitUntilCompleted:&error])).to(beFalsy());
 		expect(error).notTo(beNil());
 		expect(@([NSFileManager.defaultManager fileExistsAtPath:[realDirURL URLByAppendingPathComponent:@"ShipItState.plist.prepared"].path])).to(beFalsy());
+	});
+
+	it(@"should re-attach directory watcher after the state directory is deleted and recreated", ^{
+		NSURL *watchedDir = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"watched-state" isDirectory:YES];
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:watchedDir withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+		NSURL *stateURL = [watchedDir URLByAppendingPathComponent:@"ShipItState.plist"];
+
+		NSMutableArray<SQRLShipItRequest *> *observed = [NSMutableArray array];
+		RACDisposable *subscription = [[[[SQRLShipItRequest
+			watchDirectoryAtURL:watchedDir fallbackInterval:30.0 retryInterval:0.05]
+			flattenMap:^(id _) {
+				return [[SQRLShipItRequest readUsingURL:[RACSignal return:stateURL]] catchTo:[RACSignal empty]];
+			}]
+			distinctUntilChanged]
+			subscribeNext:^(SQRLShipItRequest *observedRequest) {
+				@synchronized (observed) {
+					[observed addObject:observedRequest];
+				}
+			}];
+		[self addCleanupBlock:^{
+			[subscription dispose];
+		}];
+
+		BOOL (^waitForObservedRequest)(SQRLShipItRequest *) = ^BOOL(SQRLShipItRequest *expected) {
+			NSDate *deadline = [NSDate dateWithTimeIntervalSinceNow:SQRLLongTimeout];
+			while ([deadline timeIntervalSinceNow] > 0) {
+				@synchronized (observed) {
+					if ([observed.lastObject isEqual:expected]) return YES;
+				}
+				[NSThread sleepForTimeInterval:0.02];
+			}
+			return NO;
+		};
+
+		expect(@([[request writeUsingURL:[RACSignal return:stateURL]] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@(waitForObservedRequest(request))).to(beTruthy());
+
+		// Replace the watched directory immediately (simulating atomic folder
+		// replacement before any retry timer tick) and verify instant recovery.
+		NSURL *replacementDir = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"watched-state-new" isDirectory:YES];
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:replacementDir withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager removeItemAtURL:watchedDir error:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager moveItemAtURL:replacementDir toURL:watchedDir error:NULL])).to(beTruthy());
+
+		NSURL *replacedUpdateURL = [self createTestApplicationUpdate];
+		SQRLShipItRequest *replacedRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:replacedUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[replacedRequest writeUsingURL:[RACSignal return:stateURL]] waitUntilCompleted:NULL])).to(beTruthy());
+		expect(@(waitForObservedRequest(replacedRequest))).to(beTruthy());
+
+		// Also delete the watched directory while absent, then recreate it later
+		// and verify timer-backed re-attachment.
+		expect(@([NSFileManager.defaultManager removeItemAtURL:watchedDir error:NULL])).to(beTruthy());
+		[NSThread sleepForTimeInterval:0.1];
+		expect(@([NSFileManager.defaultManager createDirectoryAtURL:watchedDir withIntermediateDirectories:YES attributes:nil error:NULL])).to(beTruthy());
+		[NSThread sleepForTimeInterval:0.1];
+
+		NSURL *newerUpdateURL = [self createTestApplicationUpdate];
+		SQRLShipItRequest *newerRequest = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:newerUpdateURL targetBundleURL:self.testApplicationURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO earlyStaging:YES];
+		expect(@([[newerRequest writeUsingURL:[RACSignal return:stateURL]] waitUntilCompleted:NULL])).to(beTruthy());
+
+		expect(@(waitForObservedRequest(newerRequest))).to(beTruthy());
+	});
+
+	it(@"should not miss an event written before or immediately around subscription", ^{
+		NSURL *stateURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"ShipItState.plist"];
+		RACSignal *location = [RACSignal return:stateURL];
+		expect(@([[request writePreparationResult:nil usingURL:location] waitUntilCompleted:NULL])).to(beTruthy());
+
+		__block NSError *error = nil;
+		expect(@([[request waitForPreparationUsingURL:location] asynchronouslyWaitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
 	});
 });
 

@@ -98,37 +98,129 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	return [stateURL URLByAppendingPathExtension:@"prepared"];
 }
 
++ (void)removePreparationStatusForStateURL:(NSURL *)stateURL {
+	if (stateURL == nil) return;
+	NSURL *preparedURL = [self preparationStatusURLForStateURL:stateURL];
+	int dirFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
+	if (geteuid() == 0) {
+		dirFlags |= O_NOFOLLOW_ANY;
+	}
+	int dirfd = open(preparedURL.URLByDeletingLastPathComponent.path.fileSystemRepresentation, dirFlags);
+	if (dirfd < 0) return;
+	unlinkat(dirfd, preparedURL.lastPathComponent.fileSystemRepresentation, 0);
+	close(dirfd);
+}
+
 + (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL {
+	return [self watchDirectoryAtURL:directoryURL fallbackInterval:30.0 retryInterval:1.0];
+}
+
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL fallbackInterval:(NSTimeInterval)fallbackInterval retryInterval:(NSTimeInterval)retryInterval {
 	NSParameterAssert(directoryURL != nil);
 
+	NSString *directoryPath = directoryURL.path;
 	return [[RACSignal createSignal:^ RACDisposable * (id<RACSubscriber> subscriber) {
-		int dirfd = open(directoryURL.path.fileSystemRepresentation, O_EVTONLY | O_CLOEXEC);
-		if (dirfd < 0) {
-			return [[[RACSignal interval:1.0 onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityLow]]
-				startWith:NSDate.date]
-				subscribe:subscriber];
+		dispatch_queue_attr_t attr = dispatch_queue_attr_make_with_qos_class(DISPATCH_QUEUE_SERIAL, QOS_CLASS_UTILITY, 0);
+		dispatch_queue_t queue = dispatch_queue_create("com.github.Squirrel.directoryWatcher", attr);
+
+		__block BOOL cancelled = NO;
+		__block BOOL initialized = NO;
+		__block dispatch_source_t vnodeSource = nil;
+		dispatch_source_t timerSource = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
+
+		void (^scheduleTimer)(NSTimeInterval) = ^(NSTimeInterval intervalSeconds) {
+			if (timerSource == nil) return;
+			uint64_t intervalNs = (uint64_t)(MAX(intervalSeconds, 0.05) * NSEC_PER_SEC);
+			uint64_t leewayNs = MAX(intervalNs / 5, (uint64_t)(NSEC_PER_SEC / 20));
+			dispatch_source_set_timer(timerSource, dispatch_time(DISPATCH_TIME_NOW, (int64_t)intervalNs), intervalNs, leewayNs);
+		};
+
+		__block void (^attachVnodeSource)(BOOL);
+		__weak __block void (^weakAttachVnodeSource)(BOOL);
+		weakAttachVnodeSource = attachVnodeSource = ^(BOOL sendInitialIfUnavailable) {
+			if (cancelled || vnodeSource != nil) return;
+
+			int dirfd = open(directoryPath.fileSystemRepresentation, O_EVTONLY | O_CLOEXEC);
+			if (dirfd < 0) {
+				scheduleTimer(retryInterval);
+				if (sendInitialIfUnavailable) {
+					[subscriber sendNext:RACUnit.defaultUnit];
+				}
+				return;
+			}
+
+			dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)dirfd, DISPATCH_VNODE_WRITE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_DELETE | DISPATCH_VNODE_ATTRIB | DISPATCH_VNODE_REVOKE, queue);
+			if (source == nil) {
+				close(dirfd);
+				scheduleTimer(retryInterval);
+				if (sendInitialIfUnavailable) {
+					[subscriber sendNext:RACUnit.defaultUnit];
+				}
+				return;
+			}
+
+			vnodeSource = source;
+			scheduleTimer(fallbackInterval);
+
+			dispatch_source_set_registration_handler(source, ^{
+				if (!cancelled) {
+					[subscriber sendNext:RACUnit.defaultUnit];
+				}
+			});
+			dispatch_source_set_event_handler(source, ^{
+				if (cancelled) return;
+				uintptr_t flags = dispatch_source_get_data(source);
+				[subscriber sendNext:RACUnit.defaultUnit];
+				if ((flags & (DISPATCH_VNODE_DELETE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_REVOKE)) != 0) {
+					if (vnodeSource == source) {
+						vnodeSource = nil;
+					}
+					dispatch_source_cancel(source);
+					void (^reattach)(BOOL) = weakAttachVnodeSource;
+					if (reattach != nil) {
+						reattach(NO);
+					}
+					if (vnodeSource == nil) {
+						scheduleTimer(retryInterval);
+					}
+				}
+			});
+			dispatch_source_set_cancel_handler(source, ^{
+				close(dirfd);
+			});
+			dispatch_resume(source);
+		};
+
+		if (timerSource != nil) {
+			scheduleTimer(fallbackInterval);
+			dispatch_source_set_event_handler(timerSource, ^{
+				if (cancelled || !initialized) return;
+				if (vnodeSource == nil) {
+					attachVnodeSource(NO);
+					if (vnodeSource != nil) return;
+				}
+				[subscriber sendNext:RACUnit.defaultUnit];
+			});
+			dispatch_resume(timerSource);
 		}
 
-		dispatch_queue_t queue = dispatch_get_global_queue(QOS_CLASS_UTILITY, 0);
-		dispatch_source_t source = dispatch_source_create(DISPATCH_SOURCE_TYPE_VNODE, (uintptr_t)dirfd, DISPATCH_VNODE_WRITE | DISPATCH_VNODE_RENAME | DISPATCH_VNODE_DELETE | DISPATCH_VNODE_ATTRIB, queue);
-		if (source == nil) {
-			close(dirfd);
-			return [[[RACSignal interval:1.0 onScheduler:[RACScheduler schedulerWithPriority:RACSchedulerPriorityLow]]
-				startWith:NSDate.date]
-				subscribe:subscriber];
-		}
-
-		dispatch_source_set_event_handler(source, ^{
-			[subscriber sendNext:RACUnit.defaultUnit];
+		dispatch_async(queue, ^{
+			initialized = YES;
+			attachVnodeSource(YES);
 		});
-		dispatch_source_set_cancel_handler(source, ^{
-			close(dirfd);
-		});
-		[subscriber sendNext:RACUnit.defaultUnit];
-		dispatch_resume(source);
 
 		return [RACDisposable disposableWithBlock:^{
-			dispatch_source_cancel(source);
+			dispatch_async(queue, ^{
+				cancelled = YES;
+				attachVnodeSource = nil;
+				if (vnodeSource != nil) {
+					dispatch_source_cancel(vnodeSource);
+					vnodeSource = nil;
+				}
+				if (timerSource != nil) {
+					dispatch_source_cancel(timerSource);
+				}
+			});
 		}];
 	}] setNameWithFormat:@"+watchDirectoryAtURL: %@", directoryURL];
 }

@@ -113,8 +113,14 @@ extern NSString * const SQRLShipItRequestPropertyErrorKey;
 // Returns the helper-owned preparation status URL corresponding to a state URL.
 + (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL;
 
-// Emits immediately and whenever entries in `directoryURL` are modified.
+// Removes any preparation status file corresponding to `stateURL` without
+// following symlinks.
++ (void)removePreparationStatusForStateURL:(NSURL *)stateURL;
+
+// Emits immediately after registration and whenever entries in `directoryURL`
+// are modified, recovering if `directoryURL` is deleted or renamed.
 + (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL;
++ (RACSignal *)watchDirectoryAtURL:(NSURL *)directoryURL fallbackInterval:(NSTimeInterval)fallbackInterval retryInterval:(NSTimeInterval)retryInterval;
 
 // Writes and waits for preparation readiness in a separate ShipIt-written file
 // so ShipItState.plist remains exclusively written by the application.

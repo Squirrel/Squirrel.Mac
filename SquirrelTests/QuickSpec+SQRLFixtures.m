@@ -315,7 +315,7 @@ QuickConfigurationEnd
 - (void)submitShipItRequest:(SQRLShipItRequest *)request {
 	NSURL *stateURL = [self.shipItDirectoryManager.shipItStateURL first];
 	if (stateURL != nil) {
-		[NSFileManager.defaultManager removeItemAtURL:[SQRLShipItRequest preparationStatusURLForStateURL:stateURL] error:NULL];
+		[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 	}
 	expect(@([[request writeUsingURL:self.shipItDirectoryManager.shipItStateURL] waitUntilCompleted:NULL])).to(beTruthy());
 

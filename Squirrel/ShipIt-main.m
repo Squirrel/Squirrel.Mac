@@ -127,6 +127,10 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 					concat:readRequestSignal];
 			}
 
+			// Clear any stale acknowledgment from an earlier ShipIt instance
+			// before preparing this launch's candidate.
+			[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+
 			RACScheduler *preparationScheduler = [RACScheduler schedulerWithPriority:RACSchedulerPriorityLow];
 			RACSignal *requests = [[[[[[SQRLShipItRequest watchDirectoryAtURL:stateURL.URLByDeletingLastPathComponent]
 				deliverOn:preparationScheduler]
@@ -139,6 +143,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 				flattenMap:^(SQRLShipItRequest *request) {
 					NSMutableDictionary *values = [request.dictionaryValue mutableCopy];
 					values[@keypath(request.launchAfterInstallation)] = @NO;
+					values[@keypath(request.preparationError)] = NSNull.null;
 					NSError *error = nil;
 					SQRLShipItRequest *normalized = [[SQRLShipItRequest alloc] initWithDictionary:values error:&error];
 					if (normalized == nil) {
@@ -153,6 +158,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 			return [[[requests
 				map:^(SQRLShipItRequest *request) {
 					if (!request.earlyStaging) {
+						[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 						return [[[installer discardPreparedBundle]
 							then:^{
 								return [waitForTerminationIfNecessary(request) ignoreValues];
@@ -208,7 +214,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 
 			RACSignal *action;
 			if (preparationFailed || updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
-				action = [[[[installer.abortInstallationCommand
+				action = [[[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
 						if (preparationFailed) {
@@ -218,6 +224,9 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 						} else {
 							NSLog(@"Too many attempts to install, aborting update");
 						}
+					}]
+					doCompleted:^{
+						[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 					}]
 					catch:^(NSError *error) {
 						NSLog(@"Error aborting installation: %@", error);
@@ -240,6 +249,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 					}]
 					doCompleted:^{
 						NSLog(@"Installation completed successfully");
+						[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 					}]
 					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path];
 			}

@@ -280,27 +280,31 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	NSParameterAssert(request != nil);
 
 	if (!request.earlyStaging) {
-		return [[self discardPreparedBundle] then:^{
-			return [[[[[[[self
-				ownedTemporaryDirectoryURL]
-				flattenMap:^(NSURL *directoryURL) {
-					return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
-				}]
-				flattenMap:^(NSURL *bundleURL) {
-					return [[[self
-						clearQuarantineForDirectory:bundleURL]
-						ignoreValues]
-						concat:[RACSignal return:bundleURL]];
-				}]
-				zipWith:[self codeSignatureForBundleAtURL:request.targetBundleURL]]
-				reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
-					return [[[self
-						verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
-						ignoreValues]
-						concat:[RACSignal return:updateBundleURL]];
-				}]
-				flatten]
-				setNameWithFormat:@"%@ -prepareAndValidateUpdateBundleURLForRequest: %@", self, request];
+		RACSignal *legacyPrepare = [[[[[[[self
+			ownedTemporaryDirectoryURL]
+			flattenMap:^(NSURL *directoryURL) {
+				return [self copyBundleAtURL:request.updateBundleURL toDirectory:directoryURL];
+			}]
+			flattenMap:^(NSURL *bundleURL) {
+				return [[[self
+					clearQuarantineForDirectory:bundleURL]
+					ignoreValues]
+					concat:[RACSignal return:bundleURL]];
+			}]
+			zipWith:[self codeSignatureForBundleAtURL:request.targetBundleURL]]
+			reduceEach:^(NSURL *updateBundleURL, SQRLCodeSignature *codeSignature) {
+				return [[[self
+					verifyBundleAtURL:updateBundleURL usingSignature:codeSignature]
+					ignoreValues]
+					concat:[RACSignal return:updateBundleURL]];
+			}]
+			flatten]
+			setNameWithFormat:@"%@ -prepareAndValidateUpdateBundleURLForRequest: %@", self, request];
+		return [RACSignal defer:^{
+			if (self.preparedBundleURL == nil) return legacyPrepare;
+			return [[self discardPreparedBundle] then:^{
+				return legacyPrepare;
+			}];
 		}];
 	}
 
@@ -360,9 +364,13 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 	return [RACSignal defer:^{
 		NSURL *inMemoryURL = self.preparedBundleURL;
 		NSURL *persistedURL = [self persistedPreparedBundleURL];
-		self.preparedBundleURL = nil;
 		self.preparedRequest = nil;
-		[self setPersistedPreparedBundleURL:nil];
+		if (inMemoryURL == nil && persistedURL == nil) return [RACSignal empty];
+
+		self.preparedBundleURL = nil;
+		if (persistedURL != nil) {
+			[self setPersistedPreparedBundleURL:nil];
+		}
 
 		RACSignal *deleteInMemory = (inMemoryURL == nil) ? [RACSignal empty] : [[self deleteOwnedBundleAtURL:inMemoryURL] catchTo:[RACSignal empty]];
 		RACSignal *deletePersisted = (persistedURL == nil || [persistedURL.path isEqualToString:inMemoryURL.path]) ? [RACSignal empty] : [[self deleteOwnedBundleAtURL:persistedURL] catchTo:[RACSignal empty]];
@@ -371,13 +379,13 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (RACSignal *)prepareRequest:(SQRLShipItRequest *)request {
-	return [[self validateTargetForRequest:request] flattenMap:^(SQRLShipItRequest *request) {
+	return [[self validateTargetForRequest:request] flattenMap:^(SQRLShipItRequest *validatedRequest) {
 		return [[self discardPreparedBundle] then:^{
-			return [[self stageUpdateForRequest:request] doNext:^(NSURL *URL) {
+			return [[self stageUpdateForRequest:validatedRequest] doNext:^(NSURL *URL) {
 				self.preparedBundleURL = URL;
-				self.preparedRequest = request;
+				self.preparedRequest = validatedRequest;
 				[self setPersistedPreparedBundleURL:URL];
-				NSLog(@"Prepared bundle for %@", request.updateBundleURL);
+				NSLog(@"Prepared bundle for %@", validatedRequest.updateBundleURL);
 			}];
 		}];
 	}];
@@ -509,8 +517,8 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 }
 
 - (RACSignal *)installRequest:(SQRLShipItRequest *)request {
-	return [[self validateTargetForRequest:request] flattenMap:^(SQRLShipItRequest *request) {
-		return [self installValidatedRequest:request];
+	return [[self validateTargetForRequest:request] flattenMap:^(SQRLShipItRequest *validatedRequest) {
+		return [self installValidatedRequest:validatedRequest];
 	}];
 }
 
@@ -520,12 +528,12 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 		flattenMap:^(NSURL *updateBundleURL) {
 			return [[[[self
 				renameIfNeeded:request updateBundleURL:updateBundleURL]
-				flattenMap:^(SQRLShipItRequest *request) {
+				flattenMap:^(SQRLShipItRequest *renamedRequest) {
 					// Final validation that the application is not running again;
 					NSArray *apps = nil;
-					if (request.bundleIdentifier != nil) {
-						apps = [[NSRunningApplication runningApplicationsWithBundleIdentifier:request.bundleIdentifier] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSRunningApplication *app, NSDictionary *bindings) {
-							if (![[[app bundleURL] URLByStandardizingPath] isEqual:request.targetBundleURL]) return NO;
+					if (renamedRequest.bundleIdentifier != nil) {
+						apps = [[NSRunningApplication runningApplicationsWithBundleIdentifier:renamedRequest.bundleIdentifier] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSRunningApplication *app, NSDictionary *bindings) {
+							if (![[[app bundleURL] URLByStandardizingPath] isEqual:renamedRequest.targetBundleURL]) return NO;
 							if (app.processIdentifier <= 0) return NO;
 							// LaunchServices can still list an exited process just
 							// after the termination listener's kernel notification.
@@ -542,29 +550,29 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 						return [RACSignal error:[NSError errorWithDomain:SQRLInstallerErrorDomain code:SQRLInstallerErrorAppStillRunning userInfo:errorInfo]];
 					}
 
-					return [[self acquireTargetBundleURLForRequest:request] concat:[RACSignal return:request]];
+					return [[self acquireTargetBundleURLForRequest:renamedRequest] concat:[RACSignal return:renamedRequest]];
 				}]
-				flattenMap:^(SQRLShipItRequest *request) {
-					if (request.earlyStaging) {
+				flattenMap:^(SQRLShipItRequest *targetRequest) {
+					if (targetRequest.earlyStaging) {
 						return [[self
-							installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
+							installItemToURL:targetRequest.targetBundleURL fromURL:updateBundleURL]
 							then:^{
 								SQRLInstallerOwnedBundle *ownedBundle = self.ownedBundle;
 								NSMutableDictionary *values = [ownedBundle.dictionaryValue mutableCopy];
-								values[@keypath(ownedBundle.cleanupURLs)] = @[ request.updateBundleURL, updateBundleURL, ownedBundle.temporaryURL ];
+								values[@keypath(ownedBundle.cleanupURLs)] = @[ targetRequest.updateBundleURL, updateBundleURL, ownedBundle.temporaryURL ];
 								NSError *error = nil;
 								SQRLInstallerOwnedBundle *committed = [[SQRLInstallerOwnedBundle alloc] initWithDictionary:values error:&error];
 								if (committed == nil || ![self saveOwnedBundle:committed error:&error]) return [RACSignal error:error];
 								self.preparedRequest = nil;
 								self.preparedBundleURL = nil;
 								[self setPersistedPreparedBundleURL:nil];
-								return [RACSignal return:request];
+								return [RACSignal return:targetRequest];
 							}];
 					}
 
 					return [[[[[[self
-						installItemToURL:request.targetBundleURL fromURL:updateBundleURL]
-						concat:[RACSignal return:request.updateBundleURL]]
+						installItemToURL:targetRequest.targetBundleURL fromURL:updateBundleURL]
+						concat:[RACSignal return:targetRequest.updateBundleURL]]
 						concat:[RACSignal return:updateBundleURL]]
 						concat:[RACSignal defer:^{
 							return [RACSignal return:self.ownedBundle.temporaryURL];
@@ -577,7 +585,7 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 								}]
 								catchTo:[RACSignal empty]];
 						}]
-						concat:[RACSignal return:request]];
+						concat:[RACSignal return:targetRequest]];
 				}]
 				doCompleted:^{
 					if (!request.earlyStaging) {
