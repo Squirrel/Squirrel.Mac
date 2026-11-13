@@ -214,7 +214,7 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 
 			RACSignal *action;
 			if (preparationFailed || updateMissing || attempt > SQRLShipItMaximumInstallationAttempts) {
-				action = [[[[[installer.abortInstallationCommand
+				action = [[[[installer.abortInstallationCommand
 					execute:request]
 					initially:^{
 						if (preparationFailed) {
@@ -224,9 +224,6 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 						} else {
 							NSLog(@"Too many attempts to install, aborting update");
 						}
-					}]
-					doCompleted:^{
-						[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 					}]
 					catch:^(NSError *error) {
 						NSLog(@"Error aborting installation: %@", error);
@@ -249,15 +246,17 @@ static void installRequest(NSURL *stateURL, NSString *applicationIdentifier) {
 					}]
 					doCompleted:^{
 						NSLog(@"Installation completed successfully");
-						[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
 					}]
 					sqrl_addTransactionWithName:NSLocalizedString(@"Updating", nil) description:NSLocalizedString(@"%@ is being updated, and interrupting the process could corrupt the application", nil), request.targetBundleURL.path];
 			}
 
-			// Clear the installation attempts for a successful abort or
-			// install.
+			// Clear the installation attempts and any preparation acknowledgment
+			// for a successful abort or install.
 			action = [action doCompleted:^{
 				clearInstallationAttempts(applicationIdentifier);
+				if (request.earlyStaging) {
+					[SQRLShipItRequest removePreparationStatusForStateURL:stateURL];
+				}
 			}];
 
 			if (request.launchAfterInstallation) {

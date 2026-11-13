@@ -384,7 +384,6 @@ static NSString * const SQRLInstallerPreparedBundlePathKey = @"SQRLInstallerPrep
 			return [[self stageUpdateForRequest:validatedRequest] doNext:^(NSURL *URL) {
 				self.preparedBundleURL = URL;
 				self.preparedRequest = validatedRequest;
-				[self setPersistedPreparedBundleURL:URL];
 				NSLog(@"Prepared bundle for %@", validatedRequest.updateBundleURL);
 			}];
 		}];

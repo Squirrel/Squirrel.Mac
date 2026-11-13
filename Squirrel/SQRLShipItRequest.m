@@ -93,6 +93,14 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 		self.earlyStaging == request.earlyStaging;
 }
 
+static int openStateDirectory(NSURL *directoryURL) {
+	int dirFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
+	if (geteuid() == 0) {
+		dirFlags |= O_NOFOLLOW_ANY;
+	}
+	return open(directoryURL.path.fileSystemRepresentation, dirFlags);
+}
+
 + (NSURL *)preparationStatusURLForStateURL:(NSURL *)stateURL {
 	NSParameterAssert(stateURL != nil);
 	return [stateURL URLByAppendingPathExtension:@"prepared"];
@@ -101,11 +109,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 + (void)removePreparationStatusForStateURL:(NSURL *)stateURL {
 	if (stateURL == nil) return;
 	NSURL *preparedURL = [self preparationStatusURLForStateURL:stateURL];
-	int dirFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
-	if (geteuid() == 0) {
-		dirFlags |= O_NOFOLLOW_ANY;
-	}
-	int dirfd = open(preparedURL.URLByDeletingLastPathComponent.path.fileSystemRepresentation, dirFlags);
+	int dirfd = openStateDirectory(preparedURL.URLByDeletingLastPathComponent);
 	if (dirfd < 0) return;
 	unlinkat(dirfd, preparedURL.lastPathComponent.fileSystemRepresentation, 0);
 	close(dirfd);
@@ -264,11 +268,7 @@ NSString * const SQRLShipItRequestPropertyErrorKey = @"SQRLShipItRequestProperty
 	// privileged), create a fresh mode-0644 temporary file with O_NOFOLLOW,
 	// and renameat() within the opened directory descriptor so symlinks are
 	// never followed.
-	int dirFlags = O_RDONLY | O_DIRECTORY | O_NOFOLLOW | O_CLOEXEC;
-	if (geteuid() == 0) {
-		dirFlags |= O_NOFOLLOW_ANY;
-	}
-	int dirfd = open(parentURL.path.fileSystemRepresentation, dirFlags);
+	int dirfd = openStateDirectory(parentURL);
 	if (dirfd < 0) {
 		if (errorRef != NULL) *errorRef = [NSError errorWithDomain:NSPOSIXErrorDomain code:errno userInfo:nil];
 		return NO;
