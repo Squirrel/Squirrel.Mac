@@ -200,6 +200,23 @@ it(@"should install an update to another volume", ^{
 	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).to(equal(SQRLTestApplicationUpdatedShortVersionString));
 });
 
+it(@"should install an update between two external volumes", ^{
+	// Both sides of the install are on disk images, so the backup and the
+	// final install each cross a volume boundary. Neither step may leave the
+	// target bundle missing while a long copy is in progress.
+	NSURL *updateDiskImageURL = [self createAndMountDiskImageNamed:@"TestApplicationUpdateExternal" fromDirectory:updateURL.URLByDeletingLastPathComponent];
+	NSURL *externalUpdateURL = [updateDiskImageURL URLByAppendingPathComponent:updateURL.lastPathComponent];
+	NSURL *targetDiskImageURL = [self createAndMountDiskImageNamed:@"TestApplicationTargetExternal" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+	NSURL *externalTargetURL = [targetDiskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+	SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:externalUpdateURL targetBundleURL:externalTargetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+
+	[self installWithRequest:request remote:YES];
+
+	NSURL *plistURL = [externalTargetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+	expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).to(equal(SQRLTestApplicationUpdatedShortVersionString));
+});
+
 describe(@"with backup restoration", ^{
 	__block NSURL *targetURL;
 
@@ -263,6 +280,99 @@ describe(@"with backup restoration", ^{
 		expect(error).to(beNil());
 
 		expect(self.testApplicationBundleVersion).to(equal(SQRLTestApplicationOriginalShortVersionString));
+	});
+});
+
+describe(@"with an invalid backup bundle on another volume", ^{
+	__block NSURL *targetURL;
+	__block NSURL *backupURL;
+
+	beforeEach(^{
+		// An interrupted cross-volume copy left a partial backup in system
+		// temp while the real app is still installed on a disk image. The old
+		// restore path removed the installed app before copying the backup,
+		// which made a partial backup unrecoverable.
+		NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplicationInvalidBackup" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+		targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+		backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"Invalid Backup.app"];
+		expect(@([NSFileManager.defaultManager copyItemAtURL:self.testApplicationURL toURL:backupURL error:NULL])).to(beTruthy());
+		expect(@([NSFileManager.defaultManager removeItemAtURL:[backupURL URLByAppendingPathComponent:@"Contents/Info.plist"] error:NULL])).to(beTruthy());
+
+		SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:targetURL temporaryURL:backupURL codeSignature:self.testApplicationSignature];
+		NSData *ownedBundleArchive = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle];
+		expect(ownedBundleArchive).notTo(beNil());
+
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(4), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)ownedBundleArchive, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
+	});
+
+	afterEach(^{
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
+	});
+
+	it(@"should not replace the installed app with the invalid backup", ^{
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+		[self installWithRequest:request remote:YES];
+
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:targetURL.path])).to(beTruthy());
+
+		__block NSError *error;
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+		expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).to(equal(SQRLTestApplicationOriginalShortVersionString));
+	});
+});
+
+describe(@"with a backup and the app still installed on another volume", ^{
+	__block NSURL *targetURL;
+	__block NSURL *backupURL;
+
+	beforeEach(^{
+		// An interrupted backup left the original app on the external volume
+		// and a complete copy in the system temp directory. Restoring the copy
+		// must replace the existing app atomically instead of deleting it first.
+		NSURL *diskImageURL = [self createAndMountDiskImageNamed:@"TestApplicationStillInstalled" fromDirectory:self.testApplicationURL.URLByDeletingLastPathComponent];
+		targetURL = [diskImageURL URLByAppendingPathComponent:self.testApplicationURL.lastPathComponent];
+
+		backupURL = [self.temporaryDirectoryURL URLByAppendingPathComponent:@"Recovered Backup.app"];
+		expect(@([NSFileManager.defaultManager copyItemAtURL:self.testApplicationURL toURL:backupURL error:NULL])).to(beTruthy());
+
+		SQRLInstallerOwnedBundle *ownedBundle = [[SQRLInstallerOwnedBundle alloc] initWithOriginalURL:targetURL temporaryURL:backupURL codeSignature:self.testApplicationSignature];
+		NSData *ownedBundleArchive = [NSKeyedArchiver archivedDataWithRootObject:ownedBundle];
+		expect(ownedBundleArchive).notTo(beNil());
+
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, (__bridge CFPropertyListRef)@(4), (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, (__bridge CFDataRef)ownedBundleArchive, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
+	});
+
+	afterEach(^{
+		NSString *applicationIdentifier = self.shipItDirectoryManager.applicationIdentifier;
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLShipItInstallationAttemptsKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		CFPreferencesSetValue((__bridge CFStringRef)SQRLInstallerOwnedBundleKey, NULL, (__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost);
+		expect(@(CFPreferencesSynchronize((__bridge CFStringRef)applicationIdentifier, kCFPreferencesCurrentUser, kCFPreferencesCurrentHost))).to(beTruthy());
+	});
+
+	it(@"should restore the backup without first deleting the installed app", ^{
+		SQRLShipItRequest *request = [[SQRLShipItRequest alloc] initWithUpdateBundleURL:updateURL targetBundleURL:targetURL bundleIdentifier:nil launchAfterInstallation:NO useUpdateBundleName:NO];
+		[self installWithRequest:request remote:YES];
+
+		__block NSError *error;
+		expect(@([[self.testApplicationSignature verifyBundleAtURL:targetURL] waitUntilCompleted:&error])).to(beTruthy());
+		expect(error).to(beNil());
+
+		NSURL *plistURL = [targetURL URLByAppendingPathComponent:@"Contents/Info.plist"];
+		expect([NSDictionary dictionaryWithContentsOfURL:plistURL][SQRLBundleShortVersionStringKey]).to(equal(SQRLTestApplicationOriginalShortVersionString));
+		expect(@([NSFileManager.defaultManager fileExistsAtPath:backupURL.path])).to(beFalsy());
 	});
 });
 
