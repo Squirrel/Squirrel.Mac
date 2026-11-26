@@ -8,8 +8,10 @@
 
 #import "SQRLInstaller.h"
 
+#import <errno.h>
 #import <libkern/OSAtomic.h>
 #import <mach-o/dyld.h>
+#import <stdlib.h>
 #import <sys/param.h>
 #import <unistd.h>
 #import <ReactiveObjC/EXTScope.h>
@@ -43,6 +45,45 @@ const NSInteger SQRLInstallerErrorAppStillRunning = -9;
 
 NSString * const SQRLShipItInstallationAttemptsKey = @"SQRLShipItInstallationAttempts";
 NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
+
+// Creates a private, uniquely named directory inside directoryURL. The
+// directory is created with mkdtemp(), so it has mode 0700 and cannot collide
+// with another ShipIt attempt. Used to stage a bundle on the same volume as its
+// final destination before replacing anything there.
+static NSURL *SQRLCreatePrivateTemporaryDirectory(NSURL *directoryURL, NSString *prefix, NSError **error) {
+	NSCAssert(directoryURL != nil, @"A staging directory URL is required");
+
+	NSString *template = [NSString stringWithFormat:@"%@.XXXXXXXX", prefix];
+	NSString *path = [directoryURL.path stringByAppendingPathComponent:template];
+	char *buffer = strdup(path.fileSystemRepresentation);
+	if (buffer == NULL) {
+		if (error != NULL) {
+			*error = [NSError errorWithDomain:NSPOSIXErrorDomain code:ENOMEM userInfo:nil];
+		}
+		return nil;
+	}
+
+	if (mkdtemp(buffer) == NULL) {
+		int code = errno;
+		const char *description = strerror(code);
+		NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+		if (description != NULL) userInfo[NSLocalizedDescriptionKey] = @(description);
+		if (error != NULL) *error = [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
+		free(buffer);
+		return nil;
+	}
+
+	NSURL *URL = [NSURL fileURLWithPath:[NSFileManager.defaultManager stringWithFileSystemRepresentation:buffer length:strlen(buffer)] isDirectory:YES];
+	free(buffer);
+	return URL;
+}
+
+static NSError *SQRLPOSIXError(int code) {
+	NSMutableDictionary *userInfo = [NSMutableDictionary dictionary];
+	const char *description = strerror(code);
+	if (description != NULL) userInfo[NSLocalizedDescriptionKey] = @(description);
+	return [NSError errorWithDomain:NSPOSIXErrorDomain code:code userInfo:userInfo];
+}
 
 @interface SQRLInstaller ()
 
@@ -94,14 +135,16 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 
 // Moves `sourceURL` to `targetURL`.
 //
-// If the two URLs lie on the same volume, the installation will be performed
-// atomically. Otherwise, the target item will be deleted, the source item will
-// be copied to the target, then the source item will be deleted.
+// If the two URLs lie on the same volume, the installation is a single atomic
+// rename. Otherwise, the source is copied into a private staging directory on
+// the target's volume, then same-volume renames replace the target. The
+// original target is kept aside until the new one is in place, so an
+// interrupted cross-volume install cannot leave the application missing.
 //
 // targetURL - The URL to overwrite with the install. This must not be nil.
 // sourceURL - The URL to move from. This must not be nil.
 //
-// Retruns a signal which will synchronously complete or error.
+// Returns a signal which will synchronously complete or error.
 - (RACSignal *)installItemToURL:(NSURL *)targetURL fromURL:(NSURL *)sourceURL;
 
 // Recursively clears the quarantine extended attribute from the given
@@ -412,8 +455,20 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 	SQRLInstallerOwnedBundle *ownedBundle = self.ownedBundle;
 	if (ownedBundle == nil) return [RACSignal empty];
 
-	return [[[[self
-		installItemToURL:ownedBundle.originalURL fromURL:ownedBundle.temporaryURL]
+	// The backed-up bundle can be incomplete if an earlier cross-volume move
+	// was interrupted. Never replace the original application with it unless it
+	// still matches the signature captured before the move began. Verify the
+	// bundle directly so a failed restore does not change its ownership.
+	RACSignal *verifyBackup = [RACSignal empty];
+	if (ownedBundle.codeSignature != nil) {
+		verifyBackup = [[ownedBundle.codeSignature verifyBundleAtURL:ownedBundle.temporaryURL]
+			setNameWithFormat:@"%@ -verify backup bundle at %@", self, ownedBundle.temporaryURL];
+	}
+
+	return [[[[verifyBackup
+		then:^{
+			return [self installItemToURL:ownedBundle.originalURL fromURL:ownedBundle.temporaryURL];
+		}]
 		doCompleted:^{
 			self.ownedBundle = nil;
 		}]
@@ -635,17 +690,82 @@ NSString * const SQRLInstallerOwnedBundleKey = @"SQRLInstallerOwnedBundle";
 		catch:^(NSError *error) {
 			if (![error.domain isEqual:NSPOSIXErrorDomain] || error.code != EXDEV) return [RACSignal error:error];
 
-			// If the locations lie on two different volumes, remove the
-			// destination by hand, then perform a move.
-			[NSFileManager.defaultManager removeItemAtURL:targetContentsURL error:NULL];
+			NSFileManager *manager = NSFileManager.defaultManager;
 
-			if ([NSFileManager.defaultManager moveItemAtURL:sourceContentsURL toURL:targetContentsURL error:&error]) {
-				NSLog(@"Moved bundle contents across volumes from %@ to %@", sourceContentsURL, targetContentsURL);
-				return [RACSignal empty];
-			} else {
-				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't move bundle contents %@ across volumes to %@", nil), sourceContentsURL, targetContentsURL];
-				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:error]];
+			// A cross-volume move cannot be atomic. Copy the source into a
+			// private staging directory on the target's volume first, then use
+			// same-volume renames to swap it into place. The destination is
+			// never removed before a complete replacement is available, so an
+			// interrupted install cannot leave the user without an app.
+			if (![manager fileExistsAtPath:sourceContentsURL.path]) {
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Bundle to move %@ no longer exists", nil), sourceContentsURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:nil]];
 			}
+
+			NSError *stagingError = nil;
+			NSURL *stagingDirectoryURL = SQRLCreatePrivateTemporaryDirectory(targetContentsURL.URLByDeletingLastPathComponent, _applicationIdentifier, &stagingError);
+			if (stagingDirectoryURL == nil) {
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't create staging directory for %@ on the volume containing %@", nil), sourceContentsURL, targetContentsURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:stagingError]];
+			}
+
+			void (^removeStagingDirectory)(void) = ^{
+				NSError *cleanupError = nil;
+				if (![manager removeItemAtURL:stagingDirectoryURL error:&cleanupError]) {
+					NSLog(@"Couldn't remove staging directory at %@: %@", stagingDirectoryURL, cleanupError.sqrl_verboseDescription);
+				}
+			};
+
+			NSURL *stagedContentsURL = [stagingDirectoryURL URLByAppendingPathComponent:targetContentsURL.lastPathComponent];
+			NSError *copyError = nil;
+			if (![manager copyItemAtURL:sourceContentsURL toURL:stagedContentsURL error:&copyError]) {
+				removeStagingDirectory();
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't stage bundle contents %@ on the volume containing %@", nil), sourceContentsURL, targetContentsURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:copyError]];
+			}
+
+			BOOL targetExists = [manager fileExistsAtPath:targetContentsURL.path];
+			NSURL *replacedContentsURL = [stagingDirectoryURL URLByAppendingPathComponent:@"replaced"];
+
+			if (targetExists && rename(targetContentsURL.path.fileSystemRepresentation, replacedContentsURL.path.fileSystemRepresentation) != 0) {
+				NSError *renameError = SQRLPOSIXError(errno);
+				removeStagingDirectory();
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't move replaced bundle contents %@ aside", nil), targetContentsURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:renameError]];
+			}
+
+			if (rename(stagedContentsURL.path.fileSystemRepresentation, targetContentsURL.path.fileSystemRepresentation) != 0) {
+				int code = errno;
+				NSError *renameError = SQRLPOSIXError(code);
+
+				// Put the original back before giving up. If that fails, keep the
+				// staging directory so the replaced bundle is still recoverable.
+				BOOL restoredOriginal = YES;
+				if (targetExists && rename(replacedContentsURL.path.fileSystemRepresentation, targetContentsURL.path.fileSystemRepresentation) != 0) {
+					int restoreCode = errno;
+					NSLog(@"Couldn't restore replaced bundle contents from %@ to %@: %@; leaving it at %@", replacedContentsURL, targetContentsURL, SQRLPOSIXError(restoreCode), replacedContentsURL);
+					restoredOriginal = NO;
+				}
+
+				if (restoredOriginal) removeStagingDirectory();
+				NSString *description = [NSString stringWithFormat:NSLocalizedString(@"Couldn't install staged bundle contents %@ at %@", nil), stagedContentsURL, targetContentsURL];
+				return [RACSignal error:[self errorByAddingDescription:description code:SQRLInstallerErrorMovingAcrossVolumes toError:renameError]];
+			}
+
+			if (targetExists && ![manager removeItemAtURL:replacedContentsURL error:&error]) {
+				NSLog(@"Couldn't remove replaced bundle contents at %@: %@", replacedContentsURL, error.sqrl_verboseDescription);
+			}
+
+			// The staged copy is now the installed bundle; the original source
+			// is only a leftover (for example the update in Caches or the old
+			// app after it was backed up).
+			if (![manager removeItemAtURL:sourceContentsURL error:&error]) {
+				NSLog(@"Couldn't remove source bundle contents at %@: %@", sourceContentsURL, error.sqrl_verboseDescription);
+			}
+
+			removeStagingDirectory();
+			NSLog(@"Installed bundle contents across volumes from %@ to %@", sourceContentsURL, targetContentsURL);
+			return [RACSignal empty];
 		}]
 		setNameWithFormat:@"%@ -installItemAtURL: %@ fromURL: %@", self, targetContentsURL, sourceContentsURL];
 }
